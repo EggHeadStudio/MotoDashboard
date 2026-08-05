@@ -12,8 +12,7 @@
   <meta name="theme-color" content="#111111">
   <link rel="manifest" href="./manifest.webmanifest?v=1.1">
   <link rel="apple-touch-icon" href="./icon.svg">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -29,9 +28,13 @@
 
     html, body {
       width: 100%;
-      height: 100dvh;
+      height: 100%;
+      margin: 0;
       overflow: hidden;
-      background: #111;
+    }
+
+    body {
+      background: transparent;
       font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
       color: #fff;
       touch-action: none;
@@ -39,17 +42,43 @@
 
     /* ── MAP ── */
     #map {
-      position: absolute;
+      position: fixed;
       inset: 0;
       width: 100%;
-      height: 100%;
+      height: 100dvh;
+      z-index: 0;
+      background: #1b1b1b;
       touch-action: pan-x pan-y pinch-zoom;
-      z-index: 1;
+    }
+
+    /* ── MAP SHADE OVERLAY ── */
+    .map-shade {
+      position: fixed;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      background: rgba(0, 0, 0, 0.25);
+    }
+
+    /* ── MAP STATUS ── */
+    #map-status {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 5;
+      font-size: 11px;
+      color: rgba(255,255,255,0.75);
+      background: rgba(0,0,0,0.55);
+      padding: 3px 8px;
+      border-radius: 6px;
+      pointer-events: none;
+      white-space: nowrap;
     }
 
     /* ── HUD OVERLAY ── */
     #hud {
-      position: absolute;
+      position: fixed;
       inset: 0;
       z-index: 10;
       pointer-events: none;
@@ -225,7 +254,7 @@
 
     /* ── START OVERLAY ── */
     #start-overlay {
-      position: absolute;
+      position: fixed;
       inset: 0;
       z-index: 50;
       background: linear-gradient(180deg, rgba(8,8,12,0.92) 0%, rgba(15,15,24,0.86) 50%, rgba(9,9,12,0.96) 100%);
@@ -317,7 +346,7 @@
     /* ── GPS ERROR OVERLAY ── */
     #gps-error-overlay {
       display: none;
-      position: absolute;
+      position: fixed;
       inset: 0;
       z-index: 40;
       background: rgba(0,0,0,0.88);
@@ -411,6 +440,10 @@
 
   <!-- Map -->
   <div id="map" aria-label="Kartta" role="img"></div>
+  <!-- Map shade overlay -->
+  <div class="map-shade"></div>
+  <!-- Map tile status -->
+  <div id="map-status">Karttaa ladataan…</div>
 
   <!-- HUD (visible after start) -->
   <div id="hud" aria-hidden="false">
@@ -459,6 +492,7 @@
       <button class="hud-btn" id="retry-btn" aria-label="Yritä GPS-yhteyttä uudelleen">Yritä uudelleen</button>
       <div id="safety-msg" aria-hidden="true">Käytä ajoneuvon omaa mittaristoa ensisijaisena nopeusmittarina.</div>
     </div>
+    <div id="speed-debug" style="font-size:10px;color:rgba(255,255,255,0.6);text-align:center;padding:2px 0;pointer-events:none;"></div>
   </div>
 
   <!-- Start overlay -->
@@ -469,7 +503,7 @@
     <div id="start-status" aria-live="assertive" aria-atomic="true">Valmis</div>
     <div id="start-debug" aria-live="polite" aria-atomic="true">Debug: Valmis</div>
     <div id="map-fallback-msg" aria-live="polite"></div>
-    <div id="start-version">Versio 1.1</div>
+    <div id="start-version">Versio 1.2</div>
     <p class="start-safety">Älä käytä kosketusnäyttöä ajon aikana.</p>
   </div>
 
@@ -479,14 +513,21 @@
     <button id="retry-gps-btn" aria-label="Yritä GPS-yhteyttä uudelleen">Yritä uudelleen</button>
   </div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN/WLs=" crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script>
   (function () {
     'use strict';
 
     document.addEventListener('DOMContentLoaded', function () {
-      var APP_VERSION = '1.1';
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function (registrations) {
+          registrations.forEach(function (registration) {
+            registration.unregister();
+          });
+        });
+      }
+
+      var APP_VERSION = '1.2';
       var elSpeedValue = document.getElementById('speed-value');
       var elTimeDisplay = document.getElementById('time-display');
       var elWeatherRow = document.getElementById('weather-row');
@@ -506,6 +547,8 @@
       var elStartDebug = document.getElementById('start-debug');
       var elStartVersion = document.getElementById('start-version');
       var elMapFallbackMsg = document.getElementById('map-fallback-msg');
+      var elMapStatus = document.getElementById('map-status');
+      var elSpeedDebug = document.getElementById('speed-debug');
 
       var requiredElements = [
         elSpeedValue, elTimeDisplay, elWeatherRow, elTemperatureRow, elWindRow,
@@ -587,7 +630,7 @@
           kmh = 0;
         }
         kmh = Math.round(kmh);
-        if (kmh < 2) {
+        if (kmh < 0.8) {
           kmh = 0;
         }
         elSpeedValue.textContent = String(kmh);
@@ -628,7 +671,7 @@
         if (map || mapUnavailable || typeof L === 'undefined') {
           if (typeof L === 'undefined') {
             mapUnavailable = true;
-            setMapUnavailableMessage('Karttaa ei voitu ladata');
+            setMapUnavailableMessage('Karttakirjastoa ei voitu ladata');
           }
           return;
         }
@@ -642,17 +685,31 @@
             scrollWheelZoom: false,
             doubleClickZoom: false,
             boxZoom: false
-          }).setView([60.1699, 24.9384], 16);
+          }).setView([61.9241, 25.7482], 6);
 
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          var tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
             maxZoom: 19,
             crossOrigin: true
           }).addTo(map);
 
+          tileLayer.on('load', function () {
+            if (elMapStatus) { elMapStatus.style.display = 'none'; }
+          });
+          tileLayer.on('tileerror', function () {
+            if (elMapStatus) {
+              elMapStatus.textContent = 'Karttatiiliä ei voitu ladata';
+              elMapStatus.style.display = '';
+            }
+          });
+
           map.on('dragstart', function () {
             followUser = false;
           });
+
+          window.setTimeout(function () {
+            map.invalidateSize();
+          }, 250);
         } catch (error) {
           mapUnavailable = true;
           map = null;
@@ -687,6 +744,8 @@
         if (followUser) {
           map.setView(latlng, map.getZoom() < 14 ? 16 : map.getZoom());
         }
+
+        map.invalidateSize();
       }
 
       function fetchWeather(lat, lon) {
@@ -829,19 +888,28 @@
         var lon = coords.longitude;
         var accuracy = coords.accuracy;
         var speedKmh = null;
+        var fallbackKmh = null;
+        var rawGpsKmh = null;
+        var dt = 0;
 
         elGpsAccuracy.textContent = 'Tarkkuus: ' + Math.round(accuracy) + ' m';
         updateGpsQuality(accuracy);
 
         if (typeof coords.speed === 'number' && isFinite(coords.speed) && coords.speed >= 0) {
-          speedKmh = coords.speed * 3.6;
-        } else if (accuracy <= 75 && prevCoords) {
-          var dt = (now - prevCoords.t) / 1000;
-          if (dt >= 2) {
+          rawGpsKmh = coords.speed * 3.6;
+          speedKmh = rawGpsKmh;
+        }
+
+        if (accuracy <= 50 && prevCoords) {
+          dt = (now - prevCoords.t) / 1000;
+          if (dt >= 1) {
             var dist = haversine(prevCoords.lat, prevCoords.lon, lat, lon);
-            var rawKmh = (dist / dt) * 3.6;
-            if (rawKmh <= 300) {
-              speedKmh = rawKmh;
+            var calcKmh = (dist / dt) * 3.6;
+            if (isFinite(calcKmh) && calcKmh <= 300) {
+              fallbackKmh = calcKmh;
+              if (speedKmh === null) {
+                speedKmh = fallbackKmh;
+              }
             }
           }
         }
@@ -854,7 +922,16 @@
 
         setSpeedDisplay(smoothedSpeed);
 
-        if (accuracy <= 75) {
+        if (elSpeedDebug) {
+          var rawStr = rawGpsKmh !== null ? rawGpsKmh.toFixed(1) : 'ei saatavilla';
+          var calcStr = fallbackKmh !== null ? fallbackKmh.toFixed(1) : '—';
+          var dtStr = dt > 0 ? dt.toFixed(1) + ' s' : '—';
+          elSpeedDebug.textContent = 'GPS: ' + rawStr + ' | laskettu: ' + calcStr + ' | näyttö: ' + Math.round(smoothedSpeed) + ' | Δt: ' + dtStr;
+        }
+
+        if (accuracy <= 50) {
+          prevCoords = { lat: lat, lon: lon, t: now };
+        } else if (!prevCoords) {
           prevCoords = { lat: lat, lon: lon, t: now };
         }
         lastGoodCoords = { lat: lat, lon: lon };
