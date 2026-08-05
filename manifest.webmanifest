@@ -1,0 +1,20 @@
+{
+  "name": "Moto Dashboard",
+  "short_name": "MotoDash",
+  "description": "Moottoripyörän digitaalinen mittaristo",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "theme_color": "#111111",
+  "background_color": "#111111",
+  "lang": "fi",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
