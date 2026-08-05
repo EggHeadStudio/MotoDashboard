@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-title" content="MotoDash">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#111111">
-  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="manifest" href="./manifest.webmanifest?v=1.1">
   <link rel="apple-touch-icon" href="./icon.svg">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
@@ -53,72 +53,56 @@
       inset: 0;
       z-index: 10;
       pointer-events: none;
-      display: flex;
-      flex-direction: column;
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      align-items: start;
+      min-height: 100dvh;
       padding:
-        calc(var(--safe-top) + 6px)
-        calc(var(--safe-right) + 8px)
-        calc(var(--safe-bottom) + 6px)
-        calc(var(--safe-left) + 8px);
-      gap: 4px;
+        calc(var(--safe-top) + 10px)
+        calc(var(--safe-right) + 12px)
+        calc(var(--safe-bottom) + 18px)
+        calc(var(--safe-left) + 12px);
+      gap: 12px;
     }
 
-    /* ── TOP PANEL ── */
+    .panel {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.24);
+    }
+
     #top-panel {
       pointer-events: auto;
-      display: flex;
-      flex-direction: row;
-      align-items: flex-start;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 8px;
       width: 100%;
+      align-self: start;
     }
 
-    /* Speed block */
-    #speed-block {
-      background: var(--panel-bg);
-      border: 1px solid var(--panel-border);
-      border-radius: 12px;
-      padding: 4px 16px 4px 16px;
+    .compact-panel {
+      padding: 10px 12px;
+      min-height: 64px;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      min-width: 130px;
-    }
-
-    #speed-value {
-      font-size: clamp(56px, 12vw, 110px);
-      font-weight: 900;
-      line-height: 1;
-      color: var(--accent);
-      text-shadow: 0 0 20px rgba(255,204,0,0.5), 0 2px 4px rgba(0,0,0,0.8);
-      letter-spacing: -2px;
-      font-variant-numeric: tabular-nums;
-    }
-
-    #speed-unit {
-      font-size: 14px;
-      font-weight: 600;
-      color: rgba(255,255,255,0.7);
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      margin-top: -4px;
-    }
-
-    /* Info panel */
-    #info-panel {
-      background: var(--panel-bg);
-      border: 1px solid var(--panel-border);
-      border-radius: 12px;
-      padding: 8px 12px;
-      display: flex;
-      flex-direction: column;
+      justify-content: center;
       gap: 4px;
-      flex: 1;
+    }
+
+    .panel-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.62);
     }
 
     #time-display {
-      font-size: clamp(22px, 4vw, 36px);
-      font-weight: 700;
+      font-size: clamp(28px, 6vw, 42px);
+      font-weight: 800;
       color: #fff;
       text-shadow: 0 1px 4px rgba(0,0,0,0.9);
       font-variant-numeric: tabular-nums;
@@ -126,12 +110,41 @@
     }
 
     .info-row {
-      font-size: clamp(11px, 2vw, 15px);
+      font-size: clamp(12px, 3vw, 16px);
       font-weight: 600;
-      color: rgba(255,255,255,0.90);
+      color: rgba(255,255,255,0.92);
       text-shadow: 0 1px 3px rgba(0,0,0,0.9);
       white-space: nowrap;
       line-height: 1.25;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #speed-block {
+      justify-self: center;
+      align-self: start;
+      text-align: center;
+      width: min(100%, 280px);
+      padding: 14px 18px 12px;
+    }
+
+    #speed-value {
+      font-size: clamp(84px, 24vw, 148px);
+      font-weight: 900;
+      line-height: 0.92;
+      color: var(--accent);
+      text-shadow: 0 0 24px rgba(255,204,0,0.45), 0 2px 6px rgba(0,0,0,0.85);
+      letter-spacing: -3px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    #speed-unit {
+      font-size: 14px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.75);
+      text-transform: uppercase;
+      letter-spacing: 0.24em;
+      margin-top: 2px;
     }
 
     #weather-row { color: #87ceeb; }
@@ -144,14 +157,36 @@
     .status-moderate { color: var(--accent); }
     .status-bad { color: #ff6666; }
 
+    #bottom-panel {
+      pointer-events: auto;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      align-self: end;
+      padding-bottom: max(8px, var(--safe-bottom));
+    }
+
+    #status-stack {
+      display: grid;
+      gap: 8px;
+    }
+
+    .status-panel {
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
     /* Control buttons in HUD */
     #controls-row {
       pointer-events: auto;
       display: flex;
       flex-direction: row;
       align-items: center;
+      justify-content: center;
       gap: 8px;
-      margin-top: 2px;
+      flex-wrap: wrap;
     }
 
     .hud-btn {
@@ -188,43 +223,21 @@
       pointer-events: auto;
     }
 
-    /* ── PORTRAIT WARNING ── */
-    #portrait-warning {
-      display: none;
-      position: absolute;
-      inset: 0;
-      z-index: 100;
-      background: #111;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-      padding: 32px;
-    }
-
-    #portrait-warning p {
-      font-size: 22px;
-      font-weight: 600;
-      color: rgba(255,255,255,0.85);
-    }
-
-    @media (orientation: portrait) {
-      #portrait-warning { display: flex; }
-    }
-
     /* ── START OVERLAY ── */
     #start-overlay {
       position: absolute;
       inset: 0;
       z-index: 50;
-      background: linear-gradient(160deg, #0a0a0a 0%, #1a1a2e 100%);
+      background: linear-gradient(180deg, rgba(8,8,12,0.92) 0%, rgba(15,15,24,0.86) 50%, rgba(9,9,12,0.96) 100%);
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      gap: 24px;
-      padding: 32px;
-      padding-top: calc(var(--safe-top) + 32px);
-      padding-bottom: calc(var(--safe-bottom) + 32px);
+      gap: 18px;
+      padding: 24px;
+      padding-top: calc(var(--safe-top) + 24px);
+      padding-bottom: calc(var(--safe-bottom) + 24px);
+      text-align: center;
     }
 
     #start-overlay h1 {
@@ -264,6 +277,42 @@
       box-shadow: 0 0 30px rgba(255,204,0,0.4);
     }
     #start-btn:active { opacity: 0.8; }
+    #start-btn[disabled] { opacity: 0.72; }
+
+    #start-status, #start-debug, #start-version, #map-fallback-msg {
+      max-width: 460px;
+      font-size: clamp(13px, 3.2vw, 16px);
+      color: rgba(255,255,255,0.9);
+      line-height: 1.45;
+    }
+
+    #start-status {
+      min-height: 1.5em;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    #start-debug {
+      font-size: 12px;
+      color: rgba(255,255,255,0.72);
+      padding: 8px 12px;
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.06);
+    }
+
+    #start-version {
+      font-size: 12px;
+      color: rgba(255,255,255,0.65);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    #map-fallback-msg {
+      font-size: 12px;
+      color: #ffcf88;
+      min-height: 1.4em;
+    }
 
     /* ── GPS ERROR OVERLAY ── */
     #gps-error-overlay {
@@ -326,6 +375,36 @@
       border: 3px solid #fff;
       box-shadow: 0 0 8px rgba(77,166,255,0.8);
     }
+
+    @media (orientation: landscape) {
+      #hud {
+        grid-template-columns: minmax(220px, 320px) 1fr minmax(220px, 320px);
+        grid-template-rows: auto 1fr auto;
+        gap: 10px;
+      }
+
+      #top-panel {
+        grid-column: 1;
+        grid-template-columns: 1fr;
+      }
+
+      #speed-block {
+        grid-column: 2;
+        align-self: start;
+        margin-top: 12px;
+      }
+
+      #bottom-panel {
+        grid-column: 3;
+        align-self: start;
+        padding-bottom: 0;
+      }
+
+      #controls-row {
+        grid-column: 1 / -1;
+        align-self: end;
+      }
+    }
   </style>
 </head>
 <body>
@@ -336,20 +415,42 @@
   <!-- HUD (visible after start) -->
   <div id="hud" aria-hidden="false">
     <div id="top-panel">
-      <!-- Speed -->
-      <div id="speed-block" aria-label="GPS-nopeus">
-        <div id="speed-value" aria-live="polite" aria-atomic="true">0</div>
-        <div id="speed-unit">km/h</div>
+      <div class="panel compact-panel">
+        <div class="panel-label">Kello</div>
+        <div id="time-display" aria-live="polite" aria-atomic="true">--.--</div>
       </div>
-
-      <!-- Info -->
-      <div id="info-panel">
-        <div id="time-display" aria-live="polite" aria-atomic="true">--.-​-</div>
+      <div class="panel compact-panel">
+        <div class="panel-label">Sää</div>
         <div id="weather-row" class="info-row" aria-live="polite">Sää ladataan…</div>
-        <div id="wind-row" class="info-row"></div>
-        <div id="gps-status-row" class="info-row status-moderate" aria-live="polite" aria-atomic="true">Etsitään GPS-signaalia</div>
-        <div id="gps-accuracy-row" class="info-row">Tarkkuus: –</div>
-        <div id="network-row" class="info-row" aria-live="polite"></div>
+      </div>
+      <div class="panel compact-panel">
+        <div class="panel-label">Lämpötila</div>
+        <div id="temperature-row" class="info-row">— °C</div>
+      </div>
+      <div class="panel compact-panel">
+        <div class="panel-label">Tuuli</div>
+        <div id="wind-row" class="info-row">—</div>
+      </div>
+    </div>
+
+    <div id="speed-block" class="panel" aria-label="GPS-nopeus">
+      <div id="speed-value" aria-live="polite" aria-atomic="true">0</div>
+      <div id="speed-unit">km/h</div>
+    </div>
+
+    <div></div>
+
+    <div id="bottom-panel">
+      <div id="status-stack">
+        <div class="panel status-panel">
+          <div class="panel-label">GPS</div>
+          <div id="gps-status-row" class="info-row status-moderate" aria-live="polite" aria-atomic="true">Valmis aloittamaan</div>
+          <div id="gps-accuracy-row" class="info-row">Tarkkuus: –</div>
+        </div>
+        <div class="panel status-panel">
+          <div class="panel-label">Verkko</div>
+          <div id="network-row" class="info-row" aria-live="polite"></div>
+        </div>
       </div>
     </div>
 
@@ -360,16 +461,15 @@
     </div>
   </div>
 
-  <!-- Portrait warning -->
-  <div id="portrait-warning" aria-live="polite" role="alert">
-    <p>Käännä puhelin vaakatasoon.</p>
-  </div>
-
   <!-- Start overlay -->
   <div id="start-overlay" role="dialog" aria-modal="true" aria-label="Aloitusnäyttö">
     <h1>Moto Dashboard</h1>
     <p class="start-sub">Paina Aloita ja salli tarkka sijainti. Käynnistä sovellus ennen liikkeelle lähtöä.</p>
     <button id="start-btn" aria-label="Aloita sovellus">Aloita</button>
+    <div id="start-status" aria-live="assertive" aria-atomic="true">Valmis</div>
+    <div id="start-debug" aria-live="polite" aria-atomic="true">Debug: Valmis</div>
+    <div id="map-fallback-msg" aria-live="polite"></div>
+    <div id="start-version">Versio 1.1</div>
     <p class="start-safety">Älä käytä kosketusnäyttöä ajon aikana.</p>
   </div>
 
@@ -385,364 +485,495 @@
   (function () {
     'use strict';
 
-    // ── Elements ──────────────────────────────────────────────────────────────
-    var elSpeedValue    = document.getElementById('speed-value');
-    var elTimeDisplay   = document.getElementById('time-display');
-    var elWeatherRow    = document.getElementById('weather-row');
-    var elWindRow       = document.getElementById('wind-row');
-    var elGpsStatus     = document.getElementById('gps-status-row');
-    var elGpsAccuracy   = document.getElementById('gps-accuracy-row');
-    var elNetworkRow    = document.getElementById('network-row');
-    var elStartOverlay  = document.getElementById('start-overlay');
-    var elStartBtn      = document.getElementById('start-btn');
-    var elHud           = document.getElementById('hud');
-    var elCenterBtn     = document.getElementById('center-btn');
-    var elRetryBtn      = document.getElementById('retry-btn');
-    var elGpsErrOverlay = document.getElementById('gps-error-overlay');
-    var elGpsErrMsg     = document.getElementById('gps-error-msg');
-    var elRetryGpsBtn   = document.getElementById('retry-gps-btn');
+    document.addEventListener('DOMContentLoaded', function () {
+      var APP_VERSION = '1.1';
+      var elSpeedValue = document.getElementById('speed-value');
+      var elTimeDisplay = document.getElementById('time-display');
+      var elWeatherRow = document.getElementById('weather-row');
+      var elTemperatureRow = document.getElementById('temperature-row');
+      var elWindRow = document.getElementById('wind-row');
+      var elGpsStatus = document.getElementById('gps-status-row');
+      var elGpsAccuracy = document.getElementById('gps-accuracy-row');
+      var elNetworkRow = document.getElementById('network-row');
+      var elStartOverlay = document.getElementById('start-overlay');
+      var elStartBtn = document.getElementById('start-btn');
+      var elCenterBtn = document.getElementById('center-btn');
+      var elRetryBtn = document.getElementById('retry-btn');
+      var elGpsErrOverlay = document.getElementById('gps-error-overlay');
+      var elGpsErrMsg = document.getElementById('gps-error-msg');
+      var elRetryGpsBtn = document.getElementById('retry-gps-btn');
+      var elStartStatus = document.getElementById('start-status');
+      var elStartDebug = document.getElementById('start-debug');
+      var elStartVersion = document.getElementById('start-version');
+      var elMapFallbackMsg = document.getElementById('map-fallback-msg');
 
-    // ── State ─────────────────────────────────────────────────────────────────
-    var map            = null;
-    var posMarker      = null;
-    var accCircle      = null;
-    var watchId        = null;
-    var followUser     = true;
-    var wakeLock       = null;
-    var weatherTimer   = null;
-    var lastWeatherFetch = 0;
-    var smoothedSpeed  = 0;
-    var prevCoords     = null;  // {lat, lon, t}
-    var lastGoodCoords = null;  // {lat, lon}
-    var started        = false;
+      var requiredElements = [
+        elSpeedValue, elTimeDisplay, elWeatherRow, elTemperatureRow, elWindRow,
+        elGpsStatus, elGpsAccuracy, elNetworkRow, elStartOverlay, elStartBtn,
+        elCenterBtn, elRetryBtn, elGpsErrOverlay, elGpsErrMsg, elRetryGpsBtn,
+        elStartStatus, elStartDebug, elStartVersion, elMapFallbackMsg
+      ];
 
-    // ── Clock ─────────────────────────────────────────────────────────────────
-    function updateClock() {
-      var now = new Date();
-      var h = String(now.getHours()).padStart(2, '0');
-      var m = String(now.getMinutes()).padStart(2, '0');
-      elTimeDisplay.textContent = h + '.' + m;
-    }
-    setInterval(updateClock, 500);
-    updateClock();
-
-    // ── Network status ────────────────────────────────────────────────────────
-    function updateNetwork() {
-      if (navigator.onLine) {
-        elNetworkRow.textContent = 'Verkko käytössä';
-        elNetworkRow.className = 'info-row status-good';
-      } else {
-        elNetworkRow.textContent = 'Ei verkkoyhteyttä';
-        elNetworkRow.className = 'info-row status-bad';
-      }
-    }
-    window.addEventListener('online',  updateNetwork);
-    window.addEventListener('offline', updateNetwork);
-    updateNetwork();
-
-    // ── Map init ──────────────────────────────────────────────────────────────
-    function initMap() {
-      if (map || typeof L === 'undefined') return;
-      map = L.map('map', {
-        zoomControl: false,
-        attributionControl: true,
-        dragging: true,
-        touchZoom: true,
-        scrollWheelZoom: false,
-        doubleClickZoom: false,
-        boxZoom: false
-      }).setView([60.1699, 24.9384], 16);
-
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
-        maxZoom: 19,
-        crossOrigin: true
-      }).addTo(map);
-
-      // Detect manual pan → stop following
-      map.on('dragstart', function () { followUser = false; });
-    }
-
-    // ── Position marker ───────────────────────────────────────────────────────
-    var dotIcon = L.divIcon({
-      className: '',
-      html: '<div class="position-dot"></div>',
-      iconSize: [18, 18],
-      iconAnchor: [9, 9]
-    });
-
-    function updateMapPosition(lat, lon, accuracy) {
-      if (!map) return;
-      var latlng = [lat, lon];
-      if (!posMarker) {
-        posMarker = L.marker(latlng, { icon: dotIcon, interactive: false }).addTo(map);
-      } else {
-        posMarker.setLatLng(latlng);
-      }
-      if (!accCircle) {
-        accCircle = L.circle(latlng, {
-          radius: accuracy,
-          className: 'accuracy-circle',
-          interactive: false
-        }).addTo(map);
-      } else {
-        accCircle.setLatLng(latlng);
-        accCircle.setRadius(accuracy);
-      }
-      if (followUser) {
-        map.setView(latlng, map.getZoom() < 14 ? 16 : map.getZoom());
-      }
-    }
-
-    // ── Center button ─────────────────────────────────────────────────────────
-    elCenterBtn.addEventListener('click', function () {
-      followUser = true;
-      if (map && lastGoodCoords) {
-        map.setView([lastGoodCoords.lat, lastGoodCoords.lon], 16);
-      }
-    });
-
-    // ── Haversine distance (metres) ───────────────────────────────────────────
-    function haversine(lat1, lon1, lat2, lon2) {
-      var R = 6371000;
-      var dLat = (lat2 - lat1) * Math.PI / 180;
-      var dLon = (lon2 - lon1) * Math.PI / 180;
-      var a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
-            + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180)
-            * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    }
-
-    // ── Speed display ─────────────────────────────────────────────────────────
-    function setSpeedDisplay(kmh) {
-      if (!isFinite(kmh) || isNaN(kmh) || kmh < 0) kmh = 0;
-      kmh = Math.round(kmh);
-      if (kmh < 2) kmh = 0;
-      elSpeedValue.textContent = String(kmh);
-    }
-
-    // ── GPS position handler ──────────────────────────────────────────────────
-    function onPosition(pos) {
-      var c = pos.coords;
-      var now = Date.now();
-      var lat = c.latitude;
-      var lon = c.longitude;
-      var accuracy = c.accuracy;
-
-      // Update accuracy display
-      elGpsAccuracy.textContent = 'Tarkkuus: ' + Math.round(accuracy) + ' m';
-
-      // GPS status
-      if (accuracy <= 20) {
-        elGpsStatus.textContent = 'GPS hyvä';
-        elGpsStatus.className = 'info-row status-good';
-      } else if (accuracy <= 50) {
-        elGpsStatus.textContent = 'GPS kohtalainen';
-        elGpsStatus.className = 'info-row status-moderate';
-      } else {
-        elGpsStatus.textContent = 'GPS heikko';
-        elGpsStatus.className = 'info-row status-bad';
-      }
-
-      // Hide error overlay
-      elGpsErrOverlay.style.display = 'none';
-      elRetryBtn.style.display = 'none';
-
-      // Speed
-      var speedKmh = null;
-      if (typeof c.speed === 'number' && isFinite(c.speed) && c.speed >= 0) {
-        speedKmh = c.speed * 3.6;
-      } else if (accuracy <= 75 && prevCoords) {
-        var dt = (now - prevCoords.t) / 1000; // seconds
-        if (dt >= 2) {
-          var dist = haversine(prevCoords.lat, prevCoords.lon, lat, lon);
-          // Sanity: ignore jumps > 500m in 2s (~900 km/h) — use stricter 300 km/h cap
-          var rawKmh = (dist / dt) * 3.6;
-          if (rawKmh <= 300) {
-            speedKmh = rawKmh;
-          }
-        }
-      }
-
-      if (speedKmh !== null && isFinite(speedKmh)) {
-        // Exponential smoothing α=0.4 (responsive but not jittery)
-        smoothedSpeed = 0.4 * speedKmh + 0.6 * smoothedSpeed;
-      }
-      // If no speed reading, keep smoothedSpeed (slow decay toward 0)
-      else {
-        smoothedSpeed = smoothedSpeed * 0.85;
-      }
-
-      setSpeedDisplay(smoothedSpeed);
-
-      // Update prev coords only for good accuracy
-      if (accuracy <= 75) {
-        prevCoords = { lat: lat, lon: lon, t: now };
-      }
-      lastGoodCoords = { lat: lat, lon: lon };
-
-      // Map
-      updateMapPosition(lat, lon, accuracy);
-
-      // Weather (first time + every 15 min)
-      if (lastWeatherFetch === 0 || (now - lastWeatherFetch) >= 15 * 60 * 1000) {
-        fetchWeather(lat, lon);
-      }
-    }
-
-    // ── GPS error handler ─────────────────────────────────────────────────────
-    function onGpsError(err) {
-      elGpsStatus.textContent = 'GPS ei saatavilla';
-      elGpsStatus.className = 'info-row status-bad';
-      setSpeedDisplay(0);
-      smoothedSpeed = 0;
-      prevCoords = null;
-
-      var msg;
-      if (err.code === 1) {
-        // PERMISSION_DENIED
-        msg = 'Sijaintilupa tarvitaan nopeuden ja kartan näyttämiseen. Salli sijainti Safarin asetuksista ja lataa sivu uudelleen.';
-        elRetryGpsBtn.style.display = 'none';
-      } else if (err.code === 3) {
-        // TIMEOUT
-        msg = 'GPS-signaali aikakatkaistu. Tarkista sijainti ja yritä uudelleen.';
-        elRetryGpsBtn.style.display = '';
-      } else {
-        msg = 'GPS-virhe: ' + (err.message || 'Tuntematon virhe') + '. Yritä uudelleen.';
-        elRetryGpsBtn.style.display = '';
-      }
-
-      elGpsErrMsg.textContent = msg;
-      elGpsErrOverlay.style.display = 'flex';
-      elRetryBtn.style.display = '';
-    }
-
-    // ── Start GPS ─────────────────────────────────────────────────────────────
-    function startGps() {
-      if (!('geolocation' in navigator)) {
-        elGpsStatus.textContent = 'GPS ei saatavilla';
-        elGpsStatus.className = 'info-row status-bad';
-        elGpsErrMsg.textContent = 'Selain ei tue GPS-paikannusta.';
-        elGpsErrOverlay.style.display = 'flex';
-        elRetryGpsBtn.style.display = 'none';
+      if (requiredElements.some(function (element) { return !element; })) {
+        console.error('Pakollisia DOM-elementtejä puuttuu. Sovellusta ei käynnistetä.');
         return;
       }
-      if (watchId !== null) {
-        navigator.geolocation.clearWatch(watchId);
-      }
-      watchId = navigator.geolocation.watchPosition(onPosition, onGpsError, {
-        enableHighAccuracy: true,
-        maximumAge: 1000,
-        timeout: 10000
-      });
-    }
 
-    // ── Wake lock ─────────────────────────────────────────────────────────────
-    async function requestWakeLock() {
-      try {
-        if ('wakeLock' in navigator) {
-          wakeLock = await navigator.wakeLock.request('screen');
+      if (document.querySelectorAll('#start-btn').length !== 1) {
+        console.error('Aloita-painikkeen ID ei ole yksilöllinen.');
+        return;
+      }
+
+      var map = null;
+      var posMarker = null;
+      var accCircle = null;
+      var watchId = null;
+      var followUser = true;
+      var wakeLock = null;
+      var smoothedSpeed = 0;
+      var prevCoords = null;
+      var lastGoodCoords = null;
+      var lastWeatherFetch = 0;
+      var hasReceivedFirstPosition = false;
+      var isStartingGps = false;
+      var mapUnavailable = false;
+
+      var WMO_CODES = {
+        0: 'Selkeää',
+        1: 'Melko selkeää', 2: 'Puolipilvistä', 3: 'Pilvistä',
+        45: 'Sumua', 48: 'Huurteista sumua',
+        51: 'Kevyttä tihkusadetta', 53: 'Tihkusadetta', 55: 'Tiheää tihkusadetta',
+        56: 'Jäätävää tihkusadetta', 57: 'Tiheää jäätävää tihkusadetta',
+        61: 'Kevyttä sadetta', 63: 'Sadetta', 65: 'Rankkasadetta',
+        66: 'Jäätävää sadetta', 67: 'Tiheää jäätävää sadetta',
+        71: 'Kevyttä lumisadetta', 73: 'Lumisadetta', 75: 'Tiheää lumisadetta',
+        77: 'Lumirakeita',
+        80: 'Sadekuuroja', 81: 'Sadekuuroja', 82: 'Voimakkaita sadekuuroja',
+        85: 'Lumikuuroja', 86: 'Voimakkaita lumikuuroja',
+        95: 'Ukkosta', 96: 'Ukkosta ja raesadetta', 99: 'Ukkosta ja raesadetta'
+      };
+
+      var dotIcon = typeof L !== 'undefined' ? L.divIcon({
+        className: '',
+        html: '<div class="position-dot"></div>',
+        iconSize: [18, 18],
+        iconAnchor: [9, 9]
+      }) : null;
+
+      function setDebugStage(message) {
+        elStartDebug.textContent = 'Debug: ' + message;
+      }
+
+      function setStartStatus(message) {
+        elStartStatus.textContent = message;
+      }
+
+      function setMapUnavailableMessage(message) {
+        elMapFallbackMsg.textContent = message || '';
+      }
+
+      function setGpsStatus(message, className) {
+        elGpsStatus.textContent = message;
+        elGpsStatus.className = 'info-row ' + (className || 'status-moderate');
+      }
+
+      function resetStartButton(label) {
+        elStartBtn.disabled = false;
+        elStartBtn.textContent = label;
+      }
+
+      function setSpeedDisplay(kmh) {
+        if (!isFinite(kmh) || isNaN(kmh) || kmh < 0) {
+          kmh = 0;
         }
-      } catch (e) { /* silently ignore */ }
-    }
-
-    document.addEventListener('visibilitychange', function () {
-      if (document.visibilityState === 'visible' && started) {
-        requestWakeLock();
+        kmh = Math.round(kmh);
+        if (kmh < 2) {
+          kmh = 0;
+        }
+        elSpeedValue.textContent = String(kmh);
       }
-    });
 
-    // ── Fullscreen ────────────────────────────────────────────────────────────
-    function tryFullscreen() {
-      var el = document.documentElement;
-      try {
-        if (el.requestFullscreen) el.requestFullscreen();
-        else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-      } catch (e) { /* silently ignore */ }
-    }
+      function updateClock() {
+        var now = new Date();
+        var h = String(now.getHours()).padStart(2, '0');
+        var m = String(now.getMinutes()).padStart(2, '0');
+        elTimeDisplay.textContent = h + '.' + m;
+      }
 
-    // ── Weather ───────────────────────────────────────────────────────────────
-    var WMO_CODES = {
-      0: 'Selkeää',
-      1: 'Melko selkeää', 2: 'Puolipilvistä', 3: 'Pilvistä',
-      45: 'Sumua', 48: 'Huurteista sumua',
-      51: 'Kevyttä tihkusadetta', 53: 'Tihkusadetta', 55: 'Tiheää tihkusadetta',
-      56: 'Jäätävää tihkusadetta', 57: 'Tiheää jäätävää tihkusadetta',
-      61: 'Kevyttä sadetta', 63: 'Sadetta', 65: 'Rankkasadetta',
-      66: 'Jäätävää sadetta', 67: 'Tiheää jäätävää sadetta',
-      71: 'Kevyttä lumisadetta', 73: 'Lumisadetta', 75: 'Tiheää lumisadetta',
-      77: 'Lumirakeita',
-      80: 'Sadekuuroja', 81: 'Sadekuuroja', 82: 'Voimakkaita sadekuuroja',
-      85: 'Lumikuuroja', 86: 'Voimakkaita lumikuuroja',
-      95: 'Ukkosta', 96: 'Ukkosta ja raesadetta', 99: 'Ukkosta ja raesadetta'
-    };
+      function updateNetwork() {
+        if (navigator.onLine) {
+          elNetworkRow.textContent = 'Verkko käytössä';
+          elNetworkRow.className = 'info-row status-good';
+        } else {
+          elNetworkRow.textContent = 'Ei verkkoyhteyttä';
+          elNetworkRow.className = 'info-row status-bad';
+        }
+      }
 
-    function wmoToFinnish(code) {
-      return WMO_CODES[code] || 'Sää ei saatavilla';
-    }
+      function wmoToFinnish(code) {
+        return WMO_CODES[code] || 'Sää ei saatavilla';
+      }
 
-    function fetchWeather(lat, lon) {
-      if (!navigator.onLine) return;
-      lastWeatherFetch = Date.now();
-      var url = 'https://api.open-meteo.com/v1/forecast'
-        + '?latitude=' + lat.toFixed(4)
-        + '&longitude=' + lon.toFixed(4)
-        + '&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m'
-        + '&temperature_unit=celsius'
-        + '&wind_speed_unit=kmh'
-        + '&timezone=auto';
+      function haversine(lat1, lon1, lat2, lon2) {
+        var R = 6371000;
+        var dLat = (lat2 - lat1) * Math.PI / 180;
+        var dLon = (lon2 - lon1) * Math.PI / 180;
+        var a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+          + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180)
+          * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      }
 
-      fetch(url)
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-          if (data && data.current) {
-            var cur = data.current;
-            var temp = Math.round(cur.temperature_2m);
-            var wind = Math.round(cur.wind_speed_10m);
-            var desc = wmoToFinnish(cur.weather_code);
-            elWeatherRow.textContent = desc + '  ' + temp + ' °C';
-            elWindRow.textContent = 'Tuuli ' + wind + ' km/h';
-          } else {
-            elWeatherRow.textContent = 'Sää ei saatavilla';
-            elWindRow.textContent = '';
+      function initMap() {
+        if (map || mapUnavailable || typeof L === 'undefined') {
+          if (typeof L === 'undefined') {
+            mapUnavailable = true;
+            setMapUnavailableMessage('Karttaa ei voitu ladata');
           }
-        })
-        .catch(function () {
-          elWeatherRow.textContent = 'Sää ei saatavilla';
-          elWindRow.textContent = '';
-        });
-    }
+          return;
+        }
 
-    // ── Start button ──────────────────────────────────────────────────────────
-    elStartBtn.addEventListener('click', function () {
-      started = true;
-      initMap();
-      startGps();
-      requestWakeLock();
-      tryFullscreen();
-      // Hide start overlay after GPS init attempt
-      elStartOverlay.style.display = 'none';
-    });
+        try {
+          map = L.map('map', {
+            zoomControl: false,
+            attributionControl: true,
+            dragging: true,
+            touchZoom: true,
+            scrollWheelZoom: false,
+            doubleClickZoom: false,
+            boxZoom: false
+          }).setView([60.1699, 24.9384], 16);
 
-    // ── Retry buttons ─────────────────────────────────────────────────────────
-    function retryGps() {
-      elGpsErrOverlay.style.display = 'none';
-      elRetryBtn.style.display = 'none';
-      elGpsStatus.textContent = 'Etsitään GPS-signaalia';
-      elGpsStatus.className = 'info-row status-moderate';
-      startGps();
-    }
-    elRetryGpsBtn.addEventListener('click', retryGps);
-    elRetryBtn.addEventListener('click', retryGps);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
+            maxZoom: 19,
+            crossOrigin: true
+          }).addTo(map);
 
-    // ── Leaflet load fallback ─────────────────────────────────────────────────
-    window.addEventListener('load', function () {
-      if (typeof L === 'undefined') {
-        // Leaflet failed to load — map won't work but rest of app continues
-        console.warn('Leaflet ei latautunut. Kartta ei ole käytettävissä.');
+          map.on('dragstart', function () {
+            followUser = false;
+          });
+        } catch (error) {
+          mapUnavailable = true;
+          map = null;
+          console.warn('Karttaa ei voitu ladata', error);
+          setMapUnavailableMessage('Karttaa ei voitu ladata');
+        }
       }
-    });
 
+      function updateMapPosition(lat, lon, accuracy) {
+        if (!map || typeof L === 'undefined' || !dotIcon) {
+          return;
+        }
+
+        var latlng = [lat, lon];
+        if (!posMarker) {
+          posMarker = L.marker(latlng, { icon: dotIcon, interactive: false }).addTo(map);
+        } else {
+          posMarker.setLatLng(latlng);
+        }
+
+        if (!accCircle) {
+          accCircle = L.circle(latlng, {
+            radius: accuracy,
+            className: 'accuracy-circle',
+            interactive: false
+          }).addTo(map);
+        } else {
+          accCircle.setLatLng(latlng);
+          accCircle.setRadius(accuracy);
+        }
+
+        if (followUser) {
+          map.setView(latlng, map.getZoom() < 14 ? 16 : map.getZoom());
+        }
+      }
+
+      function fetchWeather(lat, lon) {
+        if (!navigator.onLine) {
+          elWeatherRow.textContent = 'Sää ei saatavilla';
+          elTemperatureRow.textContent = '— °C';
+          elWindRow.textContent = '—';
+          return;
+        }
+
+        lastWeatherFetch = Date.now();
+        var url = 'https://api.open-meteo.com/v1/forecast'
+          + '?latitude=' + lat.toFixed(4)
+          + '&longitude=' + lon.toFixed(4)
+          + '&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m'
+          + '&temperature_unit=celsius'
+          + '&wind_speed_unit=kmh'
+          + '&timezone=auto';
+
+        fetch(url)
+          .then(function (response) { return response.json(); })
+          .then(function (data) {
+            if (data && data.current) {
+              var cur = data.current;
+              var temp = Math.round(cur.temperature_2m);
+              var wind = Math.round(cur.wind_speed_10m);
+              var desc = wmoToFinnish(cur.weather_code);
+              elWeatherRow.textContent = desc;
+              elTemperatureRow.textContent = temp + ' °C';
+              elWindRow.textContent = wind + ' km/h';
+            } else {
+              elWeatherRow.textContent = 'Sää ei saatavilla';
+              elTemperatureRow.textContent = '— °C';
+              elWindRow.textContent = '—';
+            }
+          })
+          .catch(function () {
+            elWeatherRow.textContent = 'Sää ei saatavilla';
+            elTemperatureRow.textContent = '— °C';
+            elWindRow.textContent = '—';
+          });
+      }
+
+      function requestWakeLockSafely() {
+        if (!('wakeLock' in navigator)) {
+          return;
+        }
+
+        try {
+          navigator.wakeLock.request('screen')
+            .then(function (sentinel) {
+              wakeLock = sentinel;
+            })
+            .catch(function (error) {
+              console.warn('Wake Lock epäonnistui.', error);
+            });
+        } catch (error) {
+          console.warn('Wake Lock epäonnistui.', error);
+        }
+      }
+
+      function requestFullscreenSafely() {
+        var root = document.documentElement;
+        if (!root || !root.requestFullscreen) {
+          return;
+        }
+
+        try {
+          var fullscreenResult = root.requestFullscreen();
+          if (fullscreenResult && typeof fullscreenResult.catch === 'function') {
+            fullscreenResult.catch(function (error) {
+              console.warn('Kokoruututila epäonnistui.', error);
+            });
+          }
+        } catch (error) {
+          console.warn('Kokoruututila epäonnistui.', error);
+        }
+      }
+
+      function clearExistingWatch() {
+        if (watchId !== null && 'geolocation' in navigator) {
+          navigator.geolocation.clearWatch(watchId);
+          watchId = null;
+        }
+      }
+
+      function finishGpsStartupSuccess() {
+        hasReceivedFirstPosition = true;
+        isStartingGps = false;
+        elGpsErrOverlay.style.display = 'none';
+        elRetryBtn.style.display = 'none';
+        elStartOverlay.style.display = 'none';
+        setDebugStage('Sijainti vastaanotettu');
+        setStartStatus('Sijainti vastaanotettu');
+        resetStartButton('Aloita');
+      }
+
+      function showLocationError(message, debugMessage, error) {
+        isStartingGps = false;
+        setStartStatus(message);
+        setDebugStage(debugMessage || message);
+        setGpsStatus('GPS ei saatavilla', 'status-bad');
+        elGpsErrMsg.textContent = message;
+        elGpsErrOverlay.style.display = 'flex';
+        elStartOverlay.style.display = 'flex';
+        elRetryBtn.style.display = '';
+        resetStartButton('Yritä uudelleen');
+        if (error) {
+          console.error(error);
+        }
+      }
+
+      function getGpsErrorMessage(err) {
+        if (err && err.code === 1) {
+          return 'Sijaintilupa evättiin. Avaa iPhonen Asetukset, salli Safarille sijainti ja lataa sivu uudelleen.';
+        }
+        if (err && err.code === 2) {
+          return 'Sijaintia ei saatu. Siirry ulos avoimelle paikalle ja yritä uudelleen.';
+        }
+        if (err && err.code === 3) {
+          return 'Sijainnin haku aikakatkaistiin. Yritä uudelleen.';
+        }
+        return 'GPS-seurannan käynnistäminen epäonnistui.';
+      }
+
+      function updateGpsQuality(accuracy) {
+        if (accuracy <= 20) {
+          setGpsStatus('GPS hyvä', 'status-good');
+        } else if (accuracy <= 50) {
+          setGpsStatus('GPS kohtalainen', 'status-moderate');
+        } else {
+          setGpsStatus('GPS heikko', 'status-bad');
+        }
+      }
+
+      function handlePositionSuccess(pos) {
+        var coords = pos.coords;
+        var now = Date.now();
+        var lat = coords.latitude;
+        var lon = coords.longitude;
+        var accuracy = coords.accuracy;
+        var speedKmh = null;
+
+        elGpsAccuracy.textContent = 'Tarkkuus: ' + Math.round(accuracy) + ' m';
+        updateGpsQuality(accuracy);
+
+        if (typeof coords.speed === 'number' && isFinite(coords.speed) && coords.speed >= 0) {
+          speedKmh = coords.speed * 3.6;
+        } else if (accuracy <= 75 && prevCoords) {
+          var dt = (now - prevCoords.t) / 1000;
+          if (dt >= 2) {
+            var dist = haversine(prevCoords.lat, prevCoords.lon, lat, lon);
+            var rawKmh = (dist / dt) * 3.6;
+            if (rawKmh <= 300) {
+              speedKmh = rawKmh;
+            }
+          }
+        }
+
+        if (speedKmh !== null && isFinite(speedKmh)) {
+          smoothedSpeed = 0.4 * speedKmh + 0.6 * smoothedSpeed;
+        } else {
+          smoothedSpeed = smoothedSpeed * 0.85;
+        }
+
+        setSpeedDisplay(smoothedSpeed);
+
+        if (accuracy <= 75) {
+          prevCoords = { lat: lat, lon: lon, t: now };
+        }
+        lastGoodCoords = { lat: lat, lon: lon };
+
+        updateMapPosition(lat, lon, accuracy);
+
+        if (lastWeatherFetch === 0 || (now - lastWeatherFetch) >= 15 * 60 * 1000) {
+          fetchWeather(lat, lon);
+        }
+
+        if (!hasReceivedFirstPosition) {
+          finishGpsStartupSuccess();
+        } else {
+          setDebugStage('Sijainti vastaanotettu');
+          setStartStatus('Sijainti vastaanotettu');
+        }
+      }
+
+      function handlePositionError(err) {
+        var message = getGpsErrorMessage(err);
+        var debugMessage = err && typeof err.code !== 'undefined' ? 'GPS-virhe: ' + err.code : 'GPS-virhe';
+
+        if (err && err.code === 1) {
+          setDebugStage('Sijaintilupa evätty');
+        } else {
+          setDebugStage(debugMessage);
+        }
+
+        console.error('GPS-virhe', err);
+        showLocationError(message, err && err.code === 1 ? 'Sijaintilupa evätty' : debugMessage, err);
+      }
+
+      function startGpsTracking() {
+        clearExistingWatch();
+        hasReceivedFirstPosition = false;
+        isStartingGps = true;
+        setGpsStatus('Pyydetään sijaintia…', 'status-moderate');
+        elGpsAccuracy.textContent = 'Tarkkuus: haetaan…';
+        setStartStatus('Pyydetään sijaintilupaa…');
+        setDebugStage('Pyydetään sijaintilupaa');
+        watchId = navigator.geolocation.watchPosition(
+          handlePositionSuccess,
+          handlePositionError,
+          {
+            enableHighAccuracy: true,
+            maximumAge: 0,
+            timeout: 15000
+          }
+        );
+        setDebugStage('GPS-seuranta käynnistetty');
+      }
+
+      function startButtonHandler() {
+        elStartBtn.disabled = true;
+        elStartBtn.textContent = 'Käynnistetään…';
+        setStartStatus('Pyydetään sijaintilupaa…');
+        setDebugStage('Aloita painettu');
+        elGpsErrOverlay.style.display = 'none';
+        elRetryBtn.style.display = 'none';
+        setGpsStatus('Pyydetään sijaintia…', 'status-moderate');
+
+        if (!('geolocation' in navigator)) {
+          showLocationError('Tämä selain ei tue sijaintia.', 'GPS ei tuettu');
+          return;
+        }
+
+        try {
+          startGpsTracking();
+        } catch (error) {
+          showLocationError('GPS-seurannan käynnistäminen epäonnistui.', 'GPS-käynnistys epäonnistui', error);
+          return;
+        }
+
+        requestWakeLockSafely();
+        requestFullscreenSafely();
+      }
+
+      function retryGps() {
+        elGpsErrOverlay.style.display = 'none';
+        elRetryBtn.style.display = 'none';
+        elStartOverlay.style.display = 'flex';
+        startButtonHandler();
+      }
+
+      elStartVersion.textContent = 'Versio ' + APP_VERSION;
+      setStartStatus('Valmis');
+      setDebugStage('Valmis');
+      setSpeedDisplay(0);
+      updateClock();
+      updateNetwork();
+      window.addEventListener('online', updateNetwork);
+      window.addEventListener('offline', updateNetwork);
+      setInterval(updateClock, 500);
+
+      if (typeof L === 'undefined') {
+        mapUnavailable = true;
+        setMapUnavailableMessage('Karttaa ei voitu ladata');
+        console.warn('Leaflet ei latautunut. Kartta ei ole käytettävissä.');
+      } else {
+        initMap();
+      }
+
+      elCenterBtn.addEventListener('click', function () {
+        followUser = true;
+        if (map && lastGoodCoords) {
+          map.setView([lastGoodCoords.lat, lastGoodCoords.lon], 16);
+        }
+      });
+
+      elRetryGpsBtn.addEventListener('click', retryGps);
+      elRetryBtn.addEventListener('click', retryGps);
+      elStartBtn.addEventListener('click', startButtonHandler);
+
+      document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'visible' && watchId !== null) {
+          requestWakeLockSafely();
+        }
+      });
+    });
   })();
   </script>
 </body>
