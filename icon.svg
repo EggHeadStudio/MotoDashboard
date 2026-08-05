@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="80" fill="#111111"/>
+  <!-- Speedometer arc background -->
+  <path d="M 256 320 m -160 0 a 160 160 0 1 1 320 0" fill="none" stroke="#333333" stroke-width="28" stroke-linecap="round"/>
+  <!-- Speedometer arc filled -->
+  <path d="M 256 320 m -160 0 a 160 160 0 1 1 320 0" fill="none" stroke="#ffcc00" stroke-width="28" stroke-linecap="round" stroke-dasharray="503 503" stroke-dashoffset="126"/>
+  <!-- Speed needle -->
+  <line x1="256" y1="320" x2="256" y2="180" stroke="#ffcc00" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="256" cy="320" r="14" fill="#ffcc00"/>
+  <!-- km/h text -->
+  <text x="256" y="380" text-anchor="middle" font-family="Helvetica Neue, Arial, sans-serif" font-size="44" font-weight="900" fill="#ffffff">km/h</text>
+  <!-- Dot highlights on arc -->
+  <circle cx="108" cy="256" r="8" fill="#666"/>
+  <circle cx="256" cy="128" r="8" fill="#666"/>
+  <circle cx="404" cy="256" r="8" fill="#666"/>
+</svg>
