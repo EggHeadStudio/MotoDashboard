@@ -1,75 +1,89 @@
 # Moto Dashboard
 
-Suomenkielinen digitaalinen moottoripyörän mittaristo iPhonelle. Toimii selaimessa suoraan ilman asennusta.
+Moto Dashboard on suomenkielinen, staattinen web-sovellus moottoripyörän ajodatan seurantaan. Sovellus toimii ilman backendiä GitHub Pages -ympäristössä.
 
-## Sovelluksen tarkoitus
+## Ominaisuudet
 
-Moto Dashboard on täysikuvaruudun GPS-mittaristo, joka näyttää samanaikaisesti:
+- GPS-nopeus (suuri nopeusnäyttö)
+- Kello, lämpötila, sääkuvaus ja tuuli (Open-Meteo)
+- GPS-tila ja tarkkuus
+- Verkkotila
+- Leaflet + OpenStreetMap -kartta
+- Karttateemat: Normaali, Mustavalko, Cruising, Vesistö, Metsä, Yö
+- Teeman vaihto painikkeella ja pyyhkäisyllä
+- Sessiot: uusi, jatka, lopeta, historia, poista yksittäinen, poista kaikki
+- Ajetun reitin tallennus ja näyttö
+- Heading-up / north-up -tilan vaihto
 
-- **GPS-nopeuden** km/h (suuri, helposti luettava)
-- Kellon (24 h, suomalainen muoto)
-- Ulkolämpötilan ja säätiedot (Open-Meteo, ilmainen, ei API-avainta)
-- Tuulen nopeuden
-- GPS-tarkkuuden ja -tilan
-- Verkkoyhteyden tilan
-- Interaktiivisen kartan (Leaflet + OpenStreetMap)
+## Julkinen URL
 
-## Sovelluksen URL
+https://eggheadstudio.github.io/MotoDashboard/
 
-**https://eggheadstudio.github.io/MotoDashboard/**
+## Projektin rakenne
+
+Nykyinen toteutus on tarkoituksella yksinkertainen ja staattinen:
+
+- index.html
+- manifest.webmanifest
+- README.md
+- UPDATE.md
+
+`index.html` sisältää käyttöliittymän, tyylit ja JavaScript-logiikan.
 
 ## GitHub Pages -käyttöönotto
 
-1. Avaa repositorion **Settings**
-2. Valitse **Pages** vasemmasta valikosta
-3. Kohdassa **Build and deployment** valitse **Deploy from a branch**
-4. Valitse haaran nimeksi **main**
-5. Valitse hakemistoksi **/(root)**
-6. Paina **Save**
+1. Avaa repositorion Settings.
+2. Avaa Pages.
+3. Valitse Build and deployment: Deploy from a branch.
+4. Valitse branch: main.
+5. Valitse folder: /(root).
+6. Tallenna.
 
-Sivusto julkaistaan muutaman minuutin sisällä yllä olevaan URL-osoitteeseen.
+Sovellus julkaistaan osoitteeseen yllä.
 
-## iPhone-käyttöohjeet
+## Käyttö
 
-1. Avaa **https://eggheadstudio.github.io/MotoDashboard/** Safarin osoiteriviltä.
-2. Aseta iPhone vaakasuuntaan moottoripyörän puhelinkiinnittimeen.
-3. Paina **Aloita**-painiketta.
-4. Salli tarkka sijainti kun selain pyytää lupaa.
-5. GPS-signaali löytyy yleensä muutamassa sekunnissa.
-6. Käytä sovellusta ennen liikkeelle lähtöä, jotta GPS ehtii kiinnittyä.
+1. Avaa sovellus puhelimen selaimessa.
+2. Valitse Uusi sessio tai Jatka edellistä.
+3. Salli tarkka sijainti.
+4. Ajon aikana seuranta, tallennus ja laskenta toimivat automaattisesti.
+5. Lopeta sessio painikkeesta Lopeta sessio.
+6. Tallennetut ajot löytyvät aloitusnäkymän Tallennetut ajot -painikkeesta.
 
-## Lisääminen iPhonen aloitusnäyttöön (PWA)
+## Tallennus ja tietosuoja
 
-1. Avaa sovellus Safarissa.
-2. Paina **Jaa**-kuvaketta (neliö, josta lähtee nuoli ylöspäin).
-3. Valitse **Lisää Koti-valikkoon**.
-4. Paina **Lisää**.
+- Sessiot tallennetaan vain tämän laitteen selaimeen (IndexedDB + localStorage varmistuksena).
+- Tietoja ei lähetetä omalle palvelimelle eikä pilveen.
+- Jos selaimen sivustodata poistetaan, ajohistoria voi kadota.
+- Sääpalvelukutsu lähettää koordinaatit Open-Meteo-palveluun säähaun vuoksi.
 
-Tämän jälkeen sovellus käynnistyy koko näytön tilassa suoraan aloitusnäytöltä.
+## Heading-up ja fallback
+
+- Suunta: menosuunta -tila käyttää ensisijaisesti `GeolocationCoordinates.heading`-arvoa.
+- Jos heading ei ole luotettava, suunta voidaan arvioida peräkkäisistä pisteistä.
+- Kääntö tasoitetaan lyhimmän kulman interpoloinnilla (myös 359°/0°-ylitys).
+- Jos kartan rotaatiota ei tueta selaimessa, tila palautuu turvallisesti pohjoinen ylös -tilaan.
+
+## Karttateemojen rajoitus
+
+Kartta on rasteritiilipohjainen (OpenStreetMap). Teemat toteutetaan CSS-filttereillä tile-pane-tasolla:
+
+- Mustavalko toimii tarkasti harmaasävytyksenä.
+- Cruising, Vesistö ja Metsä ovat visuaalisia approksimaatioita.
+- Teemat eivät erottele teitä, vettä ja metsiä semanttisesti kuten vektorikartat.
+
+## Sovellus ei ole navigaattori
+
+Sovellus ei sisällä kohdehakua, reittisuunnittelua, käännösopastusta tai waypoint-muokkausta.
 
 ## Tunnetut rajoitukset
 
-- **GPS-nopeus**: Korkean tarkkuuden GPS-nopeus saatavilla kun `GeolocationCoordinates.speed` on käytettävissä (iOS 13+). Vanhemmilla laitteilla tai heikon signaalin aikana nopeus lasketaan peräkkäisten sijaintipisteiden avulla, jolloin se voi olla hieman viiveinen tai epätarkka.
-- **Karttatiedot**: OpenStreetMap-karttapäivitykset vaihtelevat alueittain. Kartta ei näy ilman internet-yhteyttä (jo ladatut ruudut voivat säilyä välimuistissa).
-- **Safari-rajoitukset**: Safari ei tue Screen Wake Lock -ominaisuutta kaikilla iOS-versioilla. Puhelin voi sammuttaa näytön automaattisesti iOS:n virransäästöasetusten mukaan. Suositus: aseta **Näytön aikakatkaisuaika** mahdollisimman pitkäksi tai käytä erillisiä sovellustason virta-asetuksia.
-- **Säätiedot**: Ladataan Open-Meteo-palvelusta enintään 15 minuutin välein. Ei toimi ilman internet-yhteyttä.
-- **Kokokuvatila**: Fullscreen API ei ole tuettu Safarissa — tämä on iOS-rajoitus, ei sovelluksen vika.
+- GPS- ja heading-tarkkuus riippuu laitteesta, signaalista ja selaimen oikeuksista.
+- Wake Lock ja Fullscreen eivät ole kaikissa selaimissa käytettävissä.
+- Sää vaatii verkkoyhteyden.
+- Karttatiilien lataus voi epäonnistua heikolla yhteydellä.
 
-## Turvallisuusvaroitus
+## Turvallisuus
 
-> ⚠️ **Älä käytä kosketusnäyttöä ajon aikana.**
->
-> Käytä ajoneuvon omaa mittaristoa ensisijaisena nopeusmittarina.
-> Tämä sovellus on tarkoitettu lisätiedon näyttämiseen, ei ensisijaiseksi turvallisuuskriittiseksi mittaristoksi.
-
-## Tietosuoja
-
-**Sijaintihistoriaa ei tallenneta.** GPS-koordinaatteja käytetään ainoastaan:
-
-- Nopeuden laskemiseen ja näyttämiseen paikallisesti laitteessa
-- Kartan keskittämiseen nykyiseen sijaintiin
-- Säätietojen hakemiseen Open-Meteo-palvelusta (lähetetään vain pyöristetyt koordinaatit, ei tarkkaa sijaintia)
-
-Mitään sijaintitietoja ei tallenneta selaimen muistiin, evästeihin tai palvelimelle.
-
-muutos.
+Älä käytä kosketusnäyttöä ajon aikana.
+Käytä ajoneuvon omaa mittaristoa ensisijaisena nopeusmittarina.

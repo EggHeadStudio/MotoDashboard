@@ -636,6 +636,11 @@
     .leaflet-tile-pane {
       transition: filter 220ms ease;
     }
+
+    .leaflet-map-pane {
+      transform-origin: 50% 50%;
+      transition: rotate 220ms linear;
+    }
     body.theme-normal .leaflet-tile-pane { filter: none; }
     body.theme-monochrome .leaflet-tile-pane { filter: grayscale(1) contrast(1.2) brightness(0.88); }
     body.theme-cruising .leaflet-tile-pane { filter: sepia(0.5) saturate(1.15) hue-rotate(-12deg) contrast(1.08) brightness(0.96); }
@@ -645,6 +650,41 @@
 
     .leaflet-container {
       background: #0d0d0d;
+    }
+
+    #compass-indicator {
+      position: fixed;
+      top: calc(var(--safe-top) + 14px);
+      right: calc(var(--safe-right) + 14px);
+      z-index: 11;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.28);
+      background: rgba(0,0,0,0.46);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      font-size: 10px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.92);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    }
+
+    #compass-needle {
+      position: absolute;
+      width: 2px;
+      height: 13px;
+      border-radius: 1px;
+      background: #ff6a5f;
+      top: 4px;
+      left: 50%;
+      margin-left: -1px;
+      transform-origin: 50% calc(100% - 1px);
+      transform: rotate(0deg);
+      transition: transform 220ms linear;
     }
 
     /* Accuracy circle */
@@ -703,6 +743,7 @@
   <div class="map-shade"></div>
   <!-- Map tile status -->
   <div id="map-status">Karttaa ladataan…</div>
+  <div id="compass-indicator" aria-hidden="true"><span id="compass-needle"></span>N</div>
 
   <!-- HUD (visible after start) -->
   <div id="hud" aria-hidden="false">
@@ -760,6 +801,7 @@
     <div id="controls-row">
       <button class="hud-btn" id="center-btn" aria-label="Keskitä kartta sijaintiin">Keskitä</button>
       <button class="hud-btn" id="theme-btn" aria-label="Vaihda karttateemaa">Teema</button>
+      <button class="hud-btn" id="heading-btn" aria-label="Vaihda kartan suuntaustapaa">Suunta: pohjoinen</button>
       <button class="hud-btn" id="session-stats-toggle-btn" aria-label="Näytä tai piilota session tiedot">Sessio: piilota</button>
       <button class="hud-btn" id="finish-session-btn" aria-label="Lopeta nykyinen sessio">Lopeta sessio</button>
       <button class="hud-btn" id="back-to-start-btn" aria-label="Palaa aloitusnäkymään">Palaa aloitukseen</button>
@@ -861,6 +903,9 @@
       var elMapStatus = document.getElementById('map-status');
       var elSpeedDebug = document.getElementById('speed-debug');
       var elMap = document.getElementById('map');
+      var elHeadingBtn = document.getElementById('heading-btn');
+      var elCompassIndicator = document.getElementById('compass-indicator');
+      var elCompassNeedle = document.getElementById('compass-needle');
 
       var requiredElements = [
         elSpeedValue, elTimeDisplay, elWeatherRow, elTemperatureRow, elWindRow,
@@ -870,7 +915,8 @@
         elStatusStack, elStatusTab, elTopPanel, elTopTab, elStartOverlay, elStartBtn, elResumeSessionBtn,
         elHistoryBtn, elSessionSummary, elHistoryList, elHistoryActions, elClearHistoryBtn, elCenterBtn, elThemeBtn,
         elFinishSessionBtn, elBackToStartBtn, elRetryBtn, elGpsErrOverlay, elGpsErrMsg, elRetryGpsBtn,
-        elStartStatus, elStartDebug, elStartVersion, elMapFallbackMsg, elStartGpsHint, elMap
+        elStartStatus, elStartDebug, elStartVersion, elMapFallbackMsg, elStartGpsHint, elMap,
+        elHeadingBtn, elCompassIndicator, elCompassNeedle
       ];
 
       if (requiredElements.some(function (element) { return !element; })) {
@@ -884,6 +930,7 @@
       }
 
       var map = null;
+      var mapPane = null;
       var posMarker = null;
       var accCircle = null;
       var routeLayer = null;
@@ -924,6 +971,14 @@
       var STOP_GAP_BREAK_DISTANCE_M = 300;
       var MAX_VALID_SPEED_KMH = 220;
       var MAX_FALLBACK_SPEED_KMH = 220;
+      var headingUpEnabled = false;
+      var mapRotationSupported = false;
+      var currentHeadingDeg = 0;
+      var lastReliableHeadingAt = 0;
+      var HEADING_MIN_SPEED_KMH = 4;
+      var HEADING_MIN_DISTANCE_M = 6;
+      var ROTATION_SMOOTHING = 0.26;
+      var NORTH_UP_DELAY_MS = 12000;
 
       var movingSampleCount = 0;
       var stopSampleCount = 0;
@@ -939,6 +994,36 @@
       var SWIPE_MAX_DURATION_MS = 650;
 
       var themeToastTimer = null;
+      var mapStatusTimer = null;
+
+      function normalizeAngle(deg) {
+        var value = deg % 360;
+        if (value < 0) {
+          value += 360;
+        }
+        return value;
+      }
+
+      function shortestAngleDelta(fromDeg, toDeg) {
+        var delta = normalizeAngle(toDeg) - normalizeAngle(fromDeg);
+        if (delta > 180) {
+          delta -= 360;
+        } else if (delta < -180) {
+          delta += 360;
+        }
+        return delta;
+      }
+
+      function bearingDegrees(lat1, lon1, lat2, lon2) {
+        var phi1 = lat1 * Math.PI / 180;
+        var phi2 = lat2 * Math.PI / 180;
+        var dLambda = (lon2 - lon1) * Math.PI / 180;
+        var y = Math.sin(dLambda) * Math.cos(phi2);
+        var x = Math.cos(phi1) * Math.sin(phi2)
+          - Math.sin(phi1) * Math.cos(phi2) * Math.cos(dLambda);
+        var brng = Math.atan2(y, x) * 180 / Math.PI;
+        return normalizeAngle(brng);
+      }
 
       var themeNames = ['Normaali', 'Mustavalko', 'Cruising', 'Vesistö', 'Metsä', 'Yö'];
       var themeClasses = ['theme-normal', 'theme-monochrome', 'theme-cruising', 'theme-water', 'theme-forest', 'theme-night'];
@@ -1376,6 +1461,27 @@
         }, 1200);
       }
 
+      function showMapStatusMessage(message, durationMs) {
+        if (!elMapStatus) {
+          return;
+        }
+
+        if (mapStatusTimer) {
+          window.clearTimeout(mapStatusTimer);
+          mapStatusTimer = null;
+        }
+
+        elMapStatus.textContent = message;
+        elMapStatus.style.display = '';
+
+        mapStatusTimer = window.setTimeout(function () {
+          if (elMapStatus.textContent === message) {
+            elMapStatus.style.display = 'none';
+          }
+          mapStatusTimer = null;
+        }, durationMs || 1400);
+      }
+
       function applyStoredTheme() {
         var localTheme = readSettingFromLocalStorage('mapTheme');
         if (localTheme && themeClasses.indexOf('theme-' + localTheme) >= 0) {
@@ -1406,6 +1512,120 @@
         showThemeToast(themeNames[currentIndex]);
       }
 
+      function applyMapRotationVisual(angleDeg) {
+        if (!mapPane || !mapRotationSupported) {
+          return;
+        }
+
+        mapPane.style.rotate = angleDeg + 'deg';
+        if (elCompassNeedle) {
+          elCompassNeedle.style.transform = 'rotate(' + angleDeg + 'deg)';
+        }
+      }
+
+      function updateHeadingButtonLabel() {
+        elHeadingBtn.textContent = headingUpEnabled ? 'Suunta: menosuunta' : 'Suunta: pohjoinen';
+      }
+
+      function persistHeadingMode() {
+        var mode = headingUpEnabled ? 'heading-up' : 'north-up';
+        writeSettingToLocalStorage('mapHeadingMode', mode);
+        saveSettingToIndexedDb('mapHeadingMode', mode);
+      }
+
+      function applyHeadingModeSettings(mode, persist) {
+        var requestedHeadingUp = mode === 'heading-up';
+        headingUpEnabled = requestedHeadingUp;
+        if (requestedHeadingUp && !mapRotationSupported) {
+          headingUpEnabled = false;
+          showMapStatusMessage('Suuntaustila ei ole tuettu tässä selaimessa', 1800);
+        }
+        updateHeadingButtonLabel();
+
+        if (elCompassIndicator) {
+          elCompassIndicator.style.display = headingUpEnabled ? 'inline-flex' : 'none';
+        }
+
+        if (!headingUpEnabled) {
+          currentHeadingDeg = 0;
+          applyMapRotationVisual(0);
+        }
+
+        if (persist) {
+          persistHeadingMode();
+        }
+      }
+
+      function applyStoredHeadingMode() {
+        var localMode = readSettingFromLocalStorage('mapHeadingMode');
+        if (localMode === 'heading-up' || localMode === 'north-up') {
+          applyHeadingModeSettings(localMode, false);
+        } else {
+          applyHeadingModeSettings('north-up', false);
+        }
+
+        loadSettingFromIndexedDb('mapHeadingMode').then(function (idbMode) {
+          if (idbMode !== 'heading-up' && idbMode !== 'north-up') {
+            return;
+          }
+          if (idbMode === (headingUpEnabled ? 'heading-up' : 'north-up')) {
+            return;
+          }
+          applyHeadingModeSettings(idbMode, false);
+        });
+      }
+
+      function getReliableHeading(coords, lat, lon, validatedSpeedKmh) {
+        if (coords
+          && typeof coords.heading === 'number'
+          && isFinite(coords.heading)
+          && validatedSpeedKmh !== null
+          && validatedSpeedKmh >= HEADING_MIN_SPEED_KMH
+          && coords.accuracy <= MOVING_ACCURACY_MAX_M) {
+          return normalizeAngle(coords.heading);
+        }
+
+        if (activeSession && activeSession.lastAcceptedPoint) {
+          var point = activeSession.lastAcceptedPoint;
+          var d = haversine(point.latitude, point.longitude, lat, lon);
+          if (d >= HEADING_MIN_DISTANCE_M) {
+            return bearingDegrees(point.latitude, point.longitude, lat, lon);
+          }
+        }
+
+        if (prevCoords) {
+          var fallbackDistance = haversine(prevCoords.lat, prevCoords.lon, lat, lon);
+          if (fallbackDistance >= HEADING_MIN_DISTANCE_M) {
+            return bearingDegrees(prevCoords.lat, prevCoords.lon, lat, lon);
+          }
+        }
+
+        return null;
+      }
+
+      function updateMapRotation(headingCandidate, movingConfident, now) {
+        if (!headingUpEnabled || !mapRotationSupported) {
+          return;
+        }
+
+        var targetHeading = currentHeadingDeg;
+        if (headingCandidate !== null && movingConfident) {
+          targetHeading = headingCandidate;
+          lastReliableHeadingAt = now;
+        } else if (lastReliableHeadingAt > 0 && (now - lastReliableHeadingAt) >= NORTH_UP_DELAY_MS) {
+          targetHeading = 0;
+        }
+
+        var delta = shortestAngleDelta(currentHeadingDeg, targetHeading);
+        if (Math.abs(delta) < 0.35) {
+          currentHeadingDeg = normalizeAngle(targetHeading);
+        } else {
+          currentHeadingDeg = normalizeAngle(currentHeadingDeg + delta * ROTATION_SMOOTHING);
+        }
+
+        applyMapRotationVisual(-currentHeadingDeg);
+      }
+
       function isInteractiveTarget(target) {
         if (!target || typeof target.closest !== 'function') {
           return false;
@@ -1418,6 +1638,7 @@
         movingSampleCount = 0;
         stopSampleCount = 0;
         movementConfirmed = false;
+        lastReliableHeadingAt = 0;
       }
 
       function updateMovementState(validatedSpeedKmh, accuracy) {
@@ -2000,12 +2221,42 @@
           window.setTimeout(function () {
             map.invalidateSize();
           }, 250);
+
+          mapPane = map.getPanes ? map.getPanes().mapPane : null;
+          mapRotationSupported = !!(mapPane && 'rotate' in mapPane.style);
+          if (!mapRotationSupported) {
+            headingUpEnabled = false;
+          }
+          applyHeadingModeSettings(headingUpEnabled ? 'heading-up' : 'north-up', false);
         } catch (error) {
           mapUnavailable = true;
           map = null;
+          mapPane = null;
+          mapRotationSupported = false;
           console.warn('Karttaa ei voitu ladata', error);
           setMapUnavailableMessage('Karttaa ei voitu ladata');
         }
+      }
+
+      function setFollowView(lat, lon) {
+        if (!map) {
+          return;
+        }
+
+        var zoom = map.getZoom() < 14 ? 16 : map.getZoom();
+        var latLng = typeof L !== 'undefined' ? L.latLng(lat, lon) : [lat, lon];
+
+        if (!headingUpEnabled || !mapRotationSupported) {
+          map.setView(latLng, zoom);
+          return;
+        }
+
+        var distanceAheadM = 70;
+        var headingRad = currentHeadingDeg * Math.PI / 180;
+        var dLat = (distanceAheadM * Math.cos(headingRad)) / 111111;
+        var cosLat = Math.cos(lat * Math.PI / 180);
+        var dLon = cosLat !== 0 ? (distanceAheadM * Math.sin(headingRad)) / (111111 * cosLat) : 0;
+        map.setView([lat + dLat, lon + dLon], zoom);
       }
 
       function updateMapPosition(lat, lon, accuracy) {
@@ -2032,7 +2283,7 @@
         }
 
         if (followUser) {
-          map.setView(latlng, map.getZoom() < 14 ? 16 : map.getZoom());
+          setFollowView(lat, lon);
         }
 
         map.invalidateSize();
@@ -2258,6 +2509,12 @@
           }
         }
 
+        var movingForHeading = sessionActive && activeSession
+          ? movementConfirmed
+          : (validatedSpeedKmh !== null && validatedSpeedKmh >= MOVING_SPEED_THRESHOLD_KMH && accuracy <= MOVING_ACCURACY_MAX_M);
+        var headingCandidate = getReliableHeading(coords, lat, lon, validatedSpeedKmh);
+        updateMapRotation(headingCandidate, movingForHeading, now);
+
         setSpeedDisplay(smoothedSpeed);
 
         if (elSpeedDebug) {
@@ -2404,6 +2661,7 @@
       setDebugStage('Valmis');
       setSpeedDisplay(0);
       applyStoredTheme();
+      applyStoredHeadingMode();
       updateClock();
       updateNetwork();
       window.addEventListener('online', updateNetwork);
@@ -2460,12 +2718,17 @@
       elCenterBtn.addEventListener('click', function () {
         followUser = true;
         if (map && lastGoodCoords) {
-          map.setView([lastGoodCoords.lat, lastGoodCoords.lon], 16);
+          setFollowView(lastGoodCoords.lat, lastGoodCoords.lon);
         }
       });
 
       elThemeBtn.addEventListener('click', function () {
         cycleTheme(1);
+      });
+
+      elHeadingBtn.addEventListener('click', function () {
+        var nextMode = headingUpEnabled ? 'north-up' : 'heading-up';
+        applyHeadingModeSettings(nextMode, true);
       });
 
       elMap.addEventListener('touchstart', function (event) {

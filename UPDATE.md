@@ -330,34 +330,34 @@ When the user is moving reliably, rotate the map so the top of the screen points
 
 Use this priority order:
 
-1. [ ] Reliable `GeolocationCoordinates.heading` while moving.
-2. [ ] Bearing calculated from consecutive accepted route points.
+1. [x] Reliable `GeolocationCoordinates.heading` while moving.
+2. [x] Bearing calculated from consecutive accepted route points.
 3. [ ] Optional device orientation heading only when supported, permission has been explicitly granted and it improves reliability.
-4. [ ] Keep the last stable heading when no new reliable heading exists.
+4. [x] Keep the last stable heading when no new reliable heading exists.
 
 Do not request device orientation permission automatically on initial page load. Only request it after a user gesture if the implementation uses it.
 
 ## 7.3 Rotation behavior
 
-- [ ] Keep the current-position marker near the lower-middle portion of the map while following.
-- [ ] Smooth heading changes to prevent jitter.
-- [ ] Correctly handle transition across 359° and 0° using shortest-angle interpolation.
-- [ ] Do not rotate when stationary or when heading confidence is poor.
-- [ ] Return smoothly toward north-up after a configurable stationary period, or keep the last heading if that produces a better experience; document the chosen behavior.
-- [ ] Add a small compass or north indicator.
-- [ ] Provide one compact control to toggle between `menosuunta ylös` and `pohjoinen ylös`.
-- [ ] Persist the user's rotation preference locally.
+- [x] Keep the current-position marker near the lower-middle portion of the map while following.
+- [x] Smooth heading changes to prevent jitter.
+- [x] Correctly handle transition across 359° and 0° using shortest-angle interpolation.
+- [x] Do not rotate when stationary or when heading confidence is poor.
+- [x] Return smoothly toward north-up after a configurable stationary period, or keep the last heading if that produces a better experience; document the chosen behavior.
+- [x] Add a small compass or north indicator.
+- [x] Provide one compact control to toggle between `menosuunta ylös` and `pohjoinen ylös`.
+- [x] Persist the user's rotation preference locally.
 
 ## 7.4 Leaflet implementation warning
 
 Leaflet raster tiles do not provide native map-bearing rotation. Implement rotation carefully without changing the map provider.
 
-- [ ] First inspect whether the existing project already uses a compatible Leaflet rotation approach or plugin.
+- [x] First inspect whether the existing project already uses a compatible Leaflet rotation approach or plugin.
 - [ ] Prefer a small, well-maintained browser-side Leaflet rotation plugin only if it can be loaded statically and introduces no build step.
-- [ ] If no plugin is used, rotate the correct Leaflet map pane/container rather than only rotating the marker.
+- [x] If no plugin is used, rotate the correct Leaflet map pane/container rather than only rotating the marker.
 - [ ] Counter-rotate labels, controls or overlays that must remain readable where technically possible.
 - [ ] Ensure panning, zooming, marker positioning and route polyline remain aligned after rotation.
-- [ ] If robust rotation cannot be achieved across a browser, automatically fall back to north-up instead of breaking the map.
+- [x] If robust rotation cannot be achieved across a browser, automatically fall back to north-up instead of breaking the map.
 
 ## 7.5 Rotation verification
 
@@ -509,14 +509,14 @@ Do not claim a browser was tested unless it actually was.
 
 ## 12.1 README update
 
-- [ ] Document the new file structure.
-- [ ] Explain GitHub Pages deployment.
-- [ ] Explain local-only IndexedDB storage and its limitations.
-- [ ] Explain new session, resume, history and delete behavior.
-- [ ] Explain heading-up rotation and browser fallback.
-- [ ] Explain map presets and the raster-filter limitation.
-- [ ] Explain that the app is not a navigation system.
-- [ ] Include the existing safety warning about using the vehicle's own instruments as primary.
+- [x] Document the new file structure.
+- [x] Explain GitHub Pages deployment.
+- [x] Explain local-only IndexedDB storage and its limitations.
+- [x] Explain new session, resume, history and delete behavior.
+- [x] Explain heading-up rotation and browser fallback.
+- [x] Explain map presets and the raster-filter limitation.
+- [x] Explain that the app is not a navigation system.
+- [x] Include the existing safety warning about using the vehicle's own instruments as primary.
 
 ## 12.2 UPDATE.md progress
 
@@ -549,12 +549,13 @@ Do not claim a browser was tested unless it actually was.
 
 # Implementation notes
 
-The agent must add implementation notes here after completing the work, including:
-
-- final module structure
-- IndexedDB database and object-store names
-- chosen movement thresholds
-- map rotation technique and fallback
-- actual tested browsers/devices
-- known limitations
-- any unchecked tasks and reasons
+- Final module structure: single-file static app (`index.html`) plus `manifest.webmanifest`; no bundler or backend.
+- IndexedDB: database `moto-dashboard-db` (version 1), stores `sessions` and `settings`.
+- Local fallback storage keys: `moto-dashboard-sessions-v1`, `moto-dashboard-settings-v1`.
+- Movement thresholds in `index.html`: moving threshold `2.5 km/h`, stop threshold `1.7 km/h`, max accepted accuracy `55 m`, min point distance `4 m`, max point jump `500 m`, max point jump speed `220 km/h`.
+- Route behavior: break markers are inserted after long resume gaps and stop->move transitions to avoid false route lines.
+- Map rotation technique: CSS `rotate` applied to Leaflet `mapPane` with shortest-angle interpolation and smoothing.
+- Rotation fallback: if pane rotation is unsupported, heading-up mode is disabled and UI stays in north-up mode.
+- Theme implementation: CSS filters on `.leaflet-tile-pane` only; markers, route and HUD are not filtered.
+- Tested browsers/devices in this session: desktop Chromium runtime (Playwright) on macOS. GPS permission in this environment is denied, so live outdoor GPS path and heading confidence scenarios were not fully executable here.
+- Known limitations: device-orientation heading source is intentionally not used yet; cross-browser real-device matrix (iPhone/Android variants) is still pending.
