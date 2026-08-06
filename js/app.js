@@ -33,6 +33,7 @@ import { createSessionStore } from './session-store.js';
 import {
   normalizeAngle,
   shortestAngleDelta,
+  getRotationDeltaFromDrag,
   bearingDegrees,
   formatDuration,
   formatDate,
@@ -116,6 +117,7 @@ import { createRouteRecorder } from './route-recorder.js';
       var elHeadingBtn = dom.elHeadingBtn;
       var elCompassIndicator = dom.elCompassIndicator;
       var elCompassNeedle = dom.elCompassNeedle;
+      var elCompassOverlayNeedle = document.getElementById('compass-overlay-needle');
 
       var map = null;
       var mapPane = null;
@@ -148,7 +150,19 @@ import { createRouteRecorder } from './route-recorder.js';
       var headingUpEnabled = false;
       var mapRotationSupported = false;
       var currentHeadingDeg = 0;
+      var renderedMapRotationDeg = 0;
       var lastReliableHeadingAt = 0;
+      var lastPositionAt = 0;
+      var hasAppliedInitialFollowZoom = false;
+      var touchRotationActive = false;
+      var touchRotationStartAngle = 0;
+      var touchRotationStartMapAngle = 0;
+      var rotationPanActive = false;
+      var rotationPanLastPoint = null;
+      var desktopRotationActive = false;
+      var desktopRotationLastPoint = null;
+      var wheelRotateOverlayTimer = null;
+      var compassOverlayHideTimer = null;
 
       var movementConfirmed = false;
       var uiControlsHidden = false;
@@ -452,37 +466,133 @@ import { createRouteRecorder } from './route-recorder.js';
       }
 
       function applyMapRotationVisual(angleDeg) {
-        if (!mapPane || !mapRotationSupported) {
+        if (!elMap || !mapRotationSupported) {
           return;
         }
 
-        mapPane.style.rotate = angleDeg + 'deg';
+        renderedMapRotationDeg = normalizeAngle(angleDeg);
+        var visualScale = getRotationVisualScale();
+        elMap.style.transform = 'rotate(' + angleDeg + 'deg) scale(' + visualScale + ')';
         if (elCompassNeedle) {
           elCompassNeedle.style.transform = 'rotate(' + angleDeg + 'deg)';
         }
+        if (elCompassOverlayNeedle) {
+          elCompassOverlayNeedle.style.transform = 'rotate(' + angleDeg + 'deg)';
+        }
+      }
+
+      function getRotationVisualScale() {
+        return headingUpEnabled && mapRotationSupported ? 1.48 : 1;
+      }
+
+      function setMapDraggingForMode() {
+        if (!map || !map.dragging) {
+          return;
+        }
+
+        if (headingUpEnabled && mapRotationSupported) {
+          map.dragging.disable();
+        } else {
+          map.dragging.enable();
+        }
+      }
+
+      function getRotationAwarePanDelta(dx, dy) {
+        var angleRad = getVisualRotationAngleDeg() * Math.PI / 180;
+        var cosA = Math.cos(angleRad);
+        var sinA = Math.sin(angleRad);
+        var scale = getRotationVisualScale();
+
+        return [
+          (-cosA * dx + sinA * dy) / scale,
+          (-sinA * dx - cosA * dy) / scale
+        ];
+      }
+
+      function getVisualRotationAngleDeg() {
+        if (elCompassNeedle && typeof elCompassNeedle.style.transform === 'string') {
+          var match = elCompassNeedle.style.transform.match(/rotate\((-?[0-9.]+)deg\)/);
+          if (match && match[1]) {
+            var parsed = parseFloat(match[1]);
+            if (isFinite(parsed)) {
+              return normalizeAngle(parsed);
+            }
+          }
+        }
+
+        if (isFinite(renderedMapRotationDeg)) {
+          return normalizeAngle(renderedMapRotationDeg);
+        }
+
+        return normalizeAngle(currentHeadingDeg);
+      }
+
+      function panRotationAwareBy(dx, dy) {
+        if (!map || !headingUpEnabled || !mapRotationSupported) {
+          return;
+        }
+
+        var adjustedDelta = getRotationAwarePanDelta(dx, dy);
+        map.panBy([adjustedDelta[0], adjustedDelta[1]], { animate: false });
+        followUser = false;
+      }
+
+      function clearCompassOverlayHideTimer() {
+        if (!compassOverlayHideTimer) {
+          return;
+        }
+
+        window.clearTimeout(compassOverlayHideTimer);
+        compassOverlayHideTimer = null;
+      }
+
+      function hideCompassGestureOverlayImmediately() {
+        clearCompassOverlayHideTimer();
+        document.body.classList.remove('compass-gesture-active');
+      }
+
+      function scheduleCompassOverlayHide(delayMs) {
+        clearCompassOverlayHideTimer();
+        compassOverlayHideTimer = window.setTimeout(function () {
+          document.body.classList.remove('compass-gesture-active');
+          compassOverlayHideTimer = null;
+        }, typeof delayMs === 'number' ? delayMs : 1500);
+      }
+
+      function setCompassGestureOverlayActive(active) {
+        var shouldShowOverlay = !!active && headingUpEnabled && mapRotationSupported;
+        if (shouldShowOverlay) {
+          clearCompassOverlayHideTimer();
+          document.body.classList.add('compass-gesture-active');
+          return;
+        }
+
+        scheduleCompassOverlayHide(500);
       }
 
       function updateHeadingButtonLabel() {
-        elHeadingBtn.textContent = headingUpEnabled ? 'Suunta: menosuunta' : 'Suunta: pohjoinen';
+        elHeadingBtn.textContent = headingUpEnabled ? 'Suunta: menosuunta' : 'Suunta: lukittu';
       }
 
       function persistHeadingMode() {
-        var mode = headingUpEnabled ? 'heading-up' : 'north-up';
+        var mode = headingUpEnabled ? 'menosuunta' : 'lukittu';
         writeSettingToLocalStorage('mapHeadingMode', mode);
         saveSettingToIndexedDb('mapHeadingMode', mode);
       }
 
       function applyHeadingModeSettings(mode, persist) {
-        var requestedHeadingUp = mode === 'heading-up';
+        var requestedHeadingUp = mode === 'menosuunta';
         headingUpEnabled = requestedHeadingUp;
         if (requestedHeadingUp && !mapRotationSupported) {
           headingUpEnabled = false;
           showMapStatusMessage('Suuntaustila ei ole tuettu tässä selaimessa', 1800);
         }
         updateHeadingButtonLabel();
+        document.body.classList.toggle('heading-menosuunta', headingUpEnabled && mapRotationSupported);
+        hideCompassGestureOverlayImmediately();
 
         if (elCompassIndicator) {
-          elCompassIndicator.style.display = headingUpEnabled ? 'inline-flex' : 'none';
+          elCompassIndicator.style.display = headingUpEnabled && mapRotationSupported ? 'inline-flex' : 'none';
         }
 
         if (!headingUpEnabled) {
@@ -497,17 +607,26 @@ import { createRouteRecorder } from './route-recorder.js';
 
       function applyStoredHeadingMode() {
         var localMode = readSettingFromLocalStorage('mapHeadingMode');
-        if (localMode === 'heading-up' || localMode === 'north-up') {
+        if (localMode === 'menosuunta' || localMode === 'lukittu') {
           applyHeadingModeSettings(localMode, false);
+        } else if (localMode === 'heading-up' || localMode === 'north-up') {
+          // Backward compatibility with previous stored values.
+          applyHeadingModeSettings(localMode === 'heading-up' ? 'menosuunta' : 'lukittu', false);
         } else {
-          applyHeadingModeSettings('north-up', false);
+          applyHeadingModeSettings('lukittu', false);
         }
 
         loadSettingFromIndexedDb('mapHeadingMode').then(function (idbMode) {
-          if (idbMode !== 'heading-up' && idbMode !== 'north-up') {
+          if (idbMode === 'heading-up') {
+            idbMode = 'menosuunta';
+          } else if (idbMode === 'north-up') {
+            idbMode = 'lukittu';
+          }
+
+          if (idbMode !== 'menosuunta' && idbMode !== 'lukittu') {
             return;
           }
-          if (idbMode === (headingUpEnabled ? 'heading-up' : 'north-up')) {
+          if (idbMode === (headingUpEnabled ? 'menosuunta' : 'lukittu')) {
             return;
           }
           applyHeadingModeSettings(idbMode, false);
@@ -563,6 +682,226 @@ import { createRouteRecorder } from './route-recorder.js';
         }
 
         applyMapRotationVisual(-currentHeadingDeg);
+      }
+
+      function getTouchAngleDeg(touchA, touchB) {
+        return normalizeAngle(Math.atan2(touchB.clientY - touchA.clientY, touchB.clientX - touchA.clientX) * (180 / Math.PI));
+      }
+
+      function setupManualTouchRotation() {
+        if (!elMap) {
+          return;
+        }
+
+        var startRotationAwarePan = function (point) {
+          rotationPanActive = true;
+          rotationPanLastPoint = point;
+        };
+
+        var stopRotationAwarePan = function () {
+          rotationPanActive = false;
+          rotationPanLastPoint = null;
+        };
+
+        var updateRotationAwarePan = function (point) {
+          if (!rotationPanActive || !rotationPanLastPoint) {
+            return;
+          }
+
+          var dx = point.x - rotationPanLastPoint.x;
+          var dy = point.y - rotationPanLastPoint.y;
+          if (dx === 0 && dy === 0) {
+            return;
+          }
+
+          panRotationAwareBy(dx, dy);
+          rotationPanLastPoint = point;
+        };
+
+        var resetTouchState = function () {
+          touchRotationActive = false;
+          setCompassGestureOverlayActive(false);
+        };
+
+        elMap.addEventListener('touchstart', function (event) {
+          if (!headingUpEnabled || !mapRotationSupported) {
+            return;
+          }
+
+          if (event.touches.length === 1) {
+            startRotationAwarePan({ x: event.touches[0].clientX, y: event.touches[0].clientY });
+            return;
+          }
+
+          if (event.touches.length < 2) {
+            return;
+          }
+
+          stopRotationAwarePan();
+          followUser = false;
+
+          touchRotationStartAngle = getTouchAngleDeg(event.touches[0], event.touches[1]);
+          touchRotationStartMapAngle = currentHeadingDeg;
+          touchRotationActive = true;
+          setCompassGestureOverlayActive(true);
+        }, { passive: true });
+
+        elMap.addEventListener('touchmove', function (event) {
+          if (!headingUpEnabled || !mapRotationSupported) {
+            return;
+          }
+
+          if (event.touches.length === 1 && rotationPanActive) {
+            event.preventDefault();
+            updateRotationAwarePan({ x: event.touches[0].clientX, y: event.touches[0].clientY });
+            return;
+          }
+
+          if (event.touches.length < 2) {
+            stopRotationAwarePan();
+            resetTouchState();
+            return;
+          }
+
+          stopRotationAwarePan();
+          followUser = false;
+
+          setCompassGestureOverlayActive(true);
+
+          var currentTouchAngle = getTouchAngleDeg(event.touches[0], event.touches[1]);
+          if (!touchRotationActive) {
+            touchRotationStartAngle = currentTouchAngle;
+            touchRotationStartMapAngle = currentHeadingDeg;
+            touchRotationActive = true;
+            return;
+          }
+
+          var delta = shortestAngleDelta(touchRotationStartAngle, currentTouchAngle);
+          currentHeadingDeg = normalizeAngle(touchRotationStartMapAngle + delta);
+          applyMapRotationVisual(currentHeadingDeg);
+        }, { passive: true });
+
+        elMap.addEventListener('touchend', function (event) {
+          if (event.touches.length === 0) {
+            stopRotationAwarePan();
+          }
+          resetTouchState();
+        }, { passive: true });
+
+        elMap.addEventListener('touchcancel', function () {
+          stopRotationAwarePan();
+          resetTouchState();
+        }, { passive: true });
+
+        elMap.addEventListener('mousedown', function (event) {
+          if (!headingUpEnabled || !mapRotationSupported || event.button !== 0) {
+            return;
+          }
+
+          event.preventDefault();
+          stopRotationAwarePan();
+          desktopRotationActive = false;
+          desktopRotationLastPoint = null;
+
+          if (event.shiftKey) {
+            desktopRotationActive = true;
+            desktopRotationLastPoint = { x: event.clientX, y: event.clientY };
+            followUser = false;
+            setCompassGestureOverlayActive(true);
+            return;
+          }
+
+          startRotationAwarePan({ x: event.clientX, y: event.clientY });
+        }, { passive: false });
+
+        window.addEventListener('mousemove', function (event) {
+          if (desktopRotationActive && desktopRotationLastPoint) {
+            event.preventDefault();
+            var dragDelta = getRotationDeltaFromDrag(event.clientX - desktopRotationLastPoint.x, event.clientY - desktopRotationLastPoint.y);
+            if (dragDelta !== 0) {
+              currentHeadingDeg = normalizeAngle(currentHeadingDeg + dragDelta);
+              applyMapRotationVisual(currentHeadingDeg);
+              setCompassGestureOverlayActive(true);
+            }
+            desktopRotationLastPoint = { x: event.clientX, y: event.clientY };
+            return;
+          }
+
+          if (!rotationPanActive) {
+            return;
+          }
+
+          event.preventDefault();
+          updateRotationAwarePan({ x: event.clientX, y: event.clientY });
+        }, { passive: false });
+
+        window.addEventListener('mouseup', function () {
+          desktopRotationActive = false;
+          desktopRotationLastPoint = null;
+          setCompassGestureOverlayActive(false);
+          stopRotationAwarePan();
+        }, { passive: true });
+
+        // Desktop/trackpad support (Safari GestureEvent): two-finger rotate on touchpad.
+        elMap.addEventListener('gesturestart', function (event) {
+          if (!headingUpEnabled || !mapRotationSupported) {
+            return;
+          }
+
+          event.preventDefault();
+          followUser = false;
+          touchRotationStartMapAngle = currentHeadingDeg;
+          setCompassGestureOverlayActive(true);
+        }, { passive: false });
+
+        elMap.addEventListener('gesturechange', function (event) {
+          if (!headingUpEnabled || !mapRotationSupported) {
+            return;
+          }
+
+          event.preventDefault();
+          followUser = false;
+          currentHeadingDeg = normalizeAngle(touchRotationStartMapAngle + event.rotation);
+          applyMapRotationVisual(currentHeadingDeg);
+          setCompassGestureOverlayActive(true);
+        }, { passive: false });
+
+        elMap.addEventListener('gestureend', function (event) {
+          if (!headingUpEnabled || !mapRotationSupported) {
+            return;
+          }
+
+          event.preventDefault();
+          setCompassGestureOverlayActive(false);
+        }, { passive: false });
+
+        // Desktop fallback: hold Shift and use mouse wheel / touchpad scroll to rotate map.
+        elMap.addEventListener('wheel', function (event) {
+          if (!headingUpEnabled || !mapRotationSupported || !event.shiftKey) {
+            return;
+          }
+
+          event.preventDefault();
+          followUser = false;
+
+          var wheelDelta = Math.abs(event.deltaY) > Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
+          var rotateStep = wheelDelta * 0.25;
+          if (!isFinite(rotateStep) || rotateStep === 0) {
+            return;
+          }
+
+          currentHeadingDeg = normalizeAngle(currentHeadingDeg + rotateStep);
+          applyMapRotationVisual(currentHeadingDeg);
+          setCompassGestureOverlayActive(true);
+
+          if (wheelRotateOverlayTimer) {
+            window.clearTimeout(wheelRotateOverlayTimer);
+          }
+          wheelRotateOverlayTimer = window.setTimeout(function () {
+            setCompassGestureOverlayActive(false);
+            wheelRotateOverlayTimer = null;
+          }, 500);
+        }, { passive: false });
       }
 
       function resetMovementState() {
@@ -836,6 +1175,7 @@ import { createRouteRecorder } from './route-recorder.js';
         sessionHistoryViewActive = false;
         setSessionStatsCollapsed(false);
         activeSession = createSession();
+        hasAppliedInitialFollowZoom = false;
         resetMovementState();
         sessionActive = true;
         updateSessionStatsPanel(activeSession);
@@ -858,6 +1198,7 @@ import { createRouteRecorder } from './route-recorder.js';
         }
 
         activeSession = JSON.parse(JSON.stringify(latest));
+        hasAppliedInitialFollowZoom = false;
         resetMovementState();
         sessionHistoryViewActive = false;
         setSessionStatsCollapsed(false);
@@ -957,20 +1298,27 @@ import { createRouteRecorder } from './route-recorder.js';
             }
           });
 
-          map.on('dragstart', function () {
-            followUser = false;
-          });
+          var onUserMapInteraction = function (event) {
+            if (event && event.originalEvent) {
+              followUser = false;
+            }
+          };
+
+          map.on('dragstart', onUserMapInteraction);
+          map.on('zoomstart', onUserMapInteraction);
+          map.on('movestart', onUserMapInteraction);
 
           window.setTimeout(function () {
             map.invalidateSize();
           }, 250);
 
           mapPane = map.getPanes ? map.getPanes().mapPane : null;
-          mapRotationSupported = !!(mapPane && 'rotate' in mapPane.style);
+          mapRotationSupported = !!(elMap && 'transform' in elMap.style);
           if (!mapRotationSupported) {
             headingUpEnabled = false;
           }
-          applyHeadingModeSettings(headingUpEnabled ? 'heading-up' : 'north-up', false);
+          applyHeadingModeSettings(headingUpEnabled ? 'menosuunta' : 'lukittu', false);
+          setupManualTouchRotation();
         } catch (error) {
           mapUnavailable = true;
           map = null;
@@ -986,20 +1334,41 @@ import { createRouteRecorder } from './route-recorder.js';
           return;
         }
 
-        var zoom = map.getZoom() < 14 ? 16 : map.getZoom();
         var latLng = typeof L !== 'undefined' ? L.latLng(lat, lon) : [lat, lon];
 
-        if (!headingUpEnabled || !mapRotationSupported) {
-          map.setView(latLng, zoom);
+        if (!hasAppliedInitialFollowZoom && map.getZoom() < 14) {
+          hasAppliedInitialFollowZoom = true;
+          map.setView(latLng, 16, { animate: true });
           return;
         }
 
-        var distanceAheadM = 70;
-        var headingRad = currentHeadingDeg * Math.PI / 180;
-        var dLat = (distanceAheadM * Math.cos(headingRad)) / 111111;
-        var cosLat = Math.cos(lat * Math.PI / 180);
-        var dLon = cosLat !== 0 ? (distanceAheadM * Math.sin(headingRad)) / (111111 * cosLat) : 0;
-        map.setView([lat + dLat, lon + dLon], zoom);
+        hasAppliedInitialFollowZoom = true;
+
+        var center = map.getCenter ? map.getCenter() : null;
+        var centerDistanceM = center && typeof L !== 'undefined'
+          ? map.distance(center, latLng)
+          : Infinity;
+
+        if (centerDistanceM < 4) {
+          return;
+        }
+
+        if (!headingUpEnabled || !mapRotationSupported) {
+          map.panTo(latLng, {
+            animate: true,
+            duration: 0.35,
+            easeLinearity: 0.35,
+            noMoveStart: true
+          });
+          return;
+        }
+
+        map.panTo(latLng, {
+          animate: true,
+          duration: 0.35,
+          easeLinearity: 0.35,
+          noMoveStart: true
+        });
       }
 
       function updateMapPosition(lat, lon, accuracy) {
@@ -1029,7 +1398,6 @@ import { createRouteRecorder } from './route-recorder.js';
           setFollowView(lat, lon);
         }
 
-        map.invalidateSize();
       }
 
       function requestWakeLockSafely() {
@@ -1162,6 +1530,7 @@ import { createRouteRecorder } from './route-recorder.js';
         var fallbackKmh = null;
         var rawGpsKmh = null;
         var dt = 0;
+        lastPositionAt = now;
 
         elGpsAccuracy.textContent = 'Tarkkuus: ' + Math.round(accuracy) + ' m';
         updateGpsQuality(accuracy);
@@ -1194,12 +1563,6 @@ import { createRouteRecorder } from './route-recorder.js';
             }
           }
         }
-
-        var movingForHeading = sessionActive && activeSession
-          ? movementConfirmed
-          : (validatedSpeedKmh !== null && validatedSpeedKmh >= MOVING_SPEED_THRESHOLD_KMH && accuracy <= MOVING_ACCURACY_MAX_M);
-        var headingCandidate = getReliableHeading(coords, lat, lon, validatedSpeedKmh);
-        updateMapRotation(headingCandidate, movingForHeading, now);
 
         setSpeedDisplay(smoothedSpeed);
 
@@ -1254,15 +1617,21 @@ import { createRouteRecorder } from './route-recorder.js';
         console.error('GPS-virhe', err);
       }
 
-      function startGpsTracking() {
+      function startGpsTracking(options) {
+        var softRestart = !!(options && options.softRestart);
         clearExistingWatch();
-        resetMovementState();
-        hasReceivedFirstPosition = false;
-        isStartingGps = true;
-        setGpsStatus('Pyydetään sijaintia…', 'status-moderate');
-        elGpsAccuracy.textContent = 'Tarkkuus: haetaan…';
-        setStartStatus('Pyydetään sijaintilupaa…');
-        setDebugStage('Pyydetään sijaintilupaa');
+        if (!softRestart) {
+          resetMovementState();
+          hasReceivedFirstPosition = false;
+          isStartingGps = true;
+          setGpsStatus('Pyydetään sijaintia…', 'status-moderate');
+          elGpsAccuracy.textContent = 'Tarkkuus: haetaan…';
+          setStartStatus('Pyydetään sijaintilupaa…');
+          setDebugStage('Pyydetään sijaintilupaa');
+        } else {
+          isStartingGps = false;
+          setDebugStage('GPS-seuranta palautetaan');
+        }
 
         var options = {
           enableHighAccuracy: true,
@@ -1273,11 +1642,13 @@ import { createRouteRecorder } from './route-recorder.js';
         watchId = navigator.geolocation.watchPosition(handlePositionSuccess, handlePositionError, options);
         setDebugStage('GPS-seuranta käynnistetty');
 
-        navigator.geolocation.getCurrentPosition(function (pos) {
-          handlePositionSuccess(pos);
-        }, function (err) {
-          handlePositionError(err);
-        }, options);
+        if (!softRestart) {
+          navigator.geolocation.getCurrentPosition(function (pos) {
+            handlePositionSuccess(pos);
+          }, function (err) {
+            handlePositionError(err);
+          }, options);
+        }
       }
 
       function startButtonHandler() {
@@ -1385,6 +1756,7 @@ import { createRouteRecorder } from './route-recorder.js';
         }
 
         activeSession = JSON.parse(JSON.stringify(session));
+        hasAppliedInitialFollowZoom = false;
         sessionHistoryViewActive = false;
         activeSession.resumeAnchorPending = true;
         sessionActive = true;
@@ -1421,7 +1793,7 @@ import { createRouteRecorder } from './route-recorder.js';
       });
 
       elHeadingBtn.addEventListener('click', function () {
-        var nextMode = headingUpEnabled ? 'north-up' : 'heading-up';
+        var nextMode = headingUpEnabled ? 'lukittu' : 'menosuunta';
         applyHeadingModeSettings(nextMode, true);
       });
 
@@ -1597,8 +1969,35 @@ import { createRouteRecorder } from './route-recorder.js';
           return;
         }
 
-        if (document.visibilityState === 'visible' && watchId !== null) {
+        if (document.visibilityState === 'visible') {
           requestWakeLockSafely();
+
+          if (!sessionActive || !('geolocation' in navigator) || !window.isSecureContext) {
+            return;
+          }
+
+          var stalePosition = !lastPositionAt || (Date.now() - lastPositionAt) > 20000;
+          if (watchId === null || stalePosition) {
+            try {
+              startGpsTracking({ softRestart: true });
+            } catch (error) {
+              console.warn('GPS-seurannan palautus epaonnistui näkyvyyden muutoksen jälkeen.', error);
+            }
+          }
+        }
+      });
+
+      window.addEventListener('pageshow', function () {
+        if (!sessionActive || !window.isSecureContext || !('geolocation' in navigator)) {
+          return;
+        }
+
+        if (watchId === null) {
+          try {
+            startGpsTracking({ softRestart: true });
+          } catch (error) {
+            console.warn('GPS-seurannan palautus pageshow-tapahtumassa epaonnistui.', error);
+          }
         }
       });
     });

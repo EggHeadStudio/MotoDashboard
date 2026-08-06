@@ -24,6 +24,15 @@
   <!-- Map tile status -->
   <div id="map-status">Karttaa ladataan…</div>
   <div id="compass-indicator" aria-hidden="true"><span id="compass-needle"></span>N</div>
+  <div id="compass-rotating-overlay" aria-hidden="true">
+    <div class="compass-rose">
+      <span class="compass-dir compass-n">N</span>
+      <span class="compass-dir compass-e">E</span>
+      <span class="compass-dir compass-s">S</span>
+      <span class="compass-dir compass-w">W</span>
+      <span id="compass-overlay-needle"></span>
+    </div>
+  </div>
 
   <!-- HUD (visible after start) -->
   <div id="hud" aria-hidden="false">
@@ -81,7 +90,7 @@
     <div id="controls-row">
       <button class="hud-btn" id="center-btn" aria-label="Keskitä kartta sijaintiin">Keskitä</button>
       <button class="hud-btn" id="theme-btn" aria-label="Vaihda karttateemaa">Teema</button>
-      <button class="hud-btn" id="heading-btn" aria-label="Vaihda kartan suuntaustapaa">Suunta: pohjoinen</button>
+      <button class="hud-btn" id="heading-btn" aria-label="Vaihda kartan suuntatilaa">Suunta: lukittu</button>
       <button class="hud-btn" id="session-stats-toggle-btn" aria-label="Näytä tai piilota session tiedot">Sessio: piilota</button>
       <button class="hud-btn" id="finish-session-btn" aria-label="Lopeta nykyinen sessio">Lopeta sessio</button>
       <button class="hud-btn" id="back-to-start-btn" aria-label="Palaa aloitusnäkymään">Palaa aloitukseen</button>

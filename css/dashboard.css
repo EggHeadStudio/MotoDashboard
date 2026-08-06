@@ -33,6 +33,9 @@
       z-index: 0;
       background: #1b1b1b;
       touch-action: pan-x pan-y pinch-zoom;
+      transform-origin: 50% 50%;
+      transition: transform 220ms linear;
+      will-change: transform;
     }
 
     /* ── MAP SHADE OVERLAY ── */
@@ -639,7 +642,6 @@
 
     .leaflet-map-pane {
       transform-origin: 50% 50%;
-      transition: rotate 220ms linear;
     }
     body.theme-normal .leaflet-tile-pane { filter: none; }
     body.theme-monochrome .leaflet-tile-pane { filter: grayscale(1) contrast(1.2) brightness(0.88); }
@@ -657,8 +659,8 @@
       top: calc(var(--safe-top) + 14px);
       right: calc(var(--safe-right) + 14px);
       z-index: 11;
-      width: 34px;
-      height: 34px;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
       border: 1px solid rgba(255,255,255,0.28);
       background: rgba(0,0,0,0.46);
@@ -666,25 +668,123 @@
       align-items: center;
       justify-content: center;
       pointer-events: none;
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 700;
       color: rgba(255,255,255,0.92);
       backdrop-filter: blur(6px);
       -webkit-backdrop-filter: blur(6px);
+      opacity: 1;
+      transform: scale(1);
+      transition: opacity 260ms ease, transform 280ms ease;
     }
 
     #compass-needle {
       position: absolute;
       width: 2px;
-      height: 13px;
+      height: 16px;
       border-radius: 1px;
       background: #ff6a5f;
-      top: 4px;
+      top: 5px;
       left: 50%;
       margin-left: -1px;
       transform-origin: 50% calc(100% - 1px);
       transform: rotate(0deg);
       transition: transform 220ms linear;
+    }
+
+    #compass-rotating-overlay {
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      width: 220px;
+      height: 220px;
+      margin-left: -110px;
+      margin-top: -110px;
+      z-index: 12;
+      pointer-events: none;
+      opacity: 0;
+      transform: translate(calc(50vw - var(--safe-right) - 34px), calc(-50vh + var(--safe-top) + 34px)) scale(0.18);
+      transition: transform 320ms cubic-bezier(0.22, 0.75, 0.16, 1), opacity 260ms ease;
+    }
+
+    .compass-rose {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.28);
+      background: radial-gradient(circle, rgba(255,255,255,0.06) 0%, rgba(0,0,0,0.35) 68%, rgba(0,0,0,0.48) 100%);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      box-shadow: 0 14px 42px rgba(0,0,0,0.35);
+    }
+
+    .compass-dir {
+      position: absolute;
+      font-size: 20px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.72);
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+      line-height: 1;
+    }
+
+    .compass-n {
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: rgba(255,255,255,0.92);
+    }
+
+    .compass-e {
+      top: 50%;
+      right: 12px;
+      transform: translateY(-50%);
+    }
+
+    .compass-s {
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .compass-w {
+      top: 50%;
+      left: 12px;
+      transform: translateY(-50%);
+    }
+
+    #compass-overlay-needle {
+      position: absolute;
+      width: 6px;
+      height: 92px;
+      border-radius: 3px;
+      background: linear-gradient(180deg, rgba(255, 106, 95, 0.95) 0%, rgba(255, 106, 95, 0.3) 100%);
+      top: 16px;
+      left: 50%;
+      margin-left: -3px;
+      transform-origin: 50% calc(100% - 4px);
+      transform: rotate(0deg);
+      transition: transform 95ms linear;
+      box-shadow: 0 0 12px rgba(255, 106, 95, 0.45);
+    }
+
+    body.heading-menosuunta.compass-gesture-active #compass-indicator {
+      opacity: 0;
+      transform: scale(0.72);
+    }
+
+    body.heading-menosuunta.compass-gesture-active #compass-rotating-overlay {
+      opacity: 1;
+      transform: translate(0, 0) scale(1);
+    }
+
+    body.heading-menosuunta.compass-gesture-active #map {
+      transition: none;
+    }
+
+    body.heading-menosuunta.compass-gesture-active #compass-needle,
+    body.heading-menosuunta.compass-gesture-active #compass-overlay-needle {
+      transition: none;
     }
 
     /* Accuracy circle */

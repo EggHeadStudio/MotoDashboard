@@ -16,6 +16,14 @@ export function shortestAngleDelta(fromDeg, toDeg) {
   return delta;
 }
 
+export function getRotationDeltaFromDrag(dx, dy) {
+  var horizontalDelta = Number(dx);
+  if (!isFinite(horizontalDelta)) {
+    return 0;
+  }
+  return horizontalDelta * 0.25;
+}
+
 export function bearingDegrees(lat1, lon1, lat2, lon2) {
   var phi1 = lat1 * Math.PI / 180;
   var phi2 = lat2 * Math.PI / 180;
