@@ -28,6 +28,8 @@ import {
   ROTATION_SMOOTHING,
   NORTH_UP_DELAY_MS
 } from './config.js';
+import { getDomRefs } from './dom.js';
+import { createSessionStore } from './session-store.js';
 import {
   normalizeAngle,
   shortestAngleDelta,
@@ -38,6 +40,9 @@ import {
   formatDistanceKm,
   haversine
 } from './utils.js';
+import { fetchAndRenderWeather } from './weather.js';
+import { evaluateSpeedSample, smoothSpeed, createMovementTracker } from './speed.js';
+import { createRouteRecorder } from './route-recorder.js';
 
 (function () {
     'use strict';
@@ -51,80 +56,66 @@ import {
         });
       }
 
-      var elSpeedBlock = document.getElementById('speed-block');
-      var elSpeedValue = document.getElementById('speed-value');
-      var elTimeDisplay = document.getElementById('time-display');
-      var elWeatherRow = document.getElementById('weather-row');
-      var elTemperatureRow = document.getElementById('temperature-row');
-      var elWindRow = document.getElementById('wind-row');
-      var elTimePanel = document.getElementById('time-panel');
-      var elWeatherPanel = document.getElementById('weather-panel');
-      var elTemperaturePanel = document.getElementById('temperature-panel');
-      var elWindPanel = document.getElementById('wind-panel');
-      var elGpsStatus = document.getElementById('gps-status-row');
-      var elGpsAccuracy = document.getElementById('gps-accuracy-row');
-      var elNetworkRow = document.getElementById('network-row');
-      var elSessionStatsPanel = document.getElementById('session-stats-panel');
-      var elStatDistance = document.getElementById('stat-distance');
-      var elStatDuration = document.getElementById('stat-duration');
-      var elStatAverage = document.getElementById('stat-average');
-      var elStatMax = document.getElementById('stat-max');
-      var elSessionStatsToggleBtn = document.getElementById('session-stats-toggle-btn');
-      var elGpsPanel = document.getElementById('gps-panel');
-      var elNetworkPanel = document.getElementById('network-panel');
-      var elStatusStack = document.getElementById('status-stack');
-      var elStatusTab = document.getElementById('status-tab');
-      var elTopPanel = document.getElementById('top-panel');
-      var elTopTab = document.getElementById('top-tab');
-      var elStartOverlay = document.getElementById('start-overlay');
-      var elStartBtn = document.getElementById('start-btn');
-      var elResumeSessionBtn = document.getElementById('resume-session-btn');
-      var elHistoryBtn = document.getElementById('history-btn');
-      var elSessionSummary = document.getElementById('session-summary');
-      var elHistoryList = document.getElementById('history-list');
-      var elHistoryActions = document.getElementById('history-actions');
-      var elClearHistoryBtn = document.getElementById('clear-history-btn');
-      var elCenterBtn = document.getElementById('center-btn');
-      var elThemeBtn = document.getElementById('theme-btn');
-      var elFinishSessionBtn = document.getElementById('finish-session-btn');
-      var elBackToStartBtn = document.getElementById('back-to-start-btn');
-      var elRetryBtn = document.getElementById('retry-btn');
-      var elGpsErrOverlay = document.getElementById('gps-error-overlay');
-      var elGpsErrMsg = document.getElementById('gps-error-msg');
-      var elRetryGpsBtn = document.getElementById('retry-gps-btn');
-      var elStartStatus = document.getElementById('start-status');
-      var elStartDebug = document.getElementById('start-debug');
-      var elStartVersion = document.getElementById('start-version');
-      var elMapFallbackMsg = document.getElementById('map-fallback-msg');
-      var elStartGpsHint = document.getElementById('start-gps-hint');
-      var elMapStatus = document.getElementById('map-status');
-      var elSpeedDebug = document.getElementById('speed-debug');
-      var elMap = document.getElementById('map');
-      var elHeadingBtn = document.getElementById('heading-btn');
-      var elCompassIndicator = document.getElementById('compass-indicator');
-      var elCompassNeedle = document.getElementById('compass-needle');
-
-      var requiredElements = [
-        elSpeedBlock, elSpeedValue, elTimeDisplay, elWeatherRow, elTemperatureRow, elWindRow,
-        elTimePanel, elWeatherPanel, elTemperaturePanel, elWindPanel, elGpsStatus,
-        elSessionStatsPanel, elStatDistance, elStatDuration, elStatAverage, elStatMax, elSessionStatsToggleBtn,
-        elGpsAccuracy, elNetworkRow, elGpsPanel, elNetworkPanel,
-        elStatusStack, elStatusTab, elTopPanel, elTopTab, elStartOverlay, elStartBtn, elResumeSessionBtn,
-        elHistoryBtn, elSessionSummary, elHistoryList, elHistoryActions, elClearHistoryBtn, elCenterBtn, elThemeBtn,
-        elFinishSessionBtn, elBackToStartBtn, elRetryBtn, elGpsErrOverlay, elGpsErrMsg, elRetryGpsBtn,
-        elStartStatus, elStartDebug, elStartVersion, elMapFallbackMsg, elStartGpsHint, elMap,
-        elHeadingBtn, elCompassIndicator, elCompassNeedle
-      ];
-
-      if (requiredElements.some(function (element) { return !element; })) {
-        console.error('Pakollisia DOM-elementtejä puuttuu. Sovellusta ei käynnistetä.');
+      var dom;
+      try {
+        dom = getDomRefs(document);
+      } catch (error) {
+        console.error(error && error.message ? error.message : 'Pakollisia DOM-elementtejä puuttuu. Sovellusta ei käynnistetä.');
         return;
       }
 
-      if (document.querySelectorAll('#start-btn').length !== 1) {
-        console.error('Aloita-painikkeen ID ei ole yksilöllinen.');
-        return;
-      }
+      var elSpeedBlock = dom.elSpeedBlock;
+      var elSpeedValue = dom.elSpeedValue;
+      var elTimeDisplay = dom.elTimeDisplay;
+      var elWeatherRow = dom.elWeatherRow;
+      var elTemperatureRow = dom.elTemperatureRow;
+      var elWindRow = dom.elWindRow;
+      var elTimePanel = dom.elTimePanel;
+      var elWeatherPanel = dom.elWeatherPanel;
+      var elTemperaturePanel = dom.elTemperaturePanel;
+      var elWindPanel = dom.elWindPanel;
+      var elGpsStatus = dom.elGpsStatus;
+      var elGpsAccuracy = dom.elGpsAccuracy;
+      var elNetworkRow = dom.elNetworkRow;
+      var elSessionStatsPanel = dom.elSessionStatsPanel;
+      var elStatDistance = dom.elStatDistance;
+      var elStatDuration = dom.elStatDuration;
+      var elStatAverage = dom.elStatAverage;
+      var elStatMax = dom.elStatMax;
+      var elSessionStatsToggleBtn = dom.elSessionStatsToggleBtn;
+      var elGpsPanel = dom.elGpsPanel;
+      var elNetworkPanel = dom.elNetworkPanel;
+      var elStatusStack = dom.elStatusStack;
+      var elStatusTab = dom.elStatusTab;
+      var elTopPanel = dom.elTopPanel;
+      var elTopTab = dom.elTopTab;
+      var elStartOverlay = dom.elStartOverlay;
+      var elStartBtn = dom.elStartBtn;
+      var elResumeSessionBtn = dom.elResumeSessionBtn;
+      var elHistoryBtn = dom.elHistoryBtn;
+      var elSessionSummary = dom.elSessionSummary;
+      var elHistoryList = dom.elHistoryList;
+      var elHistoryActions = dom.elHistoryActions;
+      var elClearHistoryBtn = dom.elClearHistoryBtn;
+      var elCenterBtn = dom.elCenterBtn;
+      var elThemeBtn = dom.elThemeBtn;
+      var elFinishSessionBtn = dom.elFinishSessionBtn;
+      var elBackToStartBtn = dom.elBackToStartBtn;
+      var elRetryBtn = dom.elRetryBtn;
+      var elGpsErrOverlay = dom.elGpsErrOverlay;
+      var elGpsErrMsg = dom.elGpsErrMsg;
+      var elRetryGpsBtn = dom.elRetryGpsBtn;
+      var elStartStatus = dom.elStartStatus;
+      var elStartDebug = dom.elStartDebug;
+      var elStartVersion = dom.elStartVersion;
+      var elMapFallbackMsg = dom.elMapFallbackMsg;
+      var elStartGpsHint = dom.elStartGpsHint;
+      var elMapStatus = dom.elMapStatus;
+      var elSpeedDebug = dom.elSpeedDebug;
+      var elMap = dom.elMap;
+      var elHeadingBtn = dom.elHeadingBtn;
+      var elCompassIndicator = dom.elCompassIndicator;
+      var elCompassNeedle = dom.elCompassNeedle;
 
       var map = null;
       var mapPane = null;
@@ -159,8 +150,6 @@ import {
       var currentHeadingDeg = 0;
       var lastReliableHeadingAt = 0;
 
-      var movingSampleCount = 0;
-      var stopSampleCount = 0;
       var movementConfirmed = false;
       var uiControlsHidden = false;
 
@@ -169,6 +158,26 @@ import {
 
       var themeNames = THEME_NAMES;
       var themeClasses = THEME_CLASSES;
+
+      var movementTracker = createMovementTracker({
+        movingSpeedThresholdKmh: MOVING_SPEED_THRESHOLD_KMH,
+        stopSpeedThresholdKmh: STOP_SPEED_THRESHOLD_KMH,
+        movingAccuracyMaxM: MOVING_ACCURACY_MAX_M,
+        minMovingConfirmationSamples: MIN_MOVING_CONFIRMATION_SAMPLES,
+        minStopConfirmationSamples: MIN_STOP_CONFIRMATION_SAMPLES
+      });
+
+      var routeRecorder = createRouteRecorder({
+        haversine: haversine,
+        resumeAnchorGapMs: RESUME_ANCHOR_GAP_MS,
+        resumeAnchorDistanceM: RESUME_ANCHOR_DISTANCE_M,
+        stopGapBreakMs: STOP_GAP_BREAK_MS,
+        stopGapBreakDistanceM: STOP_GAP_BREAK_DISTANCE_M,
+        minAcceptedPointDistanceM: MIN_ACCEPTED_POINT_DISTANCE_M,
+        maxPointJumpDistanceM: MAX_POINT_JUMP_DISTANCE_M,
+        maxPointJumpSpeedKmh: MAX_POINT_JUMP_SPEED_KMH,
+        movingSpeedThresholdKmh: MOVING_SPEED_THRESHOLD_KMH
+      });
 
       var dotIcon = typeof L !== 'undefined' ? L.divIcon({
         className: '',
@@ -309,70 +318,14 @@ import {
           });
       }
 
-      function supportsIndexedDb() {
-        return typeof window.indexedDB !== 'undefined';
-      }
-
-      function createIdbPromise(request) {
-        return new Promise(function (resolve, reject) {
-          request.onsuccess = function () { resolve(request.result); };
-          request.onerror = function () { reject(request.error || new Error('IndexedDB-pyyntö epäonnistui.')); };
-        });
-      }
-
-      var openDbPromise = null;
-
-      function openSessionDatabase() {
-        if (!supportsIndexedDb()) {
-          return Promise.resolve(null);
-        }
-
-        if (openDbPromise) {
-          return openDbPromise;
-        }
-
-        openDbPromise = new Promise(function (resolve, reject) {
-          var request;
-          try {
-            request = window.indexedDB.open(dbName, dbVersion);
-          } catch (error) {
-            reject(error);
-            return;
-          }
-
-          request.onupgradeneeded = function () {
-            var db = request.result;
-            if (!db.objectStoreNames.contains(sessionsStoreName)) {
-              db.createObjectStore(sessionsStoreName, { keyPath: 'id' });
-            }
-            if (!db.objectStoreNames.contains(settingsStoreName)) {
-              db.createObjectStore(settingsStoreName, { keyPath: 'key' });
-            }
-          };
-
-          request.onsuccess = function () {
-            var db = request.result;
-            db.onversionchange = function () {
-              db.close();
-            };
-            resolve(db);
-          };
-
-          request.onblocked = function () {
-            console.warn('IndexedDB on varattu toisessa välilehdessä.');
-          };
-
-          request.onerror = function () {
-            reject(request.error || new Error('IndexedDB:n avaus epäonnistui.'));
-          };
-        }).catch(function (error) {
-          openDbPromise = null;
-          console.warn('IndexedDB ei ole käytettävissä, käytetään localStoragea.', error);
-          return null;
-        });
-
-        return openDbPromise;
-      }
+      var sessionStore = createSessionStore({
+        sessionStorageKey: sessionStorageKey,
+        settingsStorageKey: settingsStorageKey,
+        dbName: dbName,
+        dbVersion: dbVersion,
+        sessionsStoreName: sessionsStoreName,
+        settingsStoreName: settingsStoreName
+      });
 
       function sortSessionHistory() {
         sessionHistory.sort(function (a, b) {
@@ -383,181 +336,35 @@ import {
       }
 
       function loadSessionHistoryFromLocalStorage() {
-        try {
-          var saved = localStorage.getItem(sessionStorageKey);
-          if (!saved) {
-            sessionHistory = [];
-            return;
-          }
-          sessionHistory = JSON.parse(saved);
-          if (!Array.isArray(sessionHistory)) {
-            sessionHistory = [];
-          }
-        } catch (error) {
-          sessionHistory = [];
-          console.warn('Sessiohistorian lataus localStoragesta epäonnistui.', error);
-        }
+        sessionHistory = sessionStore.loadSessionHistoryFromLocalStorage();
       }
 
       function saveSessionHistoryToLocalStorage() {
-        try {
-          localStorage.setItem(sessionStorageKey, JSON.stringify(sessionHistory));
-        } catch (error) {
-          console.warn('Sessiohistorian tallennus localStorageen epäonnistui.', error);
-        }
+        sessionStore.saveSessionHistoryToLocalStorage(sessionHistory);
       }
 
       function loadSessionsFromIndexedDb() {
-        return openSessionDatabase().then(function (db) {
-          if (!db) {
-            return null;
-          }
-
-          return new Promise(function (resolve) {
-            try {
-              var tx = db.transaction(sessionsStoreName, 'readonly');
-              var request = tx.objectStore(sessionsStoreName).getAll();
-              request.onsuccess = function () {
-                resolve(Array.isArray(request.result) ? request.result : []);
-              };
-              request.onerror = function () {
-                console.warn('Sessiohistorian lataus IndexedDB:stä epäonnistui.', request.error);
-                resolve(null);
-              };
-            } catch (error) {
-              console.warn('Sessiohistorian lataus IndexedDB:stä epäonnistui.', error);
-              resolve(null);
-            }
-          });
-        });
+        return sessionStore.loadSessionsFromIndexedDb();
       }
 
       function saveSessionsToIndexedDb() {
-        return openSessionDatabase().then(function (db) {
-          if (!db) {
-            return;
-          }
-
-          return new Promise(function (resolve) {
-            try {
-              var tx = db.transaction(sessionsStoreName, 'readwrite');
-              var store = tx.objectStore(sessionsStoreName);
-              var keysRequest = store.getAllKeys();
-
-              keysRequest.onsuccess = function () {
-                var keepMap = Object.create(null);
-                sessionHistory.forEach(function (item) {
-                  if (!item || !item.id) {
-                    return;
-                  }
-                  keepMap[item.id] = true;
-                  store.put(item);
-                });
-
-                (keysRequest.result || []).forEach(function (id) {
-                  if (!keepMap[id]) {
-                    store.delete(id);
-                  }
-                });
-              };
-
-              keysRequest.onerror = function () {
-                console.warn('Sessiohistorian avainhaku IndexedDB:stä epäonnistui.', keysRequest.error);
-              };
-
-              tx.oncomplete = function () { resolve(); };
-              tx.onabort = function () {
-                console.warn('Sessiohistorian tallennus IndexedDB:hen keskeytyi.', tx.error);
-                resolve();
-              };
-              tx.onerror = function () {
-                console.warn('Sessiohistorian tallennus IndexedDB:hen epäonnistui.', tx.error);
-                resolve();
-              };
-            } catch (error) {
-              console.warn('Sessiohistorian tallennus IndexedDB:hen epäonnistui.', error);
-              resolve();
-            }
-          });
-        });
-      }
-
-      function readSettingsFromLocalStorage() {
-        try {
-          var raw = localStorage.getItem(settingsStorageKey);
-          if (!raw) {
-            return {};
-          }
-          var parsed = JSON.parse(raw);
-          return parsed && typeof parsed === 'object' ? parsed : {};
-        } catch (error) {
-          return {};
-        }
+        return sessionStore.saveSessionsToIndexedDb(sessionHistory);
       }
 
       function readSettingFromLocalStorage(key) {
-        return readSettingsFromLocalStorage()[key];
+        return sessionStore.readSettingFromLocalStorage(key);
       }
 
       function writeSettingToLocalStorage(key, value) {
-        try {
-          var settings = readSettingsFromLocalStorage();
-          settings[key] = value;
-          localStorage.setItem(settingsStorageKey, JSON.stringify(settings));
-        } catch (error) {
-          console.warn('Asetuksen tallennus localStorageen epäonnistui.', error);
-        }
+        sessionStore.writeSettingToLocalStorage(key, value);
       }
 
       function loadSettingFromIndexedDb(key) {
-        return openSessionDatabase().then(function (db) {
-          if (!db) {
-            return null;
-          }
-          return new Promise(function (resolve) {
-            try {
-              var tx = db.transaction(settingsStoreName, 'readonly');
-              var request = tx.objectStore(settingsStoreName).get(key);
-              request.onsuccess = function () {
-                resolve(request.result ? request.result.value : null);
-              };
-              request.onerror = function () {
-                console.warn('Asetuksen lataus IndexedDB:stä epäonnistui.', request.error);
-                resolve(null);
-              };
-            } catch (error) {
-              console.warn('Asetuksen lataus IndexedDB:stä epäonnistui.', error);
-              resolve(null);
-            }
-          });
-        });
+        return sessionStore.loadSettingFromIndexedDb(key);
       }
 
       function saveSettingToIndexedDb(key, value) {
-        return openSessionDatabase().then(function (db) {
-          if (!db) {
-            return;
-          }
-
-          return new Promise(function (resolve) {
-            try {
-              var tx = db.transaction(settingsStoreName, 'readwrite');
-              tx.objectStore(settingsStoreName).put({ key: key, value: value, updatedAt: Date.now() });
-              tx.oncomplete = function () { resolve(); };
-              tx.onabort = function () {
-                console.warn('Asetuksen tallennus IndexedDB:hen keskeytyi.', tx.error);
-                resolve();
-              };
-              tx.onerror = function () {
-                console.warn('Asetuksen tallennus IndexedDB:hen epäonnistui.', tx.error);
-                resolve();
-              };
-            } catch (error) {
-              console.warn('Asetuksen tallennus IndexedDB:hen epäonnistui.', error);
-              resolve();
-            }
-          });
-        });
+        return sessionStore.saveSettingToIndexedDb(key, value);
       }
 
       function applyTheme(themeName) {
@@ -759,41 +566,13 @@ import {
       }
 
       function resetMovementState() {
-        movingSampleCount = 0;
-        stopSampleCount = 0;
+        movementTracker.reset();
         movementConfirmed = false;
         lastReliableHeadingAt = 0;
       }
 
       function updateMovementState(validatedSpeedKmh, accuracy) {
-        var movingCandidate = validatedSpeedKmh !== null
-          && validatedSpeedKmh >= MOVING_SPEED_THRESHOLD_KMH
-          && accuracy <= MOVING_ACCURACY_MAX_M;
-        var stopCandidate = validatedSpeedKmh === null
-          || validatedSpeedKmh <= STOP_SPEED_THRESHOLD_KMH
-          || accuracy > MOVING_ACCURACY_MAX_M;
-
-        if (movingCandidate) {
-          movingSampleCount += 1;
-          stopSampleCount = 0;
-          if (!movementConfirmed && movingSampleCount >= MIN_MOVING_CONFIRMATION_SAMPLES) {
-            movementConfirmed = true;
-            if (activeSession && activeSession.lastAcceptedPoint) {
-              activeSession.stopAnchorPending = true;
-            }
-          }
-          return;
-        }
-
-        movingSampleCount = 0;
-        if (stopCandidate) {
-          stopSampleCount += 1;
-          if (movementConfirmed && stopSampleCount >= MIN_STOP_CONFIRMATION_SAMPLES) {
-            movementConfirmed = false;
-          }
-        } else {
-          stopSampleCount = 0;
-        }
+        movementConfirmed = movementTracker.update(validatedSpeedKmh, accuracy, activeSession);
       }
 
       function setSessionSummary(message) {
@@ -840,18 +619,7 @@ import {
       }
 
       function getSessionLastLatLng(session) {
-        if (!session || !Array.isArray(session.routePoints)) {
-          return null;
-        }
-
-        for (var i = session.routePoints.length - 1; i >= 0; i -= 1) {
-          var point = session.routePoints[i];
-          if (point && typeof point.latitude === 'number' && typeof point.longitude === 'number') {
-            return [point.latitude, point.longitude];
-          }
-        }
-
-        return null;
+        return routeRecorder.getSessionLastLatLng(session);
       }
 
       function loadSessionHistory() {
@@ -996,58 +764,12 @@ import {
       }
 
       function updateRouteLayer() {
-        if (!map || typeof L === 'undefined') {
-          return;
-        }
-
-        if (!activeSession || !activeSession.routePoints || activeSession.routePoints.length < 2) {
-          if (routeLayer && map.hasLayer(routeLayer)) {
-            map.removeLayer(routeLayer);
-            routeLayer = null;
-          }
-          return;
-        }
-
-        var segments = [];
-        var currentSegment = [];
-        activeSession.routePoints.forEach(function (point) {
-          if (point && point.break) {
-            if (currentSegment.length > 1) {
-              segments.push(currentSegment);
-            }
-            currentSegment = [];
-            return;
-          }
-
-          if (point && typeof point.latitude === 'number' && typeof point.longitude === 'number') {
-            currentSegment.push([point.latitude, point.longitude]);
-          }
+        routeLayer = routeRecorder.updateRouteLayer({
+          map: map,
+          leaflet: typeof L !== 'undefined' ? L : undefined,
+          activeSession: activeSession,
+          routeLayer: routeLayer
         });
-
-        if (currentSegment.length > 1) {
-          segments.push(currentSegment);
-        }
-
-        if (!segments.length) {
-          if (routeLayer && map.hasLayer(routeLayer)) {
-            map.removeLayer(routeLayer);
-            routeLayer = null;
-          }
-          return;
-        }
-
-        var latLngs = segments.length === 1 ? segments[0] : segments;
-
-        if (!routeLayer) {
-          routeLayer = L.polyline(latLngs, {
-            color: '#ffcc00',
-            weight: 5,
-            opacity: 0.9
-          }).addTo(map);
-          return;
-        }
-
-        routeLayer.setLatLngs(latLngs);
       }
 
       function persistActiveSession(force) {
@@ -1092,79 +814,22 @@ import {
       }
 
       function addAcceptedPoint(lat, lon, accuracy, speedKmh, heading) {
-        if (!activeSession || !sessionActive) {
-          return;
-        }
-
-        var point = {
-          latitude: lat,
-          longitude: lon,
-          timestamp: Date.now(),
+        var result = routeRecorder.addAcceptedPoint({
+          lat: lat,
+          lon: lon,
           accuracy: accuracy,
-          speedKmh: speedKmh || 0,
-          heading: heading || 0
-        };
+          speedKmh: speedKmh,
+          heading: heading,
+          now: Date.now(),
+          activeSession: activeSession,
+          sessionActive: sessionActive,
+          map: map,
+          leaflet: typeof L !== 'undefined' ? L : undefined,
+          routeLayer: routeLayer,
+          persistActiveSession: persistActiveSession
+        });
 
-        var lastPoint = activeSession.lastAcceptedPoint;
-        if (!lastPoint) {
-          activeSession.routePoints.push(point);
-          activeSession.lastAcceptedPoint = point;
-          activeSession.resumeAnchorPending = false;
-          updateRouteLayer();
-          persistActiveSession(false);
-          return;
-        }
-
-        if (activeSession.resumeAnchorPending) {
-          var gapMs = point.timestamp - (lastPoint.timestamp || point.timestamp);
-          var gapDistance = haversine(lastPoint.latitude, lastPoint.longitude, lat, lon);
-
-          if (gapMs >= RESUME_ANCHOR_GAP_MS || gapDistance >= RESUME_ANCHOR_DISTANCE_M) {
-            activeSession.routePoints.push({ break: true, timestamp: point.timestamp });
-            activeSession.routePoints.push(point);
-            activeSession.lastAcceptedPoint = point;
-            activeSession.resumeAnchorPending = false;
-            updateRouteLayer();
-            persistActiveSession(false);
-            return;
-          }
-
-          activeSession.resumeAnchorPending = false;
-        }
-
-        if (activeSession.stopAnchorPending) {
-          var stopGapMs = point.timestamp - (lastPoint.timestamp || point.timestamp);
-          var stopGapDistance = haversine(lastPoint.latitude, lastPoint.longitude, lat, lon);
-          if (stopGapMs >= STOP_GAP_BREAK_MS || stopGapDistance >= STOP_GAP_BREAK_DISTANCE_M) {
-            activeSession.routePoints.push({ break: true, timestamp: point.timestamp });
-          }
-          activeSession.stopAnchorPending = false;
-        }
-
-        var distance = haversine(lastPoint.latitude, lastPoint.longitude, lat, lon);
-        if (distance < MIN_ACCEPTED_POINT_DISTANCE_M || distance > MAX_POINT_JUMP_DISTANCE_M) {
-          return;
-        }
-
-        var dtSeconds = (point.timestamp - (lastPoint.timestamp || point.timestamp)) / 1000;
-        if (dtSeconds > 0) {
-          var jumpSpeedKmh = (distance / dtSeconds) * 3.6;
-          if (!isFinite(jumpSpeedKmh) || jumpSpeedKmh > MAX_POINT_JUMP_SPEED_KMH) {
-            return;
-          }
-        }
-
-        if (speedKmh < MOVING_SPEED_THRESHOLD_KMH) {
-          return;
-        }
-
-        activeSession.distanceMeters += distance;
-        activeSession.routePoints.push(point);
-        activeSession.lastAcceptedPoint = point;
-        activeSession.maxSpeedKmh = Math.max(activeSession.maxSpeedKmh, speedKmh || 0);
-
-        updateRouteLayer();
-        persistActiveSession(false);
+        routeLayer = result.routeLayer;
       }
 
       function startNewSession() {
@@ -1254,10 +919,6 @@ import {
         if (!visible) {
           renderHistory();
         }
-      }
-
-      function wmoToFinnish(code) {
-        return WMO_CODES[code] || 'Sää ei saatavilla';
       }
 
       function initMap() {
@@ -1369,47 +1030,6 @@ import {
         }
 
         map.invalidateSize();
-      }
-
-      function fetchWeather(lat, lon) {
-        if (!navigator.onLine) {
-          elWeatherRow.textContent = 'Sää ei saatavilla';
-          elTemperatureRow.textContent = '— °C';
-          elWindRow.textContent = '—';
-          return;
-        }
-
-        lastWeatherFetch = Date.now();
-        var url = 'https://api.open-meteo.com/v1/forecast'
-          + '?latitude=' + lat.toFixed(4)
-          + '&longitude=' + lon.toFixed(4)
-          + '&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m'
-          + '&temperature_unit=celsius'
-          + '&wind_speed_unit=kmh'
-          + '&timezone=auto';
-
-        fetch(url)
-          .then(function (response) { return response.json(); })
-          .then(function (data) {
-            if (data && data.current) {
-              var cur = data.current;
-              var temp = Math.round(cur.temperature_2m);
-              var wind = Math.round(cur.wind_speed_10m);
-              var desc = wmoToFinnish(cur.weather_code);
-              elWeatherRow.textContent = desc;
-              elTemperatureRow.textContent = temp + ' °C';
-              elWindRow.textContent = wind + ' km/h';
-            } else {
-              elWeatherRow.textContent = 'Sää ei saatavilla';
-              elTemperatureRow.textContent = '— °C';
-              elWindRow.textContent = '—';
-            }
-          })
-          .catch(function () {
-            elWeatherRow.textContent = 'Sää ei saatavilla';
-            elTemperatureRow.textContent = '— °C';
-            elWindRow.textContent = '—';
-          });
       }
 
       function requestWakeLockSafely() {
@@ -1538,7 +1158,6 @@ import {
         var lat = coords.latitude;
         var lon = coords.longitude;
         var accuracy = coords.accuracy;
-        var speedKmh = null;
         var validatedSpeedKmh = null;
         var fallbackKmh = null;
         var rawGpsKmh = null;
@@ -1547,36 +1166,21 @@ import {
         elGpsAccuracy.textContent = 'Tarkkuus: ' + Math.round(accuracy) + ' m';
         updateGpsQuality(accuracy);
 
-        if (typeof coords.speed === 'number' && isFinite(coords.speed) && coords.speed >= 0) {
-          rawGpsKmh = coords.speed * 3.6;
-          if (rawGpsKmh <= MAX_VALID_SPEED_KMH) {
-            speedKmh = rawGpsKmh;
-          }
-        }
+        var speedSample = evaluateSpeedSample({
+          coords: coords,
+          prevCoords: prevCoords,
+          now: now,
+          maxValidSpeedKmh: MAX_VALID_SPEED_KMH,
+          maxFallbackSpeedKmh: MAX_FALLBACK_SPEED_KMH,
+          haversine: haversine
+        });
 
-        if (accuracy <= 50 && prevCoords) {
-          dt = (now - prevCoords.t) / 1000;
-          if (dt >= 1) {
-            var dist = haversine(prevCoords.lat, prevCoords.lon, lat, lon);
-            var calcKmh = (dist / dt) * 3.6;
-            if (isFinite(calcKmh) && calcKmh <= MAX_FALLBACK_SPEED_KMH) {
-              fallbackKmh = calcKmh;
-              if (speedKmh === null) {
-                speedKmh = fallbackKmh;
-              }
-            }
-          }
-        }
+        validatedSpeedKmh = speedSample.validatedSpeedKmh;
+        rawGpsKmh = speedSample.rawGpsKmh;
+        fallbackKmh = speedSample.fallbackKmh;
+        dt = speedSample.dtSeconds;
 
-        if (speedKmh !== null && isFinite(speedKmh) && speedKmh <= MAX_VALID_SPEED_KMH) {
-          validatedSpeedKmh = speedKmh;
-        }
-
-        if (validatedSpeedKmh !== null) {
-          smoothedSpeed = 0.4 * validatedSpeedKmh + 0.6 * smoothedSpeed;
-        } else {
-          smoothedSpeed = smoothedSpeed * 0.85;
-        }
+        smoothedSpeed = smoothSpeed(smoothedSpeed, validatedSpeedKmh);
 
         if (sessionActive && activeSession) {
           updateMovementState(validatedSpeedKmh, accuracy);
@@ -1616,7 +1220,15 @@ import {
         updateMapPosition(lat, lon, accuracy);
 
         if (lastWeatherFetch === 0 || (now - lastWeatherFetch) >= 15 * 60 * 1000) {
-          fetchWeather(lat, lon);
+          lastWeatherFetch = Date.now();
+          fetchAndRenderWeather(lat, lon, {
+            isOnline: navigator.onLine,
+            weatherRowEl: elWeatherRow,
+            temperatureRowEl: elTemperatureRow,
+            windRowEl: elWindRow,
+            wmoCodes: WMO_CODES,
+            fetchImpl: fetch
+          });
         }
 
         if (!hasReceivedFirstPosition) {

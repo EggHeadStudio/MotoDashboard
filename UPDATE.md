@@ -112,19 +112,19 @@ Reason: `index.html` lataa nyt `./js/app.js` moduulina, ja `app.js` käyttää s
 
 - [ ] `app.js`: application bootstrap and high-level orchestration only.
 - [x] `config.js`: thresholds, intervals, theme names and constants.
-- [ ] `dom.js`: centralized DOM references with null validation.
+- [x] `dom.js`: centralized DOM references with null validation.
 - [ ] `gps.js`: geolocation permission, watcher lifecycle and raw position events.
-- [ ] `speed.js`: speed validation, fallback calculation and smoothing.
+- [x] `speed.js`: speed validation, fallback calculation and smoothing.
 - [ ] `map.js`: Leaflet initialization, markers, route layers and base map state.
 - [ ] `map-rotation.js`: heading calculation, rotation state and rotation fallback behavior.
-- [ ] `weather.js`: current Open-Meteo request and display mapping only.
-- [ ] `session-store.js`: IndexedDB access and schema upgrades.
+- [x] `weather.js`: current Open-Meteo request and display mapping only.
+- [x] `session-store.js`: IndexedDB access and schema upgrades.
 - [ ] `session-manager.js`: new, resume, finish and history workflows.
-- [ ] `route-recorder.js`: accepted GPS points, duplicate suppression and polyline updates.
+- [x] `route-recorder.js`: accepted GPS points, duplicate suppression and polyline updates.
 - [ ] `gestures.js`: swipe recognition without breaking map pan/zoom.
 - [ ] `ui.js`: visible state changes, dialogs, summaries and messages.
 - [x] `utils.js`: pure reusable helpers such as Haversine distance, time formatting and clamping.
-Reason: Vain ensimmäinen turvallinen pilkkomisaskel tehty; muu vastuujako (gps/map/session/ui jne.) jatkuu seuraavissa vaiheissa.
+Reason: DOM-, sää-, tallennus-, nopeus- ja reittitallennusvastuut on erotettu moduuleihin. Jäljellä ovat vielä gps/map/session-manager/ui/gestures -jaot.
 
 ## 2.4 Refactor verification
 

@@ -27,6 +27,11 @@ Nykyinen toteutus on tarkoituksella yksinkertainen ja staattinen:
 - css/dashboard.css
 - js/app.js
 - js/config.js
+- js/dom.js
+- js/route-recorder.js
+- js/session-store.js
+- js/speed.js
+- js/weather.js
 - js/utils.js
 - manifest.webmanifest
 - README.md
@@ -36,6 +41,11 @@ Nykyinen toteutus on tarkoituksella yksinkertainen ja staattinen:
 `css/dashboard.css` sisältää tyylit.
 `js/app.js` sisältää sovelluksen käynnistyksen ja orkestroinnin.
 `js/config.js` sisältää vakioita ja raja-arvoja.
+`js/dom.js` sisältää DOM-viittaukset ja validoinnin.
+`js/route-recorder.js` sisältää reittipisteiden hyväksynnän ja polyline-päivityksen.
+`js/session-store.js` sisältää IndexedDB/localStorage-käsittelyn.
+`js/speed.js` sisältää nopeuden validoinnin, fallback-laskennan ja suodatuksen.
+`js/weather.js` sisältää Open-Meteo-haun ja säärivien päivityksen.
 `js/utils.js` sisältää puhtaat apufunktiot.
 
 ## GitHub Pages -käyttöönotto
