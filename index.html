@@ -165,6 +165,13 @@
       text-align: center;
       width: min(100%, 280px);
       padding: 14px 18px 12px;
+      cursor: pointer;
+      pointer-events: auto;
+      touch-action: manipulation;
+    }
+
+    #speed-block:active {
+      background: rgba(255,255,255,0.16);
     }
 
     #speed-value {
@@ -320,6 +327,15 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
+    }
+
+    body.controls-hidden #controls-row {
+      display: none !important;
+    }
+
+    body.controls-hidden #status-tab,
+    body.controls-hidden #top-tab {
+      display: none !important;
     }
 
     /* Control buttons in HUD */
@@ -767,7 +783,7 @@
     </div>
     <button id="top-tab" class="hud-btn" aria-label="Näytä kello- ja säätiedot" aria-expanded="true">Kello / Sää</button>
 
-    <div id="speed-block" class="panel" aria-label="GPS-nopeus">
+    <div id="speed-block" class="panel" role="button" tabindex="0" aria-label="GPS-nopeus, napauta piilottaaksesi tai näyttääksesi painikkeet">
       <div id="speed-value" aria-live="polite" aria-atomic="true">0</div>
       <div id="speed-unit">km/h</div>
     </div>
@@ -855,6 +871,7 @@
       }
 
       var APP_VERSION = '1.2';
+      var elSpeedBlock = document.getElementById('speed-block');
       var elSpeedValue = document.getElementById('speed-value');
       var elTimeDisplay = document.getElementById('time-display');
       var elWeatherRow = document.getElementById('weather-row');
@@ -908,7 +925,7 @@
       var elCompassNeedle = document.getElementById('compass-needle');
 
       var requiredElements = [
-        elSpeedValue, elTimeDisplay, elWeatherRow, elTemperatureRow, elWindRow,
+        elSpeedBlock, elSpeedValue, elTimeDisplay, elWeatherRow, elTemperatureRow, elWindRow,
         elTimePanel, elWeatherPanel, elTemperaturePanel, elWindPanel, elGpsStatus,
         elSessionStatsPanel, elStatDistance, elStatDuration, elStatAverage, elStatMax, elSessionStatsToggleBtn,
         elGpsAccuracy, elNetworkRow, elGpsPanel, elNetworkPanel,
@@ -983,15 +1000,7 @@
       var movingSampleCount = 0;
       var stopSampleCount = 0;
       var movementConfirmed = false;
-
-      var swipeStartX = 0;
-      var swipeStartY = 0;
-      var swipeStartTime = 0;
-      var swipeGestureLocked = false;
-      var swipeHandled = false;
-      var SWIPE_MIN_DISTANCE_PX = 52;
-      var SWIPE_DIRECTION_RATIO = 1.35;
-      var SWIPE_MAX_DURATION_MS = 650;
+      var uiControlsHidden = false;
 
       var themeToastTimer = null;
       var mapStatusTimer = null;
@@ -1100,6 +1109,11 @@
 
       function expandTopDock() {
         setTopCollapsed(false);
+      }
+
+      function setUiControlsHidden(hidden) {
+        uiControlsHidden = !!hidden;
+        document.body.classList.toggle('controls-hidden', uiControlsHidden);
       }
 
       function setSpeedDisplay(kmh) {
@@ -1624,14 +1638,6 @@
         }
 
         applyMapRotationVisual(-currentHeadingDeg);
-      }
-
-      function isInteractiveTarget(target) {
-        if (!target || typeof target.closest !== 'function') {
-          return false;
-        }
-
-        return !!target.closest('button, a, input, select, textarea, dialog, #hud, #gps-error, #start-overlay, .leaflet-control-container');
       }
 
       function resetMovementState() {
@@ -2731,63 +2737,16 @@
         applyHeadingModeSettings(nextMode, true);
       });
 
-      elMap.addEventListener('touchstart', function (event) {
-        if (!event.touches || event.touches.length !== 1) {
-          swipeGestureLocked = true;
-          return;
+      elSpeedBlock.addEventListener('click', function () {
+        setUiControlsHidden(!uiControlsHidden);
+      });
+
+      elSpeedBlock.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          setUiControlsHidden(!uiControlsHidden);
         }
-
-        if (isInteractiveTarget(event.target)) {
-          swipeGestureLocked = true;
-          return;
-        }
-
-        var touch = event.touches[0];
-        swipeStartX = touch.clientX;
-        swipeStartY = touch.clientY;
-        swipeStartTime = Date.now();
-        swipeGestureLocked = false;
-        swipeHandled = false;
-      }, { passive: true });
-
-      elMap.addEventListener('touchmove', function (event) {
-        if (swipeGestureLocked || swipeHandled || !event.touches || event.touches.length !== 1) {
-          return;
-        }
-
-        var touch = event.touches[0];
-        var dx = touch.clientX - swipeStartX;
-        var dy = touch.clientY - swipeStartY;
-        if (Math.abs(dy) > Math.abs(dx) / SWIPE_DIRECTION_RATIO) {
-          swipeGestureLocked = true;
-        }
-      }, { passive: true });
-
-      elMap.addEventListener('touchend', function (event) {
-        if (swipeGestureLocked || swipeHandled || !event.changedTouches || event.changedTouches.length !== 1) {
-          return;
-        }
-
-        var touch = event.changedTouches[0];
-        var dx = touch.clientX - swipeStartX;
-        var dy = touch.clientY - swipeStartY;
-        var duration = Date.now() - swipeStartTime;
-
-        if (duration > SWIPE_MAX_DURATION_MS) {
-          return;
-        }
-
-        if (Math.abs(dx) < SWIPE_MIN_DISTANCE_PX) {
-          return;
-        }
-
-        if (Math.abs(dx) <= Math.abs(dy) * SWIPE_DIRECTION_RATIO) {
-          return;
-        }
-
-        swipeHandled = true;
-        cycleTheme(dx < 0 ? 1 : -1);
-      }, { passive: true });
+      });
 
       elRetryGpsBtn.addEventListener('click', retryGps);
       elRetryBtn.addEventListener('click', retryGps);
