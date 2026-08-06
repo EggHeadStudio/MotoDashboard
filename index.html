@@ -242,6 +242,42 @@
       gap: 8px;
     }
 
+    #session-stats-panel {
+      display: none;
+      padding: 8px 10px;
+      gap: 6px;
+    }
+
+    #session-stats-toggle-btn {
+      display: none;
+      min-width: 104px;
+    }
+
+    #session-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 4px 10px;
+    }
+
+    .session-stat-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.9);
+    }
+
+    .session-stat-name {
+      color: rgba(255,255,255,0.7);
+      font-size: 11px;
+    }
+
+    .session-stat-value {
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
     .status-panel {
       padding: 10px 12px;
       display: flex;
@@ -298,6 +334,10 @@
       display: none;
     }
 
+    #back-to-start-btn {
+      display: none;
+    }
+
     .start-actions {
       display: flex;
       flex-wrap: wrap;
@@ -346,6 +386,29 @@
       background: rgba(255,255,255,0.06);
       border: 1px solid rgba(255,255,255,0.1);
       text-align: left;
+    }
+
+    #history-actions {
+      width: min(100%, 520px);
+      display: none;
+      justify-content: flex-end;
+      margin-top: -6px;
+    }
+
+    #history-storage-note {
+      width: min(100%, 520px);
+      color: rgba(255,255,255,0.68);
+      font-size: 11px;
+      line-height: 1.35;
+      text-align: left;
+    }
+
+    #clear-history-btn {
+      font-size: 12px;
+      padding: 6px 10px;
+      background: rgba(255, 102, 102, 0.2);
+      border-color: rgba(255, 102, 102, 0.45);
+      color: #ffdada;
     }
 
     .session-item {
@@ -663,6 +726,15 @@
     <div></div>
 
     <div id="bottom-panel">
+      <div id="session-stats-panel" class="panel" aria-live="polite" aria-atomic="true">
+        <div class="panel-label">Sessio</div>
+        <div id="session-stats-grid">
+          <div class="session-stat-item"><span class="session-stat-name">Matka</span><span id="stat-distance" class="session-stat-value">0.0 km</span></div>
+          <div class="session-stat-item"><span class="session-stat-name">Aika</span><span id="stat-duration" class="session-stat-value">00:00:00</span></div>
+          <div class="session-stat-item"><span class="session-stat-name">KA</span><span id="stat-average" class="session-stat-value">0.0 km/h</span></div>
+          <div class="session-stat-item"><span class="session-stat-name">MAX</span><span id="stat-max" class="session-stat-value">0.0 km/h</span></div>
+        </div>
+      </div>
       <div id="status-stack">
         <div id="gps-panel" class="panel status-panel is-collapsible" role="button" tabindex="0" aria-label="Piilota GPS- ja verkkotiedot">
           <div class="panel-label">GPS</div>
@@ -680,7 +752,9 @@
     <div id="controls-row">
       <button class="hud-btn" id="center-btn" aria-label="Keskitä kartta sijaintiin">Keskitä</button>
       <button class="hud-btn" id="theme-btn" aria-label="Vaihda karttateemaa">Teema</button>
+      <button class="hud-btn" id="session-stats-toggle-btn" aria-label="Näytä tai piilota session tiedot">Sessio: piilota</button>
       <button class="hud-btn" id="finish-session-btn" aria-label="Lopeta nykyinen sessio">Lopeta sessio</button>
+      <button class="hud-btn" id="back-to-start-btn" aria-label="Palaa aloitusnäkymään">Palaa aloitukseen</button>
       <button class="hud-btn" id="retry-btn" aria-label="Yritä GPS-yhteyttä uudelleen">Yritä uudelleen</button>
       <div id="safety-msg" aria-hidden="true">Käytä ajoneuvon omaa mittaristoa ensisijaisena nopeusmittarina.</div>
     </div>
@@ -698,6 +772,10 @@
     </div>
     <div id="session-summary" aria-live="polite">Ei tallennettuja ajoja vielä.</div>
     <div id="history-list" aria-live="polite"></div>
+    <div id="history-actions">
+      <button id="clear-history-btn" class="start-option-btn secondary" aria-label="Poista kaikki tallennetut ajot">Poista kaikki ajot</button>
+    </div>
+    <div id="history-storage-note">Tallennetut ajot säilyvät vain tässä selaimessa ja tällä laitteella. Tiedot voivat kadota, jos selaimen sivustodata poistetaan.</div>
     <div id="start-status" aria-live="assertive" aria-atomic="true">Valmis</div>
     <div id="start-debug" aria-live="polite" aria-atomic="true">Debug: Valmis</div>
     <div id="map-fallback-msg" aria-live="polite"></div>
@@ -739,6 +817,12 @@
       var elGpsStatus = document.getElementById('gps-status-row');
       var elGpsAccuracy = document.getElementById('gps-accuracy-row');
       var elNetworkRow = document.getElementById('network-row');
+      var elSessionStatsPanel = document.getElementById('session-stats-panel');
+      var elStatDistance = document.getElementById('stat-distance');
+      var elStatDuration = document.getElementById('stat-duration');
+      var elStatAverage = document.getElementById('stat-average');
+      var elStatMax = document.getElementById('stat-max');
+      var elSessionStatsToggleBtn = document.getElementById('session-stats-toggle-btn');
       var elGpsPanel = document.getElementById('gps-panel');
       var elNetworkPanel = document.getElementById('network-panel');
       var elStatusStack = document.getElementById('status-stack');
@@ -751,9 +835,12 @@
       var elHistoryBtn = document.getElementById('history-btn');
       var elSessionSummary = document.getElementById('session-summary');
       var elHistoryList = document.getElementById('history-list');
+      var elHistoryActions = document.getElementById('history-actions');
+      var elClearHistoryBtn = document.getElementById('clear-history-btn');
       var elCenterBtn = document.getElementById('center-btn');
       var elThemeBtn = document.getElementById('theme-btn');
       var elFinishSessionBtn = document.getElementById('finish-session-btn');
+      var elBackToStartBtn = document.getElementById('back-to-start-btn');
       var elRetryBtn = document.getElementById('retry-btn');
       var elGpsErrOverlay = document.getElementById('gps-error-overlay');
       var elGpsErrMsg = document.getElementById('gps-error-msg');
@@ -769,10 +856,11 @@
       var requiredElements = [
         elSpeedValue, elTimeDisplay, elWeatherRow, elTemperatureRow, elWindRow,
         elTimePanel, elWeatherPanel, elTemperaturePanel, elWindPanel, elGpsStatus,
+        elSessionStatsPanel, elStatDistance, elStatDuration, elStatAverage, elStatMax, elSessionStatsToggleBtn,
         elGpsAccuracy, elNetworkRow, elGpsPanel, elNetworkPanel,
         elStatusStack, elStatusTab, elTopPanel, elTopTab, elStartOverlay, elStartBtn, elResumeSessionBtn,
-        elHistoryBtn, elSessionSummary, elHistoryList, elCenterBtn, elThemeBtn,
-        elFinishSessionBtn, elRetryBtn, elGpsErrOverlay, elGpsErrMsg, elRetryGpsBtn,
+        elHistoryBtn, elSessionSummary, elHistoryList, elHistoryActions, elClearHistoryBtn, elCenterBtn, elThemeBtn,
+        elFinishSessionBtn, elBackToStartBtn, elRetryBtn, elGpsErrOverlay, elGpsErrMsg, elRetryGpsBtn,
         elStartStatus, elStartDebug, elStartVersion, elMapFallbackMsg, elStartGpsHint
       ];
 
@@ -802,9 +890,16 @@
       var mapUnavailable = false;
       var currentTheme = 'normal';
       var sessionStorageKey = 'moto-dashboard-sessions-v1';
+      var settingsStorageKey = 'moto-dashboard-settings-v1';
+      var dbName = 'moto-dashboard-db';
+      var dbVersion = 1;
+      var sessionsStoreName = 'sessions';
+      var settingsStoreName = 'settings';
       var sessionHistory = [];
       var activeSession = null;
       var sessionActive = false;
+      var sessionHistoryViewActive = false;
+      var sessionStatsCollapsed = false;
       var sessionSaveTimer = null;
       var RESUME_ANCHOR_GAP_MS = 10 * 60 * 1000;
       var RESUME_ANCHOR_DISTANCE_M = 1200;
@@ -949,6 +1044,257 @@
           });
       }
 
+      function supportsIndexedDb() {
+        return typeof window.indexedDB !== 'undefined';
+      }
+
+      function createIdbPromise(request) {
+        return new Promise(function (resolve, reject) {
+          request.onsuccess = function () { resolve(request.result); };
+          request.onerror = function () { reject(request.error || new Error('IndexedDB-pyyntö epäonnistui.')); };
+        });
+      }
+
+      var openDbPromise = null;
+
+      function openSessionDatabase() {
+        if (!supportsIndexedDb()) {
+          return Promise.resolve(null);
+        }
+
+        if (openDbPromise) {
+          return openDbPromise;
+        }
+
+        openDbPromise = new Promise(function (resolve, reject) {
+          var request;
+          try {
+            request = window.indexedDB.open(dbName, dbVersion);
+          } catch (error) {
+            reject(error);
+            return;
+          }
+
+          request.onupgradeneeded = function () {
+            var db = request.result;
+            if (!db.objectStoreNames.contains(sessionsStoreName)) {
+              db.createObjectStore(sessionsStoreName, { keyPath: 'id' });
+            }
+            if (!db.objectStoreNames.contains(settingsStoreName)) {
+              db.createObjectStore(settingsStoreName, { keyPath: 'key' });
+            }
+          };
+
+          request.onsuccess = function () {
+            var db = request.result;
+            db.onversionchange = function () {
+              db.close();
+            };
+            resolve(db);
+          };
+
+          request.onblocked = function () {
+            console.warn('IndexedDB on varattu toisessa välilehdessä.');
+          };
+
+          request.onerror = function () {
+            reject(request.error || new Error('IndexedDB:n avaus epäonnistui.'));
+          };
+        }).catch(function (error) {
+          openDbPromise = null;
+          console.warn('IndexedDB ei ole käytettävissä, käytetään localStoragea.', error);
+          return null;
+        });
+
+        return openDbPromise;
+      }
+
+      function sortSessionHistory() {
+        sessionHistory.sort(function (a, b) {
+          var aTime = (a && (a.updatedAt || a.startedAt)) || 0;
+          var bTime = (b && (b.updatedAt || b.startedAt)) || 0;
+          return bTime - aTime;
+        });
+      }
+
+      function loadSessionHistoryFromLocalStorage() {
+        try {
+          var saved = localStorage.getItem(sessionStorageKey);
+          if (!saved) {
+            sessionHistory = [];
+            return;
+          }
+          sessionHistory = JSON.parse(saved);
+          if (!Array.isArray(sessionHistory)) {
+            sessionHistory = [];
+          }
+        } catch (error) {
+          sessionHistory = [];
+          console.warn('Sessiohistorian lataus localStoragesta epäonnistui.', error);
+        }
+      }
+
+      function saveSessionHistoryToLocalStorage() {
+        try {
+          localStorage.setItem(sessionStorageKey, JSON.stringify(sessionHistory));
+        } catch (error) {
+          console.warn('Sessiohistorian tallennus localStorageen epäonnistui.', error);
+        }
+      }
+
+      function loadSessionsFromIndexedDb() {
+        return openSessionDatabase().then(function (db) {
+          if (!db) {
+            return null;
+          }
+
+          return new Promise(function (resolve) {
+            try {
+              var tx = db.transaction(sessionsStoreName, 'readonly');
+              var request = tx.objectStore(sessionsStoreName).getAll();
+              request.onsuccess = function () {
+                resolve(Array.isArray(request.result) ? request.result : []);
+              };
+              request.onerror = function () {
+                console.warn('Sessiohistorian lataus IndexedDB:stä epäonnistui.', request.error);
+                resolve(null);
+              };
+            } catch (error) {
+              console.warn('Sessiohistorian lataus IndexedDB:stä epäonnistui.', error);
+              resolve(null);
+            }
+          });
+        });
+      }
+
+      function saveSessionsToIndexedDb() {
+        return openSessionDatabase().then(function (db) {
+          if (!db) {
+            return;
+          }
+
+          return new Promise(function (resolve) {
+            try {
+              var tx = db.transaction(sessionsStoreName, 'readwrite');
+              var store = tx.objectStore(sessionsStoreName);
+              var keysRequest = store.getAllKeys();
+
+              keysRequest.onsuccess = function () {
+                var keepMap = Object.create(null);
+                sessionHistory.forEach(function (item) {
+                  if (!item || !item.id) {
+                    return;
+                  }
+                  keepMap[item.id] = true;
+                  store.put(item);
+                });
+
+                (keysRequest.result || []).forEach(function (id) {
+                  if (!keepMap[id]) {
+                    store.delete(id);
+                  }
+                });
+              };
+
+              keysRequest.onerror = function () {
+                console.warn('Sessiohistorian avainhaku IndexedDB:stä epäonnistui.', keysRequest.error);
+              };
+
+              tx.oncomplete = function () { resolve(); };
+              tx.onabort = function () {
+                console.warn('Sessiohistorian tallennus IndexedDB:hen keskeytyi.', tx.error);
+                resolve();
+              };
+              tx.onerror = function () {
+                console.warn('Sessiohistorian tallennus IndexedDB:hen epäonnistui.', tx.error);
+                resolve();
+              };
+            } catch (error) {
+              console.warn('Sessiohistorian tallennus IndexedDB:hen epäonnistui.', error);
+              resolve();
+            }
+          });
+        });
+      }
+
+      function readSettingsFromLocalStorage() {
+        try {
+          var raw = localStorage.getItem(settingsStorageKey);
+          if (!raw) {
+            return {};
+          }
+          var parsed = JSON.parse(raw);
+          return parsed && typeof parsed === 'object' ? parsed : {};
+        } catch (error) {
+          return {};
+        }
+      }
+
+      function readSettingFromLocalStorage(key) {
+        return readSettingsFromLocalStorage()[key];
+      }
+
+      function writeSettingToLocalStorage(key, value) {
+        try {
+          var settings = readSettingsFromLocalStorage();
+          settings[key] = value;
+          localStorage.setItem(settingsStorageKey, JSON.stringify(settings));
+        } catch (error) {
+          console.warn('Asetuksen tallennus localStorageen epäonnistui.', error);
+        }
+      }
+
+      function loadSettingFromIndexedDb(key) {
+        return openSessionDatabase().then(function (db) {
+          if (!db) {
+            return null;
+          }
+          return new Promise(function (resolve) {
+            try {
+              var tx = db.transaction(settingsStoreName, 'readonly');
+              var request = tx.objectStore(settingsStoreName).get(key);
+              request.onsuccess = function () {
+                resolve(request.result ? request.result.value : null);
+              };
+              request.onerror = function () {
+                console.warn('Asetuksen lataus IndexedDB:stä epäonnistui.', request.error);
+                resolve(null);
+              };
+            } catch (error) {
+              console.warn('Asetuksen lataus IndexedDB:stä epäonnistui.', error);
+              resolve(null);
+            }
+          });
+        });
+      }
+
+      function saveSettingToIndexedDb(key, value) {
+        return openSessionDatabase().then(function (db) {
+          if (!db) {
+            return;
+          }
+
+          return new Promise(function (resolve) {
+            try {
+              var tx = db.transaction(settingsStoreName, 'readwrite');
+              tx.objectStore(settingsStoreName).put({ key: key, value: value, updatedAt: Date.now() });
+              tx.oncomplete = function () { resolve(); };
+              tx.onabort = function () {
+                console.warn('Asetuksen tallennus IndexedDB:hen keskeytyi.', tx.error);
+                resolve();
+              };
+              tx.onerror = function () {
+                console.warn('Asetuksen tallennus IndexedDB:hen epäonnistui.', tx.error);
+                resolve();
+              };
+            } catch (error) {
+              console.warn('Asetuksen tallennus IndexedDB:hen epäonnistui.', error);
+              resolve();
+            }
+          });
+        });
+      }
+
       function applyTheme(themeName) {
         var normalizedTheme = themeName || currentTheme;
         document.body.classList.remove.apply(document.body.classList, themeClasses);
@@ -957,24 +1303,25 @@
         if (elThemeBtn) {
           elThemeBtn.textContent = 'Teema: ' + themeNames[themeClasses.indexOf('theme-' + normalizedTheme)];
         }
-        try {
-          localStorage.setItem('moto-dashboard-theme', normalizedTheme);
-        } catch (error) {
-          console.warn('Teemaa ei voitu tallentaa.', error);
-        }
+        writeSettingToLocalStorage('mapTheme', normalizedTheme);
+        saveSettingToIndexedDb('mapTheme', normalizedTheme);
       }
 
       function applyStoredTheme() {
-        var storedTheme = null;
-        try {
-          storedTheme = localStorage.getItem('moto-dashboard-theme');
-        } catch (error) {
-          storedTheme = null;
-        }
-        if (storedTheme && themeClasses.indexOf('theme-' + storedTheme) >= 0) {
-          currentTheme = storedTheme;
+        var localTheme = readSettingFromLocalStorage('mapTheme');
+        if (localTheme && themeClasses.indexOf('theme-' + localTheme) >= 0) {
+          currentTheme = localTheme;
         }
         applyTheme(currentTheme);
+
+        loadSettingFromIndexedDb('mapTheme').then(function (idbTheme) {
+          if (!idbTheme || themeClasses.indexOf('theme-' + idbTheme) < 0) {
+            return;
+          }
+          if (idbTheme !== currentTheme) {
+            applyTheme(idbTheme);
+          }
+        });
       }
 
       function cycleTheme(direction) {
@@ -990,6 +1337,10 @@
 
       function setSessionSummary(message) {
         elSessionSummary.textContent = message;
+      }
+
+      function updateHistoryActionsVisibility() {
+        elHistoryActions.style.display = sessionHistory.length ? 'flex' : 'none';
       }
 
       function formatDuration(ms) {
@@ -1008,49 +1359,176 @@
         return date.toLocaleString('fi-FI', { dateStyle: 'short', timeStyle: 'short' });
       }
 
+      function formatSpeedKmh(kmh) {
+        var value = Number(kmh);
+        if (!isFinite(value) || value < 0) {
+          value = 0;
+        }
+        return (Math.round(value * 10) / 10).toFixed(1);
+      }
+
+      function formatDistanceKm(distanceMeters) {
+        var meters = Number(distanceMeters);
+        if (!isFinite(meters) || meters < 0) {
+          meters = 0;
+        }
+        return (Math.round((meters / 1000) * 10) / 10).toFixed(1);
+      }
+
+      function setSessionStatsVisible(visible) {
+        if (!visible) {
+          elSessionStatsPanel.style.display = 'none';
+          elSessionStatsToggleBtn.style.display = 'none';
+          return;
+        }
+
+        elSessionStatsToggleBtn.style.display = 'inline-flex';
+        elSessionStatsPanel.style.display = sessionStatsCollapsed ? 'none' : 'grid';
+      }
+
+      function setSessionStatsCollapsed(collapsed) {
+        sessionStatsCollapsed = !!collapsed;
+        elSessionStatsPanel.style.display = sessionStatsCollapsed ? 'none' : 'grid';
+        elSessionStatsToggleBtn.textContent = sessionStatsCollapsed ? 'Sessio: näytä' : 'Sessio: piilota';
+        elSessionStatsToggleBtn.setAttribute('aria-pressed', String(!sessionStatsCollapsed));
+      }
+
+      function toggleSessionStatsCollapsed() {
+        setSessionStatsCollapsed(!sessionStatsCollapsed);
+      }
+
+      function updateSessionStatsPanel(session) {
+        if (!session || !sessionActive) {
+          setSessionStatsVisible(false);
+          return;
+        }
+
+        setSessionStatsVisible(true);
+        elStatDistance.textContent = formatDistanceKm(session.distanceMeters || 0) + ' km';
+        elStatDuration.textContent = formatDuration(session.movingDurationMs || 0);
+        elStatAverage.textContent = formatSpeedKmh(session.averageMovingSpeedKmh || 0) + ' km/h';
+        elStatMax.textContent = formatSpeedKmh(session.maxSpeedKmh || 0) + ' km/h';
+      }
+
+      function getSessionLastLatLng(session) {
+        if (!session || !Array.isArray(session.routePoints)) {
+          return null;
+        }
+
+        for (var i = session.routePoints.length - 1; i >= 0; i -= 1) {
+          var point = session.routePoints[i];
+          if (point && typeof point.latitude === 'number' && typeof point.longitude === 'number') {
+            return [point.latitude, point.longitude];
+          }
+        }
+
+        return null;
+      }
+
       function loadSessionHistory() {
-        try {
-          var saved = localStorage.getItem(sessionStorageKey);
-          if (!saved) {
-            sessionHistory = [];
+        loadSessionHistoryFromLocalStorage();
+        sortSessionHistory();
+
+        var localCount = sessionHistory.length;
+
+        loadSessionsFromIndexedDb().then(function (storedSessions) {
+          if (!Array.isArray(storedSessions)) {
             return;
           }
-          sessionHistory = JSON.parse(saved);
-          if (!Array.isArray(sessionHistory)) {
-            sessionHistory = [];
+
+          if (!storedSessions.length && localCount > 0) {
+            saveSessionsToIndexedDb();
+            return;
           }
-        } catch (error) {
-          sessionHistory = [];
-          console.warn('Sessiohistorian lataus epäonnistui.', error);
-        }
+
+          sessionHistory = storedSessions;
+          sortSessionHistory();
+          saveSessionHistoryToLocalStorage();
+          renderHistory();
+          updateStartSummary();
+        });
       }
 
       function saveSessionHistory() {
-        try {
-          localStorage.setItem(sessionStorageKey, JSON.stringify(sessionHistory));
-        } catch (error) {
-          console.warn('Sessiohistorian tallennus epäonnistui.', error);
-        }
+        sortSessionHistory();
+        saveSessionHistoryToLocalStorage();
+        saveSessionsToIndexedDb();
       }
 
       function renderHistory() {
         if (!sessionHistory.length) {
           elHistoryList.innerHTML = '<div>Ei tallennettuja ajoja vielä.</div>';
+          updateHistoryActionsVisibility();
           return;
         }
 
         elHistoryList.innerHTML = sessionHistory.map(function (session) {
           var km = Math.round((session.distanceMeters || 0) / 100) / 10;
           var state = session.status === 'active' ? 'Kesken' : 'Valmis';
+          var avg = formatSpeedKmh(session.averageMovingSpeedKmh);
+          var max = formatSpeedKmh(session.maxSpeedKmh);
           var resumeBtn = session.status === 'active'
             ? '<button data-action="resume" data-id="' + session.id + '">Jatka</button>'
             : '';
+          var openBtn = session.status === 'completed'
+            ? '<button data-action="open" data-id="' + session.id + '">Avaa</button>'
+            : '';
           return '<div class="session-item">'
             + '<div><strong>' + formatDate(session.startedAt) + '</strong><br><small>'
-            + km + ' km · ' + formatDuration(session.movingDurationMs || 0) + ' · ' + state + '</small></div>'
-            + '<div>' + resumeBtn + '<button class="delete" data-action="delete" data-id="' + session.id + '">Poista</button></div>'
+            + km + ' km · ' + formatDuration(session.movingDurationMs || 0) + ' · ka ' + avg + ' km/h · max ' + max + ' km/h · ' + state + '</small></div>'
+            + '<div>' + openBtn + resumeBtn + '<button class="delete" data-action="delete" data-id="' + session.id + '">Poista</button></div>'
             + '</div>';
         }).join('');
+
+        updateHistoryActionsVisibility();
+      }
+
+      function openCompletedSessionView(session) {
+        if (!session || session.status !== 'completed') {
+          return;
+        }
+
+        sessionHistoryViewActive = true;
+        sessionActive = false;
+        setSessionStatsVisible(false);
+        activeSession = JSON.parse(JSON.stringify(session));
+        elFinishSessionBtn.style.display = 'none';
+        elBackToStartBtn.style.display = 'inline-flex';
+        elStartOverlay.style.display = 'none';
+        elHistoryList.style.display = 'none';
+        elHistoryActions.style.display = 'none';
+        followUser = false;
+
+        updateRouteLayer();
+
+        var lastLatLng = getSessionLastLatLng(activeSession);
+        if (map && lastLatLng) {
+          map.setView(lastLatLng, map.getZoom() < 14 ? 14 : map.getZoom());
+        }
+
+        setStartStatus('Ajon katselu');
+        setSessionSummary('Katselu: ' + formatDate(session.startedAt)
+          + ' · ' + (Math.round((session.distanceMeters || 0) / 100) / 10) + ' km'
+          + ' · ' + formatDuration(session.movingDurationMs || 0)
+          + ' · ka ' + formatSpeedKmh(session.averageMovingSpeedKmh) + ' km/h'
+          + ' · max ' + formatSpeedKmh(session.maxSpeedKmh) + ' km/h');
+      }
+
+      function returnToStartView() {
+        sessionHistoryViewActive = false;
+        if (!sessionActive) {
+          activeSession = null;
+        }
+        setSessionStatsVisible(false);
+        if (routeLayer && map && map.hasLayer(routeLayer)) {
+          map.removeLayer(routeLayer);
+          routeLayer = null;
+        }
+        elBackToStartBtn.style.display = 'none';
+        elStartOverlay.style.display = 'flex';
+        renderHistory();
+        updateStartSummary();
+        setStartStatus('Valmis');
       }
 
       function updateStartSummary() {
@@ -1059,12 +1537,14 @@
 
         if (!sessionHistory.length) {
           setSessionSummary('Ei tallennettuja ajoja vielä.');
+          updateHistoryActionsVisibility();
           return;
         }
 
         var latestCompleted = sessionHistory.find(function (item) { return item.status === 'completed'; }) || sessionHistory[0];
-        var km = Math.round((latestCompleted.distanceMeters || 0) / 100) / 10;
+        var km = formatDistanceKm(latestCompleted.distanceMeters || 0);
         setSessionSummary('Viimeisin ajo: ' + formatDate(latestCompleted.startedAt) + ' · ' + km + ' km · ' + formatDuration(latestCompleted.movingDurationMs || 0));
+        updateHistoryActionsVisibility();
       }
 
       function createSession() {
@@ -1150,19 +1630,34 @@
           ? Math.round((activeSession.distanceMeters / 1000) / (activeSession.movingDurationMs / 3600000) * 10) / 10
           : 0;
 
-        if (force || !sessionSaveTimer) {
+        updateSessionStatsPanel(activeSession);
+
+        var commit = function () {
+          var existing = sessionHistory.find(function (item) { return item.id === activeSession.id; });
+          if (existing) {
+            Object.assign(existing, activeSession);
+          } else {
+            sessionHistory.unshift(activeSession);
+          }
+          saveSessionHistory();
+          renderHistory();
+          updateStartSummary();
+        };
+
+        if (force) {
+          if (sessionSaveTimer) {
+            window.clearTimeout(sessionSaveTimer);
+            sessionSaveTimer = null;
+          }
+          commit();
+          return;
+        }
+
+        if (!sessionSaveTimer) {
           sessionSaveTimer = window.setTimeout(function () {
             sessionSaveTimer = null;
-            var existing = sessionHistory.find(function (item) { return item.id === activeSession.id; });
-            if (existing) {
-              Object.assign(existing, activeSession);
-            } else {
-              sessionHistory.unshift(activeSession);
-            }
-            saveSessionHistory();
-            renderHistory();
-            updateStartSummary();
-          }, force ? 0 : 600);
+            commit();
+          }, 600);
         }
       }
 
@@ -1222,13 +1717,17 @@
       }
 
       function startNewSession() {
+        sessionHistoryViewActive = false;
+        setSessionStatsCollapsed(false);
         activeSession = createSession();
         sessionActive = true;
+        updateSessionStatsPanel(activeSession);
         if (routeLayer && map && map.hasLayer(routeLayer)) {
           map.removeLayer(routeLayer);
           routeLayer = null;
         }
         elFinishSessionBtn.style.display = 'inline-flex';
+        elBackToStartBtn.style.display = 'none';
         elHistoryList.style.display = 'none';
         setSessionSummary('Uusi sessio käynnissä. Reitti tallennetaan tähän laitteeseen.');
         persistActiveSession(true);
@@ -1242,9 +1741,13 @@
         }
 
         activeSession = JSON.parse(JSON.stringify(latest));
+        sessionHistoryViewActive = false;
+        setSessionStatsCollapsed(false);
         activeSession.resumeAnchorPending = true;
         sessionActive = true;
+        updateSessionStatsPanel(activeSession);
         elFinishSessionBtn.style.display = 'inline-flex';
+        elBackToStartBtn.style.display = 'none';
         elHistoryList.style.display = 'none';
         elStartOverlay.style.display = 'none';
         updateRouteLayer();
@@ -1281,7 +1784,10 @@
         persistActiveSession(true);
 
         sessionActive = false;
+        sessionHistoryViewActive = false;
+        setSessionStatsVisible(false);
         elFinishSessionBtn.style.display = 'none';
+        elBackToStartBtn.style.display = 'none';
         elStartOverlay.style.display = 'flex';
         setStartStatus('Sessio valmis');
         setSessionSummary('Sessio tallennettu paikallisesti.');
@@ -1750,9 +2256,40 @@
 
       elRetryGpsBtn.addEventListener('click', retryGps);
       elRetryBtn.addEventListener('click', retryGps);
+      elSessionStatsToggleBtn.addEventListener('click', toggleSessionStatsCollapsed);
       elStartBtn.addEventListener('click', startButtonHandler);
       elResumeSessionBtn.addEventListener('click', resumePreviousSession);
       elHistoryBtn.addEventListener('click', toggleHistoryList);
+      elClearHistoryBtn.addEventListener('click', function () {
+        if (!sessionHistory.length) {
+          setSessionSummary('Ei poistettavia ajoja.');
+          return;
+        }
+
+        if (!window.confirm('Poistetaanko kaikki tallennetut ajot tältä laitteelta?')) {
+          return;
+        }
+
+        if (!window.confirm('Vahvistus: poistetaanko varmasti kaikki ajot? Tätä ei voi perua.')) {
+          return;
+        }
+
+        sessionHistory = [];
+        if (!sessionActive) {
+          activeSession = null;
+          setSessionStatsVisible(false);
+          if (routeLayer && map && map.hasLayer(routeLayer)) {
+            map.removeLayer(routeLayer);
+            routeLayer = null;
+          }
+        }
+
+        saveSessionHistory();
+        renderHistory();
+        updateStartSummary();
+        setSessionSummary('Kaikki tallennetut ajot poistettu.');
+      });
+      elBackToStartBtn.addEventListener('click', returnToStartView);
       elFinishSessionBtn.addEventListener('click', finishSession);
       elStatusTab.addEventListener('click', expandStatusDock);
       elTopTab.addEventListener('click', expandTopDock);
@@ -1761,6 +2298,13 @@
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
           collapseStatusDock();
+        }
+      }
+
+      function statsPanelKeyToggle(event) {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          toggleSessionStatsCollapsed();
         }
       }
 
@@ -1800,6 +2344,7 @@
           sessionHistory = sessionHistory.filter(function (item) { return item.id !== id; });
           if (activeSession && activeSession.id === id && !sessionActive) {
             activeSession = null;
+            setSessionStatsVisible(false);
             if (routeLayer && map && map.hasLayer(routeLayer)) {
               map.removeLayer(routeLayer);
               routeLayer = null;
@@ -1809,6 +2354,17 @@
           renderHistory();
           updateStartSummary();
           setSessionSummary('Tallennettu ajo poistettu.');
+          return;
+        }
+
+        if (action === 'open') {
+          var completed = sessionHistory.find(function (item) { return item.id === id; });
+          if (!completed || completed.status !== 'completed') {
+            setSessionSummary('Valittua tallennettua sessiota ei löytynyt.');
+            return;
+          }
+
+          openCompletedSessionView(completed);
           return;
         }
 
@@ -1823,9 +2379,12 @@
         }
 
         activeSession = JSON.parse(JSON.stringify(selected));
+        sessionHistoryViewActive = false;
         activeSession.resumeAnchorPending = true;
         sessionActive = true;
+        updateSessionStatsPanel(activeSession);
         elFinishSessionBtn.style.display = 'inline-flex';
+        elBackToStartBtn.style.display = 'none';
         elStartOverlay.style.display = 'none';
         elHistoryList.style.display = 'none';
         updateRouteLayer();
@@ -1848,6 +2407,11 @@
       });
 
       document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'hidden') {
+          persistActiveSession(true);
+          return;
+        }
+
         if (document.visibilityState === 'visible' && watchId !== null) {
           requestWakeLockSafely();
         }

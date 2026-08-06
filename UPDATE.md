@@ -227,11 +227,11 @@ Resuming must:
 
 ## 5.1 IndexedDB
 
-- [ ] Store sessions in IndexedDB under the current website origin.
+- [x] Store sessions in IndexedDB under the current website origin.
 - [ ] Do not send session records or route history to any server.
-- [ ] Use a versioned database schema with safe upgrade handling.
-- [ ] Store settings separately from session records.
-- [ ] Handle IndexedDB unavailable or denied conditions gracefully.
+- [x] Use a versioned database schema with safe upgrade handling.
+- [x] Store settings separately from session records.
+- [x] Handle IndexedDB unavailable or denied conditions gracefully.
 
 ## 5.2 Session data model
 
@@ -267,20 +267,20 @@ Do not store altitude or weather snapshots.
 
 ## 5.3 Automatic persistence
 
-- [ ] Save session summary changes on a throttled interval.
-- [ ] Save route points in sensible batches rather than performing a heavy database write on every GPS callback.
-- [ ] Flush pending data when the document becomes hidden, when possible.
-- [ ] Flush data when the session is completed.
-- [ ] Never block visible GPS or speed updates while writing to storage.
+- [x] Save session summary changes on a throttled interval.
+- [x] Save route points in sensible batches rather than performing a heavy database write on every GPS callback.
+- [x] Flush pending data when the document becomes hidden, when possible.
+- [x] Flush data when the session is completed.
+- [x] Never block visible GPS or speed updates while writing to storage.
 
 ## 5.4 History
 
-- [ ] Show completed sessions sorted newest first.
-- [ ] Display date, moving time, distance, average moving speed and maximum speed.
-- [ ] Allow opening a session to view its route and summary.
-- [ ] Allow deleting one session with confirmation.
-- [ ] Allow deleting all sessions with a stronger confirmation.
-- [ ] Clearly state that data exists only on this browser/device and can disappear if browser site data is cleared.
+- [x] Show completed sessions sorted newest first.
+- [x] Display date, moving time, distance, average moving speed and maximum speed.
+- [x] Allow opening a session to view its route and summary.
+- [x] Allow deleting one session with confirmation.
+- [x] Allow deleting all sessions with a stronger confirmation.
+- [x] Clearly state that data exists only on this browser/device and can disappear if browser site data is cleared.
 
 ---
 
@@ -427,10 +427,10 @@ Do not add a separate weather page.
 
 Display compactly without cluttering the phone screen:
 
-- [ ] Distance.
-- [ ] Moving time.
-- [ ] Average moving speed.
-- [ ] Maximum speed.
+- [x] Distance.
+- [x] Moving time.
+- [x] Average moving speed.
+- [x] Maximum speed.
 
 Use a compact expandable panel, secondary dashboard card or swipeable information panel, while keeping the map and speed as primary content.
 
