@@ -197,6 +197,7 @@
       top: 50%;
       transform: translateY(-50%);
       z-index: 20;
+      pointer-events: auto;
       min-height: 110px;
       padding: 10px 9px;
       border-radius: 12px;
@@ -213,6 +214,7 @@
       top: 50%;
       transform: translateY(-50%);
       z-index: 20;
+      pointer-events: auto;
       min-height: 110px;
       padding: 10px 9px;
       border-radius: 12px;
@@ -393,6 +395,7 @@
 
     /* Safety message */
     #safety-msg {
+      display: none;
       pointer-events: none;
       background: var(--panel-bg);
       border: 1px solid var(--panel-border);
@@ -409,6 +412,10 @@
     #retry-btn {
       display: none;
       pointer-events: auto;
+    }
+
+    #speed-debug {
+      display: none;
     }
 
     /* ── START OVERLAY ── */
