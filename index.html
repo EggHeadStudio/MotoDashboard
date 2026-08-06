@@ -17,7 +17,7 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --panel-bg: rgba(0, 0, 0, 0.72);
+      --panel-bg: rgba(0, 0, 0, 0.64);
       --panel-border: rgba(255,255,255,0.10);
       --accent: #ffcc00;
       --safe-top: env(safe-area-inset-top, 0px);
@@ -113,16 +113,26 @@
     }
 
     .compact-panel {
-      padding: 10px 12px;
-      min-height: 64px;
+      padding: 8px 10px;
+      min-height: 56px;
       display: flex;
       flex-direction: column;
       justify-content: center;
-      gap: 4px;
+      gap: 3px;
+    }
+
+    .compact-panel.is-collapsible-top {
+      cursor: pointer;
+      touch-action: manipulation;
+      user-select: none;
+    }
+
+    .compact-panel.is-collapsible-top:active {
+      background: rgba(255,255,255,0.16);
     }
 
     .panel-label {
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
@@ -130,7 +140,7 @@
     }
 
     #time-display {
-      font-size: clamp(28px, 6vw, 42px);
+      font-size: clamp(24px, 5.4vw, 36px);
       font-weight: 800;
       color: #fff;
       text-shadow: 0 1px 4px rgba(0,0,0,0.9);
@@ -178,9 +188,39 @@
 
     #weather-row { color: #87ceeb; }
     #wind-row { color: rgba(255,255,255,0.80); }
-    #gps-status-row { }
     #gps-accuracy-row { color: rgba(255,255,255,0.75); }
-    #network-row { }
+
+    #status-tab {
+      display: none;
+      position: fixed;
+      right: calc(var(--safe-right) + 6px);
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 20;
+      min-height: 110px;
+      padding: 10px 9px;
+      border-radius: 12px;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+    }
+
+    #top-tab {
+      display: none;
+      position: fixed;
+      left: calc(var(--safe-left) + 6px);
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 20;
+      min-height: 110px;
+      padding: 10px 9px;
+      border-radius: 12px;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      writing-mode: vertical-lr;
+      text-orientation: mixed;
+    }
 
     .status-good { color: #66ff88; }
     .status-moderate { color: var(--accent); }
@@ -207,6 +247,36 @@
       gap: 4px;
     }
 
+    .status-panel.is-collapsible {
+      cursor: pointer;
+      touch-action: manipulation;
+      user-select: none;
+    }
+
+    .status-panel.is-collapsible:active {
+      background: rgba(255,255,255,0.16);
+    }
+
+    body.status-collapsed #status-stack {
+      display: none;
+    }
+
+    body.status-collapsed #status-tab {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    body.top-collapsed #top-panel {
+      display: none;
+    }
+
+    body.top-collapsed #top-tab {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
     /* Control buttons in HUD */
     #controls-row {
       pointer-events: auto;
@@ -216,6 +286,94 @@
       justify-content: center;
       gap: 8px;
       flex-wrap: wrap;
+    }
+
+    #theme-btn {
+      min-width: 94px;
+    }
+
+    #finish-session-btn {
+      display: none;
+    }
+
+    .start-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      width: min(100%, 520px);
+    }
+
+    .start-option-btn {
+      border: 1px solid var(--panel-border);
+      background: var(--panel-bg);
+      color: #fff;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+
+    .start-option-btn.secondary {
+      background: rgba(0, 0, 0, 0.52);
+    }
+
+    .start-option-btn:active {
+      background: rgba(255,255,255,0.18);
+    }
+
+    #session-summary {
+      max-width: 520px;
+      min-height: 1.4em;
+      color: rgba(255,255,255,0.82);
+      font-size: 13px;
+    }
+
+    #history-list {
+      width: min(100%, 520px);
+      display: none;
+      max-height: 220px;
+      overflow: auto;
+      padding: 10px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      text-align: left;
+    }
+
+    .session-item {
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .session-item:last-child {
+      border-bottom: none;
+    }
+
+    .session-item button {
+      border: 1px solid var(--panel-border);
+      border-radius: 8px;
+      padding: 5px 10px;
+      background: var(--panel-bg);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .session-item button.delete {
+      background: rgba(255, 102, 102, 0.2);
+      border-color: rgba(255, 102, 102, 0.45);
+      color: #ffdada;
     }
 
     .hud-btn {
@@ -230,6 +388,7 @@
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
     }
+
     .hud-btn:active { background: rgba(255,255,255,0.2); }
 
     /* Safety message */
@@ -343,6 +502,14 @@
       min-height: 1.4em;
     }
 
+    #start-gps-hint {
+      max-width: 520px;
+      min-height: 1.4em;
+      font-size: 12px;
+      color: rgba(255,255,255,0.72);
+      line-height: 1.45;
+    }
+
     /* ── GPS ERROR OVERLAY ── */
     #gps-error-overlay {
       display: none;
@@ -387,6 +554,20 @@
     }
     .leaflet-control-attribution a { color: rgba(255,255,255,0.6) !important; }
     .leaflet-control-zoom { display: none; }
+
+    .leaflet-tile-pane {
+      transition: filter 220ms ease;
+    }
+    body.theme-normal .leaflet-tile-pane { filter: none; }
+    body.theme-monochrome .leaflet-tile-pane { filter: grayscale(1) contrast(1.2) brightness(0.88); }
+    body.theme-cruising .leaflet-tile-pane { filter: sepia(0.5) saturate(1.15) hue-rotate(-12deg) contrast(1.08) brightness(0.96); }
+    body.theme-water .leaflet-tile-pane { filter: hue-rotate(168deg) saturate(1.22) contrast(1.08) brightness(0.98); }
+    body.theme-forest .leaflet-tile-pane { filter: hue-rotate(72deg) saturate(1.16) contrast(1.08) brightness(0.95); }
+    body.theme-night .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) saturate(0.62) brightness(0.66) contrast(1.12); }
+
+    .leaflet-container {
+      background: #0d0d0d;
+    }
 
     /* Accuracy circle */
     .accuracy-circle {
@@ -448,23 +629,24 @@
   <!-- HUD (visible after start) -->
   <div id="hud" aria-hidden="false">
     <div id="top-panel">
-      <div class="panel compact-panel">
+      <div id="time-panel" class="panel compact-panel is-collapsible-top" role="button" tabindex="0" aria-label="Piilota kello- ja säätiedot">
         <div class="panel-label">Kello</div>
         <div id="time-display" aria-live="polite" aria-atomic="true">--.--</div>
       </div>
-      <div class="panel compact-panel">
+      <div id="weather-panel" class="panel compact-panel is-collapsible-top" role="button" tabindex="0" aria-label="Piilota kello- ja säätiedot">
         <div class="panel-label">Sää</div>
         <div id="weather-row" class="info-row" aria-live="polite">Sää ladataan…</div>
       </div>
-      <div class="panel compact-panel">
+      <div id="temperature-panel" class="panel compact-panel is-collapsible-top" role="button" tabindex="0" aria-label="Piilota kello- ja säätiedot">
         <div class="panel-label">Lämpötila</div>
         <div id="temperature-row" class="info-row">— °C</div>
       </div>
-      <div class="panel compact-panel">
+      <div id="wind-panel" class="panel compact-panel is-collapsible-top" role="button" tabindex="0" aria-label="Piilota kello- ja säätiedot">
         <div class="panel-label">Tuuli</div>
         <div id="wind-row" class="info-row">—</div>
       </div>
     </div>
+    <button id="top-tab" class="hud-btn" aria-label="Näytä kello- ja säätiedot" aria-expanded="true">Kello / Sää</button>
 
     <div id="speed-block" class="panel" aria-label="GPS-nopeus">
       <div id="speed-value" aria-live="polite" aria-atomic="true">0</div>
@@ -475,20 +657,23 @@
 
     <div id="bottom-panel">
       <div id="status-stack">
-        <div class="panel status-panel">
+        <div id="gps-panel" class="panel status-panel is-collapsible" role="button" tabindex="0" aria-label="Piilota GPS- ja verkkotiedot">
           <div class="panel-label">GPS</div>
           <div id="gps-status-row" class="info-row status-moderate" aria-live="polite" aria-atomic="true">Valmis aloittamaan</div>
           <div id="gps-accuracy-row" class="info-row">Tarkkuus: –</div>
         </div>
-        <div class="panel status-panel">
+        <div id="network-panel" class="panel status-panel is-collapsible" role="button" tabindex="0" aria-label="Piilota GPS- ja verkkotiedot">
           <div class="panel-label">Verkko</div>
           <div id="network-row" class="info-row" aria-live="polite"></div>
         </div>
       </div>
+      <button id="status-tab" class="hud-btn" aria-label="Näytä GPS- ja verkkotiedot" aria-expanded="true">GPS / Verkko</button>
     </div>
 
     <div id="controls-row">
       <button class="hud-btn" id="center-btn" aria-label="Keskitä kartta sijaintiin">Keskitä</button>
+      <button class="hud-btn" id="theme-btn" aria-label="Vaihda karttateemaa">Teema</button>
+      <button class="hud-btn" id="finish-session-btn" aria-label="Lopeta nykyinen sessio">Lopeta sessio</button>
       <button class="hud-btn" id="retry-btn" aria-label="Yritä GPS-yhteyttä uudelleen">Yritä uudelleen</button>
       <div id="safety-msg" aria-hidden="true">Käytä ajoneuvon omaa mittaristoa ensisijaisena nopeusmittarina.</div>
     </div>
@@ -499,10 +684,17 @@
   <div id="start-overlay" role="dialog" aria-modal="true" aria-label="Aloitusnäyttö">
     <h1>Moto Dashboard</h1>
     <p class="start-sub">Paina Aloita ja salli tarkka sijainti. Käynnistä sovellus ennen liikkeelle lähtöä.</p>
-    <button id="start-btn" aria-label="Aloita sovellus">Aloita</button>
+    <div class="start-actions">
+      <button id="start-btn" aria-label="Aloita sovellus">Uusi sessio</button>
+      <button id="resume-session-btn" class="start-option-btn secondary" aria-label="Jatka edellistä sessiota">Jatka edellistä</button>
+      <button id="history-btn" class="start-option-btn secondary" aria-label="Näytä tallennetut ajot">Tallennetut ajot</button>
+    </div>
+    <div id="session-summary" aria-live="polite">Ei tallennettuja ajoja vielä.</div>
+    <div id="history-list" aria-live="polite"></div>
     <div id="start-status" aria-live="assertive" aria-atomic="true">Valmis</div>
     <div id="start-debug" aria-live="polite" aria-atomic="true">Debug: Valmis</div>
     <div id="map-fallback-msg" aria-live="polite"></div>
+    <div id="start-gps-hint" aria-live="polite"></div>
     <div id="start-version">Versio 1.2</div>
     <p class="start-safety">Älä käytä kosketusnäyttöä ajon aikana.</p>
   </div>
@@ -533,12 +725,28 @@
       var elWeatherRow = document.getElementById('weather-row');
       var elTemperatureRow = document.getElementById('temperature-row');
       var elWindRow = document.getElementById('wind-row');
+      var elTimePanel = document.getElementById('time-panel');
+      var elWeatherPanel = document.getElementById('weather-panel');
+      var elTemperaturePanel = document.getElementById('temperature-panel');
+      var elWindPanel = document.getElementById('wind-panel');
       var elGpsStatus = document.getElementById('gps-status-row');
       var elGpsAccuracy = document.getElementById('gps-accuracy-row');
       var elNetworkRow = document.getElementById('network-row');
+      var elGpsPanel = document.getElementById('gps-panel');
+      var elNetworkPanel = document.getElementById('network-panel');
+      var elStatusStack = document.getElementById('status-stack');
+      var elStatusTab = document.getElementById('status-tab');
+      var elTopPanel = document.getElementById('top-panel');
+      var elTopTab = document.getElementById('top-tab');
       var elStartOverlay = document.getElementById('start-overlay');
       var elStartBtn = document.getElementById('start-btn');
+      var elResumeSessionBtn = document.getElementById('resume-session-btn');
+      var elHistoryBtn = document.getElementById('history-btn');
+      var elSessionSummary = document.getElementById('session-summary');
+      var elHistoryList = document.getElementById('history-list');
       var elCenterBtn = document.getElementById('center-btn');
+      var elThemeBtn = document.getElementById('theme-btn');
+      var elFinishSessionBtn = document.getElementById('finish-session-btn');
       var elRetryBtn = document.getElementById('retry-btn');
       var elGpsErrOverlay = document.getElementById('gps-error-overlay');
       var elGpsErrMsg = document.getElementById('gps-error-msg');
@@ -547,14 +755,18 @@
       var elStartDebug = document.getElementById('start-debug');
       var elStartVersion = document.getElementById('start-version');
       var elMapFallbackMsg = document.getElementById('map-fallback-msg');
+      var elStartGpsHint = document.getElementById('start-gps-hint');
       var elMapStatus = document.getElementById('map-status');
       var elSpeedDebug = document.getElementById('speed-debug');
 
       var requiredElements = [
         elSpeedValue, elTimeDisplay, elWeatherRow, elTemperatureRow, elWindRow,
-        elGpsStatus, elGpsAccuracy, elNetworkRow, elStartOverlay, elStartBtn,
-        elCenterBtn, elRetryBtn, elGpsErrOverlay, elGpsErrMsg, elRetryGpsBtn,
-        elStartStatus, elStartDebug, elStartVersion, elMapFallbackMsg
+        elTimePanel, elWeatherPanel, elTemperaturePanel, elWindPanel, elGpsStatus,
+        elGpsAccuracy, elNetworkRow, elGpsPanel, elNetworkPanel,
+        elStatusStack, elStatusTab, elTopPanel, elTopTab, elStartOverlay, elStartBtn, elResumeSessionBtn,
+        elHistoryBtn, elSessionSummary, elHistoryList, elCenterBtn, elThemeBtn,
+        elFinishSessionBtn, elRetryBtn, elGpsErrOverlay, elGpsErrMsg, elRetryGpsBtn,
+        elStartStatus, elStartDebug, elStartVersion, elMapFallbackMsg, elStartGpsHint
       ];
 
       if (requiredElements.some(function (element) { return !element; })) {
@@ -570,6 +782,7 @@
       var map = null;
       var posMarker = null;
       var accCircle = null;
+      var routeLayer = null;
       var watchId = null;
       var followUser = true;
       var wakeLock = null;
@@ -580,6 +793,17 @@
       var hasReceivedFirstPosition = false;
       var isStartingGps = false;
       var mapUnavailable = false;
+      var currentTheme = 'normal';
+      var sessionStorageKey = 'moto-dashboard-sessions-v1';
+      var sessionHistory = [];
+      var activeSession = null;
+      var sessionActive = false;
+      var sessionSaveTimer = null;
+      var RESUME_ANCHOR_GAP_MS = 10 * 60 * 1000;
+      var RESUME_ANCHOR_DISTANCE_M = 1200;
+
+      var themeNames = ['Normaali', 'Mustavalko', 'Cruising', 'Vesistö', 'Metsä', 'Yö'];
+      var themeClasses = ['theme-normal', 'theme-monochrome', 'theme-cruising', 'theme-water', 'theme-forest', 'theme-night'];
 
       var WMO_CODES = {
         0: 'Selkeää',
@@ -615,6 +839,10 @@
         elMapFallbackMsg.textContent = message || '';
       }
 
+      function setStartGpsHint(message) {
+        elStartGpsHint.textContent = message || '';
+      }
+
       function setGpsStatus(message, className) {
         elGpsStatus.textContent = message;
         elGpsStatus.className = 'info-row ' + (className || 'status-moderate');
@@ -623,6 +851,32 @@
       function resetStartButton(label) {
         elStartBtn.disabled = false;
         elStartBtn.textContent = label;
+      }
+
+      function setStatusCollapsed(collapsed) {
+        document.body.classList.toggle('status-collapsed', collapsed);
+        elStatusTab.setAttribute('aria-expanded', String(!collapsed));
+      }
+
+      function setTopCollapsed(collapsed) {
+        document.body.classList.toggle('top-collapsed', collapsed);
+        elTopTab.setAttribute('aria-expanded', String(!collapsed));
+      }
+
+      function collapseStatusDock() {
+        setStatusCollapsed(true);
+      }
+
+      function expandStatusDock() {
+        setStatusCollapsed(false);
+      }
+
+      function collapseTopDock() {
+        setTopCollapsed(true);
+      }
+
+      function expandTopDock() {
+        setTopCollapsed(false);
       }
 
       function setSpeedDisplay(kmh) {
@@ -650,6 +904,388 @@
         } else {
           elNetworkRow.textContent = 'Ei verkkoyhteyttä';
           elNetworkRow.className = 'info-row status-bad';
+        }
+      }
+
+      function updateGpsEnvironmentHint() {
+        if (!window.isSecureContext) {
+          setStartGpsHint('Tassa selaimessa GPS voi olla estetty. Kayta localhostia tai HTTPS-osoitetta puhelimessa.');
+          return;
+        }
+
+        if (!('geolocation' in navigator)) {
+          setStartGpsHint('Selain ei tue sijaintipalvelua.');
+          return;
+        }
+
+        if (!navigator.permissions || !navigator.permissions.query) {
+          setStartGpsHint('GPS-lupa kysytaan kun painat Uusi sessio.');
+          return;
+        }
+
+        navigator.permissions.query({ name: 'geolocation' })
+          .then(function (result) {
+            if (result.state === 'denied') {
+              setStartGpsHint('Sijaintilupa on estetty. Salli lupa selaimen asetuksista.');
+            } else if (result.state === 'prompt') {
+              setStartGpsHint('GPS-lupa kysytaan kun painat Uusi sessio.');
+            } else {
+              setStartGpsHint('GPS-lupa on sallittu. Voit aloittaa session.');
+            }
+
+            if (typeof result.onchange !== 'undefined') {
+              result.onchange = updateGpsEnvironmentHint;
+            }
+          })
+          .catch(function () {
+            setStartGpsHint('GPS-lupa kysytaan kun painat Uusi sessio.');
+          });
+      }
+
+      function applyTheme(themeName) {
+        var normalizedTheme = themeName || currentTheme;
+        document.body.classList.remove.apply(document.body.classList, themeClasses);
+        document.body.classList.add('theme-' + normalizedTheme);
+        currentTheme = normalizedTheme;
+        if (elThemeBtn) {
+          elThemeBtn.textContent = 'Teema: ' + themeNames[themeClasses.indexOf('theme-' + normalizedTheme)];
+        }
+        try {
+          localStorage.setItem('moto-dashboard-theme', normalizedTheme);
+        } catch (error) {
+          console.warn('Teemaa ei voitu tallentaa.', error);
+        }
+      }
+
+      function applyStoredTheme() {
+        var storedTheme = null;
+        try {
+          storedTheme = localStorage.getItem('moto-dashboard-theme');
+        } catch (error) {
+          storedTheme = null;
+        }
+        if (storedTheme && themeClasses.indexOf('theme-' + storedTheme) >= 0) {
+          currentTheme = storedTheme;
+        }
+        applyTheme(currentTheme);
+      }
+
+      function cycleTheme(direction) {
+        var currentIndex = themeClasses.indexOf('theme-' + currentTheme);
+        if (currentIndex < 0) {
+          currentIndex = 0;
+        }
+        var step = direction === -1 ? -1 : 1;
+        currentIndex = (currentIndex + step + themeClasses.length) % themeClasses.length;
+        var nextTheme = themeClasses[currentIndex].replace('theme-', '');
+        applyTheme(nextTheme);
+      }
+
+      function setSessionSummary(message) {
+        elSessionSummary.textContent = message;
+      }
+
+      function formatDuration(ms) {
+        var totalSeconds = Math.max(0, Math.floor(ms / 1000));
+        var hours = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+        var minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+        var seconds = String(totalSeconds % 60).padStart(2, '0');
+        return hours + ':' + minutes + ':' + seconds;
+      }
+
+      function formatDate(value) {
+        var date = new Date(value);
+        if (isNaN(date.getTime())) {
+          return '—';
+        }
+        return date.toLocaleString('fi-FI', { dateStyle: 'short', timeStyle: 'short' });
+      }
+
+      function loadSessionHistory() {
+        try {
+          var saved = localStorage.getItem(sessionStorageKey);
+          if (!saved) {
+            sessionHistory = [];
+            return;
+          }
+          sessionHistory = JSON.parse(saved);
+          if (!Array.isArray(sessionHistory)) {
+            sessionHistory = [];
+          }
+        } catch (error) {
+          sessionHistory = [];
+          console.warn('Sessiohistorian lataus epäonnistui.', error);
+        }
+      }
+
+      function saveSessionHistory() {
+        try {
+          localStorage.setItem(sessionStorageKey, JSON.stringify(sessionHistory));
+        } catch (error) {
+          console.warn('Sessiohistorian tallennus epäonnistui.', error);
+        }
+      }
+
+      function renderHistory() {
+        if (!sessionHistory.length) {
+          elHistoryList.innerHTML = '<div>Ei tallennettuja ajoja vielä.</div>';
+          return;
+        }
+
+        elHistoryList.innerHTML = sessionHistory.map(function (session) {
+          var km = Math.round((session.distanceMeters || 0) / 100) / 10;
+          var state = session.status === 'active' ? 'Kesken' : 'Valmis';
+          var resumeBtn = session.status === 'active'
+            ? '<button data-action="resume" data-id="' + session.id + '">Jatka</button>'
+            : '';
+          return '<div class="session-item">'
+            + '<div><strong>' + formatDate(session.startedAt) + '</strong><br><small>'
+            + km + ' km · ' + formatDuration(session.movingDurationMs || 0) + ' · ' + state + '</small></div>'
+            + '<div>' + resumeBtn + '<button class="delete" data-action="delete" data-id="' + session.id + '">Poista</button></div>'
+            + '</div>';
+        }).join('');
+      }
+
+      function updateStartSummary() {
+        var hasActive = sessionHistory.some(function (item) { return item.status === 'active'; });
+        elResumeSessionBtn.style.display = hasActive ? 'inline-flex' : 'none';
+
+        if (!sessionHistory.length) {
+          setSessionSummary('Ei tallennettuja ajoja vielä.');
+          return;
+        }
+
+        var latestCompleted = sessionHistory.find(function (item) { return item.status === 'completed'; }) || sessionHistory[0];
+        var km = Math.round((latestCompleted.distanceMeters || 0) / 100) / 10;
+        setSessionSummary('Viimeisin ajo: ' + formatDate(latestCompleted.startedAt) + ' · ' + km + ' km · ' + formatDuration(latestCompleted.movingDurationMs || 0));
+      }
+
+      function createSession() {
+        return {
+          id: 'ride-' + Date.now() + '-' + Math.floor(Math.random() * 10000),
+          status: 'active',
+          startedAt: Date.now(),
+          endedAt: null,
+          updatedAt: Date.now(),
+          distanceMeters: 0,
+          movingDurationMs: 0,
+          maxSpeedKmh: 0,
+          averageMovingSpeedKmh: 0,
+          routePoints: [],
+          lastAcceptedPoint: null,
+          resumeAnchorPending: false,
+          mapTheme: currentTheme
+        };
+      }
+
+      function updateRouteLayer() {
+        if (!map || typeof L === 'undefined') {
+          return;
+        }
+
+        if (!activeSession || !activeSession.routePoints || activeSession.routePoints.length < 2) {
+          if (routeLayer && map.hasLayer(routeLayer)) {
+            map.removeLayer(routeLayer);
+            routeLayer = null;
+          }
+          return;
+        }
+
+        var segments = [];
+        var currentSegment = [];
+        activeSession.routePoints.forEach(function (point) {
+          if (point && point.break) {
+            if (currentSegment.length > 1) {
+              segments.push(currentSegment);
+            }
+            currentSegment = [];
+            return;
+          }
+
+          if (point && typeof point.latitude === 'number' && typeof point.longitude === 'number') {
+            currentSegment.push([point.latitude, point.longitude]);
+          }
+        });
+
+        if (currentSegment.length > 1) {
+          segments.push(currentSegment);
+        }
+
+        if (!segments.length) {
+          if (routeLayer && map.hasLayer(routeLayer)) {
+            map.removeLayer(routeLayer);
+            routeLayer = null;
+          }
+          return;
+        }
+
+        var latLngs = segments.length === 1 ? segments[0] : segments;
+
+        if (!routeLayer) {
+          routeLayer = L.polyline(latLngs, {
+            color: '#ffcc00',
+            weight: 5,
+            opacity: 0.9
+          }).addTo(map);
+          return;
+        }
+
+        routeLayer.setLatLngs(latLngs);
+      }
+
+      function persistActiveSession(force) {
+        if (!activeSession || !sessionActive) {
+          return;
+        }
+
+        activeSession.updatedAt = Date.now();
+        activeSession.averageMovingSpeedKmh = activeSession.movingDurationMs > 0 && activeSession.distanceMeters > 0
+          ? Math.round((activeSession.distanceMeters / 1000) / (activeSession.movingDurationMs / 3600000) * 10) / 10
+          : 0;
+
+        if (force || !sessionSaveTimer) {
+          sessionSaveTimer = window.setTimeout(function () {
+            sessionSaveTimer = null;
+            var existing = sessionHistory.find(function (item) { return item.id === activeSession.id; });
+            if (existing) {
+              Object.assign(existing, activeSession);
+            } else {
+              sessionHistory.unshift(activeSession);
+            }
+            saveSessionHistory();
+            renderHistory();
+            updateStartSummary();
+          }, force ? 0 : 600);
+        }
+      }
+
+      function addAcceptedPoint(lat, lon, accuracy, speedKmh, heading) {
+        if (!activeSession || !sessionActive) {
+          return;
+        }
+
+        var point = {
+          latitude: lat,
+          longitude: lon,
+          timestamp: Date.now(),
+          accuracy: accuracy,
+          speedKmh: speedKmh || 0,
+          heading: heading || 0
+        };
+
+        var lastPoint = activeSession.lastAcceptedPoint;
+        if (!lastPoint) {
+          activeSession.routePoints.push(point);
+          activeSession.lastAcceptedPoint = point;
+          activeSession.resumeAnchorPending = false;
+          updateRouteLayer();
+          persistActiveSession(false);
+          return;
+        }
+
+        if (activeSession.resumeAnchorPending) {
+          var gapMs = point.timestamp - (lastPoint.timestamp || point.timestamp);
+          var gapDistance = haversine(lastPoint.latitude, lastPoint.longitude, lat, lon);
+
+          if (gapMs >= RESUME_ANCHOR_GAP_MS || gapDistance >= RESUME_ANCHOR_DISTANCE_M) {
+            activeSession.routePoints.push({ break: true, timestamp: point.timestamp });
+            activeSession.routePoints.push(point);
+            activeSession.lastAcceptedPoint = point;
+            activeSession.resumeAnchorPending = false;
+            updateRouteLayer();
+            persistActiveSession(false);
+            return;
+          }
+
+          activeSession.resumeAnchorPending = false;
+        }
+
+        var distance = haversine(lastPoint.latitude, lastPoint.longitude, lat, lon);
+        if (distance < 4 || distance > 500) {
+          return;
+        }
+
+        activeSession.distanceMeters += distance;
+        activeSession.routePoints.push(point);
+        activeSession.lastAcceptedPoint = point;
+        activeSession.maxSpeedKmh = Math.max(activeSession.maxSpeedKmh, speedKmh || 0);
+
+        updateRouteLayer();
+        persistActiveSession(false);
+      }
+
+      function startNewSession() {
+        activeSession = createSession();
+        sessionActive = true;
+        if (routeLayer && map && map.hasLayer(routeLayer)) {
+          map.removeLayer(routeLayer);
+          routeLayer = null;
+        }
+        elFinishSessionBtn.style.display = 'inline-flex';
+        elHistoryList.style.display = 'none';
+        setSessionSummary('Uusi sessio käynnissä. Reitti tallennetaan tähän laitteeseen.');
+        persistActiveSession(true);
+      }
+
+      function resumePreviousSession() {
+        var latest = sessionHistory.find(function (item) { return item.status === 'active'; });
+        if (!latest) {
+          setSessionSummary('Kesken olevaa sessiota ei löytynyt.');
+          return;
+        }
+
+        activeSession = JSON.parse(JSON.stringify(latest));
+        activeSession.resumeAnchorPending = true;
+        sessionActive = true;
+        elFinishSessionBtn.style.display = 'inline-flex';
+        elHistoryList.style.display = 'none';
+        elStartOverlay.style.display = 'none';
+        updateRouteLayer();
+        setSessionSummary('Jatketaan aiempaa sessiota.');
+        setStartStatus('Sessio palautettu');
+
+        if (!window.isSecureContext || !('geolocation' in navigator)) {
+          showLocationError('Sijaintia ei voitu kaynnistaa jatketulle sessiolle.', 'GPS ei kaynnistynyt');
+          return;
+        }
+
+        try {
+          startGpsTracking();
+        } catch (error) {
+          showLocationError('GPS-seurannan kaynnistys epaonnistui jatketulle sessiolle.', 'GPS-kaynnistys epaonnistui', error);
+          return;
+        }
+
+        requestWakeLockSafely();
+      }
+
+      function finishSession() {
+        if (!sessionActive || !activeSession) {
+          return;
+        }
+
+        if (!window.confirm('Lopetetaanko nykyinen sessio?')) {
+          return;
+        }
+
+        activeSession.status = 'completed';
+        activeSession.endedAt = Date.now();
+        activeSession.updatedAt = Date.now();
+        persistActiveSession(true);
+
+        sessionActive = false;
+        elFinishSessionBtn.style.display = 'none';
+        elStartOverlay.style.display = 'flex';
+        setStartStatus('Sessio valmis');
+        setSessionSummary('Sessio tallennettu paikallisesti.');
+        updateStartSummary();
+      }
+
+      function toggleHistoryList() {
+        var visible = elHistoryList.style.display === 'block';
+        elHistoryList.style.display = visible ? 'none' : 'block';
+        if (!visible) {
+          renderHistory();
         }
       }
 
@@ -838,9 +1474,18 @@
         elGpsErrOverlay.style.display = 'none';
         elRetryBtn.style.display = 'none';
         elStartOverlay.style.display = 'none';
+        elFinishSessionBtn.style.display = sessionActive ? 'inline-flex' : 'none';
         setDebugStage('Sijainti vastaanotettu');
         setStartStatus('Sijainti vastaanotettu');
-        resetStartButton('Aloita');
+        resetStartButton('Uusi sessio');
+      }
+
+      function enterRunningUiPendingGps() {
+        elGpsErrOverlay.style.display = 'none';
+        elRetryBtn.style.display = 'none';
+        elStartOverlay.style.display = 'none';
+        elFinishSessionBtn.style.display = sessionActive ? 'inline-flex' : 'none';
+        resetStartButton('Uusi sessio');
       }
 
       function showLocationError(message, debugMessage, error) {
@@ -848,6 +1493,7 @@
         setStartStatus(message);
         setDebugStage(debugMessage || message);
         setGpsStatus('GPS ei saatavilla', 'status-bad');
+        elGpsAccuracy.textContent = 'Tarkkuus: ei saatavilla';
         elGpsErrMsg.textContent = message;
         elGpsErrOverlay.style.display = 'flex';
         elStartOverlay.style.display = 'flex';
@@ -869,6 +1515,16 @@
           return 'Sijainnin haku aikakatkaistiin. Yritä uudelleen.';
         }
         return 'GPS-seurannan käynnistäminen epäonnistui.';
+      }
+
+      function showLocationFallback(message, debugMessage, error) {
+        setStartStatus(message);
+        setDebugStage(debugMessage || message);
+        setGpsStatus('Pyydetään sijaintia…', 'status-moderate');
+        elGpsAccuracy.textContent = 'Tarkkuus: haetaan…';
+        if (error) {
+          console.warn(error);
+        }
       }
 
       function updateGpsQuality(accuracy) {
@@ -920,6 +1576,16 @@
           smoothedSpeed = smoothedSpeed * 0.85;
         }
 
+        if (sessionActive && activeSession) {
+          if (speedKmh !== null && speedKmh >= 2.5 && accuracy <= 55) {
+            activeSession.movingDurationMs += Math.max(1000, (now - (prevCoords ? prevCoords.t : now)));
+            if (activeSession.maxSpeedKmh < speedKmh) {
+              activeSession.maxSpeedKmh = speedKmh;
+            }
+            addAcceptedPoint(lat, lon, accuracy, smoothedSpeed, coords.heading);
+          }
+        }
+
         setSpeedDisplay(smoothedSpeed);
 
         if (elSpeedDebug) {
@@ -956,12 +1622,13 @@
 
         if (err && err.code === 1) {
           setDebugStage('Sijaintilupa evätty');
+          showLocationError(message, 'Sijaintilupa evätty', err);
         } else {
           setDebugStage(debugMessage);
+          showLocationFallback(message, debugMessage, err);
         }
 
         console.error('GPS-virhe', err);
-        showLocationError(message, err && err.code === 1 ? 'Sijaintilupa evätty' : debugMessage, err);
       }
 
       function startGpsTracking() {
@@ -972,16 +1639,21 @@
         elGpsAccuracy.textContent = 'Tarkkuus: haetaan…';
         setStartStatus('Pyydetään sijaintilupaa…');
         setDebugStage('Pyydetään sijaintilupaa');
-        watchId = navigator.geolocation.watchPosition(
-          handlePositionSuccess,
-          handlePositionError,
-          {
-            enableHighAccuracy: true,
-            maximumAge: 0,
-            timeout: 15000
-          }
-        );
+
+        var options = {
+          enableHighAccuracy: true,
+          maximumAge: 0,
+          timeout: 15000
+        };
+
+        watchId = navigator.geolocation.watchPosition(handlePositionSuccess, handlePositionError, options);
         setDebugStage('GPS-seuranta käynnistetty');
+
+        navigator.geolocation.getCurrentPosition(function (pos) {
+          handlePositionSuccess(pos);
+        }, function (err) {
+          handlePositionError(err);
+        }, options);
       }
 
       function startButtonHandler() {
@@ -992,6 +1664,16 @@
         elGpsErrOverlay.style.display = 'none';
         elRetryBtn.style.display = 'none';
         setGpsStatus('Pyydetään sijaintia…', 'status-moderate');
+
+        startNewSession();
+        updateGpsEnvironmentHint();
+
+        enterRunningUiPendingGps();
+
+        if (!window.isSecureContext) {
+          showLocationError('Sijainti vaatii suojatun yhteyden (HTTPS tai localhost).', 'Ei suojattu yhteys');
+          return;
+        }
 
         if (!('geolocation' in navigator)) {
           showLocationError('Tämä selain ei tue sijaintia.', 'GPS ei tuettu');
@@ -1012,14 +1694,28 @@
       function retryGps() {
         elGpsErrOverlay.style.display = 'none';
         elRetryBtn.style.display = 'none';
+        if ('geolocation' in navigator) {
+          try {
+            startGpsTracking();
+            return;
+          } catch (error) {
+            showLocationError('GPS-seurannan uudelleenkäynnistys epäonnistui.', 'GPS-uudelleenkäynnistys epäonnistui', error);
+            return;
+          }
+        }
         elStartOverlay.style.display = 'flex';
         startButtonHandler();
       }
 
       elStartVersion.textContent = 'Versio ' + APP_VERSION;
+      loadSessionHistory();
+      renderHistory();
+      updateStartSummary();
+      updateGpsEnvironmentHint();
       setStartStatus('Valmis');
       setDebugStage('Valmis');
       setSpeedDisplay(0);
+      applyStoredTheme();
       updateClock();
       updateNetwork();
       window.addEventListener('online', updateNetwork);
@@ -1041,9 +1737,108 @@
         }
       });
 
+      elThemeBtn.addEventListener('click', function () {
+        cycleTheme(1);
+      });
+
       elRetryGpsBtn.addEventListener('click', retryGps);
       elRetryBtn.addEventListener('click', retryGps);
       elStartBtn.addEventListener('click', startButtonHandler);
+      elResumeSessionBtn.addEventListener('click', resumePreviousSession);
+      elHistoryBtn.addEventListener('click', toggleHistoryList);
+      elFinishSessionBtn.addEventListener('click', finishSession);
+      elStatusTab.addEventListener('click', expandStatusDock);
+      elTopTab.addEventListener('click', expandTopDock);
+
+      function panelKeyToggle(event) {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          collapseStatusDock();
+        }
+      }
+
+      function topPanelKeyToggle(event) {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          collapseTopDock();
+        }
+      }
+
+      elGpsPanel.addEventListener('click', collapseStatusDock);
+      elNetworkPanel.addEventListener('click', collapseStatusDock);
+      elGpsPanel.addEventListener('keydown', panelKeyToggle);
+      elNetworkPanel.addEventListener('keydown', panelKeyToggle);
+      elTimePanel.addEventListener('click', collapseTopDock);
+      elWeatherPanel.addEventListener('click', collapseTopDock);
+      elTemperaturePanel.addEventListener('click', collapseTopDock);
+      elWindPanel.addEventListener('click', collapseTopDock);
+      elTimePanel.addEventListener('keydown', topPanelKeyToggle);
+      elWeatherPanel.addEventListener('keydown', topPanelKeyToggle);
+      elTemperaturePanel.addEventListener('keydown', topPanelKeyToggle);
+      elWindPanel.addEventListener('keydown', topPanelKeyToggle);
+
+      elHistoryList.addEventListener('click', function (event) {
+        var button = event.target.closest('button[data-action]');
+        if (!button) {
+          return;
+        }
+
+        var action = button.getAttribute('data-action');
+        var id = button.getAttribute('data-id');
+        if (action === 'delete') {
+          if (!window.confirm('Poistetaanko tallennettu ajo?')) {
+            return;
+          }
+
+          sessionHistory = sessionHistory.filter(function (item) { return item.id !== id; });
+          if (activeSession && activeSession.id === id && !sessionActive) {
+            activeSession = null;
+            if (routeLayer && map && map.hasLayer(routeLayer)) {
+              map.removeLayer(routeLayer);
+              routeLayer = null;
+            }
+          }
+          saveSessionHistory();
+          renderHistory();
+          updateStartSummary();
+          setSessionSummary('Tallennettu ajo poistettu.');
+          return;
+        }
+
+        if (action !== 'resume') {
+          return;
+        }
+
+        var selected = sessionHistory.find(function (item) { return item.id === id; });
+        if (!selected || selected.status !== 'active') {
+          setSessionSummary('Valittua keskeneräistä sessiota ei löytynyt.');
+          return;
+        }
+
+        activeSession = JSON.parse(JSON.stringify(selected));
+        activeSession.resumeAnchorPending = true;
+        sessionActive = true;
+        elFinishSessionBtn.style.display = 'inline-flex';
+        elStartOverlay.style.display = 'none';
+        elHistoryList.style.display = 'none';
+        updateRouteLayer();
+        setStartStatus('Sessio palautettu');
+        setSessionSummary('Sessio palautettu: ' + formatDate(selected.startedAt));
+
+        if (!window.isSecureContext || !('geolocation' in navigator)) {
+          showLocationError('Sijaintia ei voitu kaynnistaa jatketulle sessiolle.', 'GPS ei kaynnistynyt');
+          return;
+        }
+
+        try {
+          startGpsTracking();
+        } catch (error) {
+          showLocationError('GPS-seurannan kaynnistys epaonnistui jatketulle sessiolle.', 'GPS-kaynnistys epaonnistui', error);
+          return;
+        }
+
+        requestWakeLockSafely();
+      });
 
       document.addEventListener('visibilitychange', function () {
         if (document.visibilityState === 'visible' && watchId !== null) {
