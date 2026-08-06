@@ -71,3 +71,5 @@ Tämän jälkeen sovellus käynnistyy koko näytön tilassa suoraan aloitusnäyt
 - Säätietojen hakemiseen Open-Meteo-palvelusta (lähetetään vain pyöristetyt koordinaatit, ei tarkkaa sijaintia)
 
 Mitään sijaintitietoja ei tallenneta selaimen muistiin, evästeihin tai palvelimelle.
+
+muutos.
