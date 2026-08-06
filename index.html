@@ -246,6 +246,13 @@
       display: none;
       padding: 8px 10px;
       gap: 6px;
+      cursor: pointer;
+      touch-action: manipulation;
+      user-select: none;
+    }
+
+    #session-stats-panel:active {
+      background: rgba(255,255,255,0.16);
     }
 
     #session-stats-toggle-btn {
@@ -551,6 +558,7 @@
     }
 
     #start-debug {
+      display: none;
       font-size: 12px;
       color: rgba(255,255,255,0.72);
       padding: 8px 12px;
@@ -726,7 +734,7 @@
     <div></div>
 
     <div id="bottom-panel">
-      <div id="session-stats-panel" class="panel" aria-live="polite" aria-atomic="true">
+      <div id="session-stats-panel" class="panel" role="button" tabindex="0" aria-label="Piilota tai näytä session tiedot" aria-live="polite" aria-atomic="true">
         <div class="panel-label">Sessio</div>
         <div id="session-stats-grid">
           <div class="session-stat-item"><span class="session-stat-name">Matka</span><span id="stat-distance" class="session-stat-value">0.0 km</span></div>
@@ -852,6 +860,7 @@
       var elStartGpsHint = document.getElementById('start-gps-hint');
       var elMapStatus = document.getElementById('map-status');
       var elSpeedDebug = document.getElementById('speed-debug');
+      var elMap = document.getElementById('map');
 
       var requiredElements = [
         elSpeedValue, elTimeDisplay, elWeatherRow, elTemperatureRow, elWindRow,
@@ -861,7 +870,7 @@
         elStatusStack, elStatusTab, elTopPanel, elTopTab, elStartOverlay, elStartBtn, elResumeSessionBtn,
         elHistoryBtn, elSessionSummary, elHistoryList, elHistoryActions, elClearHistoryBtn, elCenterBtn, elThemeBtn,
         elFinishSessionBtn, elBackToStartBtn, elRetryBtn, elGpsErrOverlay, elGpsErrMsg, elRetryGpsBtn,
-        elStartStatus, elStartDebug, elStartVersion, elMapFallbackMsg, elStartGpsHint
+        elStartStatus, elStartDebug, elStartVersion, elMapFallbackMsg, elStartGpsHint, elMap
       ];
 
       if (requiredElements.some(function (element) { return !element; })) {
@@ -903,6 +912,33 @@
       var sessionSaveTimer = null;
       var RESUME_ANCHOR_GAP_MS = 10 * 60 * 1000;
       var RESUME_ANCHOR_DISTANCE_M = 1200;
+      var MOVING_SPEED_THRESHOLD_KMH = 2.5;
+      var STOP_SPEED_THRESHOLD_KMH = 1.7;
+      var MOVING_ACCURACY_MAX_M = 55;
+      var MIN_ACCEPTED_POINT_DISTANCE_M = 4;
+      var MAX_POINT_JUMP_DISTANCE_M = 500;
+      var MAX_POINT_JUMP_SPEED_KMH = 220;
+      var MIN_MOVING_CONFIRMATION_SAMPLES = 2;
+      var MIN_STOP_CONFIRMATION_SAMPLES = 2;
+      var STOP_GAP_BREAK_MS = 2 * 60 * 1000;
+      var STOP_GAP_BREAK_DISTANCE_M = 300;
+      var MAX_VALID_SPEED_KMH = 220;
+      var MAX_FALLBACK_SPEED_KMH = 220;
+
+      var movingSampleCount = 0;
+      var stopSampleCount = 0;
+      var movementConfirmed = false;
+
+      var swipeStartX = 0;
+      var swipeStartY = 0;
+      var swipeStartTime = 0;
+      var swipeGestureLocked = false;
+      var swipeHandled = false;
+      var SWIPE_MIN_DISTANCE_PX = 52;
+      var SWIPE_DIRECTION_RATIO = 1.35;
+      var SWIPE_MAX_DURATION_MS = 650;
+
+      var themeToastTimer = null;
 
       var themeNames = ['Normaali', 'Mustavalko', 'Cruising', 'Vesistö', 'Metsä', 'Yö'];
       var themeClasses = ['theme-normal', 'theme-monochrome', 'theme-cruising', 'theme-water', 'theme-forest', 'theme-night'];
@@ -1027,13 +1063,25 @@
 
         navigator.permissions.query({ name: 'geolocation' })
           .then(function (result) {
+            var lines = [];
+
             if (result.state === 'denied') {
-              setStartGpsHint('Sijaintilupa on estetty. Salli lupa selaimen asetuksista.');
+              lines.push('Sijaintilupa on estetty. Salli lupa selaimen asetuksista.');
             } else if (result.state === 'prompt') {
-              setStartGpsHint('GPS-lupa kysytaan kun painat Uusi sessio.');
+              lines.push('GPS-lupa kysytaan kun painat Uusi sessio.');
             } else {
-              setStartGpsHint('GPS-lupa on sallittu. Voit aloittaa session.');
+              lines.push('GPS-lupa on sallittu. Voit aloittaa session.');
             }
+
+            if (!('wakeLock' in navigator)) {
+              lines.push('Näytön palovartija ei ole tuettu tässä selaimessa – näyttö voi sammua ajon aikana.');
+            }
+
+            if (!document.documentElement.requestFullscreen) {
+              lines.push('Kokokuvatila ei ole tuettu tässä selaimessa.');
+            }
+
+            setStartGpsHint(lines.join(' '));
 
             if (typeof result.onchange !== 'undefined') {
               result.onchange = updateGpsEnvironmentHint;
@@ -1307,6 +1355,27 @@
         saveSettingToIndexedDb('mapTheme', normalizedTheme);
       }
 
+      function showThemeToast(themeName) {
+        if (!elMapStatus) {
+          return;
+        }
+
+        if (themeToastTimer) {
+          window.clearTimeout(themeToastTimer);
+          themeToastTimer = null;
+        }
+
+        elMapStatus.textContent = 'Teema: ' + themeName;
+        elMapStatus.style.display = '';
+
+        themeToastTimer = window.setTimeout(function () {
+          if (elMapStatus.textContent.indexOf('Teema: ') === 0) {
+            elMapStatus.style.display = 'none';
+          }
+          themeToastTimer = null;
+        }, 1200);
+      }
+
       function applyStoredTheme() {
         var localTheme = readSettingFromLocalStorage('mapTheme');
         if (localTheme && themeClasses.indexOf('theme-' + localTheme) >= 0) {
@@ -1331,8 +1400,55 @@
         }
         var step = direction === -1 ? -1 : 1;
         currentIndex = (currentIndex + step + themeClasses.length) % themeClasses.length;
-        var nextTheme = themeClasses[currentIndex].replace('theme-', '');
+        var nextThemeClass = themeClasses[currentIndex];
+        var nextTheme = nextThemeClass.replace('theme-', '');
         applyTheme(nextTheme);
+        showThemeToast(themeNames[currentIndex]);
+      }
+
+      function isInteractiveTarget(target) {
+        if (!target || typeof target.closest !== 'function') {
+          return false;
+        }
+
+        return !!target.closest('button, a, input, select, textarea, dialog, #hud, #gps-error, #start-overlay, .leaflet-control-container');
+      }
+
+      function resetMovementState() {
+        movingSampleCount = 0;
+        stopSampleCount = 0;
+        movementConfirmed = false;
+      }
+
+      function updateMovementState(validatedSpeedKmh, accuracy) {
+        var movingCandidate = validatedSpeedKmh !== null
+          && validatedSpeedKmh >= MOVING_SPEED_THRESHOLD_KMH
+          && accuracy <= MOVING_ACCURACY_MAX_M;
+        var stopCandidate = validatedSpeedKmh === null
+          || validatedSpeedKmh <= STOP_SPEED_THRESHOLD_KMH
+          || accuracy > MOVING_ACCURACY_MAX_M;
+
+        if (movingCandidate) {
+          movingSampleCount += 1;
+          stopSampleCount = 0;
+          if (!movementConfirmed && movingSampleCount >= MIN_MOVING_CONFIRMATION_SAMPLES) {
+            movementConfirmed = true;
+            if (activeSession && activeSession.lastAcceptedPoint) {
+              activeSession.stopAnchorPending = true;
+            }
+          }
+          return;
+        }
+
+        movingSampleCount = 0;
+        if (stopCandidate) {
+          stopSampleCount += 1;
+          if (movementConfirmed && stopSampleCount >= MIN_STOP_CONFIRMATION_SAMPLES) {
+            movementConfirmed = false;
+          }
+        } else {
+          stopSampleCount = 0;
+        }
       }
 
       function setSessionSummary(message) {
@@ -1560,6 +1676,7 @@
           averageMovingSpeedKmh: 0,
           routePoints: [],
           lastAcceptedPoint: null,
+          stopAnchorPending: false,
           resumeAnchorPending: false,
           mapTheme: currentTheme
         };
@@ -1702,8 +1819,29 @@
           activeSession.resumeAnchorPending = false;
         }
 
+        if (activeSession.stopAnchorPending) {
+          var stopGapMs = point.timestamp - (lastPoint.timestamp || point.timestamp);
+          var stopGapDistance = haversine(lastPoint.latitude, lastPoint.longitude, lat, lon);
+          if (stopGapMs >= STOP_GAP_BREAK_MS || stopGapDistance >= STOP_GAP_BREAK_DISTANCE_M) {
+            activeSession.routePoints.push({ break: true, timestamp: point.timestamp });
+          }
+          activeSession.stopAnchorPending = false;
+        }
+
         var distance = haversine(lastPoint.latitude, lastPoint.longitude, lat, lon);
-        if (distance < 4 || distance > 500) {
+        if (distance < MIN_ACCEPTED_POINT_DISTANCE_M || distance > MAX_POINT_JUMP_DISTANCE_M) {
+          return;
+        }
+
+        var dtSeconds = (point.timestamp - (lastPoint.timestamp || point.timestamp)) / 1000;
+        if (dtSeconds > 0) {
+          var jumpSpeedKmh = (distance / dtSeconds) * 3.6;
+          if (!isFinite(jumpSpeedKmh) || jumpSpeedKmh > MAX_POINT_JUMP_SPEED_KMH) {
+            return;
+          }
+        }
+
+        if (speedKmh < MOVING_SPEED_THRESHOLD_KMH) {
           return;
         }
 
@@ -1720,6 +1858,7 @@
         sessionHistoryViewActive = false;
         setSessionStatsCollapsed(false);
         activeSession = createSession();
+        resetMovementState();
         sessionActive = true;
         updateSessionStatsPanel(activeSession);
         if (routeLayer && map && map.hasLayer(routeLayer)) {
@@ -1741,6 +1880,7 @@
         }
 
         activeSession = JSON.parse(JSON.stringify(latest));
+        resetMovementState();
         sessionHistoryViewActive = false;
         setSessionStatsCollapsed(false);
         activeSession.resumeAnchorPending = true;
@@ -1784,6 +1924,7 @@
         persistActiveSession(true);
 
         sessionActive = false;
+        resetMovementState();
         sessionHistoryViewActive = false;
         setSessionStatsVisible(false);
         elFinishSessionBtn.style.display = 'none';
@@ -2001,12 +2142,19 @@
         resetStartButton('Uusi sessio');
       }
 
+      function setWeatherWaitingForGps() {
+        elWeatherRow.textContent = 'Sää odottaa GPS:ää';
+        elTemperatureRow.textContent = '— °C';
+        elWindRow.textContent = '—';
+      }
+
       function showLocationError(message, debugMessage, error) {
         isStartingGps = false;
         setStartStatus(message);
         setDebugStage(debugMessage || message);
         setGpsStatus('GPS ei saatavilla', 'status-bad');
         elGpsAccuracy.textContent = 'Tarkkuus: ei saatavilla';
+        setWeatherWaitingForGps();
         elGpsErrMsg.textContent = message;
         elGpsErrOverlay.style.display = 'flex';
         elStartOverlay.style.display = 'flex';
@@ -2019,7 +2167,7 @@
 
       function getGpsErrorMessage(err) {
         if (err && err.code === 1) {
-          return 'Sijaintilupa evättiin. Avaa iPhonen Asetukset, salli Safarille sijainti ja lataa sivu uudelleen.';
+          return 'Sijaintilupa evättiin. Salli selaimelle sijainti ja lataa sivu uudelleen.';
         }
         if (err && err.code === 2) {
           return 'Sijaintia ei saatu. Siirry ulos avoimelle paikalle ja yritä uudelleen.';
@@ -2035,6 +2183,7 @@
         setDebugStage(debugMessage || message);
         setGpsStatus('Pyydetään sijaintia…', 'status-moderate');
         elGpsAccuracy.textContent = 'Tarkkuus: haetaan…';
+        setWeatherWaitingForGps();
         if (error) {
           console.warn(error);
         }
@@ -2057,6 +2206,7 @@
         var lon = coords.longitude;
         var accuracy = coords.accuracy;
         var speedKmh = null;
+        var validatedSpeedKmh = null;
         var fallbackKmh = null;
         var rawGpsKmh = null;
         var dt = 0;
@@ -2066,7 +2216,9 @@
 
         if (typeof coords.speed === 'number' && isFinite(coords.speed) && coords.speed >= 0) {
           rawGpsKmh = coords.speed * 3.6;
-          speedKmh = rawGpsKmh;
+          if (rawGpsKmh <= MAX_VALID_SPEED_KMH) {
+            speedKmh = rawGpsKmh;
+          }
         }
 
         if (accuracy <= 50 && prevCoords) {
@@ -2074,7 +2226,7 @@
           if (dt >= 1) {
             var dist = haversine(prevCoords.lat, prevCoords.lon, lat, lon);
             var calcKmh = (dist / dt) * 3.6;
-            if (isFinite(calcKmh) && calcKmh <= 300) {
+            if (isFinite(calcKmh) && calcKmh <= MAX_FALLBACK_SPEED_KMH) {
               fallbackKmh = calcKmh;
               if (speedKmh === null) {
                 speedKmh = fallbackKmh;
@@ -2083,19 +2235,26 @@
           }
         }
 
-        if (speedKmh !== null && isFinite(speedKmh)) {
-          smoothedSpeed = 0.4 * speedKmh + 0.6 * smoothedSpeed;
+        if (speedKmh !== null && isFinite(speedKmh) && speedKmh <= MAX_VALID_SPEED_KMH) {
+          validatedSpeedKmh = speedKmh;
+        }
+
+        if (validatedSpeedKmh !== null) {
+          smoothedSpeed = 0.4 * validatedSpeedKmh + 0.6 * smoothedSpeed;
         } else {
           smoothedSpeed = smoothedSpeed * 0.85;
         }
 
         if (sessionActive && activeSession) {
-          if (speedKmh !== null && speedKmh >= 2.5 && accuracy <= 55) {
+          updateMovementState(validatedSpeedKmh, accuracy);
+          if (movementConfirmed && validatedSpeedKmh !== null && validatedSpeedKmh >= STOP_SPEED_THRESHOLD_KMH && accuracy <= MOVING_ACCURACY_MAX_M) {
             activeSession.movingDurationMs += Math.max(1000, (now - (prevCoords ? prevCoords.t : now)));
-            if (activeSession.maxSpeedKmh < speedKmh) {
-              activeSession.maxSpeedKmh = speedKmh;
+            if (activeSession.maxSpeedKmh < smoothedSpeed) {
+              activeSession.maxSpeedKmh = smoothedSpeed;
             }
-            addAcceptedPoint(lat, lon, accuracy, smoothedSpeed, coords.heading);
+            if (validatedSpeedKmh >= MOVING_SPEED_THRESHOLD_KMH) {
+              addAcceptedPoint(lat, lon, accuracy, smoothedSpeed, coords.heading);
+            }
           }
         }
 
@@ -2146,6 +2305,7 @@
 
       function startGpsTracking() {
         clearExistingWatch();
+        resetMovementState();
         hasReceivedFirstPosition = false;
         isStartingGps = true;
         setGpsStatus('Pyydetään sijaintia…', 'status-moderate');
@@ -2170,6 +2330,21 @@
       }
 
       function startButtonHandler() {
+        // Guard: if an active session already exists, ask user to choose first
+        if (sessionActive && activeSession) {
+          if (!window.confirm('Ajossa on jo aktiivinen sessio. Aloitetaanko uusi ajo? Kesken oleva sessio jää tallennetuksi ja voidaan jatkaa myöhemmin.')) {
+            resetStartButton('Uusi sessio');
+            return;
+          }
+          // Save current session as paused/active so it can be resumed later
+          persistActiveSession(true);
+          sessionActive = false;
+          activeSession = null;
+          clearExistingWatch();
+          setSessionStatsVisible(false);
+          elFinishSessionBtn.style.display = 'none';
+        }
+
         elStartBtn.disabled = true;
         elStartBtn.textContent = 'Käynnistetään…';
         setStartStatus('Pyydetään sijaintilupaa…');
@@ -2243,6 +2418,45 @@
         initMap();
       }
 
+      // Auto-resume: if there is exactly one active session, restore it automatically after reload
+      (function autoRestoreActiveSession() {
+        var actives = sessionHistory.filter(function (item) { return item.status === 'active'; });
+        if (actives.length !== 1) {
+          return;
+        }
+
+        var session = actives[0];
+        var ageMs = Date.now() - (session.updatedAt || session.startedAt || 0);
+        // Only auto-restore if the session was updated within the last 24 hours
+        if (ageMs > 24 * 60 * 60 * 1000) {
+          return;
+        }
+
+        activeSession = JSON.parse(JSON.stringify(session));
+        sessionHistoryViewActive = false;
+        activeSession.resumeAnchorPending = true;
+        sessionActive = true;
+        setSessionStatsCollapsed(false);
+        updateSessionStatsPanel(activeSession);
+        updateRouteLayer();
+        elFinishSessionBtn.style.display = 'inline-flex';
+        elBackToStartBtn.style.display = 'none';
+        elStartOverlay.style.display = 'none';
+        setStartStatus('Sessio palautettu automaattisesti');
+
+        if (!window.isSecureContext || !('geolocation' in navigator)) {
+          return;
+        }
+
+        try {
+          startGpsTracking();
+        } catch (error) {
+          console.warn('GPS-seurannan automaattinen käynnistys epäonnistui.', error);
+        }
+
+        requestWakeLockSafely();
+      }());
+
       elCenterBtn.addEventListener('click', function () {
         followUser = true;
         if (map && lastGoodCoords) {
@@ -2253,6 +2467,64 @@
       elThemeBtn.addEventListener('click', function () {
         cycleTheme(1);
       });
+
+      elMap.addEventListener('touchstart', function (event) {
+        if (!event.touches || event.touches.length !== 1) {
+          swipeGestureLocked = true;
+          return;
+        }
+
+        if (isInteractiveTarget(event.target)) {
+          swipeGestureLocked = true;
+          return;
+        }
+
+        var touch = event.touches[0];
+        swipeStartX = touch.clientX;
+        swipeStartY = touch.clientY;
+        swipeStartTime = Date.now();
+        swipeGestureLocked = false;
+        swipeHandled = false;
+      }, { passive: true });
+
+      elMap.addEventListener('touchmove', function (event) {
+        if (swipeGestureLocked || swipeHandled || !event.touches || event.touches.length !== 1) {
+          return;
+        }
+
+        var touch = event.touches[0];
+        var dx = touch.clientX - swipeStartX;
+        var dy = touch.clientY - swipeStartY;
+        if (Math.abs(dy) > Math.abs(dx) / SWIPE_DIRECTION_RATIO) {
+          swipeGestureLocked = true;
+        }
+      }, { passive: true });
+
+      elMap.addEventListener('touchend', function (event) {
+        if (swipeGestureLocked || swipeHandled || !event.changedTouches || event.changedTouches.length !== 1) {
+          return;
+        }
+
+        var touch = event.changedTouches[0];
+        var dx = touch.clientX - swipeStartX;
+        var dy = touch.clientY - swipeStartY;
+        var duration = Date.now() - swipeStartTime;
+
+        if (duration > SWIPE_MAX_DURATION_MS) {
+          return;
+        }
+
+        if (Math.abs(dx) < SWIPE_MIN_DISTANCE_PX) {
+          return;
+        }
+
+        if (Math.abs(dx) <= Math.abs(dy) * SWIPE_DIRECTION_RATIO) {
+          return;
+        }
+
+        swipeHandled = true;
+        cycleTheme(dx < 0 ? 1 : -1);
+      }, { passive: true });
 
       elRetryGpsBtn.addEventListener('click', retryGps);
       elRetryBtn.addEventListener('click', retryGps);
@@ -2317,8 +2589,10 @@
 
       elGpsPanel.addEventListener('click', collapseStatusDock);
       elNetworkPanel.addEventListener('click', collapseStatusDock);
+      elSessionStatsPanel.addEventListener('click', toggleSessionStatsCollapsed);
       elGpsPanel.addEventListener('keydown', panelKeyToggle);
       elNetworkPanel.addEventListener('keydown', panelKeyToggle);
+      elSessionStatsPanel.addEventListener('keydown', statsPanelKeyToggle);
       elTimePanel.addEventListener('click', collapseTopDock);
       elWeatherPanel.addEventListener('click', collapseTopDock);
       elTemperaturePanel.addEventListener('click', collapseTopDock);
@@ -2379,6 +2653,7 @@
         }
 
         activeSession = JSON.parse(JSON.stringify(selected));
+        resetMovementState();
         sessionHistoryViewActive = false;
         activeSession.resumeAnchorPending = true;
         sessionActive = true;

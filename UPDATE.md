@@ -228,7 +228,7 @@ Resuming must:
 ## 5.1 IndexedDB
 
 - [x] Store sessions in IndexedDB under the current website origin.
-- [ ] Do not send session records or route history to any server.
+- [x] Do not send session records or route history to any server.
 - [x] Use a versioned database schema with safe upgrade handling.
 - [x] Store settings separately from session records.
 - [x] Handle IndexedDB unavailable or denied conditions gracefully.
@@ -290,12 +290,12 @@ Do not store altitude or weather snapshots.
 
 A GPS point must not be appended to the route merely because `watchPosition` fired.
 
-- [ ] Do not append route points while validated speed is below the moving threshold.
-- [ ] Do not append a point when movement from the last accepted point is below a configurable minimum distance.
-- [ ] Do not append low-quality points above the configured accuracy threshold.
-- [ ] Reject impossible jumps and unrealistic speeds.
-- [ ] Use hysteresis or a short confirmation rule around the moving threshold to prevent rapid start/stop toggling caused by GPS noise.
-- [ ] Preserve a fresh anchor point when movement starts again so the route line remains continuous without stacks of duplicate points.
+- [x] Do not append route points while validated speed is below the moving threshold.
+- [x] Do not append a point when movement from the last accepted point is below a configurable minimum distance.
+- [x] Do not append low-quality points above the configured accuracy threshold.
+- [x] Reject impossible jumps and unrealistic speeds.
+- [x] Use hysteresis or a short confirmation rule around the moving threshold to prevent rapid start/stop toggling caused by GPS noise.
+- [x] Preserve a fresh anchor point when movement starts again so the route line remains continuous without stacks of duplicate points.
 
 ## 6.2 Recommended configurable defaults
 
@@ -312,11 +312,11 @@ Do not hardcode these values in multiple modules.
 
 ## 6.3 Route display
 
-- [ ] Draw the actual driven route as a Leaflet polyline.
-- [ ] Update the polyline efficiently without rebuilding all layers for every point.
-- [ ] Restore the polyline when resuming or opening a saved session.
-- [ ] Keep current-position marker visually distinct from the route.
-- [ ] Do not add route planning, waypoint editing or navigation instructions.
+- [x] Draw the actual driven route as a Leaflet polyline.
+- [x] Update the polyline efficiently without rebuilding all layers for every point.
+- [x] Restore the polyline when resuming or opening a saved session.
+- [x] Keep current-position marker visually distinct from the route.
+- [x] Do not add route planning, waypoint editing or navigation instructions.
 
 ---
 
@@ -383,28 +383,28 @@ The current OpenStreetMap raster tile service delivers already-rendered pixels. 
 
 ## 8.1 Required presets
 
-- [ ] `Normaali`: unchanged current map.
-- [ ] `Mustavalko`: grayscale with strong contrast and clearly visible roads.
-- [ ] `Cruising`: high-contrast near-monochrome treatment with warm red/yellow emphasis as far as global raster filtering allows.
-- [ ] `Vesistö`: high-contrast near-monochrome treatment with blue/cyan emphasis as far as global raster filtering allows.
-- [ ] `Metsä`: high-contrast near-monochrome treatment with green emphasis as far as global raster filtering allows.
-- [ ] `Yö`: dark, reduced-glare preset suitable for low-light riding.
+- [x] `Normaali`: unchanged current map.
+- [x] `Mustavalko`: grayscale with strong contrast and clearly visible roads.
+- [x] `Cruising`: high-contrast near-monochrome treatment with warm red/yellow emphasis as far as global raster filtering allows.
+- [x] `Vesistö`: high-contrast near-monochrome treatment with blue/cyan emphasis as far as global raster filtering allows.
+- [x] `Metsä`: high-contrast near-monochrome treatment with green emphasis as far as global raster filtering allows.
+- [x] `Yö`: dark, reduced-glare preset suitable for low-light riding.
 
 ## 8.2 Theme implementation
 
-- [ ] Define presets centrally in JavaScript or CSS custom properties.
-- [ ] Apply filters only to the tile pane, not to markers, route lines, controls or dashboard text.
-- [ ] Keep contrast sufficient for road visibility.
-- [ ] Save the selected preset locally.
-- [ ] Display the preset name briefly after changing it.
-- [ ] Add a compact non-gesture fallback control for accessibility and discoverability.
+- [x] Define presets centrally in JavaScript or CSS custom properties.
+- [x] Apply filters only to the tile pane, not to markers, route lines, controls or dashboard text.
+- [x] Keep contrast sufficient for road visibility.
+- [x] Save the selected preset locally.
+- [x] Display the preset name briefly after changing it.
+- [x] Add a compact non-gesture fallback control for accessibility and discoverability.
 
 ## 8.3 Swipe behavior
 
-- [ ] A deliberate horizontal swipe over a non-control map area changes to the previous or next preset.
-- [ ] The swipe must not trigger during vertical page gestures, button presses, pinch zoom or normal short map panning.
-- [ ] Use a clear minimum horizontal distance and direction ratio.
-- [ ] Debounce one theme change per gesture.
+- [x] A deliberate horizontal swipe over a non-control map area changes to the previous or next preset.
+- [x] The swipe must not trigger during vertical page gestures, button presses, pinch zoom or normal short map panning.
+- [x] Use a clear minimum horizontal distance and direction ratio.
+- [x] Debounce one theme change per gesture.
 - [ ] Ensure swiping remains usable on major mobile browsers.
 
 ---
@@ -413,13 +413,13 @@ The current OpenStreetMap raster tile service delivers already-rendered pixels. 
 
 ## 9.1 Keep existing live information
 
-- [ ] Current speed.
-- [ ] Current local time.
-- [ ] Current temperature.
-- [ ] Existing weather description.
-- [ ] Existing wind speed.
-- [ ] GPS accuracy/status.
-- [ ] Network status.
+- [x] Current speed.
+- [x] Current local time.
+- [x] Current temperature.
+- [x] Existing weather description.
+- [x] Existing wind speed.
+- [x] GPS accuracy/status.
+- [x] Network status.
 
 Do not add a separate weather page.
 
@@ -436,25 +436,25 @@ Use a compact expandable panel, secondary dashboard card or swipeable informatio
 
 ## 9.3 Automatic calculations
 
-- [ ] Distance is calculated only from accepted moving route points.
-- [ ] Moving time accumulates only while movement is confidently detected.
-- [ ] Average speed is based on distance divided by moving time.
-- [ ] Maximum speed uses validated and smoothed logic that rejects impossible spikes.
-- [ ] All values recover correctly after reopening and resuming an active session.
+- [x] Distance is calculated only from accepted moving route points.
+- [x] Moving time accumulates only while movement is confidently detected.
+- [x] Average speed is based on distance divided by moving time.
+- [x] Maximum speed uses validated and smoothed logic that rejects impossible spikes.
+- [x] All values recover correctly after reopening and resuming an active session.
 
 ---
 
 # Phase 10 — Usability and automation
 
-- [ ] After selecting `Uusi sessio` or `Jatka edellistä`, routine tracking is automatic.
-- [ ] No manual pause workflow.
-- [ ] No repetitive save button.
-- [ ] Auto-save happens quietly.
-- [ ] Do not show technical debug values in the production UI.
-- [ ] Keep one obvious session-end action.
-- [ ] Prevent accidental session replacement: starting a new session while an active session exists must require a clear choice to resume, finish or discard the old one.
-- [ ] Restore the last screen and essential state after a normal reload where safe.
-- [ ] Clearly communicate when browser permissions or platform limitations prevent an optional function.
+- [x] After selecting `Uusi sessio` or `Jatka edellistä`, routine tracking is automatic.
+- [x] No manual pause workflow.
+- [x] No repetitive save button.
+- [x] Auto-save happens quietly.
+- [x] Do not show technical debug values in the production UI.
+- [x] Keep one obvious session-end action.
+- [x] Prevent accidental session replacement: starting a new session while an active session exists must require a clear choice to resume, finish or discard the old one.
+- [x] Restore the last screen and essential state after a normal reload where safe.
+- [x] Clearly communicate when browser permissions or platform limitations prevent an optional function.
 
 ---
 
