@@ -100,17 +100,18 @@ The agent may merge very small modules when that improves clarity, but must keep
 
 ## 2.2 HTML requirements
 
-- [ ] Keep `index.html` semantic and small.
-- [ ] Keep all major visual elements and dialogs in HTML, rather than generating the whole interface from JavaScript.
-- [ ] Load CSS files in a predictable order.
-- [ ] Load JavaScript using `type="module"` and relative imports if supported by the current GitHub Pages setup.
-- [ ] Do not use root-relative paths such as `/js/app.js`; use `./js/app.js`.
-- [ ] Ensure all DOM elements referenced by JavaScript exist exactly once.
+- [x] Keep `index.html` semantic and small.
+- [x] Keep all major visual elements and dialogs in HTML, rather than generating the whole interface from JavaScript.
+- [x] Load CSS files in a predictable order.
+- [x] Load JavaScript using `type="module"` and relative imports if supported by the current GitHub Pages setup.
+- [x] Do not use root-relative paths such as `/js/app.js`; use `./js/app.js`.
+- [x] Ensure all DOM elements referenced by JavaScript exist exactly once.
+Reason: `index.html` lataa nyt `./js/app.js` moduulina, ja `app.js` käyttää suhteellisia importteja (`./config.js`, `./utils.js`).
 
 ## 2.3 Module responsibilities
 
 - [ ] `app.js`: application bootstrap and high-level orchestration only.
-- [ ] `config.js`: thresholds, intervals, theme names and constants.
+- [x] `config.js`: thresholds, intervals, theme names and constants.
 - [ ] `dom.js`: centralized DOM references with null validation.
 - [ ] `gps.js`: geolocation permission, watcher lifecycle and raw position events.
 - [ ] `speed.js`: speed validation, fallback calculation and smoothing.
@@ -122,16 +123,18 @@ The agent may merge very small modules when that improves clarity, but must keep
 - [ ] `route-recorder.js`: accepted GPS points, duplicate suppression and polyline updates.
 - [ ] `gestures.js`: swipe recognition without breaking map pan/zoom.
 - [ ] `ui.js`: visible state changes, dialogs, summaries and messages.
-- [ ] `utils.js`: pure reusable helpers such as Haversine distance, time formatting and clamping.
+- [x] `utils.js`: pure reusable helpers such as Haversine distance, time formatting and clamping.
+Reason: Vain ensimmäinen turvallinen pilkkomisaskel tehty; muu vastuujako (gps/map/session/ui jne.) jatkuu seuraavissa vaiheissa.
 
 ## 2.4 Refactor verification
 
 After moving code:
 
-- [ ] Run or perform a syntax check on every JavaScript file.
-- [ ] Confirm every import path resolves with correct letter case.
+- [x] Run or perform a syntax check on every JavaScript file.
+- [x] Confirm every import path resolves with correct letter case.
 - [ ] Confirm GitHub Pages serves modules with no MIME or 404 errors.
 - [ ] Confirm all Phase 1 regression checks still pass before adding new features.
+Reason: Paikallisella staattisella palvelimella moduulit palautuivat 200-vastauksilla, mutta GitHub Pages -deployn jälkeinen varmistus on vielä tekemättä.
 
 ## Phase 2 completion gate
 

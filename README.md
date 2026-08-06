@@ -10,7 +10,7 @@ Moto Dashboard on suomenkielinen, staattinen web-sovellus moottoripyörän ajoda
 - Verkkotila
 - Leaflet + OpenStreetMap -kartta
 - Karttateemat: Normaali, Mustavalko, Cruising, Vesistö, Metsä, Yö
-- Teeman vaihto painikkeella ja pyyhkäisyllä
+- Teeman vaihto painikkeella
 - Sessiot: uusi, jatka, lopeta, historia, poista yksittäinen, poista kaikki
 - Ajetun reitin tallennus ja näyttö
 - Heading-up / north-up -tilan vaihto
@@ -24,11 +24,19 @@ https://eggheadstudio.github.io/MotoDashboard/
 Nykyinen toteutus on tarkoituksella yksinkertainen ja staattinen:
 
 - index.html
+- css/dashboard.css
+- js/app.js
+- js/config.js
+- js/utils.js
 - manifest.webmanifest
 - README.md
 - UPDATE.md
 
-`index.html` sisältää käyttöliittymän, tyylit ja JavaScript-logiikan.
+`index.html` sisältää käyttöliittymärungon.
+`css/dashboard.css` sisältää tyylit.
+`js/app.js` sisältää sovelluksen käynnistyksen ja orkestroinnin.
+`js/config.js` sisältää vakioita ja raja-arvoja.
+`js/utils.js` sisältää puhtaat apufunktiot.
 
 ## GitHub Pages -käyttöönotto
 
