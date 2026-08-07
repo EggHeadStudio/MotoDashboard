@@ -96,6 +96,7 @@ export function createRouteRecorder(config) {
     var map = input.map;
     var leaflet = input.leaflet;
     var routeLayer = input.routeLayer;
+    var routeColor = input.routeColor || '#ffcc00';
     var persistActiveSession = input.persistActiveSession;
 
     if (!activeSession || !sessionActive) {
@@ -116,7 +117,7 @@ export function createRouteRecorder(config) {
       activeSession.routePoints.push(point);
       activeSession.lastAcceptedPoint = point;
       activeSession.resumeAnchorPending = false;
-      routeLayer = updateRouteLayer({ map: map, leaflet: leaflet, activeSession: activeSession, routeLayer: routeLayer });
+      routeLayer = updateRouteLayer({ map: map, leaflet: leaflet, activeSession: activeSession, routeLayer: routeLayer, routeColor: routeColor });
       persistActiveSession(false);
       return { routeLayer: routeLayer, pointAccepted: true };
     }
@@ -130,7 +131,7 @@ export function createRouteRecorder(config) {
         activeSession.routePoints.push(point);
         activeSession.lastAcceptedPoint = point;
         activeSession.resumeAnchorPending = false;
-        routeLayer = updateRouteLayer({ map: map, leaflet: leaflet, activeSession: activeSession, routeLayer: routeLayer });
+        routeLayer = updateRouteLayer({ map: map, leaflet: leaflet, activeSession: activeSession, routeLayer: routeLayer, routeColor: routeColor });
         persistActiveSession(false);
         return { routeLayer: routeLayer, pointAccepted: true };
       }
@@ -169,7 +170,7 @@ export function createRouteRecorder(config) {
     activeSession.lastAcceptedPoint = point;
     activeSession.maxSpeedKmh = Math.max(activeSession.maxSpeedKmh, speedKmh || 0);
 
-    routeLayer = updateRouteLayer({ map: map, leaflet: leaflet, activeSession: activeSession, routeLayer: routeLayer });
+    routeLayer = updateRouteLayer({ map: map, leaflet: leaflet, activeSession: activeSession, routeLayer: routeLayer, routeColor: routeColor });
     persistActiveSession(false);
 
     return { routeLayer: routeLayer, pointAccepted: true };

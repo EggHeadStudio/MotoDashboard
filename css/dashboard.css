@@ -719,6 +719,8 @@
 
     body.theme-monochrome #hud #speed-value {
       text-shadow: 0 0 20px rgba(255,59,48,0.35), 0 2px 6px rgba(0,0,0,0.85);
+      -webkit-text-stroke: 6px rgba(255,255,255,0.95);
+      paint-order: stroke fill;
     }
 
     body.theme-night #hud .panel-label,
