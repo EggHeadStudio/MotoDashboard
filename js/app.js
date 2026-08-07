@@ -62,7 +62,6 @@ import {
 import { isGeolocationSupported, startGeoWatch, stopGeoWatch, getGeolocationErrorMessage } from './gps.js';
 import { setCollapsedState, setTextContent } from './ui.js';
 import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeLayer } from './map.js';
-import { bindThemeSwipe } from './gestures.js';
 
 (function () {
     'use strict';
@@ -183,13 +182,14 @@ import { bindThemeSwipe } from './gestures.js';
       var desktopRotationLastPoint = null;
       var wheelRotateOverlayTimer = null;
       var compassOverlayHideTimer = null;
-      var unbindThemeSwipe = null;
 
       var movementConfirmed = false;
       var uiControlsHidden = false;
 
       var themeToastTimer = null;
       var mapStatusTimer = null;
+      var viewportRefreshTimer = null;
+      var viewportListenersBound = false;
 
       var themeNames = THEME_NAMES;
       var themeClasses = THEME_CLASSES;
@@ -475,6 +475,28 @@ import { bindThemeSwipe } from './gestures.js';
           }
           mapStatusTimer = null;
         }, durationMs || 1400);
+      }
+
+      function refreshMapViewportCoverage() {
+        if (!map) {
+          return;
+        }
+
+        map.invalidateSize({ pan: false, debounceMoveend: true });
+        if (mapTileLayer && typeof mapTileLayer.redraw === 'function') {
+          mapTileLayer.redraw();
+        }
+      }
+
+      function scheduleMapViewportCoverageRefresh() {
+        if (viewportRefreshTimer) {
+          window.clearTimeout(viewportRefreshTimer);
+        }
+
+        viewportRefreshTimer = window.setTimeout(function () {
+          viewportRefreshTimer = null;
+          refreshMapViewportCoverage();
+        }, 140);
       }
 
       function applyStoredTheme() {
@@ -1311,6 +1333,19 @@ import { bindThemeSwipe } from './gestures.js';
           if (!mapRotationSupported) {
             headingUpEnabled = false;
           }
+
+          if (!viewportListenersBound) {
+            window.addEventListener('resize', scheduleMapViewportCoverageRefresh);
+            window.addEventListener('orientationchange', scheduleMapViewportCoverageRefresh);
+            document.addEventListener('visibilitychange', function () {
+              if (document.visibilityState === 'visible') {
+                scheduleMapViewportCoverageRefresh();
+              }
+            });
+            viewportListenersBound = true;
+          }
+
+          scheduleMapViewportCoverageRefresh();
           applyTheme(currentTheme);
           applyHeadingModeSettings(headingUpEnabled ? 'menosuunta' : 'lukittu', false);
           setupManualTouchRotation();
@@ -1740,20 +1775,6 @@ import { bindThemeSwipe } from './gestures.js';
       elThemeBtn.addEventListener('click', function () {
         cycleTheme(1);
       });
-
-      if (elMap) {
-        unbindThemeSwipe = bindThemeSwipe({
-          mapElement: elMap,
-          minDistance: 56,
-          minDirectionRatio: 1.35,
-          canStart: function () {
-            return !touchRotationActive && !rotationPanActive && !(headingUpEnabled && mapRotationSupported);
-          },
-          onSwipe: function (direction) {
-            cycleTheme(direction > 0 ? 1 : -1);
-          }
-        });
-      }
 
       elHeadingBtn.addEventListener('click', function () {
         var nextMode = headingUpEnabled ? 'lukittu' : 'menosuunta';

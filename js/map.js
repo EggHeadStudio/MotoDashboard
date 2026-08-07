@@ -10,6 +10,19 @@ function getThemeTileConfig(themeName) {
   };
 }
 
+function createTileLayer(L, tileConfig) {
+  return L.tileLayer(tileConfig.url, {
+    attribution: tileConfig.attribution,
+    maxZoom: 19,
+    subdomains: tileConfig.subdomains,
+    // Keep a wider off-screen tile buffer to avoid blank/dark blocks when the map is rotated/scaled.
+    keepBuffer: 12,
+    updateWhenIdle: false,
+    updateWhenZooming: true,
+    crossOrigin: true
+  });
+}
+
 export function initLeafletMap(input) {
   var L = input.L;
   var mapElementId = input.mapElementId || 'map';
@@ -34,12 +47,7 @@ export function initLeafletMap(input) {
   ], isFinite(initialZoom) ? initialZoom : 6);
 
   var tileConfig = getThemeTileConfig(themeName);
-  var tileLayer = L.tileLayer(tileConfig.url, {
-    attribution: tileConfig.attribution,
-    maxZoom: 19,
-    subdomains: tileConfig.subdomains,
-    crossOrigin: true
-  }).addTo(map);
+  var tileLayer = createTileLayer(L, tileConfig).addTo(map);
 
   tileLayer.on('load', function () {
     if (mapStatusEl) {
@@ -61,8 +69,18 @@ export function initLeafletMap(input) {
   }
 
   window.setTimeout(function () {
-    map.invalidateSize();
+    map.invalidateSize({ pan: false, debounceMoveend: true });
+    if (typeof tileLayer.redraw === 'function') {
+      tileLayer.redraw();
+    }
   }, 250);
+
+  window.setTimeout(function () {
+    map.invalidateSize({ pan: false, debounceMoveend: true });
+    if (typeof tileLayer.redraw === 'function') {
+      tileLayer.redraw();
+    }
+  }, 900);
 
   return {
     map: map,
@@ -94,12 +112,7 @@ export function setMapThemeLayer(input) {
     map.removeLayer(tileLayer);
   }
 
-  var nextLayer = L.tileLayer(tileConfig.url, {
-    attribution: tileConfig.attribution,
-    maxZoom: 19,
-    subdomains: tileConfig.subdomains,
-    crossOrigin: true
-  }).addTo(map);
+  var nextLayer = createTileLayer(L, tileConfig).addTo(map);
 
   nextLayer.on('load', function () {
     if (mapStatusEl) {
