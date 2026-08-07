@@ -12,6 +12,7 @@ Moto Dashboard on suomenkielinen, staattinen web-sovellus moottoripyörän ajoda
 - Karttateemat: Normaali, Mustavalko, Cruising, Vesistö, Metsä, Yö
 - Teeman vaihto painikkeella
 - Sessiot: uusi, jatka, lopeta, historia, poista yksittäinen, poista kaikki
+- Session nimeäminen lopetuksessa tai myöhemmin historiasta
 - Ajetun reitin tallennus ja näyttö
 - Heading-up / north-up -tilan vaihto
 
@@ -29,6 +30,7 @@ Nykyinen toteutus on tarkoituksella yksinkertainen ja staattinen:
 - js/config.js
 - js/dom.js
 - js/route-recorder.js
+- js/session-manager.js
 - js/session-store.js
 - js/speed.js
 - js/weather.js
@@ -43,6 +45,7 @@ Nykyinen toteutus on tarkoituksella yksinkertainen ja staattinen:
 `js/config.js` sisältää vakioita ja raja-arvoja.
 `js/dom.js` sisältää DOM-viittaukset ja validoinnin.
 `js/route-recorder.js` sisältää reittipisteiden hyväksynnän ja polyline-päivityksen.
+`js/session-manager.js` sisältää session nimen käsittelyn sekä historia-/yhteenvetotekstien muodostuksen.
 `js/session-store.js` sisältää IndexedDB/localStorage-käsittelyn.
 `js/speed.js` sisältää nopeuden validoinnin, fallback-laskennan ja suodatuksen.
 `js/weather.js` sisältää Open-Meteo-haun ja säärivien päivityksen.
@@ -66,7 +69,8 @@ Sovellus julkaistaan osoitteeseen yllä.
 3. Salli tarkka sijainti.
 4. Ajon aikana seuranta, tallennus ja laskenta toimivat automaattisesti.
 5. Lopeta sessio painikkeesta Lopeta sessio.
-6. Tallennetut ajot löytyvät aloitusnäkymän Tallennetut ajot -painikkeesta.
+6. Anna halutessasi sessiolle nimi lopetuksen yhteydessä.
+7. Tallennetut ajot löytyvät aloitusnäkymän Tallennetut ajot -painikkeesta, jossa näkyvät myös lisätiedot (aloitus/lopetus, matka, aika, KA, MAX, pisteet) ja nimen voi vaihtaa.
 
 ## Tallennus ja tietosuoja
 

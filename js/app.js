@@ -44,6 +44,25 @@ import {
 import { fetchAndRenderWeather } from './weather.js';
 import { evaluateSpeedSample, smoothSpeed, createMovementTracker } from './speed.js';
 import { createRouteRecorder } from './route-recorder.js';
+import {
+  computeRotationVisualScale,
+  computeRotationAwarePanDelta,
+  parseVisualRotationAngle,
+  getReliableHeadingCandidate,
+  computeUpdatedHeading
+} from './map-rotation.js';
+import {
+  sanitizeSessionName,
+  createSessionRecord,
+  computeAverageMovingSpeed,
+  buildSessionHistoryHtml,
+  formatLatestSessionSummary,
+  formatCompletedSessionSummary
+} from './session-manager.js';
+import { isGeolocationSupported, startGeoWatch, stopGeoWatch, getGeolocationErrorMessage } from './gps.js';
+import { setCollapsedState, setTextContent } from './ui.js';
+import { initLeafletMap, setFollowMapView, updateMapPositionLayers } from './map.js';
+import { bindThemeSwipe } from './gestures.js';
 
 (function () {
     'use strict';
@@ -163,6 +182,7 @@ import { createRouteRecorder } from './route-recorder.js';
       var desktopRotationLastPoint = null;
       var wheelRotateOverlayTimer = null;
       var compassOverlayHideTimer = null;
+      var unbindThemeSwipe = null;
 
       var movementConfirmed = false;
       var uiControlsHidden = false;
@@ -205,35 +225,33 @@ import { createRouteRecorder } from './route-recorder.js';
       }
 
       function setStartStatus(message) {
-        elStartStatus.textContent = message;
+        setTextContent(elStartStatus, message);
       }
 
       function setMapUnavailableMessage(message) {
-        elMapFallbackMsg.textContent = message || '';
+        setTextContent(elMapFallbackMsg, message || '');
       }
 
       function setStartGpsHint(message) {
-        elStartGpsHint.textContent = message || '';
+        setTextContent(elStartGpsHint, message || '');
       }
 
       function setGpsStatus(message, className) {
-        elGpsStatus.textContent = message;
+        setTextContent(elGpsStatus, message);
         elGpsStatus.className = 'info-row ' + (className || 'status-moderate');
       }
 
       function resetStartButton(label) {
         elStartBtn.disabled = false;
-        elStartBtn.textContent = label;
+        setTextContent(elStartBtn, label);
       }
 
       function setStatusCollapsed(collapsed) {
-        document.body.classList.toggle('status-collapsed', collapsed);
-        elStatusTab.setAttribute('aria-expanded', String(!collapsed));
+        setCollapsedState(document.body, elStatusTab, collapsed, 'status-collapsed');
       }
 
       function setTopCollapsed(collapsed) {
-        document.body.classList.toggle('top-collapsed', collapsed);
-        elTopTab.setAttribute('aria-expanded', String(!collapsed));
+        setCollapsedState(document.body, elTopTab, collapsed, 'top-collapsed');
       }
 
       function collapseStatusDock() {
@@ -291,7 +309,7 @@ import { createRouteRecorder } from './route-recorder.js';
           return;
         }
 
-        if (!('geolocation' in navigator)) {
+        if (!isGeolocationSupported(navigator)) {
           setStartGpsHint('Selain ei tue sijaintipalvelua.');
           return;
         }
@@ -466,13 +484,16 @@ import { createRouteRecorder } from './route-recorder.js';
       }
 
       function applyMapRotationVisual(angleDeg) {
-        if (!elMap || !mapRotationSupported) {
+        if (!mapRotationSupported) {
           return;
         }
 
         renderedMapRotationDeg = normalizeAngle(angleDeg);
-        var visualScale = getRotationVisualScale();
-        elMap.style.transform = 'rotate(' + angleDeg + 'deg) scale(' + visualScale + ')';
+        if (elMap) {
+          var visualScale = getRotationVisualScale(angleDeg);
+          elMap.style.transform = 'rotate(' + angleDeg + 'deg) scale(' + visualScale + ')';
+        }
+
         if (elCompassNeedle) {
           elCompassNeedle.style.transform = 'rotate(' + angleDeg + 'deg)';
         }
@@ -481,8 +502,14 @@ import { createRouteRecorder } from './route-recorder.js';
         }
       }
 
-      function getRotationVisualScale() {
-        return headingUpEnabled && mapRotationSupported ? 1.48 : 1;
+      function getRotationVisualScale(angleDeg) {
+        return computeRotationVisualScale({
+          headingUpEnabled: headingUpEnabled,
+          mapRotationSupported: mapRotationSupported,
+          angleDeg: angleDeg,
+          width: elMap ? (elMap.clientWidth || window.innerWidth || 1) : (window.innerWidth || 1),
+          height: elMap ? (elMap.clientHeight || window.innerHeight || 1) : (window.innerHeight || 1)
+        });
       }
 
       function setMapDraggingForMode() {
@@ -498,33 +525,24 @@ import { createRouteRecorder } from './route-recorder.js';
       }
 
       function getRotationAwarePanDelta(dx, dy) {
-        var angleRad = getVisualRotationAngleDeg() * Math.PI / 180;
-        var cosA = Math.cos(angleRad);
-        var sinA = Math.sin(angleRad);
-        var scale = getRotationVisualScale();
-
-        return [
-          (-cosA * dx + sinA * dy) / scale,
-          (-sinA * dx - cosA * dy) / scale
-        ];
+        var visualAngle = getVisualRotationAngleDeg();
+        return computeRotationAwarePanDelta({
+          dx: dx,
+          dy: dy,
+          angleDeg: visualAngle,
+          scale: getRotationVisualScale(visualAngle)
+        });
       }
 
       function getVisualRotationAngleDeg() {
-        if (elCompassNeedle && typeof elCompassNeedle.style.transform === 'string') {
-          var match = elCompassNeedle.style.transform.match(/rotate\((-?[0-9.]+)deg\)/);
-          if (match && match[1]) {
-            var parsed = parseFloat(match[1]);
-            if (isFinite(parsed)) {
-              return normalizeAngle(parsed);
-            }
-          }
-        }
-
-        if (isFinite(renderedMapRotationDeg)) {
-          return normalizeAngle(renderedMapRotationDeg);
-        }
-
-        return normalizeAngle(currentHeadingDeg);
+        return parseVisualRotationAngle({
+          transformValue: elCompassNeedle && typeof elCompassNeedle.style.transform === 'string'
+            ? elCompassNeedle.style.transform
+            : '',
+          renderedMapRotationDeg: renderedMapRotationDeg,
+          currentHeadingDeg: currentHeadingDeg,
+          normalizeAngle: normalizeAngle
+        });
       }
 
       function panRotationAwareBy(dx, dy) {
@@ -634,53 +652,43 @@ import { createRouteRecorder } from './route-recorder.js';
       }
 
       function getReliableHeading(coords, lat, lon, validatedSpeedKmh) {
-        if (coords
-          && typeof coords.heading === 'number'
-          && isFinite(coords.heading)
-          && validatedSpeedKmh !== null
-          && validatedSpeedKmh >= HEADING_MIN_SPEED_KMH
-          && coords.accuracy <= MOVING_ACCURACY_MAX_M) {
-          return normalizeAngle(coords.heading);
-        }
-
-        if (activeSession && activeSession.lastAcceptedPoint) {
-          var point = activeSession.lastAcceptedPoint;
-          var d = haversine(point.latitude, point.longitude, lat, lon);
-          if (d >= HEADING_MIN_DISTANCE_M) {
-            return bearingDegrees(point.latitude, point.longitude, lat, lon);
-          }
-        }
-
-        if (prevCoords) {
-          var fallbackDistance = haversine(prevCoords.lat, prevCoords.lon, lat, lon);
-          if (fallbackDistance >= HEADING_MIN_DISTANCE_M) {
-            return bearingDegrees(prevCoords.lat, prevCoords.lon, lat, lon);
-          }
-        }
-
-        return null;
+        return getReliableHeadingCandidate({
+          coords: coords,
+          lat: lat,
+          lon: lon,
+          validatedSpeedKmh: validatedSpeedKmh,
+          activeSessionLastAcceptedPoint: activeSession && activeSession.lastAcceptedPoint ? activeSession.lastAcceptedPoint : null,
+          prevCoords: prevCoords,
+          headingMinSpeedKmh: HEADING_MIN_SPEED_KMH,
+          movingAccuracyMaxM: MOVING_ACCURACY_MAX_M,
+          headingMinDistanceM: HEADING_MIN_DISTANCE_M,
+          haversine: haversine,
+          bearingDegrees: bearingDegrees,
+          normalizeAngle: normalizeAngle
+        });
       }
 
       function updateMapRotation(headingCandidate, movingConfident, now) {
-        if (!headingUpEnabled || !mapRotationSupported) {
+        var headingUpdate = computeUpdatedHeading({
+          headingUpEnabled: headingUpEnabled,
+          mapRotationSupported: mapRotationSupported,
+          headingCandidate: headingCandidate,
+          movingConfident: movingConfident,
+          now: now,
+          currentHeadingDeg: currentHeadingDeg,
+          lastReliableHeadingAt: lastReliableHeadingAt,
+          northUpDelayMs: NORTH_UP_DELAY_MS,
+          rotationSmoothing: ROTATION_SMOOTHING,
+          shortestAngleDelta: shortestAngleDelta,
+          normalizeAngle: normalizeAngle
+        });
+
+        if (!headingUpdate.shouldApply) {
           return;
         }
 
-        var targetHeading = currentHeadingDeg;
-        if (headingCandidate !== null && movingConfident) {
-          targetHeading = headingCandidate;
-          lastReliableHeadingAt = now;
-        } else if (lastReliableHeadingAt > 0 && (now - lastReliableHeadingAt) >= NORTH_UP_DELAY_MS) {
-          targetHeading = 0;
-        }
-
-        var delta = shortestAngleDelta(currentHeadingDeg, targetHeading);
-        if (Math.abs(delta) < 0.35) {
-          currentHeadingDeg = normalizeAngle(targetHeading);
-        } else {
-          currentHeadingDeg = normalizeAngle(currentHeadingDeg + delta * ROTATION_SMOOTHING);
-        }
-
+        currentHeadingDeg = headingUpdate.currentHeadingDeg;
+        lastReliableHeadingAt = headingUpdate.lastReliableHeadingAt;
         applyMapRotationVisual(-currentHeadingDeg);
       }
 
@@ -998,23 +1006,11 @@ import { createRouteRecorder } from './route-recorder.js';
           return;
         }
 
-        elHistoryList.innerHTML = sessionHistory.map(function (session) {
-          var km = Math.round((session.distanceMeters || 0) / 100) / 10;
-          var state = session.status === 'active' ? 'Kesken' : 'Valmis';
-          var avg = formatSpeedKmh(session.averageMovingSpeedKmh);
-          var max = formatSpeedKmh(session.maxSpeedKmh);
-          var resumeBtn = session.status === 'active'
-            ? '<button data-action="resume" data-id="' + session.id + '">Jatka</button>'
-            : '';
-          var openBtn = session.status === 'completed'
-            ? '<button data-action="open" data-id="' + session.id + '">Avaa</button>'
-            : '';
-          return '<div class="session-item">'
-            + '<div><strong>' + formatDate(session.startedAt) + '</strong><br><small>'
-            + km + ' km · ' + formatDuration(session.movingDurationMs || 0) + ' · ka ' + avg + ' km/h · max ' + max + ' km/h · ' + state + '</small></div>'
-            + '<div>' + openBtn + resumeBtn + '<button class="delete" data-action="delete" data-id="' + session.id + '">Poista</button></div>'
-            + '</div>';
-        }).join('');
+        elHistoryList.innerHTML = buildSessionHistoryHtml(sessionHistory, {
+          formatDate: formatDate,
+          formatDuration: formatDuration,
+          formatSpeedKmh: formatSpeedKmh
+        });
 
         updateHistoryActionsVisibility();
       }
@@ -1043,11 +1039,11 @@ import { createRouteRecorder } from './route-recorder.js';
         }
 
         setStartStatus('Ajon katselu');
-        setSessionSummary('Katselu: ' + formatDate(session.startedAt)
-          + ' · ' + (Math.round((session.distanceMeters || 0) / 100) / 10) + ' km'
-          + ' · ' + formatDuration(session.movingDurationMs || 0)
-          + ' · ka ' + formatSpeedKmh(session.averageMovingSpeedKmh) + ' km/h'
-          + ' · max ' + formatSpeedKmh(session.maxSpeedKmh) + ' km/h');
+        setSessionSummary(formatCompletedSessionSummary(session, {
+          formatDate: formatDate,
+          formatDuration: formatDuration,
+          formatSpeedKmh: formatSpeedKmh
+        }));
       }
 
       function returnToStartView() {
@@ -1078,28 +1074,16 @@ import { createRouteRecorder } from './route-recorder.js';
         }
 
         var latestCompleted = sessionHistory.find(function (item) { return item.status === 'completed'; }) || sessionHistory[0];
-        var km = formatDistanceKm(latestCompleted.distanceMeters || 0);
-        setSessionSummary('Viimeisin ajo: ' + formatDate(latestCompleted.startedAt) + ' · ' + km + ' km · ' + formatDuration(latestCompleted.movingDurationMs || 0));
+        setSessionSummary(formatLatestSessionSummary(latestCompleted, {
+          formatDate: formatDate,
+          formatDistanceKm: formatDistanceKm,
+          formatDuration: formatDuration
+        }));
         updateHistoryActionsVisibility();
       }
 
       function createSession() {
-        return {
-          id: 'ride-' + Date.now() + '-' + Math.floor(Math.random() * 10000),
-          status: 'active',
-          startedAt: Date.now(),
-          endedAt: null,
-          updatedAt: Date.now(),
-          distanceMeters: 0,
-          movingDurationMs: 0,
-          maxSpeedKmh: 0,
-          averageMovingSpeedKmh: 0,
-          routePoints: [],
-          lastAcceptedPoint: null,
-          stopAnchorPending: false,
-          resumeAnchorPending: false,
-          mapTheme: currentTheme
-        };
+        return createSessionRecord(currentTheme);
       }
 
       function updateRouteLayer() {
@@ -1117,9 +1101,10 @@ import { createRouteRecorder } from './route-recorder.js';
         }
 
         activeSession.updatedAt = Date.now();
-        activeSession.averageMovingSpeedKmh = activeSession.movingDurationMs > 0 && activeSession.distanceMeters > 0
-          ? Math.round((activeSession.distanceMeters / 1000) / (activeSession.movingDurationMs / 3600000) * 10) / 10
-          : 0;
+        activeSession.averageMovingSpeedKmh = computeAverageMovingSpeed(
+          activeSession.distanceMeters,
+          activeSession.movingDurationMs
+        );
 
         updateSessionStatsPanel(activeSession);
 
@@ -1213,7 +1198,7 @@ import { createRouteRecorder } from './route-recorder.js';
         setSessionSummary('Jatketaan aiempaa sessiota.');
         setStartStatus('Sessio palautettu');
 
-        if (!window.isSecureContext || !('geolocation' in navigator)) {
+        if (!window.isSecureContext || !isGeolocationSupported(navigator)) {
           showLocationError('Sijaintia ei voitu kaynnistaa jatketulle sessiolle.', 'GPS ei kaynnistynyt');
           return;
         }
@@ -1237,6 +1222,11 @@ import { createRouteRecorder } from './route-recorder.js';
           return;
         }
 
+        var nameInput = window.prompt('Anna sessiolle nimi (valinnainen):', activeSession.name || '');
+        if (nameInput !== null) {
+          activeSession.name = sanitizeSessionName(nameInput);
+        }
+
         activeSession.status = 'completed';
         activeSession.endedAt = Date.now();
         activeSession.updatedAt = Date.now();
@@ -1250,7 +1240,7 @@ import { createRouteRecorder } from './route-recorder.js';
         elBackToStartBtn.style.display = 'none';
         elStartOverlay.style.display = 'flex';
         setStartStatus('Sessio valmis');
-        setSessionSummary('Sessio tallennettu paikallisesti.');
+        setSessionSummary('Sessio tallennettu paikallisesti' + (activeSession.name ? ': ' + activeSession.name : '.') );
         updateStartSummary();
       }
 
@@ -1272,47 +1262,24 @@ import { createRouteRecorder } from './route-recorder.js';
         }
 
         try {
-          map = L.map('map', {
-            zoomControl: false,
-            attributionControl: true,
-            dragging: true,
-            touchZoom: true,
-            scrollWheelZoom: false,
-            doubleClickZoom: false,
-            boxZoom: false
-          }).setView([61.9241, 25.7482], 6);
-
-          var tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
-            maxZoom: 19,
-            crossOrigin: true
-          }).addTo(map);
-
-          tileLayer.on('load', function () {
-            if (elMapStatus) { elMapStatus.style.display = 'none'; }
-          });
-          tileLayer.on('tileerror', function () {
-            if (elMapStatus) {
-              elMapStatus.textContent = 'Karttatiiliä ei voitu ladata';
-              elMapStatus.style.display = '';
-            }
-          });
-
           var onUserMapInteraction = function (event) {
             if (event && event.originalEvent) {
               followUser = false;
             }
           };
 
-          map.on('dragstart', onUserMapInteraction);
-          map.on('zoomstart', onUserMapInteraction);
-          map.on('movestart', onUserMapInteraction);
+          var mapInit = initLeafletMap({
+            L: L,
+            mapElementId: 'map',
+            mapStatusEl: elMapStatus,
+            onUserMapInteraction: onUserMapInteraction,
+            initialLat: 61.9241,
+            initialLon: 25.7482,
+            initialZoom: 6
+          });
 
-          window.setTimeout(function () {
-            map.invalidateSize();
-          }, 250);
-
-          mapPane = map.getPanes ? map.getPanes().mapPane : null;
+          map = mapInit.map;
+          mapPane = mapInit.mapPane;
           mapRotationSupported = !!(elMap && 'transform' in elMap.style);
           if (!mapRotationSupported) {
             headingUpEnabled = false;
@@ -1330,69 +1297,31 @@ import { createRouteRecorder } from './route-recorder.js';
       }
 
       function setFollowView(lat, lon) {
-        if (!map) {
-          return;
-        }
-
-        var latLng = typeof L !== 'undefined' ? L.latLng(lat, lon) : [lat, lon];
-
-        if (!hasAppliedInitialFollowZoom && map.getZoom() < 14) {
-          hasAppliedInitialFollowZoom = true;
-          map.setView(latLng, 16, { animate: true });
-          return;
-        }
-
-        hasAppliedInitialFollowZoom = true;
-
-        var center = map.getCenter ? map.getCenter() : null;
-        var centerDistanceM = center && typeof L !== 'undefined'
-          ? map.distance(center, latLng)
-          : Infinity;
-
-        if (centerDistanceM < 4) {
-          return;
-        }
-
-        if (!headingUpEnabled || !mapRotationSupported) {
-          map.panTo(latLng, {
-            animate: true,
-            duration: 0.35,
-            easeLinearity: 0.35,
-            noMoveStart: true
-          });
-          return;
-        }
-
-        map.panTo(latLng, {
-          animate: true,
-          duration: 0.35,
-          easeLinearity: 0.35,
-          noMoveStart: true
+        hasAppliedInitialFollowZoom = setFollowMapView({
+          map: map,
+          L: typeof L !== 'undefined' ? L : null,
+          lat: lat,
+          lon: lon,
+          hasAppliedInitialFollowZoom: hasAppliedInitialFollowZoom,
+          headingUpEnabled: headingUpEnabled,
+          mapRotationSupported: mapRotationSupported
         });
       }
 
       function updateMapPosition(lat, lon, accuracy) {
-        if (!map || typeof L === 'undefined' || !dotIcon) {
-          return;
-        }
+        var positionUpdate = updateMapPositionLayers({
+          map: map,
+          L: typeof L !== 'undefined' ? L : null,
+          dotIcon: dotIcon,
+          posMarker: posMarker,
+          accCircle: accCircle,
+          lat: lat,
+          lon: lon,
+          accuracy: accuracy
+        });
 
-        var latlng = [lat, lon];
-        if (!posMarker) {
-          posMarker = L.marker(latlng, { icon: dotIcon, interactive: false }).addTo(map);
-        } else {
-          posMarker.setLatLng(latlng);
-        }
-
-        if (!accCircle) {
-          accCircle = L.circle(latlng, {
-            radius: accuracy,
-            className: 'accuracy-circle',
-            interactive: false
-          }).addTo(map);
-        } else {
-          accCircle.setLatLng(latlng);
-          accCircle.setRadius(accuracy);
-        }
+        posMarker = positionUpdate.posMarker;
+        accCircle = positionUpdate.accCircle;
 
         if (followUser) {
           setFollowView(lat, lon);
@@ -1437,8 +1366,8 @@ import { createRouteRecorder } from './route-recorder.js';
       }
 
       function clearExistingWatch() {
-        if (watchId !== null && 'geolocation' in navigator) {
-          navigator.geolocation.clearWatch(watchId);
+        if (watchId !== null) {
+          stopGeoWatch(navigator.geolocation, watchId);
           watchId = null;
         }
       }
@@ -1487,16 +1416,7 @@ import { createRouteRecorder } from './route-recorder.js';
       }
 
       function getGpsErrorMessage(err) {
-        if (err && err.code === 1) {
-          return 'Sijaintilupa evättiin. Salli selaimelle sijainti ja lataa sivu uudelleen.';
-        }
-        if (err && err.code === 2) {
-          return 'Sijaintia ei saatu. Siirry ulos avoimelle paikalle ja yritä uudelleen.';
-        }
-        if (err && err.code === 3) {
-          return 'Sijainnin haku aikakatkaistiin. Yritä uudelleen.';
-        }
-        return 'GPS-seurannan käynnistäminen epäonnistui.';
+        return getGeolocationErrorMessage(err);
       }
 
       function showLocationFallback(message, debugMessage, error) {
@@ -1639,7 +1559,7 @@ import { createRouteRecorder } from './route-recorder.js';
           timeout: 15000
         };
 
-        watchId = navigator.geolocation.watchPosition(handlePositionSuccess, handlePositionError, options);
+        watchId = startGeoWatch(navigator.geolocation, handlePositionSuccess, handlePositionError, options);
         setDebugStage('GPS-seuranta käynnistetty');
 
         if (!softRestart) {
@@ -1685,7 +1605,7 @@ import { createRouteRecorder } from './route-recorder.js';
           return;
         }
 
-        if (!('geolocation' in navigator)) {
+        if (!isGeolocationSupported(navigator)) {
           showLocationError('Tämä selain ei tue sijaintia.', 'GPS ei tuettu');
           return;
         }
@@ -1704,7 +1624,7 @@ import { createRouteRecorder } from './route-recorder.js';
       function retryGps() {
         elGpsErrOverlay.style.display = 'none';
         elRetryBtn.style.display = 'none';
-        if ('geolocation' in navigator) {
+        if (isGeolocationSupported(navigator)) {
           try {
             startGpsTracking();
             return;
@@ -1768,7 +1688,7 @@ import { createRouteRecorder } from './route-recorder.js';
         elStartOverlay.style.display = 'none';
         setStartStatus('Sessio palautettu automaattisesti');
 
-        if (!window.isSecureContext || !('geolocation' in navigator)) {
+        if (!window.isSecureContext || !isGeolocationSupported(navigator)) {
           return;
         }
 
@@ -1791,6 +1711,20 @@ import { createRouteRecorder } from './route-recorder.js';
       elThemeBtn.addEventListener('click', function () {
         cycleTheme(1);
       });
+
+      if (elMap) {
+        unbindThemeSwipe = bindThemeSwipe({
+          mapElement: elMap,
+          minDistance: 56,
+          minDirectionRatio: 1.35,
+          canStart: function () {
+            return !touchRotationActive && !rotationPanActive && !(headingUpEnabled && mapRotationSupported);
+          },
+          onSwipe: function (direction) {
+            cycleTheme(direction > 0 ? 1 : -1);
+          }
+        });
+      }
 
       elHeadingBtn.addEventListener('click', function () {
         var nextMode = headingUpEnabled ? 'lukittu' : 'menosuunta';
@@ -1924,6 +1858,32 @@ import { createRouteRecorder } from './route-recorder.js';
           return;
         }
 
+        if (action === 'rename') {
+          var renameTarget = sessionHistory.find(function (item) { return item.id === id; });
+          if (!renameTarget) {
+            setSessionSummary('Valittua sessiota ei löytynyt.');
+            return;
+          }
+
+          var renamed = window.prompt('Anna sessiolle uusi nimi (valinnainen):', renameTarget.name || '');
+          if (renamed === null) {
+            return;
+          }
+
+          renameTarget.name = sanitizeSessionName(renamed);
+          renameTarget.updatedAt = Date.now();
+          if (activeSession && activeSession.id === renameTarget.id) {
+            activeSession.name = renameTarget.name;
+            activeSession.updatedAt = renameTarget.updatedAt;
+          }
+
+          saveSessionHistory();
+          renderHistory();
+          updateStartSummary();
+          setSessionSummary('Session nimi päivitetty.');
+          return;
+        }
+
         if (action !== 'resume') {
           return;
         }
@@ -1948,7 +1908,7 @@ import { createRouteRecorder } from './route-recorder.js';
         setStartStatus('Sessio palautettu');
         setSessionSummary('Sessio palautettu: ' + formatDate(selected.startedAt));
 
-        if (!window.isSecureContext || !('geolocation' in navigator)) {
+        if (!window.isSecureContext || !isGeolocationSupported(navigator)) {
           showLocationError('Sijaintia ei voitu kaynnistaa jatketulle sessiolle.', 'GPS ei kaynnistynyt');
           return;
         }
@@ -1972,7 +1932,7 @@ import { createRouteRecorder } from './route-recorder.js';
         if (document.visibilityState === 'visible') {
           requestWakeLockSafely();
 
-          if (!sessionActive || !('geolocation' in navigator) || !window.isSecureContext) {
+          if (!sessionActive || !isGeolocationSupported(navigator) || !window.isSecureContext) {
             return;
           }
 
@@ -1988,7 +1948,7 @@ import { createRouteRecorder } from './route-recorder.js';
       });
 
       window.addEventListener('pageshow', function () {
-        if (!sessionActive || !window.isSecureContext || !('geolocation' in navigator)) {
+        if (!sessionActive || !window.isSecureContext || !isGeolocationSupported(navigator)) {
           return;
         }
 
