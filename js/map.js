@@ -1,3 +1,15 @@
+import { THEME_MAP_STYLES } from './config.js';
+
+function getThemeTileConfig(themeName) {
+  var normalizedTheme = themeName || 'normal';
+  var config = THEME_MAP_STYLES[normalizedTheme] || THEME_MAP_STYLES.normal;
+  return {
+    url: config.url,
+    attribution: config.attribution,
+    subdomains: 'abc'
+  };
+}
+
 export function initLeafletMap(input) {
   var L = input.L;
   var mapElementId = input.mapElementId || 'map';
@@ -6,6 +18,7 @@ export function initLeafletMap(input) {
   var initialLat = Number(input.initialLat);
   var initialLon = Number(input.initialLon);
   var initialZoom = Number(input.initialZoom);
+  var themeName = input.themeName || 'normal';
 
   var map = L.map(mapElementId, {
     zoomControl: false,
@@ -20,9 +33,11 @@ export function initLeafletMap(input) {
     isFinite(initialLon) ? initialLon : 25.7482
   ], isFinite(initialZoom) ? initialZoom : 6);
 
-  var tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
+  var tileConfig = getThemeTileConfig(themeName);
+  var tileLayer = L.tileLayer(tileConfig.url, {
+    attribution: tileConfig.attribution,
     maxZoom: 19,
+    subdomains: tileConfig.subdomains,
     crossOrigin: true
   }).addTo(map);
 
@@ -54,6 +69,52 @@ export function initLeafletMap(input) {
     tileLayer: tileLayer,
     mapPane: map.getPanes ? map.getPanes().mapPane : null
   };
+}
+
+export function setMapThemeLayer(input) {
+  var map = input.map;
+  var L = input.L;
+  var themeName = input.themeName || 'normal';
+  var mapStatusEl = input.mapStatusEl || null;
+  var tileLayer = input.tileLayer || null;
+
+  if (!map || !L) {
+    return tileLayer;
+  }
+
+  var tileConfig = getThemeTileConfig(themeName);
+  var currentUrl = tileLayer && tileLayer._url ? tileLayer._url : '';
+  var currentAttribution = tileLayer && tileLayer.options ? tileLayer.options.attribution : '';
+
+  if (tileLayer && currentUrl === tileConfig.url && currentAttribution === tileConfig.attribution) {
+    return tileLayer;
+  }
+
+  if (tileLayer) {
+    map.removeLayer(tileLayer);
+  }
+
+  var nextLayer = L.tileLayer(tileConfig.url, {
+    attribution: tileConfig.attribution,
+    maxZoom: 19,
+    subdomains: tileConfig.subdomains,
+    crossOrigin: true
+  }).addTo(map);
+
+  nextLayer.on('load', function () {
+    if (mapStatusEl) {
+      mapStatusEl.style.display = 'none';
+    }
+  });
+
+  nextLayer.on('tileerror', function () {
+    if (mapStatusEl) {
+      mapStatusEl.textContent = 'Karttatiiliä ei voitu ladata';
+      mapStatusEl.style.display = '';
+    }
+  });
+
+  return nextLayer;
 }
 
 export function setFollowMapView(input) {
@@ -97,39 +158,36 @@ export function updateMapPositionLayers(input) {
   var map = input.map;
   var L = input.L;
   var dotIcon = input.dotIcon;
+  var logoRingIcon = input.logoRingIcon;
   var posMarker = input.posMarker || null;
-  var accCircle = input.accCircle || null;
+  var logoRingMarker = input.logoRingMarker || null;
   var lat = Number(input.lat);
   var lon = Number(input.lon);
-  var accuracy = Number(input.accuracy);
 
   if (!map || !L || !dotIcon) {
     return {
       posMarker: posMarker,
-      accCircle: accCircle
+      logoRingMarker: logoRingMarker
     };
   }
 
   var latLng = [lat, lon];
+  if (logoRingIcon) {
+    if (!logoRingMarker) {
+      logoRingMarker = L.marker(latLng, { icon: logoRingIcon, interactive: false, zIndexOffset: -300 }).addTo(map);
+    } else {
+      logoRingMarker.setLatLng(latLng);
+    }
+  }
+
   if (!posMarker) {
     posMarker = L.marker(latLng, { icon: dotIcon, interactive: false }).addTo(map);
   } else {
     posMarker.setLatLng(latLng);
   }
 
-  if (!accCircle) {
-    accCircle = L.circle(latLng, {
-      radius: accuracy,
-      className: 'accuracy-circle',
-      interactive: false
-    }).addTo(map);
-  } else {
-    accCircle.setLatLng(latLng);
-    accCircle.setRadius(accuracy);
-  }
-
   return {
     posMarker: posMarker,
-    accCircle: accCircle
+    logoRingMarker: logoRingMarker
   };
 }

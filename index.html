@@ -102,8 +102,11 @@
 
   <!-- Start overlay -->
   <div id="start-overlay" role="dialog" aria-modal="true" aria-label="Aloitusnäyttö">
-    <h1>Moto Dashboard</h1>
-    <p class="start-sub">Paina Aloita ja salli tarkka sijainti. Käynnistä sovellus ennen liikkeelle lähtöä.</p>
+    <img id="start-logo" src="./EggHeadStudio_logo.png" alt="EggHeadStudio logo">
+    <div id="start-title-wrap">
+      <h1>EggHeadStudio</h1>
+      <div id="start-title-sub">Moto Dashboard</div>
+    </div>
     <div class="start-actions">
       <button id="start-btn" aria-label="Aloita sovellus">Uusi sessio</button>
       <button id="resume-session-btn" class="start-option-btn secondary" aria-label="Jatka edellistä sessiota">Jatka edellistä</button>
@@ -114,13 +117,11 @@
     <div id="history-actions">
       <button id="clear-history-btn" class="start-option-btn secondary" aria-label="Poista kaikki tallennetut ajot">Poista kaikki ajot</button>
     </div>
-    <div id="history-storage-note">Tallennetut ajot säilyvät vain tässä selaimessa ja tällä laitteella. Tiedot voivat kadota, jos selaimen sivustodata poistetaan.</div>
     <div id="start-status" aria-live="assertive" aria-atomic="true">Valmis</div>
     <div id="start-debug" aria-live="polite" aria-atomic="true">Debug: Valmis</div>
     <div id="map-fallback-msg" aria-live="polite"></div>
     <div id="start-gps-hint" aria-live="polite"></div>
-    <div id="start-version">Versio 1.2</div>
-    <p class="start-safety">Älä käytä kosketusnäyttöä ajon aikana.</p>
+    <div id="start-version" aria-hidden="true"></div>
   </div>
 
   <!-- GPS error overlay -->

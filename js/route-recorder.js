@@ -29,6 +29,7 @@ export function createRouteRecorder(config) {
     var leaflet = input.leaflet;
     var activeSession = input.activeSession;
     var routeLayer = input.routeLayer;
+    var routeColor = input.routeColor || '#ffcc00';
 
     if (!map || typeof leaflet === 'undefined') {
       return routeLayer;
@@ -72,12 +73,13 @@ export function createRouteRecorder(config) {
 
     if (!routeLayer) {
       return leaflet.polyline(latLngs, {
-        color: '#ffcc00',
+        color: routeColor,
         weight: 5,
         opacity: 0.9
       }).addTo(map);
     }
 
+    routeLayer.setStyle({ color: routeColor });
     routeLayer.setLatLngs(latLngs);
     return routeLayer;
   }

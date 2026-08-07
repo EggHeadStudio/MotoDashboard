@@ -1,7 +1,29 @@
 export const APP_VERSION = '1.2';
 
-export const THEME_NAMES = ['Normaali', 'Mustavalko', 'Cruising', 'Vesistö', 'Metsä', 'Yö'];
-export const THEME_CLASSES = ['theme-normal', 'theme-monochrome', 'theme-cruising', 'theme-water', 'theme-forest', 'theme-night'];
+export const THEME_NAMES = ['Normaali', 'Mustavalko', 'Metsä', 'Asutus', 'Yö'];
+export const THEME_CLASSES = ['theme-normal', 'theme-monochrome', 'theme-forest', 'theme-urban', 'theme-night'];
+export const THEME_MAP_STYLES = {
+  normal: {
+    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
+  },
+  monochrome: {
+    url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+    attribution: 'Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors, SRTM | Map style © <a href="https://opentopomap.org" target="_blank" rel="noopener">OpenTopoMap</a>'
+  },
+  forest: {
+    url: 'https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors &copy; <a href="https://github.com/cyclosm/cyclosm-cartocss-style/releases" target="_blank" rel="noopener">CyclOSM</a>'
+  },
+  urban: {
+    url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+    attribution: 'Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors, SRTM | Map style © <a href="https://opentopomap.org" target="_blank" rel="noopener">OpenTopoMap</a>'
+  },
+  night: {
+    url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+    attribution: 'Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors, SRTM | Map style © <a href="https://opentopomap.org" target="_blank" rel="noopener">OpenTopoMap</a>'
+  }
+};
 
 export const WMO_CODES = {
   0: 'Selkeää',

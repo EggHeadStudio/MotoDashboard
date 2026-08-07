@@ -61,7 +61,7 @@ import {
 } from './session-manager.js';
 import { isGeolocationSupported, startGeoWatch, stopGeoWatch, getGeolocationErrorMessage } from './gps.js';
 import { setCollapsedState, setTextContent } from './ui.js';
-import { initLeafletMap, setFollowMapView, updateMapPositionLayers } from './map.js';
+import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeLayer } from './map.js';
 import { bindThemeSwipe } from './gestures.js';
 
 (function () {
@@ -140,8 +140,9 @@ import { bindThemeSwipe } from './gestures.js';
 
       var map = null;
       var mapPane = null;
+      var mapTileLayer = null;
       var posMarker = null;
-      var accCircle = null;
+      var logoRingMarker = null;
       var routeLayer = null;
       var watchId = null;
       var followUser = true;
@@ -216,8 +217,15 @@ import { bindThemeSwipe } from './gestures.js';
       var dotIcon = typeof L !== 'undefined' ? L.divIcon({
         className: '',
         html: '<div class="position-dot"></div>',
-        iconSize: [18, 18],
-        iconAnchor: [9, 9]
+        iconSize: [10, 10],
+        iconAnchor: [5, 5]
+      }) : null;
+
+      var logoRingIcon = typeof L !== 'undefined' ? L.divIcon({
+        className: '',
+        html: '<div class="position-logo-ring"></div>',
+        iconSize: [72, 72],
+        iconAnchor: [36, 36]
       }) : null;
 
       function setDebugStage(message) {
@@ -399,6 +407,10 @@ import { bindThemeSwipe } from './gestures.js';
         return sessionStore.saveSettingToIndexedDb(key, value);
       }
 
+      function getRouteColorForTheme(themeName) {
+        return themeName === 'monochrome' ? '#ff3b30' : '#ffcc00';
+      }
+
       function applyTheme(themeName) {
         var normalizedTheme = themeName || currentTheme;
         document.body.classList.remove.apply(document.body.classList, themeClasses);
@@ -407,6 +419,18 @@ import { bindThemeSwipe } from './gestures.js';
         if (elThemeBtn) {
           elThemeBtn.textContent = 'Teema: ' + themeNames[themeClasses.indexOf('theme-' + normalizedTheme)];
         }
+
+        if (map && typeof L !== 'undefined') {
+          mapTileLayer = setMapThemeLayer({
+            map: map,
+            L: L,
+            themeName: normalizedTheme,
+            mapStatusEl: elMapStatus,
+            tileLayer: mapTileLayer
+          });
+          updateRouteLayer();
+        }
+
         writeSettingToLocalStorage('mapTheme', normalizedTheme);
         saveSettingToIndexedDb('mapTheme', normalizedTheme);
       }
@@ -1091,7 +1115,8 @@ import { bindThemeSwipe } from './gestures.js';
           map: map,
           leaflet: typeof L !== 'undefined' ? L : undefined,
           activeSession: activeSession,
-          routeLayer: routeLayer
+          routeLayer: routeLayer,
+          routeColor: getRouteColorForTheme(currentTheme)
         });
       }
 
@@ -1150,6 +1175,7 @@ import { bindThemeSwipe } from './gestures.js';
           map: map,
           leaflet: typeof L !== 'undefined' ? L : undefined,
           routeLayer: routeLayer,
+          routeColor: getRouteColorForTheme(currentTheme),
           persistActiveSession: persistActiveSession
         });
 
@@ -1280,10 +1306,12 @@ import { bindThemeSwipe } from './gestures.js';
 
           map = mapInit.map;
           mapPane = mapInit.mapPane;
+          mapTileLayer = mapInit.tileLayer;
           mapRotationSupported = !!(elMap && 'transform' in elMap.style);
           if (!mapRotationSupported) {
             headingUpEnabled = false;
           }
+          applyTheme(currentTheme);
           applyHeadingModeSettings(headingUpEnabled ? 'menosuunta' : 'lukittu', false);
           setupManualTouchRotation();
         } catch (error) {
@@ -1313,15 +1341,16 @@ import { bindThemeSwipe } from './gestures.js';
           map: map,
           L: typeof L !== 'undefined' ? L : null,
           dotIcon: dotIcon,
+          logoRingIcon: logoRingIcon,
           posMarker: posMarker,
-          accCircle: accCircle,
+          logoRingMarker: logoRingMarker,
           lat: lat,
           lon: lon,
           accuracy: accuracy
         });
 
         posMarker = positionUpdate.posMarker;
-        accCircle = positionUpdate.accCircle;
+        logoRingMarker = positionUpdate.logoRingMarker;
 
         if (followUser) {
           setFollowView(lat, lon);
