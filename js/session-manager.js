@@ -69,6 +69,7 @@ export function buildSessionHistoryHtml(sessionHistory, deps) {
       + formatDistanceKm(session.distanceMeters || 0) + ' km / ' + deps.formatDuration(session.movingDurationMs || 0)
       + ' / ' + t('ui.avgLabel') + ' ' + deps.formatSpeedKmh(session.averageMovingSpeedKmh) + ' km/h / ' + t('ui.maxLabel') + ' ' + deps.formatSpeedKmh(session.maxSpeedKmh) + ' km/h / '
       + t('ui.points') + ' ' + (session.routePoints?.length || 0) + ' / ' + state + '</small></div><div>'
+      + (session.vehicleSnapshot ? '<small class="ride-vehicle">' + escapeHtml(session.vehicleSnapshot.nickname) + ' / ' + t('category.' + session.vehicleSnapshot.category) + '</small>' : '')
       + (session.status === 'active' ? button('resume', 'ui.resumeShort') : button('open', 'ui.open'))
       + button('rename', 'ui.rename') + button('delete', 'ui.delete') + '</div></div>';
   }).join('');
@@ -80,6 +81,7 @@ export function formatLatestSessionSummary(session, deps) {
 
 export function formatCompletedSessionSummary(session, deps) {
   return t('ui.viewPrefix') + getSessionDisplayName(session, deps.formatDate) + ' / ' + deps.formatDate(session.startedAt)
+    + (session.vehicleSnapshot ? ' / ' + session.vehicleSnapshot.nickname + ' / ' + t('category.' + session.vehicleSnapshot.category) : '')
     + ' / ' + formatDistanceKm(session.distanceMeters || 0) + ' km / ' + deps.formatDuration(session.movingDurationMs || 0)
     + ' / ' + t('ui.avgLabel') + ' ' + deps.formatSpeedKmh(session.averageMovingSpeedKmh) + ' km/h / '
     + t('ui.maxLabel') + ' ' + deps.formatSpeedKmh(session.maxSpeedKmh) + ' km/h';

@@ -1,6 +1,7 @@
 import { createPositionPipeline } from './position-pipeline.js';
 import { initAuthUI } from './auth-ui.js';
-import { initGarageUI } from './garage-ui.js';
+import { initGarageUI, selectedVehicle, onVehicleChange } from './garage-ui.js';
+import { vehicleSnapshot } from './data/schema.js';
 import { initI18n, t, resolveText, setLocalizedText, onLanguageChange, formatNumber, getLocale } from './i18n/i18n.js';
 import {
   APP_VERSION,
@@ -1026,6 +1027,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         releaseWakeLockSafely();
         activeSession = structuredClone(session);
         updateSessionStatsPanel(activeSession);
+        renderVehicle();
         applyHeadingModeSettings('lukittu', false);
         document.getElementById('history-detail').hidden = false;
         setTextContent(document.getElementById('history-detail'), () => formatCompletedSessionSummary(session, { formatDate, formatDuration, formatSpeedKmh }));
@@ -1060,6 +1062,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         if (!sessionActive) {
           activeSession = null;
         }
+        renderVehicle();
         setSessionStatsVisible(false);
         if (routeLayer && map && map.hasLayer(routeLayer)) {
           map.removeLayer(routeLayer);
@@ -1092,7 +1095,15 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       }
 
       function createSession() {
-        return createSessionRecord(currentTheme);
+        const vehicle = selectedVehicle();
+        return { ...createSessionRecord(currentTheme), vehicleId: vehicle?.id || null,
+          vehicleSnapshot: vehicleSnapshot(vehicle), category: vehicle?.category || null };
+      }
+
+      function renderVehicle() {
+        const snapshot = (sessionActive || sessionHistoryViewActive) ? activeSession?.vehicleSnapshot : selectedVehicle();
+        setLocalizedText(document.getElementById('dashboard-vehicle'), () => snapshot ? snapshot.nickname : t('garage.noVehicleShort'));
+        setLocalizedText(document.getElementById('selected-vehicle'), () => t('garage.nextVehicle', { name: selectedVehicle()?.nickname || t('garage.noVehicleShort') }));
       }
 
       function updateRouteLayer() {
@@ -1161,6 +1172,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         resetMovementState();
         sessionActive = true;
         updateSessionStatsPanel(activeSession);
+        renderVehicle();
         if (routeLayer && map && map.hasLayer(routeLayer)) {
           map.removeLayer(routeLayer);
           routeLayer = null;
@@ -1185,6 +1197,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         setSessionStatsCollapsed(false);
         sessionActive = true;
         updateSessionStatsPanel(activeSession);
+        renderVehicle();
         elFinishSessionBtn.style.display = 'inline-flex';
         elBackToStartBtn.style.display = 'none';
         elHistoryList.style.display = 'none';
@@ -1657,7 +1670,9 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       onLanguageChange(function () {
         renderHistory();
         updateGpsEnvironmentHint();
+        renderVehicle();
       });
+      onVehicleChange(renderVehicle);
 
       elCenterBtn.addEventListener('click', function () {
         followUser = true;

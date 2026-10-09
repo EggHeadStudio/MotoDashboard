@@ -93,7 +93,11 @@ def run():
         for path in ROOT.glob('js/**/*.js'):
             source = path.read_text(encoding='utf-8')
             for key in re.findall(r"\bt\(['\"]([^'\"]+)['\"]", source):
+                if key.endswith('.'):
+                    continue  # Dynamic category/role keys are checked against enum values below.
                 assert key in keys, f'Missing key {key} in {path}'
+            for prefix,values in [('category',['motorcycle','car','moped','scooter','atv-utv','off-road','snowmobile','caravan','bicycle','e-bike','e-scooter','other'])]:
+                assert all(prefix+'.'+value in keys for value in values)
             for specifier in re.findall(r"\bfrom\s+['\"]([^'\"]+)['\"]", source):
                 if specifier.startswith('.'):
                     assert (path.parent / specifier).exists(), (path, specifier)

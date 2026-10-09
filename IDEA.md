@@ -2980,7 +2980,7 @@ QR, Official Events, Stripe or subscription enforcement is authorized.
 - [x] M1: dedicated-project single app/services, shared Auth state and least-privilege
   exact schema rules; real local emulator positive/negative tests. Live acceptance pending.
 - [x] M2: Personal Garage CRUD, default/next-ride selection, private owner repository, localized mobile dialog; SDK fixture checks pass.
-- [ ] M3: dashboard/vehicle snapshot integration.
+- [x] M3: compact selected vehicle, pre-start chooser, stable vehicle ID/category/display snapshot; two-vehicle recording and deletion-history checks pass.
 - [ ] M4: durable private completed-ride cloud persistence.
 - [ ] M5: account history/detail/JSON/GPX/share.
 - [ ] M6: Clubs and membership lifecycle.

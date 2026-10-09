@@ -30,6 +30,9 @@ def run_batch2_tests(browser,base,route_map):
     context=browser.new_context(viewport={'width':390,'height':844})
     route_map(context); install(context)
     page=context.new_page(); errors=[]
+    page.add_init_script("""window.__geo={active:0}; Object.defineProperty(navigator,'geolocation',{value:{
+      watchPosition(fn){window.__geo.callback=fn;window.__geo.active=1;return 1;},clearWatch(){window.__geo.active=0;}}});
+      Element.prototype.requestFullscreen=undefined; navigator.wakeLock=undefined;""")
     page.on('pageerror',lambda e:errors.append(str(e)))
     page.goto(base,wait_until='networkidle')
     page.click('#garage-btn')
@@ -56,9 +59,24 @@ def run_batch2_tests(browser,base,route_map):
     page.reload(wait_until='networkidle'); open_garage(page)
     assert page.locator('#garage-dialog article').count()==2
     assert 'Default vehicle' in page.locator('#garage-dialog').inner_text()
-    page.on('dialog',lambda d:d.accept())
+    page.on('dialog',lambda d:d.accept('Vehicle Ride' if d.type=='prompt' else None))
+    for name,category in [('Touring Bike','motorcycle'),('Family Car','car')]:
+        page.locator('#garage-dialog article').filter(has_text=name).get_by_role('button',name='Choose for ride',exact=True).click()
+        assert name in page.locator('#selected-vehicle').inner_text()
+        page.click('#start-btn')
+        assert page.locator('#dashboard-vehicle').inner_text()==name
+        page.click('#finish-session-btn')
+        page.wait_for_selector('#start-overlay',state='visible')
+        open_garage(page)
+    rides=page.evaluate("""async()=>{const {createSessionStore}=await import('./js/session-store.js');
+      const c=await import('./js/config.js'); return (await createSessionStore({sessionStorageKey:c.SESSION_STORAGE_KEY,
+      settingsStorageKey:c.SETTINGS_STORAGE_KEY,dbName:c.DB_NAME,dbVersion:c.DB_VERSION,sessionsStoreName:c.SESSIONS_STORE_NAME,
+      settingsStoreName:c.SETTINGS_STORE_NAME}).loadSessions()).filter(r=>r.status==='completed');}""")
+    assert {r['category'] for r in rides}=={'motorcycle','car'}
+    assert all(r['vehicleId'] and r['vehicleSnapshot']['nickname'] for r in rides)
     page.locator('#garage-dialog article').filter(has_text='Family Car').get_by_role('button',name='Delete',exact=True).click()
     page.wait_for_function('document.querySelectorAll("#garage-dialog article").length===1')
+    assert any(r['vehicleSnapshot']['nickname']=='Family Car' for r in rides)
     page.select_option('#language-select','fi')
     assert page.locator('#garage-dialog h2').inner_text()=='Autotalli'
     page.set_viewport_size({'width':320,'height':568})

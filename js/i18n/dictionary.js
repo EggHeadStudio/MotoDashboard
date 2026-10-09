@@ -1,6 +1,7 @@
 // Stable keys; user-created content is never translated.
 export const dictionary = {
   "en": {
+    "garage.noVehicleShort": "No vehicle", "garage.nextVehicle": "Next ride: {name}",
     "common.loading": "Loading…", "common.loaded": "Up to date.", "common.refresh": "Refresh", "common.save": "Save", "common.cancel": "Cancel", "common.edit": "Edit", "common.delete": "Delete",
     "garage.title": "Garage", "garage.add": "Add vehicle", "garage.empty": "Your Garage is empty. Add a vehicle to choose it for your next ride.",
     "garage.category": "Category", "garage.nickname": "Nickname", "garage.manufacturer": "Manufacturer", "garage.model": "Model", "garage.year": "Model year (optional)", "garage.description": "Description", "garage.visibility": "Visibility preference",
@@ -229,6 +230,7 @@ export const dictionary = {
     "ui.finishBeforeDelete": "End the current session before deleting rides."
   },
   "fi": {
+    "garage.noVehicleShort": "Ei ajoneuvoa", "garage.nextVehicle": "Seuraava ajo: {name}",
     "common.loading": "Ladataan…", "common.loaded": "Ajan tasalla.", "common.refresh": "Päivitä", "common.save": "Tallenna", "common.cancel": "Peruuta", "common.edit": "Muokkaa", "common.delete": "Poista",
     "garage.title": "Autotalli", "garage.add": "Lisää ajoneuvo", "garage.empty": "Autotallisi on tyhjä. Lisää ajoneuvo seuraavaa ajoasi varten.",
     "garage.category": "Luokka", "garage.nickname": "Lempinimi", "garage.manufacturer": "Valmistaja", "garage.model": "Malli", "garage.year": "Vuosimalli (valinnainen)", "garage.description": "Kuvaus", "garage.visibility": "Näkyvyystoive",

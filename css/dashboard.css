@@ -1016,3 +1016,6 @@
 .muted { color: #b8c4d1; font-size: .9rem; }
 .category-icon { display: inline-grid; place-items: center; width: 36px; height: 36px; border: 2px solid currentColor; border-radius: 50%; font-weight: bold; }
 @media (max-height: 500px) { .feature-dialog { max-height: calc(100dvh - 12px); } }
+#dashboard-vehicle { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; line-height: 1.5; }
+#selected-vehicle { font-size: 13px; color: #d6e1ef; margin: 8px 0; max-width: 90%; overflow-wrap: anywhere; }
+.ride-vehicle { display: block; margin: 4px 0; }
