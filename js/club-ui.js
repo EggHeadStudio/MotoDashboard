@@ -82,10 +82,11 @@ export function initClubUI() {
   async function renderClub() {
     if(!model || !uid) return;
     editing=false;const owner=uid,token=++version;const {club,role,membership,request,invite}=model;
+    const identity=element('section');identity.id='club-identity';
+    identity.append(element('h3','',club.name),labelText(element('p'),'category.'+club.category),element('p','club-description',club.description));
     view.body.replaceChildren(button('clubs.back',()=>action(()=>Promise.resolve(),()=>browse())),
-      button('common.refresh',()=>action(()=>Promise.resolve())),element('h3','',club.name),
-      labelText(element('p','muted'),'clubs.clubId',{id:club.id}),labelText(element('p'),'category.'+club.category),
-      element('p','club-description',club.description),labelText(element('p'),'policy.'+club.membershipPolicy),
+      button('common.refresh',()=>action(()=>Promise.resolve())),identity,
+      labelText(element('p','muted'),'clubs.clubId',{id:club.id}),labelText(element('p'),'policy.'+club.membershipPolicy),
       labelText(element('p'),'clubs.memberCount',{count:club.memberCount}),labelText(element('p','muted'),'clubs.accountUid',{uid}));
     if(role) view.body.append(labelText(element('p'),'role.'+role));
     if(club.state==='archived') view.body.append(labelText(element('p'),'clubs.archived'));

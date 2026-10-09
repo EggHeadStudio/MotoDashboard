@@ -4,6 +4,7 @@ const languageKey = 'moto-dashboard-language';
 const listeners = new Set();
 const bindings = new Map();
 let language = 'en';
+let cleanupQueued = false;
 
 try {
   const saved = globalThis.localStorage?.getItem(languageKey);
@@ -34,6 +35,14 @@ export function setLocalizedText(element, render) {
   if (!element) return;
   bindings.set(element, render);
   element.textContent = resolveText(render);
+  // Removed feature screens must not retain previous-account DOM/data indefinitely.
+  if (!cleanupQueued) {
+    cleanupQueued = true;
+    queueMicrotask(() => {
+      cleanupQueued = false;
+      bindings.forEach((_, node) => { if (!node.isConnected) bindings.delete(node); });
+    });
+  }
 }
 
 export function onLanguageChange(listener) {

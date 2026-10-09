@@ -12,6 +12,11 @@ English is the default; Finnish is available from the language selector.
 - Schema v2 IndexedDB storage with localStorage fallback and visible save failures.
 - Open-Meteo weather, temperature and wind.
 - Optional email/password accounts and a minimal private Firebase profile.
+- Personal Garage with 12 categories, defaults and saved ride vehicle snapshots.
+- Account-owned completed ride cloud sync with bounded route chunks and durable retries.
+- Private history, JSON/GPX file export and Web Share with download fallback.
+- Clubs, approval/UID invitation membership, technical roles and separate visible ranks.
+- Controlled Club colors/links and a plain-text Info Wall.
 - Install manifest, safe-area layout, optional Fullscreen and Wake Lock.
 
 The manifest does not provide offline cold starts or background GPS. No offline
@@ -77,7 +82,7 @@ reload after restoring connectivity if the browser retains the failed module loa
 | Service | Current use |
 | --- | --- |
 | Authentication | Email/password registration, login, logout and persistent state listener. |
-| Cloud Firestore | Own private `users/{uid}` profile; transactional create-if-absent, server timestamps, default memory cache. No persistent profile disk cache. |
+| Cloud Firestore | Private profile, Garage, completed rides/chunks, Club memberships/roles/ranks/Wall and a minimal public Club directory. Default memory cache; no shared persistent SDK disk cache. |
 | Realtime Database | Prepared lazy adapter only. No caller, subscription, read, write, presence or live location. |
 | Storage / Analytics / Functions | Not used. A configured bucket does not enable uploads. |
 
@@ -87,33 +92,40 @@ The device's saved language controls the UI and is not overridden on login.
 New profiles use that language; explicit changes while signed in update the profile.
 A failed update keeps the local choice and offers retry in the account panel.
 
-Rides remain in this browser and are not uploaded or linked to an account yet.
-Logout clears the account/profile UI but preserves local rides and settings.
-On a shared device, any user of this browser can see its local history. Future
-UID-scoped cloud ride storage and explicit local ownership are separate work.
+Guest rides stay in a separate local scope. New signed-in rides record locally and
+upload privately only after completion. Logout/account changes stop the GPS watch,
+flush the previous owner's local ride and clear its visible route/history/Garage/Clubs.
+Returning to that account restores its records; legacy rides are not claimed/uploaded.
+Pending uploads/deletions retry on login/reconnection or Retry ride sync. Cloud history
+pages load 20 rides; route chunks download only for detail/export. Conflicting names
+can be resolved with the confirmed Reload cloud version action; export first to keep
+the local edit. Browser storage is not encryption and is accessible to the OS/browser
+owner. Settings remain device-wide.
 Map providers receive tile requests; weather requests send coordinates to Open-Meteo.
 
 ### Security rules: approval required before deployment
 
-[`firestore.rules`](firestore.rules) permits only own-profile get/create and updates
-to displayName/email/language/updatedAt. Exact six-field validation excludes admin/role
-fields. Email must match the Auth token; timestamps use server time. Changed UID/createdAt,
-listing, deletion and all unknown/nested collections are denied.
+[`firestore.rules`](firestore.rules) applies exact field/type allowlists, immutable
+ownership/timestamps, own-only profiles/Garage/private rides, canonical Club ownership,
+atomic membership/index/count changes, restricted roles, separate ranks and Wall rights.
+System privileges and every unknown path are denied. Profiles remain exactly six fields;
+extra admin fields, other-account access and profile listing/deletion are denied.
 [`database.rules.json`](database.rules.json) denies all RTDB reads and writes.
 **Neither rules file has been deployed or tested against a live database.**
 [Firebase field restrictions](https://firebase.google.com/docs/firestore/security/rules-fields).
 
-Review the files and test in Rules Playground where possible, or an independently
-approved Emulator Suite setup: allow exact own-profile get/create/update with server
-timestamps; deny signed-out/other-UID access, extra admin/role fields, changed UID/createdAt,
-unknown collections, listing/deletion and all RTDB requests. Repo mocks do not execute rules.
+Real local Firestore emulator assertions are in `tests/run_rules.py`; browser SDK fixtures
+remain separate. See [rules tests/manual acceptance](tests/RULES_TESTING.md) and
+[data contract](DATA_MODEL.md). No live Firebase or physical device test is claimed.
 
 **Only after explicit approval:**
 
 1. Select `motodash-87bf8` and confirm the intended database.
 2. **Build → Firestore Database → Rules:** back up current rules, paste `firestore.rules`,
    review/test, then **Publish**. Confirm the default Firestore database is configured.
-   Direct profile-document operations need no query indexes.
+   Direct profile-document operations need no query indexes. Add the `sessions`
+   collection index on `uploadState` ascending + `startedAt` descending and the
+   `routeChunks.pointsJson` single-field exemption from `firestore.indexes.json`.
 3. **Build → Realtime Database → Rules:** back up current rules, paste
    `database.rules.json`, review/test and **Publish** for the configured Europe West instance.
 4. Use dedicated test accounts to verify real registration/login/refresh/profile updates
@@ -155,11 +167,21 @@ js/route-recorder.js                 Accepted points and segmented rendering
 js/session-manager.js / session-store.js   Schema v2, history and local persistence
 js/weather.js / gps.js / utils.js    Existing weather, GPS and geometry helpers
 js/auth-ui.js                        Account state/form/error UI and language sync
+js/auth-state.js                     Shared account identity boundary
+js/garage-ui.js                      Personal Garage dialog/next-ride selection
+js/club-ui.js                        Club page/discovery/membership lifecycle
+js/club-members-ui.js                Role and custom rank controls
+js/club-branding-ui.js               Safe local Club branding and Info Wall
+js/ui/forms.js                       Native dialogs, safe fields and localized actions
+js/data/{schema,permissions,route-codec,branding}.js    Validation/permissions/hashes/contrast
+js/session-sync.js / session-export.js    Durable jobs and JSON/GPX/file sharing
 js/firebase/firebase.js / auth.js    Lazy single initializer and Auth operations
 js/firebase/firestore.js             Lazy Firestore service
 js/firebase/profileRepository.js     Own-profile operations only
+js/firebase/{garage,session,club}Repository.js    Scoped product repositories
 js/firebase/realtime.js              Unused future RTDB boundary
 firestore.rules / database.rules.json     Undeployed least-privilege rules
+firestore.indexes.json / DATA_MODEL.md / EXPORT_SCHEMA.md   Data/query/export contract
 tests/                              Development-only Python/native-browser checks
 manifest.webmanifest                Install metadata; no offline worker
 ```
@@ -175,7 +197,7 @@ python tests/run_browser.py
 ```
 
 No npm/build step. Tests serve the real `/MotoDashboard/` path, use real Leaflet with
-tile/weather fixtures and simulate GPS. Auth/profile flows use SDK mocks. A separate
+tile/weather fixtures and simulate GPS. Auth and product UI use SDK fixtures. A separate
 test downloads/imports the real pinned Firebase modules and initializes services while
 blocking cloud API requests. First run needs internet for cached Leaflet/Firebase files.
 See [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md) for executed checks, remaining

@@ -21,11 +21,11 @@ export function safeURL(value) {
   if (typeof value !== 'string' || value.length > 500) throw dataError('invalid-input');
   let url;
   try { url = new URL(value); } catch { throw dataError('invalid-input'); }
-  if (url.protocol !== 'https:' || !url.hostname || url.username || url.password) throw dataError('invalid-input');
+  if (url.protocol !== 'https:' || !url.hostname || url.username || url.password || url.href.length > 500) throw dataError('invalid-input');
   return url.href;
 }
 export function color(value, optional = false) {
-  if (optional && (value === null || value === '')) return null;
+  if (optional && (value == null || value === '')) return null;
   if (typeof value !== 'string' || !/^#[0-9a-f]{6}$/i.test(value)) throw dataError('invalid-input');
   return value.toLowerCase();
 }

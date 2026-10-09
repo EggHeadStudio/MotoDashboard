@@ -2,11 +2,12 @@ import { createPositionPipeline } from './position-pipeline.js';
 import { initAuthUI } from './auth-ui.js';
 import { initClubUI } from './club-ui.js';
 import { initClubMembersUI } from './club-members-ui.js';
+import { initClubBrandingUI } from './club-branding-ui.js';
 import { initGarageUI, selectedVehicle, onVehicleChange } from './garage-ui.js';
 import { vehicleSnapshot } from './data/schema.js';
-import { getAccount, onAccountChange } from './auth-state.js';
+import { getAccount, getAuthState, onAccountChange } from './auth-state.js';
 import { createSessionSync, queueRide } from './session-sync.js';
-import { listCloudSessions, loadCloudRoute, localFromCloud, cloudDeletionIds } from './firebase/sessionRepository.js';
+import { listCloudSessions, loadCloudRoute, localFromCloud, cloudDeletionIds, getCloudSession } from './firebase/sessionRepository.js';
 import { dataErrorKey } from './firebase/access.js';
 import { sessionFile, shareOrDownload } from './session-export.js';
 import { button } from './ui/forms.js';
@@ -76,6 +77,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       initGarageUI();
       initClubUI();
       initClubMembersUI();
+      initClubBrandingUI();
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(registrations => Promise.all(
           registrations.filter(registration => registration.scope === new URL('./', document.baseURI).href)
@@ -358,6 +360,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       }
 
       var accountUid = getAccount()?.uid || null;
+      var initialIdentityPending = !getAuthState().ready;
       var accountEpoch = 0;
       var cloudSync = null;
       var historyCursor = null, cloudHistoryMore = false, historyLoading = false;
@@ -1689,7 +1692,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       applyStoredHeadingMode();
 
       // Auto-resume: if there is exactly one active session, restore it automatically after reload
-      (function autoRestoreActiveSession() {
+      function autoRestoreActiveSession() {
         var actives = sessionHistory.filter(function (item) { return item.status === 'active'; });
         if (actives.length !== 1) {
           return;
@@ -1703,7 +1706,8 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         }
 
         resumeSession(session);
-      }());
+      }
+      autoRestoreActiveSession();
 
       onLanguageChange(function () {
         renderHistory();
@@ -1782,8 +1786,10 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           if(epoch===accountEpoch) setLocalizedText(document.getElementById('history-status'),()=>t(key));
         } catch(error) {if(epoch===accountEpoch) setLocalizedText(document.getElementById('history-status'),()=>t(dataErrorKey(error)));}
       }
-      onAccountChange(async ({user}) => {
+      onAccountChange(async ({user,ready}) => {
         const uid = user?.uid || null;
+        const restore = ready && initialIdentityPending;
+        if (ready) initialIdentityPending = false;
         if (uid === accountUid) return;
         // Capture/flush to the previous store before changing identity; no reassignment.
         if (sessionActive) persistActiveSession(true);
@@ -1808,6 +1814,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           await loadSessionHistory();
           if (epoch !== accountEpoch) return;
           renderHistory(); updateStartSummary(); prepareCloudSync();
+          if (restore) autoRestoreActiveSession();
           refreshCloudHistory();
         } catch (error) { if (epoch === accountEpoch) reportStorageError(error); }
       });
@@ -1941,6 +1948,21 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
 
         var action = button.getAttribute('data-action');
         var id = button.getAttribute('data-id');
+        if (action==='use-cloud') {
+          if(!window.confirm(t('rides.useCloudConfirm'))) return;
+          const epoch=accountEpoch,uid=accountUid,store=sessionStore;
+          const prior=sessionHistory.find(item=>item.id===id);
+          if(!prior || prior.syncError!=='conflict') return;
+          try {
+            const remote=await getCloudSession(uid,id);
+            const full=await loadCloudRoute(uid,localFromCloud(remote));
+            if(epoch!==accountEpoch) return;
+            await store.updateSession(id,latest=>latest.localRevision===prior.localRevision ? full : null);
+            if(epoch!==accountEpoch) return;
+            await loadSessionHistory();renderHistory();updateStartSummary();cloudSync?.retry();
+          } catch(error) {if(epoch===accountEpoch) setLocalizedText(document.getElementById('history-status'),()=>t(dataErrorKey(error)));}
+          return;
+        }
         if (['json','gpx','share'].includes(action)) {await exportRide(id,action==='json'?'json':'gpx',action==='share');return;}
         if (action === 'delete') {
           if (sessionActive) { setSessionSummary(() => t('ui.finishBeforeDelete')); return; }

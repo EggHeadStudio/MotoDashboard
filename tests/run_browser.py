@@ -229,7 +229,7 @@ def run_real_sdk_imports(browser, base, route_map):
     assert result == {'same': True, 'project': 'motodash-87bf8', 'name': 'MotoDash', 'auth': 'function', 'firestore': 'function', 'realtime': 'function', 'user': None}, result
     assert not errors, errors
     context.close()
-    print('PASS: REAL Firebase 13.0.0 browser SDK imports/exports, MotoDash single initialization and Auth persistence setup; cloud APIs blocked, no live Auth/profile/rules test')
+    print('PASS: REAL Firebase 13.0.0 browser SDK imports/exports, single MotoDash app, Auth persistence, Firestore/RTDB same app/project and invalid config rejection; cloud APIs blocked')
 
 
 if __name__ == '__main__':

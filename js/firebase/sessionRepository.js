@@ -80,6 +80,12 @@ export async function listCloudSessions(uid,cursor=null) {
   const result=await boundedRequest(sdk.getDocs(sdk.query(sdk.collection(db,'users',uid,'sessions'),...clauses)));
   service.assertCurrent();return {records:result.docs.map(doc=>doc.data()),cursor:result.docs.at(-1) || null,more:result.size===20};
 }
+export async function getCloudSession(uid,id) {
+  if(!validId(id)) throw dataError('invalid-input');
+  const s=await ownDatabase(uid),result=await boundedRequest(s.sdk.getDoc(path(s.sdk,s.db,uid,id)));
+  s.assertCurrent();if(!result.exists()) throw dataError('deleted');
+  if(result.data().uploadState!=='ready') throw dataError('conflict');return result.data();
+}
 export function localFromCloud(record) {
   if(record.schemaVersion!==1 || record.status!=='completed' || record.visibility!=='private'
     || !validId(record.id) || !Number.isFinite(record.startedAt) || !Number.isFinite(record.endedAt)

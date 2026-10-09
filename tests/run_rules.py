@@ -163,6 +163,12 @@ def run():
     commit('alice',[update('clubs/private/invites/dave',invite)])
     read('dave','clubs/private')
     join('private','dave',extra=[delete('clubs/private/invites/dave')])
+    dave=read('alice','clubs/private/members/dave')
+    commit('alice',[raw_update('clubs/private/members/dave',dave,{'technicalRole':'admin','updatedAt':SERVER})])
+    private=read('dave','clubs/private')
+    commit('dave',[raw_update('clubs/private',private,{'primaryColor':'#111111','description':'Private Admin branding','updatedAt':SERVER})])
+    commit('dave',[update('clubs/private/wall/info',dict(text='Private announcement',updatedBy='dave',createdAt=SERVER,updatedAt=SERVER))])
+    read('bob','clubs/private/wall/info',False)
     create_club('approval','alice','approval')
     join('approval','dave',allowed=False)
     commit('dave',[update('clubs/approval/joinRequests/dave',dict(uid='dave',state='pending',requestedAt=SERVER,decidedAt=None,decidedBy=None))])
@@ -179,6 +185,7 @@ def run():
     commit('dave',[delete('clubs/private/members/dave'),delete('users/dave/clubRefs/private'),
       raw_update('clubs/private',private,{'memberCount':1,'lastMembershipUid':'dave','updatedAt':SERVER})])
     for group in ['joinRequests','invites','ranks']: query('alice','clubs/private',group)
+    commit('alice',[delete('clubs/private/wall/info')])
     commit('alice',[delete('clubs/private/members/alice'),delete('users/alice/clubRefs/private'),delete('clubDirectory/private'),delete('clubs/private')])
     ride=dict(id='ride',schemaVersion=1,ownerUid='alice',vehicleId=None,vehicleSnapshot=None,category=None,name='Ride',status='completed',visibility='private',
         startedAt=1000,endedAt=2000,distanceMeters=0,movingDurationMs=0,averageMovingSpeedKmh=0,maxSpeedKmh=0,mapTheme='normal',pointCount=1,
@@ -189,6 +196,13 @@ def run():
     commit('alice',[update('users/alice/sessions/ride/routeChunks/0000',chunk)])
     commit('alice',[update('users/alice/sessions/ride/routeChunks/0000',{**chunk,'pointsJson':'changed'})],False)
     commit('alice',[raw_update('users/alice/sessions/ride',read('alice','users/alice/sessions/ride'),{'uploadState':'ready','updatedAt':SERVER})])
+    ready=read('alice','users/alice/sessions/ride')
+    commit('alice',[raw_update('users/alice/sessions/ride',ready,{'name':'Stale overwrite','revisionId':'c'*64,'baseRevisionId':'d'*64,'updatedAt':SERVER})],False,'revision conflict')
+    commit('alice',[raw_update('users/alice/sessions/ride',ready,{'distanceMeters':999,'updatedAt':SERVER})],False,'immutable stats')
+    commit('alice',[update('users/alice/sessions/ride/routeChunks/0001',{**chunk,'sequence':1})],False,'no chunks after ready')
+    large={**ride,'id':'large','pointCount':32,'chunkCount':32}
+    commit('alice',[update('users/alice/sessions/large',large)])
+    commit('alice',[update(f'users/alice/sessions/large/routeChunks/{n:04}',{**chunk,'sessionId':'large','sequence':n}) for n in range(32)],label='32-chunk batch access-call budget')
     commit('alice',[delete('users/alice/sessions/ride')],False)
     commit('alice',[update('users/alice/sessionTombstones/ride',dict(id='ride',ownerUid='alice',deletedAt=SERVER))])
     commit('alice',[delete('users/alice/sessions/ride/routeChunks/0000'),delete('users/alice/sessions/ride')])

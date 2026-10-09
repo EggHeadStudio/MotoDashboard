@@ -33,6 +33,7 @@ def run_batch2_tests(browser,base,route_map):
     page.add_init_script("""window.__geo={active:0}; Object.defineProperty(navigator,'geolocation',{value:{
       watchPosition(fn){window.__geo.callback=fn;window.__geo.active=1;return 1;},clearWatch(){window.__geo.active=0;}}});
       Element.prototype.requestFullscreen=undefined; navigator.wakeLock=undefined;""")
+    page.add_init_script("window.__unhandled=[];addEventListener('unhandledrejection',e=>window.__unhandled.push(String(e.reason)))")
     page.on('pageerror',lambda e:errors.append(str(e)))
     page.goto(base,wait_until='networkidle')
     page.click('#garage-btn')
@@ -146,7 +147,17 @@ def run_batch2_tests(browser,base,route_map):
     assert download.value.suggested_filename.endswith('.gpx')
     remote.click('#back-to-start-btn');remote.click('#history-btn')
     remote.on('dialog',lambda d:d.accept('Renamed Cloud Ride' if d.type=='prompt' else None))
+    remote.evaluate("""()=>{
+      const records=JSON.parse(localStorage.getItem('__mockProfiles'));
+      const key=Object.keys(records).find(k=>records[k].name==='Chunk Test' && records[k].uploadState==='ready');
+      records[key]={...records[key],name:'Another device name',revisionId:'c'.repeat(64)};
+      localStorage.setItem('__mockProfiles',JSON.stringify(records));
+    }""")
     remote.locator('.session-item').filter(has_text='Chunk Test').get_by_role('button',name='Rename',exact=True).click()
+    remote.wait_for_selector('#history-list button[data-action="use-cloud"]')
+    remote.locator('#history-list button[data-action="use-cloud"]').click()
+    remote.wait_for_function('document.querySelector("#history-list").textContent.includes("Another device name")')
+    remote.locator('.session-item').filter(has_text='Another device name').get_by_role('button',name='Rename',exact=True).click()
     remote.wait_for_function("Object.values(JSON.parse(localStorage.getItem('__mockProfiles'))).some(v=>v.name==='Renamed Cloud Ride' && v.uploadState==='ready')")
     remote.locator('.session-item').filter(has_text='Renamed Cloud Ride').get_by_role('button',name='Delete',exact=True).click()
     remote.wait_for_function("!Object.values(JSON.parse(localStorage.getItem('__mockProfiles'))).some(v=>v.name==='Renamed Cloud Ride')")
@@ -168,6 +179,9 @@ def run_batch2_tests(browser,base,route_map):
     page.select_option('#language-select','en')
     page.click('#start-btn')
     assert page.evaluate('window.__geo.active')==1
+    page.reload(wait_until='networkidle')
+    page.wait_for_function('window.__geo.active===1')
+    assert not page.locator('#start-overlay').is_visible(), 'Signed-in unfinished ride auto-restores'
     # Simulate Auth changing in another tab while the dashboard is recording.
     page.evaluate("async()=>{const {logout}=await import('./js/firebase/auth.js');await logout();}")
     page.wait_for_selector('#start-overlay',state='visible')
@@ -178,7 +192,20 @@ def run_batch2_tests(browser,base,route_map):
     page.wait_for_function('document.querySelector("#auth-identity").textContent==="Not signed in"')
     page.click('#account-close'); page.click('#garage-btn')
     assert page.locator('#garage-dialog article').count()==0
+    page.locator('#garage-dialog .feature-header button').click()
+    register(page,'second@example.test');open_garage(page)
+    assert page.locator('#garage-dialog article').count()==0
+    assert 'Vehicle Ride' not in page.locator('#history-list').inner_text()
+    page.locator('#garage-dialog .feature-header button').click()
+    page.click('#account-btn');page.click('#auth-logout')
+    page.wait_for_function('document.querySelector("#auth-identity").textContent==="Not signed in"')
+    page.select_option('#auth-mode','login');page.fill('#auth-email','garage@example.test');page.fill('#auth-password','fixture-password')
+    page.click('#auth-submit');page.wait_for_function('document.querySelector("#auth-status").textContent.includes("profile is ready")')
+    page.click('#account-close');open_garage(page)
+    assert page.locator('#garage-dialog article').count()==1
+    assert 'Touring Bike' in page.locator('#garage-dialog').inner_text()
     assert not errors,errors
+    assert not page.evaluate('window.__unhandled')
     context.close()
     print('PASS: MOCK Garage motorcycle/car create, edit, default, reload, delete, owner guard, logout isolation, Finnish and 320px dialog')
     print('PASS: MOCK vehicle snapshots in two rides, private completed cloud manifests, 300-point bounded chunks, durable failed-job retry, zero duplicate writes, scoped clear and logout during recording')

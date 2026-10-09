@@ -168,6 +168,28 @@ export async function getRank(uid,id,rankId) {
   const rank=await boundedRequest(s.sdk.getDoc(clubRef(s,id,'ranks',rankId)));s.assertCurrent();
   return rank.exists()?rank.data():null;
 }
+export async function updateBranding(uid,id,input) {
+  await clubTransaction(uid,id,(tx,s,club,role)=>{
+    if(!isManager(role)) throw dataError('permission-denied');
+    const validated=clubInput({...club,...input});
+    const fields={description:validated.description,primaryColor:validated.primaryColor,accentColor:validated.accentColor,
+      routeColor:validated.routeColor,mapTheme:validated.mapTheme,links:validated.links,updatedAt:stamp(s.sdk)};
+    tx.update(clubRef(s,id),fields);setDirectory(tx,s,{...club,...fields},club);
+  });
+}
+export async function loadWall(uid,id) {
+  idCheck(id);const s=await ownDatabase(uid);
+  const wall=await boundedRequest(s.sdk.getDoc(clubRef(s,id,'wall','info')));s.assertCurrent();
+  return wall.exists()?wall.data():null;
+}
+export async function saveWall(uid,id,input) {
+  const content=text(input,4000);
+  await clubTransaction(uid,id,async(tx,s,club,role)=>{
+    if(!isManager(role)) throw dataError('permission-denied');
+    const ref=clubRef(s,id,'wall','info'),old=await tx.get(ref);
+    tx.set(ref,{text:content,updatedBy:uid,createdAt:old.exists()?old.data().createdAt:stamp(s.sdk),updatedAt:stamp(s.sdk)});
+  });
+}
 export async function deleteRank(uid,id,rankId) {
   idCheck(rankId);await clubTransaction(uid,id,(tx,s,club,role)=>{
     if(!isManager(role)) throw dataError('permission-denied');tx.delete(clubRef(s,id,'ranks',rankId));

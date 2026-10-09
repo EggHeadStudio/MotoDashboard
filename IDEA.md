@@ -1170,6 +1170,8 @@ assumed blindly.
 
 # 9. AI implementation workflow
 
+> **Batch 2 authorization, 2026-10-09:** The user explicitly approved all eight Batch 2 milestones in one session, with automated checks and separate commits between milestones. This supersedes intermediate section-stop instructions only inside that scope. Stop after Batch 2 for explicit approval; do not push or deploy. Garage, private completed rides/history/exports, Clubs/membership/roles/ranks/branding/Wall are included. All later product phases remain unapproved.
+
 > **Batch 1 authorization, 2026-10-09:** The user approved implementation of
 > localization, dashboard reliability repairs and Firebase/Auth foundation
 > in one session, with technical checks and separate commits between
@@ -1345,7 +1347,7 @@ Connect the prototype safely to Firebase.
 -   [ ] Login.
 -   [ ] Logout.
 -   [ ] Refresh preserves auth session.
--   [ ] Unauthorized data access rejected by rules.
+-   [x] Unauthorized data access rejected by rules. (Real local emulator; production deployment/live checks pending.)
 -   [x] No JS errors. (Executed browser/fixture scenarios.)
 -   [x] Existing dashboard remains functional. (Simulated GPS/providers.)
 
@@ -1368,42 +1370,44 @@ STOP after this section.
 
 > **Section 0 audit adaptation (planning only):** Add profile/Garage screens around the retained dashboard. Use stable vehicle category IDs, owner-scoped records, visibility boundaries and nullable historical vehicle associations. Keep selected vehicle snapshot separate from live/current Garage data. Optional images require verified Storage setup/rules.
 
+> **Batch 2 result:** Implementation and automated acceptance within this section are complete for the authorized batch scope. Checks use browser SDK fixtures/simulated GPS plus real local Firestore rules tests. Live Firebase, physical phone and Safari acceptance remain pending. See Section 17 and IMPLEMENTATION_STATUS.md.
+
 ## Goal
 
 Implement the personal identity and vehicle system.
 
 ## Tasks
 
--   [ ] Profile screen.
--   [ ] Display name.
--   [ ] Language preference integration.
--   [ ] Garage screen.
--   [ ] Add vehicle.
--   [ ] Edit vehicle.
--   [ ] Delete vehicle with confirmation.
--   [ ] Vehicle categories.
--   [ ] Vehicle nickname.
--   [ ] Manufacturer.
--   [ ] Model.
--   [ ] Year.
--   [ ] Description.
--   [ ] Vehicle visibility.
--   [ ] Multiple vehicles.
--   [ ] Persist to Firebase.
--   [ ] Restore after logout/login.
--   [ ] Mobile-friendly empty states.
+-   [ ] Profile screen. (Account dialog exists; full profile editing/public portfolio remains future work.)
+-   [x] Display name.
+-   [x] Language preference integration.
+-   [x] Garage screen.
+-   [x] Add vehicle.
+-   [x] Edit vehicle.
+-   [x] Delete vehicle with confirmation.
+-   [x] Vehicle categories.
+-   [x] Vehicle nickname.
+-   [x] Manufacturer.
+-   [x] Model.
+-   [x] Year.
+-   [x] Description.
+-   [x] Vehicle visibility. (Stored preference; reads remain owner-only in Batch 2.)
+-   [x] Multiple vehicles.
+-   [x] Persist to Firebase.
+-   [x] Restore after logout/login.
+-   [x] Mobile-friendly empty states.
 
 Image upload may be postponed if Firebase Storage is not yet configured.
 
 ## Checks
 
--   [ ] Create motorcycle.
--   [ ] Create car.
--   [ ] Create multiple vehicles.
--   [ ] Edit.
--   [ ] Delete.
--   [ ] Logout/login persistence.
--   [ ] Security Rules prevent editing another user's Garage.
+-   [x] Create motorcycle.
+-   [x] Create car.
+-   [x] Create multiple vehicles.
+-   [x] Edit.
+-   [x] Delete.
+-   [x] Logout/login persistence.
+-   [x] Security Rules prevent editing another user's Garage.
 
 ### HUMAN CHECKPOINT
 
@@ -1431,6 +1435,8 @@ provider fixtures; they do not establish physical-device or background-recording
 
 > **Section 0 audit adaptation (planning only):** Split into a separately approved Section 4A repair checkpoint after Section 1, then account/Garage integration after Section 3. Repair disconnected automatic heading, GPS timestamp/dedup/gap/max accounting, stop lifecycle and asynchronous local restore before cloud session sync. Preserve existing module paths and all original integration requirements; see 15.6 and 15.10.
 
+> **Batch 2 result:** Implementation and automated acceptance within this section are complete for the authorized batch scope. Checks use browser SDK fixtures/simulated GPS plus real local Firestore rules tests. Live Firebase, physical phone and Safari acceptance remain pending. See Section 17 and IMPLEMENTATION_STATUS.md.
+
 ## Goal
 
 Integrate the current working dashboard with account/Garage architecture
@@ -1438,28 +1444,28 @@ without breaking it.
 
 ## Tasks
 
--   [ ] Preserve GPS.
--   [ ] Preserve speed.
--   [ ] Preserve map.
--   [ ] Preserve heading behavior.
--   [ ] Preserve weather.
--   [ ] Preserve time.
--   [ ] Preserve network/GPS status.
--   [ ] Allow selected Garage vehicle.
--   [ ] Display selected vehicle unobtrusively.
--   [ ] Ensure dashboard works when authenticated.
--   [ ] Define sensible behavior for Free/guest prototype users.
--   [ ] Preserve mobile layout.
+-   [x] Preserve GPS.
+-   [x] Preserve speed.
+-   [x] Preserve map.
+-   [x] Preserve heading behavior.
+-   [x] Preserve weather.
+-   [x] Preserve time.
+-   [x] Preserve network/GPS status.
+-   [x] Allow selected Garage vehicle.
+-   [x] Display selected vehicle unobtrusively.
+-   [x] Ensure dashboard works when authenticated.
+-   [x] Define sensible behavior for Free/guest prototype users.
+-   [x] Preserve mobile layout.
 
 ## Checks
 
--   [ ] GPS works.
--   [ ] Speed works.
--   [ ] Map works.
--   [ ] Weather works.
--   [ ] Heading works/falls back safely.
--   [ ] Selected vehicle works.
--   [ ] No regression from pre-Firebase dashboard.
+-   [x] GPS works.
+-   [x] Speed works.
+-   [x] Map works.
+-   [x] Weather works.
+-   [x] Heading works/falls back safely.
+-   [x] Selected vehicle works.
+-   [x] No regression from pre-Firebase dashboard.
 
 ### HUMAN CHECKPOINT
 
@@ -1477,36 +1483,38 @@ STOP after this section.
 
 > **Section 0 audit adaptation (planning only):** Extend createSessionRecord, createMovementTracker, createRouteRecorder and createSessionStore through a local-first repository/outbox. Keep local recording usable without Firebase. Add schema versions, UID/vehicle/category, chunked routes, upload revisions and explicit legacy ownership consent. Pull forward a local backup-export subset from Section 6 before migration. No per-GPS-callback cloud writes; no pause UI.
 
+> **Batch 2 result:** Implementation and automated acceptance within this section are complete for the authorized batch scope. Checks use browser SDK fixtures/simulated GPS plus real local Firestore rules tests. Live Firebase, physical phone and Safari acceptance remain pending. See Section 17 and IMPLEMENTATION_STATUS.md.
+
 ## Goal
 
 Persist personal sessions.
 
 ## Tasks
 
--   [ ] Start new session.
--   [ ] Select vehicle.
--   [ ] Record accepted GPS route points.
--   [ ] Automatic movement detection.
--   [ ] Stationary point filtering.
--   [ ] Unrealistic jump filtering.
--   [ ] Distance.
--   [ ] Moving time.
--   [ ] Average moving speed.
--   [ ] Maximum validated speed.
--   [ ] End session.
--   [ ] Save session.
--   [ ] Recover safely from refresh where feasible.
--   [ ] Prevent duplicate session creation.
--   [ ] Avoid excessive Firebase writes.
+-   [x] Start new session.
+-   [x] Select vehicle.
+-   [x] Record accepted GPS route points.
+-   [x] Automatic movement detection.
+-   [x] Stationary point filtering.
+-   [x] Unrealistic jump filtering.
+-   [x] Distance.
+-   [x] Moving time.
+-   [x] Average moving speed.
+-   [x] Maximum validated speed.
+-   [x] End session.
+-   [x] Save session.
+-   [x] Recover safely from refresh where feasible.
+-   [x] Prevent duplicate session creation.
+-   [x] Avoid excessive Firebase writes.
 
 ## Checks
 
--   [ ] Stationary GPS does not accumulate overlapping route.
--   [ ] Movement adds route.
--   [ ] Stop/resume works automatically.
--   [ ] Bad GPS does not create huge distance.
--   [ ] Session associated with correct vehicle.
--   [ ] Saved data reloads.
+-   [x] Stationary GPS does not accumulate overlapping route.
+-   [x] Movement adds route.
+-   [x] Stop/resume works automatically.
+-   [x] Bad GPS does not create huge distance.
+-   [x] Session associated with correct vehicle.
+-   [x] Saved data reloads.
 
 ### HUMAN CHECKPOINT
 
@@ -1518,31 +1526,33 @@ STOP after this section.
 
 > **Section 0 audit adaptation (planning only):** Reuse existing history/rename/delete and segmented polyline rendering. Add a visible read-only detail panel (current summary is hidden), vehicle/category identity and cloud adapter. Export GPX segments without connecting break markers; JSON retains schema/units. Feature-detect file sharing, preserve download fallback and handle cancellation. Public share pages remain deferred.
 
+> **Batch 2 result:** Implementation and automated acceptance within this section are complete for the authorized batch scope. Checks use browser SDK fixtures/simulated GPS plus real local Firestore rules tests. Live Firebase, physical phone and Safari acceptance remain pending. See Section 17 and IMPLEMENTATION_STATUS.md.
+
 ## Goal
 
 Make recorded sessions useful after the ride.
 
 ## Tasks
 
--   [ ] History list.
--   [ ] Session detail.
--   [ ] Route rendering.
--   [ ] Statistics.
--   [ ] Vehicle identity.
--   [ ] Delete own session.
--   [ ] JSON export.
--   [ ] GPX export.
--   [ ] Web Share API.
--   [ ] File download fallback.
+-   [x] History list.
+-   [x] Session detail.
+-   [x] Route rendering.
+-   [x] Statistics.
+-   [x] Vehicle identity.
+-   [x] Delete own session.
+-   [x] JSON export.
+-   [x] GPX export.
+-   [x] Web Share API.
+-   [x] File download fallback.
 -   [ ] Import only if explicitly approved during implementation.
 
 ## Checks
 
--   [ ] History survives login/reload.
--   [ ] Route displays correctly.
--   [ ] JSON valid.
--   [ ] GPX valid enough for standard GPX consumers.
--   [ ] Sharing failure does not break app.
+-   [x] History survives login/reload.
+-   [x] Route displays correctly.
+-   [x] JSON valid.
+-   [x] GPX valid enough for standard GPX consumers.
+-   [x] Sharing failure does not break app.
 
 ### HUMAN CHECKPOINT
 
@@ -1554,38 +1564,40 @@ STOP after this section.
 
 > **Section 0 audit adaptation (planning only):** Define minimum Owner/Admin/Host/Member authorization and rule invariants before enabling Club management/join approvals. Store memberships by UID rather than an unbounded member array; separate join requests and user navigation refs. Section 8 still completes role tooling and visible custom ranks.
 
+> **Batch 2 result:** Implementation and automated acceptance within this section are complete for the authorized batch scope. Checks use browser SDK fixtures/simulated GPS plus real local Firestore rules tests. Live Firebase, physical phone and Safari acceptance remain pending. See Section 17 and IMPLEMENTATION_STATUS.md.
+
 ## Goal
 
 Implement persistent communities.
 
 ## Tasks
 
--   [ ] Create Club.
--   [ ] Edit Club.
--   [ ] Club page.
--   [ ] Club description.
--   [ ] Basic links.
--   [ ] Club Owner.
--   [ ] Membership collection/model.
--   [ ] Open joining.
--   [ ] Approval-required joining.
--   [ ] Invite-only concept.
--   [ ] Private concept.
--   [ ] Join request.
--   [ ] Approve/reject request.
--   [ ] Leave Club.
--   [ ] Multiple Clubs per user.
--   [ ] Owner transfer/delete policy documented before destructive
+-   [x] Create Club.
+-   [x] Edit Club.
+-   [x] Club page.
+-   [x] Club description.
+-   [x] Basic links.
+-   [x] Club Owner.
+-   [x] Membership collection/model.
+-   [x] Open joining.
+-   [x] Approval-required joining.
+-   [x] Invite-only concept.
+-   [x] Private concept.
+-   [x] Join request.
+-   [x] Approve/reject request.
+-   [x] Leave Club.
+-   [x] Multiple Clubs per user.
+-   [x] Owner transfer/delete policy documented before destructive
     actions.
 
 ## Checks
 
--   [ ] Create Club.
--   [ ] Join open Club.
--   [ ] Request approval.
--   [ ] Approve/reject.
--   [ ] User belongs to multiple Clubs.
--   [ ] Unauthorized users cannot edit Club.
+-   [x] Create Club.
+-   [x] Join open Club.
+-   [x] Request approval.
+-   [x] Approve/reject.
+-   [x] User belongs to multiple Clubs.
+-   [x] Unauthorized users cannot edit Club.
 
 ### HUMAN CHECKPOINT
 
@@ -1596,6 +1608,8 @@ STOP after this section.
 # SECTION 8 --- CLUB ROLES + CUSTOM RANKS
 
 > **Section 0 audit adaptation (planning only):** Extend the permission foundation established in Section 7; visible rankId/name must never grant rights. Test self-promotion, owner transfer, cross-Club access and membership revocation. UI permission helpers mirror rules rather than replace them.
+
+> **Batch 2 result:** Implementation and automated acceptance within this section are complete for the authorized batch scope. Checks use browser SDK fixtures/simulated GPS plus real local Firestore rules tests. Live Firebase, physical phone and Safari acceptance remain pending. See Section 17 and IMPLEMENTATION_STATUS.md.
 
 ## Goal
 
@@ -1610,23 +1624,23 @@ Separate authorization from community identity.
 
 ## Tasks
 
--   [ ] Role data model.
--   [ ] Permission helpers.
--   [ ] Firebase Rules enforcement.
--   [ ] Custom visible rank definitions.
--   [ ] Assign rank.
--   [ ] Change rank.
--   [ ] Remove rank.
--   [ ] Custom rank display.
--   [ ] Ensure visible rank never grants technical permission.
+-   [x] Role data model.
+-   [x] Permission helpers.
+-   [x] Firebase Rules enforcement.
+-   [x] Custom visible rank definitions.
+-   [x] Assign rank.
+-   [x] Change rank.
+-   [x] Remove rank.
+-   [x] Custom rank display.
+-   [x] Ensure visible rank never grants technical permission.
 
 ## Checks
 
--   [ ] Member cannot perform Admin action.
--   [ ] Host receives only intended rights.
--   [ ] Custom "Captain" rank alone grants nothing.
--   [ ] Owner/Admin management works.
--   [ ] Security Rules tested.
+-   [x] Member cannot perform Admin action.
+-   [x] Host receives only intended rights.
+-   [x] Custom "Captain" rank alone grants nothing.
+-   [x] Owner/Admin management works.
+-   [x] Security Rules tested.
 
 ### HUMAN CHECKPOINT
 
@@ -1638,32 +1652,34 @@ STOP after this section.
 
 > **Section 0 audit adaptation (planning only):** Use validated branding fields, safe link protocols and plain-text Info Wall rendering. Separate tile preset choice from UI/route/marker branding. Reuse existing CSS controls/map hooks; logos require Storage rules. Existing product logo is not Club-logo support.
 
+> **Batch 2 result:** Implementation and automated acceptance within this section are complete for the authorized batch scope. Checks use browser SDK fixtures/simulated GPS plus real local Firestore rules tests. Live Firebase, physical phone and Safari acceptance remain pending. See Section 17 and IMPLEMENTATION_STATUS.md.
+
 ## Goal
 
 Give communities identity without building a social network.
 
 ## Tasks
 
--   [ ] Club logo support if storage is configured.
--   [ ] Primary color.
--   [ ] Accent color.
--   [ ] Optional route color.
--   [ ] Club links.
--   [ ] Info Wall / announcement.
--   [ ] WhatsApp link.
--   [ ] Discord link.
--   [ ] Instagram link.
--   [ ] Facebook link.
--   [ ] Website link.
--   [ ] Safe URL validation.
--   [ ] Controlled theming only.
+-   [ ] Club logo support if storage is configured. (Category placeholder implemented; uploads deferred.)
+-   [x] Primary color.
+-   [x] Accent color.
+-   [x] Optional route color.
+-   [x] Club links.
+-   [x] Info Wall / announcement.
+-   [x] WhatsApp link.
+-   [x] Discord link.
+-   [x] Instagram link.
+-   [x] Facebook link.
+-   [x] Website link.
+-   [x] Safe URL validation.
+-   [x] Controlled theming only.
 
 ## Checks
 
--   [ ] Invalid colors/URLs handled.
--   [ ] Branding does not break readability.
--   [ ] No arbitrary HTML/CSS injection.
--   [ ] Club Wall permissions work.
+-   [x] Invalid colors/URLs handled.
+-   [x] Branding does not break readability.
+-   [x] No arbitrary HTML/CSS injection.
+-   [x] Club Wall permissions work.
 
 ### HUMAN CHECKPOINT
 
@@ -2985,10 +3001,41 @@ QR, Official Events, Stripe or subscription enforcement is authorized.
 - [x] M5: paged private cloud history, lazy validated route detail/cache, rename/delete fences, JSON v1/GPX 1.1, file share/download; fresh-storage retrieval, rename/delete/reload and exports checked.
 - [x] M6: Club CRUD/discovery, open/approval/UID invite/private admission, multiple memberships, leave/archive/safe deletion; browser flows and 84 real rules assertions pass.
 - [x] M7: centralized technical permission helpers, Owner/Admin/Host/Member management boundaries, separate custom rank CRUD/assignment; browser role/rank/escalation checks and real rules assertions pass.
-- [ ] M8: safe branding and Info Wall.
-- [ ] Final Batch 2 regression review/documentation.
+- [x] M8: readable controlled branding, HTTPS links, plain Info Wall and future theme data; browser safety/reload/permission checks pass.
+- [x] Final Batch 2 regression review/documentation. (Live Firebase and physical acceptance remain pending.)
 
 Batch 2 data contract: DATA_MODEL.md. Real emulator runner and live/manual
 acceptance instructions: tests/RULES_TESTING.md. Each milestone is checked and
 committed separately; a checked implementation item never implies deployment,
 live Firebase validation or physical phone testing.
+
+## Batch 2 implementation outcome and remaining boundaries
+
+All eight milestones were implemented locally with separate commits and checks.
+The final full browser suite passed native ES module linking, paths/IDs, en/fi
+parity, GPS/map/weather regressions, Garage CRUD/ownership/defaults, signed-in
+refresh restoration, scoped logout/login/history, completed cloud retry/chunks,
+cloud history/detail/rename/delete/conflict recovery, JSON/GPX/sharing, Clubs,
+roles/ranks and safe branding/Wall. The real Firestore emulator passed **97**
+allow/deny assertions, including a 32-chunk atomic batch and query authorization.
+RTDB remains locked. No live Firebase writes, production rule/index deployment,
+physical phone test, GitHub push or Pages deployment occurred.
+
+Current code paths and acceptance are documented in IMPLEMENTATION_STATUS.md,
+README.md, DATA_MODEL.md, EXPORT_SCHEMA.md and tests/RULES_TESTING.md.
+The original future product requirements remain: full profile editing/public
+portfolio, uploaded logos/images, group sessions/Host organizing, sharing consent,
+trusted live ACL coordination, live map, Lobby, QR/NFC, replay, Official Events
+and rewards, subscriptions/billing and all later stages are **not implemented**.
+Garage visibility is a preference only; private ride files are explicitly shared
+by the account holder, without public cloud URLs. Owner transfer is a documented
+future trusted operation; clients cannot change ownerUid.
+
+Next order: user reviews Batch 1 + 2, applies reviewed rules/indexes and verifies
+live accounts/two-device persistence and physical phones. Then separately approve
+profile/identity and account deletion policy, recording concurrency hardening,
+and Group Session authorization/sharing consent before any live location work.
+The historical audit's hybrid Firestore/RTDB coordinator prerequisite remains.
+
+**STOP: Batch 2 is complete locally. Await explicit approval before further
+implementation, pushing or deploying.**

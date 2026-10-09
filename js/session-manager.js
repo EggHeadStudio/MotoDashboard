@@ -74,6 +74,7 @@ export function buildSessionHistoryHtml(sessionHistory, deps) {
       + (session.status === 'active' ? button('resume', 'ui.resumeShort') : button('open', 'ui.open'))
       + button('rename', 'ui.rename') + button('delete', 'ui.delete')
       + (session.status==='completed' ? button('json','rides.json')+button('gpx','rides.gpx')+button('share','rides.share') : '')
+      + (session.syncError==='conflict' ? button('use-cloud','rides.useCloud') : '')
       + (session.syncAction ? '<small class="ride-vehicle">'+t(session.syncError ? dataErrorKey({code:session.syncError}) : 'rides.pending')+'</small>' : '')
       + '</div></div>';
   }).join('');
