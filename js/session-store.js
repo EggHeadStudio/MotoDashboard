@@ -15,8 +15,10 @@ export function isSessionRecord(record) {
 
 export function createSessionStore(options) {
   const { sessionStorageKey, settingsStorageKey, dbName, dbVersion, sessionsStoreName, settingsStoreName } = options;
-  const prefix = sessionStorageKey + ':';
-  const clearedKey = sessionStorageKey + '-cleared-at';
+  const ownerUid = options.ownerUid || null;
+  const scoped = record => (record?.ownerUid || null) === ownerUid;
+  const prefix = sessionStorageKey + (ownerUid ? ':account:' + ownerUid : '') + ':';
+  const clearedKey = sessionStorageKey + (ownerUid ? ':account:' + ownerUid : '') + '-cleared-at';
   let dbPromise = null;
   let writes = Promise.resolve();
   function openDb() {
@@ -73,43 +75,57 @@ export function createSessionStore(options) {
     writes = task.catch(() => {});
     return task;
   }
-  async function loadSessions() {
+  async function readSessions() {
     let durable = [];
     try { durable = await transaction(sessionsStoreName, 'readonly', store => store.getAll()); } catch { /* Fallback below. */ }
     let clearedAt = 0;
     try { clearedAt = Number(localStorage.getItem(clearedKey)) || 0; } catch { /* Optional. */ }
     const byId = new Map();
     for (const record of [...(durable || []), ...fallbackRecords()]) {
-      if (!record || typeof record.id !== 'string' || !(record.updatedAt > clearedAt)) continue;
+      if (!record || !scoped(record) || typeof record.id !== 'string' || !(record.updatedAt > clearedAt)) continue;
       const prior = byId.get(record.id);
       if (!prior || record.updatedAt >= prior.updatedAt) byId.set(record.id, record);
     }
     return [...byId.values()].filter(isSessionRecord);
   }
+  async function loadSessions() { await writes; return readSessions(); }
+  async function writeSnapshot(snapshot) {
+    try {
+      await transaction(sessionsStoreName, 'readwrite', store => store.put(snapshot));
+      try { localStorage.removeItem(prefix + snapshot.id); } catch { /* Optional cleanup. */ }
+      return 'indexeddb';
+    } catch {
+      localStorage.setItem(prefix + snapshot.id, JSON.stringify(snapshot));
+      return 'localstorage';
+    }
+  }
   function saveSession(record) {
     const snapshot = structuredClone(record);
-    if (!isSessionRecord(snapshot)) return Promise.reject(new Error('invalid-session'));
+    if (!isSessionRecord(snapshot) || !scoped(snapshot)) return Promise.reject(new Error('invalid-session-owner'));
+    return queue(() => writeSnapshot(snapshot));
+  }
+  function updateSession(id, mutate) {
     return queue(async () => {
-      try {
-        await transaction(sessionsStoreName, 'readwrite', store => store.put(snapshot));
-        try { localStorage.removeItem(prefix + snapshot.id); } catch { /* Optional cleanup. */ }
-        return 'indexeddb';
-      } catch {
-        localStorage.setItem(prefix + snapshot.id, JSON.stringify(snapshot));
-        return 'localstorage';
-      }
+      const latest = (await readSessions()).find(record => record.id === id);
+      if (!latest) return null;
+      const next = mutate(structuredClone(latest));
+      if (!next) return null;
+      if (!isSessionRecord(next) || !scoped(next)) throw new Error('invalid-session-owner');
+      await writeSnapshot(next); return next;
     });
   }
   function deleteSession(id) {
     return queue(async () => {
       let durable = false;
+      const existing = await transaction(sessionsStoreName, 'readonly', store => store.get(id)).catch(() => null);
+      if (existing && !scoped(existing)) throw new Error('invalid-session-owner');
       try {
         await transaction(sessionsStoreName, 'readwrite', store => store.delete(id));
         durable = true;
       } catch { /* A local tombstone hides an inaccessible IDB record. */ }
       try {
         if (durable) localStorage.removeItem(prefix + id);
-        else localStorage.setItem(prefix + id, JSON.stringify({ id, deleted: true, updatedAt: Date.now() }));
+        else localStorage.setItem(prefix + id, JSON.stringify({ id, ownerUid, deleted: true, updatedAt: Date.now() }));
       } catch {
         if (!durable) throw new Error('storage-write-failed');
       }
@@ -118,7 +134,11 @@ export function createSessionStore(options) {
   function clearSessions() {
     return queue(async () => {
       let durable = false;
-      try { await transaction(sessionsStoreName, 'readwrite', store => store.clear()); durable = true; } catch { /* Fallback below. */ }
+      try {
+        const records = await transaction(sessionsStoreName, 'readonly', store => store.getAll());
+        await transaction(sessionsStoreName, 'readwrite', store => { for (const record of records || []) if (scoped(record)) store.delete(record.id); });
+        durable = true;
+      } catch { /* Fallback below. */ }
       try {
         localStorage.setItem(clearedKey, String(Date.now()));
         for (const record of fallbackRecords()) if (record?.id) localStorage.removeItem(prefix + record.id);
@@ -143,6 +163,6 @@ export function createSessionStore(options) {
   async function saveSettingToIndexedDb(key, value) {
     try { await transaction(settingsStoreName, 'readwrite', store => store.put({ key, value, updatedAt: Date.now() })); } catch { /* localStorage retains preferences. */ }
   }
-  return { loadSessions, saveSession, deleteSession, clearSessions, flush: () => writes,
+  return { loadSessions, saveSession, updateSession, deleteSession, clearSessions, flush: () => writes,
     readSettingFromLocalStorage, writeSettingToLocalStorage, loadSettingFromIndexedDb, saveSettingToIndexedDb };
 }

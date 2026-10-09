@@ -1,6 +1,7 @@
 // Stable keys; user-created content is never translated.
 export const dictionary = {
   "en": {
+    "rides.syncing": "Saving private completed rides…", "rides.pending": "Cloud sync pending. Rides remain saved locally; reconnect and retry.", "rides.synced": "Private ride sync complete.", "rides.guest": "Guest rides stay on this device and are not uploaded.", "rides.retry": "Retry ride sync",
     "garage.noVehicleShort": "No vehicle", "garage.nextVehicle": "Next ride: {name}",
     "common.loading": "Loading…", "common.loaded": "Up to date.", "common.refresh": "Refresh", "common.save": "Save", "common.cancel": "Cancel", "common.edit": "Edit", "common.delete": "Delete",
     "garage.title": "Garage", "garage.add": "Add vehicle", "garage.empty": "Your Garage is empty. Add a vehicle to choose it for your next ride.",
@@ -27,7 +28,7 @@ export const dictionary = {
     "auth.email": "Email",
     "auth.password": "Password",
     "auth.passwordHint": "Registration requires at least 6 characters; the project's password policy may require more.",
-    "auth.localRides": "Rides stay in this browser. Signing in does not upload them.",
+    "auth.localRides": "Guest rides stay on this device. New signed-in completed rides sync to your private account history.",
     "auth.signedInAs": "Signed in as {name}",
     "auth.signedOut": "Not signed in",
     "auth.loading": "Connecting to your account…",
@@ -230,6 +231,7 @@ export const dictionary = {
     "ui.finishBeforeDelete": "End the current session before deleting rides."
   },
   "fi": {
+    "rides.syncing": "Tallennetaan yksityisiä ajoja…", "rides.pending": "Pilvitallennus odottaa. Ajot säilyvät paikallisesti; yhdistä verkkoon ja yritä uudelleen.", "rides.synced": "Yksityiset ajot on synkronoitu.", "rides.guest": "Vieraan ajot säilyvät tällä laitteella, eikä niitä lähetetä pilveen.", "rides.retry": "Yritä ajojen synkronointia",
     "garage.noVehicleShort": "Ei ajoneuvoa", "garage.nextVehicle": "Seuraava ajo: {name}",
     "common.loading": "Ladataan…", "common.loaded": "Ajan tasalla.", "common.refresh": "Päivitä", "common.save": "Tallenna", "common.cancel": "Peruuta", "common.edit": "Muokkaa", "common.delete": "Poista",
     "garage.title": "Autotalli", "garage.add": "Lisää ajoneuvo", "garage.empty": "Autotallisi on tyhjä. Lisää ajoneuvo seuraavaa ajoasi varten.",
@@ -256,7 +258,7 @@ export const dictionary = {
     "auth.email": "Sähköposti",
     "auth.password": "Salasana",
     "auth.passwordHint": "Rekisteröinti vaatii vähintään 6 merkkiä. Projektin salasanavaatimukset voivat olla tiukemmat.",
-    "auth.localRides": "Ajot pysyvät tässä selaimessa. Kirjautuminen ei lähetä niitä pilveen.",
+    "auth.localRides": "Vieraan ajot säilyvät tällä laitteella. Kirjautuneena tehdyt uudet päättyneet ajot synkronoidaan yksityiseen ajohistoriaasi.",
     "auth.signedInAs": "Kirjautunut: {name}",
     "auth.signedOut": "Et ole kirjautunut",
     "auth.loading": "Yhdistetään tiliin…",

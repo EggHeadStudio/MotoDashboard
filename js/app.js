@@ -2,6 +2,8 @@ import { createPositionPipeline } from './position-pipeline.js';
 import { initAuthUI } from './auth-ui.js';
 import { initGarageUI, selectedVehicle, onVehicleChange } from './garage-ui.js';
 import { vehicleSnapshot } from './data/schema.js';
+import { getAccount, onAccountChange } from './auth-state.js';
+import { createSessionSync, queueRide } from './session-sync.js';
 import { initI18n, t, resolveText, setLocalizedText, onLanguageChange, formatNumber, getLocale } from './i18n/i18n.js';
 import {
   APP_VERSION,
@@ -347,14 +349,19 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           });
       }
 
-      var sessionStore = createSessionStore({
+      var accountUid = getAccount()?.uid || null;
+      var accountEpoch = 0;
+      var cloudSync = null;
+      function accountStore(uid) { return createSessionStore({
         sessionStorageKey: sessionStorageKey,
         settingsStorageKey: settingsStorageKey,
         dbName: dbName,
         dbVersion: dbVersion,
         sessionsStoreName: sessionsStoreName,
-        settingsStoreName: settingsStoreName
-      });
+        settingsStoreName: settingsStoreName,
+        ownerUid: uid
+      }); }
+      var sessionStore = accountStore(accountUid);
 
       function sortSessionHistory() {
         sessionHistory.sort(function (a, b) {
@@ -989,7 +996,10 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       }
 
       async function loadSessionHistory() {
-        sessionHistory = await sessionStore.loadSessions();
+        const epoch = accountEpoch;
+        const records = await sessionStore.loadSessions();
+        if (epoch !== accountEpoch) return;
+        sessionHistory = records.filter(record => record.syncAction !== 'delete');
         sortSessionHistory();
         recordingReady = true;
         elStartBtn.disabled = false;
@@ -1097,7 +1107,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       function createSession() {
         const vehicle = selectedVehicle();
         return { ...createSessionRecord(currentTheme), vehicleId: vehicle?.id || null,
-          vehicleSnapshot: vehicleSnapshot(vehicle), category: vehicle?.category || null };
+          vehicleSnapshot: vehicleSnapshot(vehicle), category: vehicle?.category || null, ownerUid: accountUid };
       }
 
       function renderVehicle() {
@@ -1123,16 +1133,28 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       }
 
       function commitSession(snapshot) {
+        const store = sessionStore, epoch = accountEpoch;
         const index = sessionHistory.findIndex(item => item.id === snapshot.id);
         if (index >= 0) sessionHistory[index] = snapshot;
         else sessionHistory.unshift(snapshot);
         sortSessionHistory();
         renderHistory();
         updateStartSummary();
-        return sessionStore.saveSession(snapshot).then(() => {
-          setTextContent(document.getElementById('storage-status'), '');
+        return store.saveSession(snapshot).then(() => {
+          if (epoch === accountEpoch) {
+            setTextContent(document.getElementById('storage-status'), '');
+            if (snapshot.syncAction) cloudSync?.retry();
+          }
           return true;
-        }).catch(error => { reportStorageError(error); return false; });
+        }).catch(error => { if (epoch === accountEpoch) reportStorageError(error); return false; });
+      }
+      async function removeRide(id) {
+        const ride = sessionHistory.find(item => item.id === id);
+        const store = sessionStore, sync = cloudSync;
+        if (ride?.ownerUid && ride.status === 'completed') {
+          await store.saveSession(queueRide({...ride,updatedAt:Date.now()},'delete'));
+          sync?.retry();
+        } else await store.deleteSession(id);
       }
 
       function persistActiveSession(force) {
@@ -1239,7 +1261,10 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         activeSession.endedAt = Date.now();
         activeSession.updatedAt = Date.now();
         sessionActive = false;
+        if (accountUid) activeSession = queueRide(activeSession);
+        const finished = activeSession, epoch = accountEpoch;
         const saved = await persistActiveSession(true);
+        if (epoch !== accountEpoch) return;
 
         sessionActive = false;
         resetMovementState();
@@ -1249,7 +1274,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         elBackToStartBtn.style.display = 'none';
         elStartOverlay.style.display = 'flex';
         setStartStatus(() => t("ui.completed"));
-        setSessionSummary(() => t(saved ? "ui.savedLocal" : "ui.storageFailure") + (activeSession.name ? ': ' + activeSession.name : '.') );
+        setSessionSummary(() => t(saved ? "ui.savedLocal" : "ui.storageFailure") + (finished.name ? ': ' + finished.name : '.') );
         updateStartSummary();
       }
 
@@ -1674,6 +1699,49 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       });
       onVehicleChange(renderVehicle);
 
+      function prepareCloudSync() {
+        const epoch = accountEpoch;
+        cloudSync = accountUid ? createSessionSync({uid:accountUid,store:sessionStore,
+          onChange(record,id) {
+            if (epoch !== accountEpoch) return;
+            const target = record?.id || id;
+            sessionHistory = sessionHistory.filter(item => item.id !== target);
+            if (record && record.syncAction !== 'delete') sessionHistory.push(record);
+            sortSessionHistory(); renderHistory(); updateStartSummary();
+          }, onStatus(key) { if (epoch === accountEpoch) setLocalizedText(document.getElementById('cloud-status'),()=>t(key)); }
+        }) : null;
+        setLocalizedText(document.getElementById('cloud-status'), () => t(accountUid ? 'rides.pending' : 'rides.guest'));
+        cloudSync?.retry();
+      }
+      onAccountChange(async ({user}) => {
+        const uid = user?.uid || null;
+        if (uid === accountUid) return;
+        // Capture/flush to the previous store before changing identity; no reassignment.
+        if (sessionActive) persistActiveSession(true);
+        clearExistingWatch(); releaseWakeLockSafely(); resetMovementState(); cancelSessionSave();
+        ++accountEpoch; accountUid = uid; recordingReady = false;
+        sessionActive = false; activeSession = null; sessionHistory = [];
+        sessionStore = accountStore(uid); cloudSync = null;
+        returnToStartView(); renderVehicle();
+        elFinishSessionBtn.style.display = 'none';
+        elGpsErrOverlay.style.display = 'none';
+        lastGoodCoords = null; lastPositionAt = 0; hasReceivedFirstPosition = false;
+        for (const layer of [posMarker,logoRingMarker,accuracyCircle]) if (layer && map?.hasLayer(layer)) map.removeLayer(layer);
+        posMarker = null; logoRingMarker = null; accuracyCircle = null;
+        if (map) map.setView([61.9241,25.7482],6);
+        setLocalizedText(elGpsAccuracy, () => t('ui.accuracyInitial'));
+        setSpeedDisplay(0); elStartBtn.disabled = true;
+        const epoch = accountEpoch;
+        try {
+          await loadSessionHistory();
+          if (epoch !== accountEpoch) return;
+          renderHistory(); updateStartSummary(); prepareCloudSync();
+        } catch (error) { if (epoch === accountEpoch) reportStorageError(error); }
+      });
+      if (recordingReady) prepareCloudSync();
+      document.getElementById('cloud-retry').addEventListener('click',()=>cloudSync?.retry());
+      window.addEventListener('online',()=>cloudSync?.retry());
+
       elCenterBtn.addEventListener('click', function () {
         followUser = true;
         if (map && lastGoodCoords) {
@@ -1723,7 +1791,12 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         }
 
         cancelSessionSave();
-        try { await sessionStore.clearSessions(); } catch (error) { reportStorageError(error); return; }
+        const epoch = accountEpoch;
+        try {
+          if (accountUid) for (const ride of [...sessionHistory]) await removeRide(ride.id);
+          else await sessionStore.clearSessions();
+        } catch (error) { reportStorageError(error); return; }
+        if (epoch !== accountEpoch) return;
         sessionHistory = [];
         if (!sessionActive) {
           activeSession = null;
@@ -1794,7 +1867,9 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           }
 
           cancelSessionSave();
-          try { await sessionStore.deleteSession(id); } catch (error) { reportStorageError(error); return; }
+          const epoch = accountEpoch;
+          try { await removeRide(id); } catch (error) { reportStorageError(error); return; }
+          if (epoch !== accountEpoch) return;
           sessionHistory = sessionHistory.filter(function (item) { return item.id !== id; });
           if (activeSession && activeSession.id === id && !sessionActive) {
             activeSession = null;
@@ -1840,7 +1915,8 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
             activeSession.updatedAt = renameTarget.updatedAt;
           }
 
-          sessionStore.saveSession(renameTarget).catch(reportStorageError);
+          if (accountUid && renameTarget.status === 'completed') Object.assign(renameTarget,queueRide(renameTarget));
+          await commitSession(renameTarget);
           renderHistory();
           updateStartSummary();
           setSessionSummary(() => t('ui.renamed'));

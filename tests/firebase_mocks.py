@@ -48,6 +48,7 @@ function write(ref,data) {
   const records=read(); records[ref]=data; localStorage.setItem('__mockProfiles',JSON.stringify(records)); window.__mock.writes++;
 }
 export async function runTransaction(_,fn) {
+  if(window.__mock.denyData) throw Object.assign(new Error('Offline fixture'),{code:'unavailable'});
   if(window.__mock.denyProfile) throw Object.assign(new Error('Denied'),{code:'permission-denied'});
   const staged=[];
   const result=await fn({get:async ref=>snap(ref,read()[ref]),set:(ref,data)=>staged.push(['set',ref,data]),

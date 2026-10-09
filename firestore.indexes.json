@@ -1,5 +1,10 @@
 {
-  "indexes": [],
+  "indexes": [
+    { "collectionGroup": "sessions", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "uploadState", "order": "ASCENDING" },
+      { "fieldPath": "startedAt", "order": "DESCENDING" }
+    ] }
+  ],
   "fieldOverrides": [
     { "collectionGroup": "routeChunks", "fieldPath": "pointsJson", "indexes": [] }
   ]

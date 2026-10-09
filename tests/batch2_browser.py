@@ -69,11 +69,41 @@ def run_batch2_tests(browser,base,route_map):
         page.wait_for_selector('#start-overlay',state='visible')
         open_garage(page)
     rides=page.evaluate("""async()=>{const {createSessionStore}=await import('./js/session-store.js');
-      const c=await import('./js/config.js'); return (await createSessionStore({sessionStorageKey:c.SESSION_STORAGE_KEY,
+      const {getAccount}=await import('./js/auth-state.js'); const c=await import('./js/config.js'); return (await createSessionStore({ownerUid:getAccount()?.uid,sessionStorageKey:c.SESSION_STORAGE_KEY,
       settingsStorageKey:c.SETTINGS_STORAGE_KEY,dbName:c.DB_NAME,dbVersion:c.DB_VERSION,sessionsStoreName:c.SESSIONS_STORE_NAME,
       settingsStoreName:c.SETTINGS_STORE_NAME}).loadSessions()).filter(r=>r.status==='completed');}""")
     assert {r['category'] for r in rides}=={'motorcycle','car'}
     assert all(r['vehicleId'] and r['vehicleSnapshot']['nickname'] for r in rides)
+    page.wait_for_function('document.querySelector("#cloud-status").textContent==="Private ride sync complete."')
+    cloud=page.evaluate("Object.entries(JSON.parse(localStorage.getItem('__mockProfiles'))).filter(([k,v])=>k.includes('/sessions/') && v.status==='completed')")
+    assert len(cloud)==2 and all(v['visibility']=='private' and v['uploadState']=='ready' for _,v in cloud)
+    sync_result=page.evaluate("""async()=>{
+      const {createSessionStore}=await import('./js/session-store.js'); const c=await import('./js/config.js');
+      const {getAccount}=await import('./js/auth-state.js'); const uid=getAccount().uid;
+      const store=createSessionStore({ownerUid:uid,sessionStorageKey:c.SESSION_STORAGE_KEY,settingsStorageKey:c.SETTINGS_STORAGE_KEY,
+        dbName:c.DB_NAME,dbVersion:c.DB_VERSION,sessionsStoreName:c.SESSIONS_STORE_NAME,settingsStoreName:c.SETTINGS_STORE_NAME});
+      const {queueRide,createSessionSync}=await import('./js/session-sync.js');
+      const {createSessionRecord}=await import('./js/session-manager.js');
+      const now=Date.now()-10000; const routePoints=Array.from({length:300},(_,i)=>({latitude:60+i*0.00001,longitude:25,
+        timestamp:now+i,accuracy:5,speedKmh:30,heading:90}));
+      let job=queueRide({...createSessionRecord('normal',now),ownerUid:uid,status:'completed',endedAt:now+1000,
+        routePoints,name:'Chunk Test',vehicleId:null,vehicleSnapshot:null,category:null});
+      await store.saveSession(job); window.__mock.denyData=true;
+      const sync=createSessionSync({uid,store,onChange:()=>{},onStatus:()=>{}}); await sync.retry();
+      const failed=(await store.loadSessions()).find(r=>r.id===job.id);
+      window.__mock.denyData=false; await sync.retry();
+      const saved=(await store.loadSessions()).find(r=>r.id===job.id);
+      const {uploadSession}=await import('./js/firebase/sessionRepository.js');
+      const before=window.__mock.writes;await uploadSession(uid,saved);const after=window.__mock.writes;
+      const db=JSON.parse(localStorage.getItem('__mockProfiles'));
+      const chunks=Object.entries(db).filter(([k])=>k.includes('/sessions/'+job.id+'/routeChunks/'));
+      const otherStore=createSessionStore({ownerUid:'fixture-other',sessionStorageKey:c.SESSION_STORAGE_KEY,settingsStorageKey:c.SETTINGS_STORAGE_KEY,
+        dbName:c.DB_NAME,dbVersion:c.DB_VERSION,sessionsStoreName:c.SESSIONS_STORE_NAME,settingsStoreName:c.SETTINGS_STORE_NAME});
+      await otherStore.clearSessions();
+      return {pending:failed.syncAction,success:saved.syncAction,chunks:chunks.length,max:Math.max(...chunks.map(([,v])=>v.pointCount)),
+        duplicateWrites:after-before,other:(await otherStore.loadSessions()).length,preserved:(await store.loadSessions()).some(r=>r.id===job.id)};
+    }""")
+    assert sync_result=={'pending':'upsert','success':None,'chunks':3,'max':128,'duplicateWrites':0,'other':0,'preserved':True},sync_result
     page.locator('#garage-dialog article').filter(has_text='Family Car').get_by_role('button',name='Delete',exact=True).click()
     page.wait_for_function('document.querySelectorAll("#garage-dialog article").length===1')
     assert any(r['vehicleSnapshot']['nickname']=='Family Car' for r in rides)
@@ -84,10 +114,19 @@ def run_batch2_tests(browser,base,route_map):
     assert rect['x']>=0 and rect['x']+rect['width']<=321
     page.locator('#garage-dialog .feature-header button').click()
     page.select_option('#language-select','en')
-    page.click('#account-btn'); page.click('#auth-logout')
+    page.click('#start-btn')
+    assert page.evaluate('window.__geo.active')==1
+    # Simulate Auth changing in another tab while the dashboard is recording.
+    page.evaluate("async()=>{const {logout}=await import('./js/firebase/auth.js');await logout();}")
+    page.wait_for_selector('#start-overlay',state='visible')
+    assert page.evaluate('window.__geo.active')==0
+    page.click('#history-btn')
+    assert 'Vehicle Ride' not in page.locator('#history-list').inner_text()
+    page.click('#account-btn')
     page.wait_for_function('document.querySelector("#auth-identity").textContent==="Not signed in"')
     page.click('#account-close'); page.click('#garage-btn')
     assert page.locator('#garage-dialog article').count()==0
     assert not errors,errors
     context.close()
     print('PASS: MOCK Garage motorcycle/car create, edit, default, reload, delete, owner guard, logout isolation, Finnish and 320px dialog')
+    print('PASS: MOCK vehicle snapshots in two rides, private completed cloud manifests, 300-point bounded chunks, durable failed-job retry, zero duplicate writes, scoped clear and logout during recording')
