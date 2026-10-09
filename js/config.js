@@ -1,6 +1,6 @@
 export const APP_VERSION = '1.2';
 
-export const THEME_NAMES = ['Normaali', 'Mustavalko', 'Metsä', 'Asutus', 'Yö'];
+export const THEME_NAMES = ['themes.normal', 'themes.monochrome', 'themes.forest', 'themes.urban', 'themes.night'];
 export const THEME_CLASSES = ['theme-normal', 'theme-monochrome', 'theme-forest', 'theme-urban', 'theme-night'];
 export const THEME_MAP_STYLES = {
   normal: {
@@ -26,18 +26,18 @@ export const THEME_MAP_STYLES = {
 };
 
 export const WMO_CODES = {
-  0: 'Selkeää',
-  1: 'Melko selkeää', 2: 'Puolipilvistä', 3: 'Pilvistä',
-  45: 'Sumua', 48: 'Huurteista sumua',
-  51: 'Kevyttä tihkusadetta', 53: 'Tihkusadetta', 55: 'Tiheää tihkusadetta',
-  56: 'Jäätävää tihkusadetta', 57: 'Tiheää jäätävää tihkusadetta',
-  61: 'Kevyttä sadetta', 63: 'Sadetta', 65: 'Rankkasadetta',
-  66: 'Jäätävää sadetta', 67: 'Tiheää jäätävää sadetta',
-  71: 'Kevyttä lumisadetta', 73: 'Lumisadetta', 75: 'Tiheää lumisadetta',
-  77: 'Lumirakeita',
-  80: 'Sadekuuroja', 81: 'Sadekuuroja', 82: 'Voimakkaita sadekuuroja',
-  85: 'Lumikuuroja', 86: 'Voimakkaita lumikuuroja',
-  95: 'Ukkosta', 96: 'Ukkosta ja raesadetta', 99: 'Ukkosta ja raesadetta'
+  0: 'weather.0',
+  1: 'weather.1', 2: 'weather.2', 3: 'weather.3',
+  45: 'weather.45', 48: 'weather.48',
+  51: 'weather.51', 53: 'weather.53', 55: 'weather.55',
+  56: 'weather.56', 57: 'weather.57',
+  61: 'weather.61', 63: 'weather.63', 65: 'weather.65',
+  66: 'weather.66', 67: 'weather.67',
+  71: 'weather.71', 73: 'weather.73', 75: 'weather.75',
+  77: 'weather.77',
+  80: 'weather.80', 81: 'weather.81', 82: 'weather.82',
+  85: 'weather.85', 86: 'weather.86',
+  95: 'weather.95', 96: 'weather.96', 99: 'weather.99'
 };
 
 export const SESSION_STORAGE_KEY = 'moto-dashboard-sessions-v1';

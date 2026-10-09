@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="fi">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Moto Dashboard</title>
-  <meta name="description" content="Moottoripyörän digitaalinen mittaristo">
+  <meta name="description" content="A digital dashboard for your rides" data-i18n-content="ui.description">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="MotoDash">
@@ -16,13 +16,14 @@
   <link rel="stylesheet" href="./css/dashboard.css">
 </head>
 <body>
+  <div id="language-control"><label for="language-select" data-i18n="ui.language">Language</label><select id="language-select"><option value="en">English</option><option value="fi">Suomi</option></select></div>
 
   <!-- Map -->
-  <div id="map" aria-label="Kartta" role="img"></div>
+  <div id="map" aria-label="Map" data-i18n-aria-label="ui.map" role="img"></div>
   <!-- Map shade overlay -->
   <div class="map-shade"></div>
   <!-- Map tile status -->
-  <div id="map-status">Karttaa ladataan…</div>
+  <div id="map-status" data-i18n="ui.mapLoading">Loading map?</div>
   <div id="compass-indicator" aria-hidden="true"><span id="compass-needle"></span>N</div>
   <div id="compass-rotating-overlay" aria-hidden="true">
     <div class="compass-rose">
@@ -37,26 +38,26 @@
   <!-- HUD (visible after start) -->
   <div id="hud" aria-hidden="false">
     <div id="top-panel">
-      <div id="time-panel" class="panel compact-panel is-collapsible-top" role="button" tabindex="0" aria-label="Piilota kello- ja säätiedot">
-        <div class="panel-label">Kello</div>
+      <div id="time-panel" class="panel compact-panel is-collapsible-top" role="button" tabindex="0" aria-label="Hide time and weather" data-i18n-aria-label="ui.hideTop">
+        <div class="panel-label" data-i18n="ui.time">Time</div>
         <div id="time-display" aria-live="polite" aria-atomic="true">--.--</div>
       </div>
-      <div id="weather-panel" class="panel compact-panel is-collapsible-top" role="button" tabindex="0" aria-label="Piilota kello- ja säätiedot">
-        <div class="panel-label">Sää</div>
-        <div id="weather-row" class="info-row" aria-live="polite">Sää ladataan…</div>
+      <div id="weather-panel" class="panel compact-panel is-collapsible-top" role="button" tabindex="0" aria-label="Hide time and weather" data-i18n-aria-label="ui.hideTop">
+        <div class="panel-label" data-i18n="ui.weather">Weather</div>
+        <div id="weather-row" class="info-row" aria-live="polite" data-i18n="ui.weatherLoading">Loading weather?</div>
       </div>
-      <div id="temperature-panel" class="panel compact-panel is-collapsible-top" role="button" tabindex="0" aria-label="Piilota kello- ja säätiedot">
-        <div class="panel-label">Lämpötila</div>
+      <div id="temperature-panel" class="panel compact-panel is-collapsible-top" role="button" tabindex="0" aria-label="Hide time and weather" data-i18n-aria-label="ui.hideTop">
+        <div class="panel-label" data-i18n="ui.temperature">Temperature</div>
         <div id="temperature-row" class="info-row">— °C</div>
       </div>
-      <div id="wind-panel" class="panel compact-panel is-collapsible-top" role="button" tabindex="0" aria-label="Piilota kello- ja säätiedot">
-        <div class="panel-label">Tuuli</div>
+      <div id="wind-panel" class="panel compact-panel is-collapsible-top" role="button" tabindex="0" aria-label="Hide time and weather" data-i18n-aria-label="ui.hideTop">
+        <div class="panel-label" data-i18n="ui.wind">Wind</div>
         <div id="wind-row" class="info-row">—</div>
       </div>
     </div>
-    <button id="top-tab" class="hud-btn" aria-label="Näytä kello- ja säätiedot" aria-expanded="true">Kello / Sää</button>
+    <button id="top-tab" class="hud-btn" aria-label="Show time and weather" data-i18n-aria-label="ui.showTop" aria-expanded="true" data-i18n="ui.clockWeather">Time / Weather</button>
 
-    <div id="speed-block" class="panel" role="button" tabindex="0" aria-label="GPS-nopeus, napauta piilottaaksesi tai näyttääksesi painikkeet">
+    <div id="speed-block" class="panel" role="button" tabindex="0" aria-label="GPS speed; tap to hide or show controls" data-i18n-aria-label="ui.speedControl">
       <div id="speed-value" aria-live="polite" aria-atomic="true">0</div>
       <div id="speed-unit">km/h</div>
     </div>
@@ -64,60 +65,60 @@
     <div></div>
 
     <div id="bottom-panel">
-      <div id="session-stats-panel" class="panel" role="button" tabindex="0" aria-label="Piilota tai näytä session tiedot" aria-live="polite" aria-atomic="true">
-        <div class="panel-label">Sessio</div>
+      <div id="session-stats-panel" class="panel" role="button" tabindex="0" aria-label="Hide or show session statistics" data-i18n-aria-label="ui.statsControl" aria-live="polite" aria-atomic="true">
+        <div class="panel-label" data-i18n="ui.session">Session</div>
         <div id="session-stats-grid">
-          <div class="session-stat-item"><span class="session-stat-name">Matka</span><span id="stat-distance" class="session-stat-value">0.0 km</span></div>
-          <div class="session-stat-item"><span class="session-stat-name">Aika</span><span id="stat-duration" class="session-stat-value">00:00:00</span></div>
-          <div class="session-stat-item"><span class="session-stat-name">KA</span><span id="stat-average" class="session-stat-value">0.0 km/h</span></div>
-          <div class="session-stat-item"><span class="session-stat-name">MAX</span><span id="stat-max" class="session-stat-value">0.0 km/h</span></div>
+          <div class="session-stat-item"><span class="session-stat-name" data-i18n="ui.distance">Distance</span><span id="stat-distance" class="session-stat-value">0.0 km</span></div>
+          <div class="session-stat-item"><span class="session-stat-name" data-i18n="ui.duration">Moving time</span><span id="stat-duration" class="session-stat-value">00:00:00</span></div>
+          <div class="session-stat-item"><span class="session-stat-name" data-i18n="ui.average">AVG</span><span id="stat-average" class="session-stat-value">0.0 km/h</span></div>
+          <div class="session-stat-item"><span class="session-stat-name" data-i18n="ui.maximum" data-i18n="ui.maximum">MAX</span><span id="stat-max" class="session-stat-value">0.0 km/h</span></div>
         </div>
       </div>
       <div id="status-stack">
-        <div id="gps-panel" class="panel status-panel is-collapsible" role="button" tabindex="0" aria-label="Piilota GPS- ja verkkotiedot">
+        <div id="gps-panel" class="panel status-panel is-collapsible" role="button" tabindex="0" aria-label="Hide GPS and network status" data-i18n-aria-label="ui.hideStatus">
           <div class="panel-label">GPS</div>
-          <div id="gps-status-row" class="info-row status-moderate" aria-live="polite" aria-atomic="true">Valmis aloittamaan</div>
-          <div id="gps-accuracy-row" class="info-row">Tarkkuus: –</div>
+          <div id="gps-status-row" class="info-row status-moderate" aria-live="polite" aria-atomic="true" data-i18n="ui.readyStart">Ready to start</div>
+          <div id="gps-accuracy-row" class="info-row" data-i18n="ui.accuracyInitial">Accuracy: -</div>
         </div>
-        <div id="network-panel" class="panel status-panel is-collapsible" role="button" tabindex="0" aria-label="Piilota GPS- ja verkkotiedot">
-          <div class="panel-label">Verkko</div>
+        <div id="network-panel" class="panel status-panel is-collapsible" role="button" tabindex="0" aria-label="Hide GPS and network status" data-i18n-aria-label="ui.hideStatus">
+          <div class="panel-label" data-i18n="ui.network">Network</div>
           <div id="network-row" class="info-row" aria-live="polite"></div>
         </div>
       </div>
-      <button id="status-tab" class="hud-btn" aria-label="Näytä GPS- ja verkkotiedot" aria-expanded="true">GPS / Verkko</button>
+      <button id="status-tab" class="hud-btn" aria-label="Show GPS and network status" data-i18n-aria-label="ui.showStatus" aria-expanded="true" data-i18n="ui.networkTab">GPS / Network</button>
     </div>
 
     <div id="controls-row">
-      <button class="hud-btn" id="center-btn" aria-label="Keskitä kartta sijaintiin">Keskitä</button>
-      <button class="hud-btn" id="theme-btn" aria-label="Vaihda karttateemaa">Teema</button>
-      <button class="hud-btn" id="heading-btn" aria-label="Vaihda kartan suuntatilaa">Suunta: lukittu</button>
-      <button class="hud-btn" id="session-stats-toggle-btn" aria-label="Näytä tai piilota session tiedot">Sessio: piilota</button>
-      <button class="hud-btn" id="finish-session-btn" aria-label="Lopeta nykyinen sessio">Lopeta sessio</button>
-      <button class="hud-btn" id="back-to-start-btn" aria-label="Palaa aloitusnäkymään">Palaa aloitukseen</button>
-      <button class="hud-btn" id="retry-btn" aria-label="Yritä GPS-yhteyttä uudelleen">Yritä uudelleen</button>
-      <div id="safety-msg" aria-hidden="true">Käytä ajoneuvon omaa mittaristoa ensisijaisena nopeusmittarina.</div>
+      <button class="hud-btn" id="center-btn" aria-label="Center the map on your location" data-i18n-aria-label="ui.centerLabel" data-i18n="ui.center">Center</button>
+      <button class="hud-btn" id="theme-btn" aria-label="Change map theme" data-i18n-aria-label="ui.themeLabel" data-i18n="ui.theme">Theme</button>
+      <button class="hud-btn" id="heading-btn" aria-label="Change map orientation" data-i18n-aria-label="ui.headingLabel" data-i18n="ui.northUp">Direction: north-up</button>
+      <button class="hud-btn" id="session-stats-toggle-btn" aria-label="Show or hide session statistics" data-i18n-aria-label="ui.statsLabel" data-i18n="ui.hideStats">Session: hide</button>
+      <button class="hud-btn" id="finish-session-btn" aria-label="End the current session" data-i18n-aria-label="ui.finishLabel" data-i18n="ui.finish">End session</button>
+      <button class="hud-btn" id="back-to-start-btn" aria-label="Return to the start screen" data-i18n-aria-label="ui.backLabel" data-i18n="ui.back">Back to start</button>
+      <button class="hud-btn" id="retry-btn" aria-label="Retry GPS tracking" data-i18n-aria-label="ui.retryLabel" data-i18n="ui.retry">Try again</button>
+      <div id="safety-msg" aria-hidden="true" data-i18n="ui.safety">Use your vehicle's instruments as the primary speedometer.</div>
     </div>
     <div id="speed-debug" style="font-size:10px;color:rgba(255,255,255,0.6);text-align:center;padding:2px 0;pointer-events:none;"></div>
   </div>
 
   <!-- Start overlay -->
-  <div id="start-overlay" role="dialog" aria-modal="true" aria-label="Aloitusnäyttö">
+  <div id="start-overlay" role="dialog" aria-modal="true" aria-label="Start screen" data-i18n-aria-label="ui.startScreen">
     <img id="start-logo" src="./EggHeadStudio_logo.png" alt="EggHeadStudio logo">
     <div id="start-title-wrap">
       <h1>EggHeadStudio</h1>
       <div id="start-title-sub">Moto Dashboard</div>
     </div>
     <div class="start-actions">
-      <button id="start-btn" aria-label="Aloita sovellus">Uusi sessio</button>
-      <button id="resume-session-btn" class="start-option-btn secondary" aria-label="Jatka edellistä sessiota">Jatka edellistä</button>
-      <button id="history-btn" class="start-option-btn secondary" aria-label="Näytä tallennetut ajot">Tallennetut ajot</button>
+      <button id="start-btn" aria-label="Start the application" data-i18n-aria-label="ui.startApp" data-i18n="ui.newSession">New session</button>
+      <button id="resume-session-btn" class="start-option-btn secondary" aria-label="Resume the previous session" data-i18n-aria-label="ui.resumeLabel" data-i18n="ui.resume">Resume previous</button>
+      <button id="history-btn" class="start-option-btn secondary" aria-label="Show saved rides" data-i18n-aria-label="ui.historyLabel" data-i18n="ui.history">Saved rides</button>
     </div>
-    <div id="session-summary" aria-live="polite">Ei tallennettuja ajoja vielä.</div>
+    <div id="session-summary" aria-live="polite" data-i18n="ui.noRides">No saved rides yet.</div>
     <div id="history-list" aria-live="polite"></div>
     <div id="history-actions">
-      <button id="clear-history-btn" class="start-option-btn secondary" aria-label="Poista kaikki tallennetut ajot">Poista kaikki ajot</button>
+      <button id="clear-history-btn" class="start-option-btn secondary" aria-label="Delete all saved rides" data-i18n-aria-label="ui.clearLabel" data-i18n="ui.clear">Delete all rides</button>
     </div>
-    <div id="start-status" aria-live="assertive" aria-atomic="true">Valmis</div>
+    <div id="start-status" aria-live="assertive" aria-atomic="true" data-i18n="ui.ready">Ready</div>
     <div id="start-debug" aria-live="polite" aria-atomic="true">Debug: Valmis</div>
     <div id="map-fallback-msg" aria-live="polite"></div>
     <div id="start-gps-hint" aria-live="polite"></div>
@@ -127,7 +128,7 @@
   <!-- GPS error overlay -->
   <div id="gps-error-overlay" role="alert" aria-live="assertive">
     <div id="gps-error-msg"></div>
-    <button id="retry-gps-btn" aria-label="Yritä GPS-yhteyttä uudelleen">Yritä uudelleen</button>
+    <button id="retry-gps-btn" aria-label="Retry GPS tracking" data-i18n-aria-label="ui.retryLabel" data-i18n="ui.retry">Try again</button>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>

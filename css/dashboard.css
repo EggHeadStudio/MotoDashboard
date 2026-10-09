@@ -10,6 +10,33 @@
       --safe-left: env(safe-area-inset-left, 0px);
     }
 
+    #language-control {
+      position: fixed;
+      top: calc(var(--safe-top) + 8px);
+      left: calc(var(--safe-left) + 8px);
+      z-index: 60;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 8px;
+      border-radius: 10px;
+      background: #111;
+      font-size: 12px;
+    }
+    #language-select {
+      min-height: 44px;
+      color: #fff;
+      background: #222;
+      border: 1px solid #666;
+      border-radius: 8px;
+      padding: 6px;
+      font: inherit;
+    }
+    body:has(#start-overlay[style*="display: none"]) #language-control {
+      top: auto;
+      bottom: calc(var(--safe-bottom) + 4px);
+    }
+
     html, body {
       width: 100%;
       min-height: 100%;

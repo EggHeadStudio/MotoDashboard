@@ -1,3 +1,4 @@
+import { setLocalizedText, resolveText } from './i18n/i18n.js';
 export function setCollapsedState(bodyElement, toggleElement, collapsed, className) {
   if (bodyElement && bodyElement.classList && typeof bodyElement.classList.toggle === 'function') {
     bodyElement.classList.toggle(className, !!collapsed);
@@ -15,5 +16,5 @@ export function setTextContent(element, text) {
     return;
   }
 
-  element.textContent = text == null ? '' : String(text);
+  setLocalizedText(element, () => resolveText(text));
 }

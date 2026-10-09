@@ -1,3 +1,4 @@
+import { t, setLocalizedText, formatNumber } from './i18n/i18n.js';
 import { THEME_MAP_STYLES } from './config.js';
 
 function getThemeTileConfig(themeName) {
@@ -57,7 +58,7 @@ export function initLeafletMap(input) {
 
   tileLayer.on('tileerror', function () {
     if (mapStatusEl) {
-      mapStatusEl.textContent = 'Karttatiiliä ei voitu ladata';
+      setLocalizedText(mapStatusEl, () => t("ui.tileError"));
       mapStatusEl.style.display = '';
     }
   });
@@ -122,7 +123,7 @@ export function setMapThemeLayer(input) {
 
   nextLayer.on('tileerror', function () {
     if (mapStatusEl) {
-      mapStatusEl.textContent = 'Karttatiiliä ei voitu ladata';
+      setLocalizedText(mapStatusEl, () => t("ui.tileError"));
       mapStatusEl.style.display = '';
     }
   });

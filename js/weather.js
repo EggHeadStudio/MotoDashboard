@@ -1,5 +1,6 @@
+import { t, setLocalizedText, formatNumber } from './i18n/i18n.js';
 export function wmoToFinnish(code, wmoCodes) {
-  return wmoCodes[code] || 'Sää ei saatavilla';
+  return t(wmoCodes[code] || 'ui.weatherUnavailable');
 }
 
 export function fetchAndRenderWeather(lat, lon, options) {
@@ -11,9 +12,9 @@ export function fetchAndRenderWeather(lat, lon, options) {
   var fetchImpl = options.fetchImpl || fetch;
 
   if (!isOnline) {
-    weatherRowEl.textContent = 'Sää ei saatavilla';
-    temperatureRowEl.textContent = '— °C';
-    windRowEl.textContent = '—';
+    setLocalizedText(weatherRowEl, () => t("ui.weatherUnavailable"));
+    setLocalizedText(temperatureRowEl, () => '— °C');
+    setLocalizedText(windRowEl, () => '—');
     return Promise.resolve(false);
   }
 
@@ -32,22 +33,22 @@ export function fetchAndRenderWeather(lat, lon, options) {
         var cur = data.current;
         var temp = Math.round(cur.temperature_2m);
         var wind = Math.round(cur.wind_speed_10m);
-        var desc = wmoToFinnish(cur.weather_code, wmoCodes);
-        weatherRowEl.textContent = desc;
-        temperatureRowEl.textContent = temp + ' °C';
-        windRowEl.textContent = wind + ' km/h';
+        var desc = function () { return wmoToFinnish(cur.weather_code, wmoCodes); };
+        setLocalizedText(weatherRowEl, () => desc());
+        setLocalizedText(temperatureRowEl, () => formatNumber(temp, 0) + ' °C');
+        setLocalizedText(windRowEl, () => formatNumber(wind, 0) + ' km/h');
         return true;
       }
 
-      weatherRowEl.textContent = 'Sää ei saatavilla';
-      temperatureRowEl.textContent = '— °C';
-      windRowEl.textContent = '—';
+      setLocalizedText(weatherRowEl, () => t("ui.weatherUnavailable"));
+      setLocalizedText(temperatureRowEl, () => '— °C');
+      setLocalizedText(windRowEl, () => '—');
       return false;
     })
     .catch(function () {
-      weatherRowEl.textContent = 'Sää ei saatavilla';
-      temperatureRowEl.textContent = '— °C';
-      windRowEl.textContent = '—';
+      setLocalizedText(weatherRowEl, () => t("ui.weatherUnavailable"));
+      setLocalizedText(temperatureRowEl, () => '— °C');
+      setLocalizedText(windRowEl, () => '—');
       return false;
     });
 }

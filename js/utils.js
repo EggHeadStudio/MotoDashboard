@@ -1,3 +1,4 @@
+import { getLocale, formatNumber } from './i18n/i18n.js';
 export function normalizeAngle(deg) {
   var value = deg % 360;
   if (value < 0) {
@@ -48,7 +49,7 @@ export function formatDate(value) {
   if (isNaN(date.getTime())) {
     return '—';
   }
-  return date.toLocaleString('fi-FI', { dateStyle: 'short', timeStyle: 'short' });
+  return date.toLocaleString(getLocale(), { dateStyle: 'short', timeStyle: 'short' });
 }
 
 export function formatSpeedKmh(kmh) {
@@ -56,7 +57,7 @@ export function formatSpeedKmh(kmh) {
   if (!isFinite(value) || value < 0) {
     value = 0;
   }
-  return (Math.round(value * 10) / 10).toFixed(1);
+  return formatNumber(Math.round(value * 10) / 10, 1);
 }
 
 export function formatDistanceKm(distanceMeters) {
@@ -64,7 +65,7 @@ export function formatDistanceKm(distanceMeters) {
   if (!isFinite(meters) || meters < 0) {
     meters = 0;
   }
-  return (Math.round((meters / 1000) * 10) / 10).toFixed(1);
+  return formatNumber(Math.round((meters / 1000) * 10) / 10, 1);
 }
 
 export function haversine(lat1, lon1, lat2, lon2) {

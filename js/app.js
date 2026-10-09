@@ -1,3 +1,4 @@
+import { initI18n, t, resolveText, setLocalizedText, onLanguageChange, formatNumber, getLocale } from './i18n/i18n.js';
 import {
   APP_VERSION,
   THEME_NAMES,
@@ -67,6 +68,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
     'use strict';
 
     document.addEventListener('DOMContentLoaded', function () {
+      initI18n();
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function (registrations) {
           registrations.forEach(function (registration) {
@@ -191,7 +193,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       var viewportRefreshTimer = null;
       var viewportListenersBound = false;
 
-      var themeNames = THEME_NAMES;
+      function themeLabel(index) { return t(THEME_NAMES[index]); }
       var themeClasses = THEME_CLASSES;
 
       var movementTracker = createMovementTracker({
@@ -229,7 +231,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       }) : null;
 
       function setDebugStage(message) {
-        elStartDebug.textContent = 'Debug: ' + message;
+        setLocalizedText(elStartDebug, () => 'Debug: ' + resolveText(message));
       }
 
       function setStartStatus(message) {
@@ -237,11 +239,11 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       }
 
       function setMapUnavailableMessage(message) {
-        setTextContent(elMapFallbackMsg, message || '');
+        setTextContent(elMapFallbackMsg, () => resolveText(message));
       }
 
       function setStartGpsHint(message) {
-        setTextContent(elStartGpsHint, message || '');
+        setTextContent(elStartGpsHint, () => resolveText(message));
       }
 
       function setGpsStatus(message, className) {
@@ -291,39 +293,37 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         if (kmh < 0.8) {
           kmh = 0;
         }
-        elSpeedValue.textContent = String(kmh);
+        setLocalizedText(elSpeedValue, () => String(kmh));
       }
 
       function updateClock() {
         var now = new Date();
-        var h = String(now.getHours()).padStart(2, '0');
-        var m = String(now.getMinutes()).padStart(2, '0');
-        elTimeDisplay.textContent = h + '.' + m;
+        setLocalizedText(elTimeDisplay, () => now.toLocaleTimeString(getLocale(), { hour: '2-digit', minute: '2-digit', hour12: false }));
       }
 
       function updateNetwork() {
         if (navigator.onLine) {
-          elNetworkRow.textContent = 'Verkko käytössä';
+          setLocalizedText(elNetworkRow, () => t("ui.networkOnline"));
           elNetworkRow.className = 'info-row status-good';
         } else {
-          elNetworkRow.textContent = 'Ei verkkoyhteyttä';
+          setLocalizedText(elNetworkRow, () => t("ui.networkOffline"));
           elNetworkRow.className = 'info-row status-bad';
         }
       }
 
       function updateGpsEnvironmentHint() {
         if (!window.isSecureContext) {
-          setStartGpsHint('Tassa selaimessa GPS voi olla estetty. Kayta localhostia tai HTTPS-osoitetta puhelimessa.');
+          setStartGpsHint(() => t("ui.secureHint"));
           return;
         }
 
         if (!isGeolocationSupported(navigator)) {
-          setStartGpsHint('Selain ei tue sijaintipalvelua.');
+          setStartGpsHint(() => t("ui.gpsUnsupported"));
           return;
         }
 
         if (!navigator.permissions || !navigator.permissions.query) {
-          setStartGpsHint('GPS-lupa kysytaan kun painat Uusi sessio.');
+          setStartGpsHint(() => t("ui.permissionPrompt"));
           return;
         }
 
@@ -332,29 +332,29 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
             var lines = [];
 
             if (result.state === 'denied') {
-              lines.push('Sijaintilupa on estetty. Salli lupa selaimen asetuksista.');
+              lines.push(t("ui.permissionDeniedHint"));
             } else if (result.state === 'prompt') {
-              lines.push('GPS-lupa kysytaan kun painat Uusi sessio.');
+              lines.push(t("ui.permissionPrompt"));
             } else {
-              lines.push('GPS-lupa on sallittu. Voit aloittaa session.');
+              lines.push(t("ui.permissionAllowed"));
             }
 
             if (!('wakeLock' in navigator)) {
-              lines.push('Näytön palovartija ei ole tuettu tässä selaimessa – näyttö voi sammua ajon aikana.');
+              lines.push(t("ui.wakeUnsupported"));
             }
 
             if (!document.documentElement.requestFullscreen) {
-              lines.push('Kokokuvatila ei ole tuettu tässä selaimessa.');
+              lines.push(t("ui.fullscreenUnsupported"));
             }
 
-            setStartGpsHint(lines.join(' '));
+            setStartGpsHint(() => lines.join(' '));
 
             if (typeof result.onchange !== 'undefined') {
               result.onchange = updateGpsEnvironmentHint;
             }
           })
           .catch(function () {
-            setStartGpsHint('GPS-lupa kysytaan kun painat Uusi sessio.');
+            setStartGpsHint(() => t("ui.permissionPrompt"));
           });
       }
 
@@ -417,7 +417,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         document.body.classList.add('theme-' + normalizedTheme);
         currentTheme = normalizedTheme;
         if (elThemeBtn) {
-          elThemeBtn.textContent = 'Teema: ' + themeNames[themeClasses.indexOf('theme-' + normalizedTheme)];
+          setLocalizedText(elThemeBtn, () => t("ui.themePrefix") + themeLabel(themeClasses.indexOf('theme-' + normalizedTheme)));
         }
 
         if (map && typeof L !== 'undefined') {
@@ -445,11 +445,11 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           themeToastTimer = null;
         }
 
-        elMapStatus.textContent = 'Teema: ' + themeName;
+        setLocalizedText(elMapStatus, () => t("ui.themePrefix") + resolveText(themeName));
         elMapStatus.style.display = '';
 
         themeToastTimer = window.setTimeout(function () {
-          if (elMapStatus.textContent.indexOf('Teema: ') === 0) {
+          if (elMapStatus.textContent.indexOf(t("ui.themePrefix")) === 0) {
             elMapStatus.style.display = 'none';
           }
           themeToastTimer = null;
@@ -466,11 +466,11 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           mapStatusTimer = null;
         }
 
-        elMapStatus.textContent = message;
+        setLocalizedText(elMapStatus, () => resolveText(message));
         elMapStatus.style.display = '';
 
         mapStatusTimer = window.setTimeout(function () {
-          if (elMapStatus.textContent === message) {
+          if (elMapStatus.textContent === resolveText(message)) {
             elMapStatus.style.display = 'none';
           }
           mapStatusTimer = null;
@@ -526,7 +526,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         var nextThemeClass = themeClasses[currentIndex];
         var nextTheme = nextThemeClass.replace('theme-', '');
         applyTheme(nextTheme);
-        showThemeToast(themeNames[currentIndex]);
+        showThemeToast(() => themeLabel(currentIndex));
       }
 
       function applyMapRotationVisual(angleDeg) {
@@ -635,7 +635,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       }
 
       function updateHeadingButtonLabel() {
-        elHeadingBtn.textContent = headingUpEnabled ? 'Suunta: menosuunta' : 'Suunta: lukittu';
+        setLocalizedText(elHeadingBtn, () => headingUpEnabled ? t("ui.headingUp") : t("ui.northUp"));
       }
 
       function persistHeadingMode() {
@@ -649,7 +649,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         headingUpEnabled = requestedHeadingUp;
         if (requestedHeadingUp && !mapRotationSupported) {
           headingUpEnabled = false;
-          showMapStatusMessage('Suuntaustila ei ole tuettu tässä selaimessa', 1800);
+          showMapStatusMessage(() => t("ui.rotationUnsupported"), 1800);
         }
         updateHeadingButtonLabel();
         document.body.classList.toggle('heading-menosuunta', headingUpEnabled && mapRotationSupported);
@@ -969,7 +969,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       }
 
       function setSessionSummary(message) {
-        elSessionSummary.textContent = message;
+        setLocalizedText(elSessionSummary, () => resolveText(message));
       }
 
       function updateHistoryActionsVisibility() {
@@ -990,7 +990,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       function setSessionStatsCollapsed(collapsed) {
         sessionStatsCollapsed = !!collapsed;
         elSessionStatsPanel.style.display = sessionStatsCollapsed ? 'none' : 'grid';
-        elSessionStatsToggleBtn.textContent = sessionStatsCollapsed ? 'Sessio: näytä' : 'Sessio: piilota';
+        setLocalizedText(elSessionStatsToggleBtn, () => sessionStatsCollapsed ? t("ui.showStats") : t("ui.hideStats"));
         elSessionStatsToggleBtn.setAttribute('aria-pressed', String(!sessionStatsCollapsed));
       }
 
@@ -1005,10 +1005,10 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         }
 
         setSessionStatsVisible(true);
-        elStatDistance.textContent = formatDistanceKm(session.distanceMeters || 0) + ' km';
-        elStatDuration.textContent = formatDuration(session.movingDurationMs || 0);
-        elStatAverage.textContent = formatSpeedKmh(session.averageMovingSpeedKmh || 0) + ' km/h';
-        elStatMax.textContent = formatSpeedKmh(session.maxSpeedKmh || 0) + ' km/h';
+        setLocalizedText(elStatDistance, () => formatDistanceKm(session.distanceMeters || 0) + ' km');
+        setLocalizedText(elStatDuration, () => formatDuration(session.movingDurationMs || 0));
+        setLocalizedText(elStatAverage, () => formatSpeedKmh(session.averageMovingSpeedKmh || 0) + ' km/h');
+        setLocalizedText(elStatMax, () => formatSpeedKmh(session.maxSpeedKmh || 0) + ' km/h');
       }
 
       function getSessionLastLatLng(session) {
@@ -1047,7 +1047,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
 
       function renderHistory() {
         if (!sessionHistory.length) {
-          elHistoryList.innerHTML = '<div>Ei tallennettuja ajoja vielä.</div>';
+          elHistoryList.innerHTML = '<div>' + t('ui.noRides') + '</div>';
           updateHistoryActionsVisibility();
           return;
         }
@@ -1084,8 +1084,8 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           map.setView(lastLatLng, map.getZoom() < 14 ? 14 : map.getZoom());
         }
 
-        setStartStatus('Ajon katselu');
-        setSessionSummary(formatCompletedSessionSummary(session, {
+        setStartStatus(() => t("ui.viewRide"));
+        setSessionSummary(() => formatCompletedSessionSummary(session, {
           formatDate: formatDate,
           formatDuration: formatDuration,
           formatSpeedKmh: formatSpeedKmh
@@ -1106,7 +1106,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         elStartOverlay.style.display = 'flex';
         renderHistory();
         updateStartSummary();
-        setStartStatus('Valmis');
+        setStartStatus(() => t("ui.ready"));
       }
 
       function updateStartSummary() {
@@ -1114,13 +1114,13 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         elResumeSessionBtn.style.display = hasActive ? 'inline-flex' : 'none';
 
         if (!sessionHistory.length) {
-          setSessionSummary('Ei tallennettuja ajoja vielä.');
+          setSessionSummary(() => t("ui.noRides"));
           updateHistoryActionsVisibility();
           return;
         }
 
         var latestCompleted = sessionHistory.find(function (item) { return item.status === 'completed'; }) || sessionHistory[0];
-        setSessionSummary(formatLatestSessionSummary(latestCompleted, {
+        setSessionSummary(() => formatLatestSessionSummary(latestCompleted, {
           formatDate: formatDate,
           formatDistanceKm: formatDistanceKm,
           formatDuration: formatDuration
@@ -1219,14 +1219,14 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         elFinishSessionBtn.style.display = 'inline-flex';
         elBackToStartBtn.style.display = 'none';
         elHistoryList.style.display = 'none';
-        setSessionSummary('Uusi sessio käynnissä. Reitti tallennetaan tähän laitteeseen.');
+        setSessionSummary(() => t("ui.recordingLocal"));
         persistActiveSession(true);
       }
 
       function resumePreviousSession() {
         var latest = sessionHistory.find(function (item) { return item.status === 'active'; });
         if (!latest) {
-          setSessionSummary('Kesken olevaa sessiota ei löytynyt.');
+          setSessionSummary(() => t("ui.noActive"));
           return;
         }
 
@@ -1243,18 +1243,18 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         elHistoryList.style.display = 'none';
         elStartOverlay.style.display = 'none';
         updateRouteLayer();
-        setSessionSummary('Jatketaan aiempaa sessiota.');
-        setStartStatus('Sessio palautettu');
+        setSessionSummary(() => t("ui.resuming"));
+        setStartStatus(() => t("ui.restored"));
 
         if (!window.isSecureContext || !isGeolocationSupported(navigator)) {
-          showLocationError('Sijaintia ei voitu kaynnistaa jatketulle sessiolle.', 'GPS ei kaynnistynyt');
+          showLocationError(() => t("ui.resumeLocationError"), t("ui.gpsStartFailed"));
           return;
         }
 
         try {
           startGpsTracking();
         } catch (error) {
-          showLocationError('GPS-seurannan kaynnistys epaonnistui jatketulle sessiolle.', 'GPS-kaynnistys epaonnistui', error);
+          showLocationError(() => t("ui.resumeTrackingError"), t("ui.gpsStartupFailed"), error);
           return;
         }
 
@@ -1266,11 +1266,11 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           return;
         }
 
-        if (!window.confirm('Lopetetaanko nykyinen sessio?')) {
+        if (!window.confirm(t("ui.finishConfirm"))) {
           return;
         }
 
-        var nameInput = window.prompt('Anna sessiolle nimi (valinnainen):', activeSession.name || '');
+        var nameInput = window.prompt(t("ui.namePrompt"), activeSession.name || '');
         if (nameInput !== null) {
           activeSession.name = sanitizeSessionName(nameInput);
         }
@@ -1287,8 +1287,8 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         elFinishSessionBtn.style.display = 'none';
         elBackToStartBtn.style.display = 'none';
         elStartOverlay.style.display = 'flex';
-        setStartStatus('Sessio valmis');
-        setSessionSummary('Sessio tallennettu paikallisesti' + (activeSession.name ? ': ' + activeSession.name : '.') );
+        setStartStatus(() => t("ui.completed"));
+        setSessionSummary(() => t("ui.savedLocal") + (activeSession.name ? ': ' + activeSession.name : '.') );
         updateStartSummary();
       }
 
@@ -1304,7 +1304,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         if (map || mapUnavailable || typeof L === 'undefined') {
           if (typeof L === 'undefined') {
             mapUnavailable = true;
-            setMapUnavailableMessage('Karttakirjastoa ei voitu ladata');
+            setMapUnavailableMessage(() => t("ui.mapLibraryError"));
           }
           return;
         }
@@ -1354,8 +1354,8 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           map = null;
           mapPane = null;
           mapRotationSupported = false;
-          console.warn('Karttaa ei voitu ladata', error);
-          setMapUnavailableMessage('Karttaa ei voitu ladata');
+          console.warn(t("ui.mapError"), error);
+          setMapUnavailableMessage(() => t("ui.mapError"));
         }
       }
 
@@ -1443,9 +1443,9 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         elRetryBtn.style.display = 'none';
         elStartOverlay.style.display = 'none';
         elFinishSessionBtn.style.display = sessionActive ? 'inline-flex' : 'none';
-        setDebugStage('Sijainti vastaanotettu');
-        setStartStatus('Sijainti vastaanotettu');
-        resetStartButton('Uusi sessio');
+        setDebugStage(() => t("ui.positionReceived"));
+        setStartStatus(() => t("ui.positionReceived"));
+        resetStartButton(() => t("ui.newSession"));
       }
 
       function enterRunningUiPendingGps() {
@@ -1453,27 +1453,27 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         elRetryBtn.style.display = 'none';
         elStartOverlay.style.display = 'none';
         elFinishSessionBtn.style.display = sessionActive ? 'inline-flex' : 'none';
-        resetStartButton('Uusi sessio');
+        resetStartButton(() => t("ui.newSession"));
       }
 
       function setWeatherWaitingForGps() {
-        elWeatherRow.textContent = 'Sää odottaa GPS:ää';
-        elTemperatureRow.textContent = '— °C';
-        elWindRow.textContent = '—';
+        setLocalizedText(elWeatherRow, () => t("ui.weatherWaiting"));
+        setLocalizedText(elTemperatureRow, () => '— °C');
+        setLocalizedText(elWindRow, () => '—');
       }
 
       function showLocationError(message, debugMessage, error) {
         isStartingGps = false;
-        setStartStatus(message);
-        setDebugStage(debugMessage || message);
-        setGpsStatus('GPS ei saatavilla', 'status-bad');
-        elGpsAccuracy.textContent = 'Tarkkuus: ei saatavilla';
+        setStartStatus(() => resolveText(message));
+        setDebugStage(() => resolveText(debugMessage || message));
+        setGpsStatus(() => t("ui.gpsUnavailable"), 'status-bad');
+        setLocalizedText(elGpsAccuracy, () => t("ui.accuracyUnavailable"));
         setWeatherWaitingForGps();
-        elGpsErrMsg.textContent = message;
+        setLocalizedText(elGpsErrMsg, () => resolveText(message));
         elGpsErrOverlay.style.display = 'flex';
         elStartOverlay.style.display = 'flex';
         elRetryBtn.style.display = '';
-        resetStartButton('Yritä uudelleen');
+        resetStartButton(() => t("ui.retry"));
         if (error) {
           console.error(error);
         }
@@ -1484,10 +1484,10 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       }
 
       function showLocationFallback(message, debugMessage, error) {
-        setStartStatus(message);
-        setDebugStage(debugMessage || message);
-        setGpsStatus('Pyydetään sijaintia…', 'status-moderate');
-        elGpsAccuracy.textContent = 'Tarkkuus: haetaan…';
+        setStartStatus(() => resolveText(message));
+        setDebugStage(() => resolveText(debugMessage || message));
+        setGpsStatus(() => t("ui.locationRequest"), 'status-moderate');
+        setLocalizedText(elGpsAccuracy, () => t("ui.accuracyPending"));
         setWeatherWaitingForGps();
         if (error) {
           console.warn(error);
@@ -1496,11 +1496,11 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
 
       function updateGpsQuality(accuracy) {
         if (accuracy <= 20) {
-          setGpsStatus('GPS hyvä', 'status-good');
+          setGpsStatus(() => t("ui.gpsGood"), 'status-good');
         } else if (accuracy <= 50) {
-          setGpsStatus('GPS kohtalainen', 'status-moderate');
+          setGpsStatus(() => t("ui.gpsModerate"), 'status-moderate');
         } else {
-          setGpsStatus('GPS heikko', 'status-bad');
+          setGpsStatus(() => t("ui.gpsPoor"), 'status-bad');
         }
       }
 
@@ -1516,7 +1516,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         var dt = 0;
         lastPositionAt = now;
 
-        elGpsAccuracy.textContent = 'Tarkkuus: ' + Math.round(accuracy) + ' m';
+        setLocalizedText(elGpsAccuracy, () => t("ui.accuracyPrefix") + formatNumber(Math.round(accuracy), 0) + ' m');
         updateGpsQuality(accuracy);
 
         var speedSample = evaluateSpeedSample({
@@ -1551,10 +1551,10 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         setSpeedDisplay(smoothedSpeed);
 
         if (elSpeedDebug) {
-          var rawStr = rawGpsKmh !== null ? rawGpsKmh.toFixed(1) : 'ei saatavilla';
+          var rawStr = rawGpsKmh !== null ? rawGpsKmh.toFixed(1) : t("ui.unavailable");
           var calcStr = fallbackKmh !== null ? fallbackKmh.toFixed(1) : '—';
           var dtStr = dt > 0 ? dt.toFixed(1) + ' s' : '—';
-          elSpeedDebug.textContent = 'GPS: ' + rawStr + ' | laskettu: ' + calcStr + ' | näyttö: ' + Math.round(smoothedSpeed) + ' | Δt: ' + dtStr;
+          setLocalizedText(elSpeedDebug, () => t('ui.debugLine', { raw: rawStr, calculated: calcStr, display: Math.round(smoothedSpeed), dt: dtStr }));
         }
 
         if (accuracy <= 50) {
@@ -1581,24 +1581,24 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         if (!hasReceivedFirstPosition) {
           finishGpsStartupSuccess();
         } else {
-          setDebugStage('Sijainti vastaanotettu');
-          setStartStatus('Sijainti vastaanotettu');
+          setDebugStage(() => t("ui.positionReceived"));
+          setStartStatus(() => t("ui.positionReceived"));
         }
       }
 
       function handlePositionError(err) {
-        var message = getGpsErrorMessage(err);
-        var debugMessage = err && typeof err.code !== 'undefined' ? 'GPS-virhe: ' + err.code : 'GPS-virhe';
+        var message = () => getGpsErrorMessage(err);
+        var debugMessage = err && typeof err.code !== 'undefined' ? t("ui.gpsErrorPrefix") + err.code : t("ui.gpsError");
 
         if (err && err.code === 1) {
-          setDebugStage('Sijaintilupa evätty');
-          showLocationError(message, 'Sijaintilupa evätty', err);
+          setDebugStage(() => t("ui.permissionDenied"));
+          showLocationError(message, t("ui.permissionDenied"), err);
         } else {
-          setDebugStage(debugMessage);
+          setDebugStage(() => debugMessage);
           showLocationFallback(message, debugMessage, err);
         }
 
-        console.error('GPS-virhe', err);
+        console.error(t("ui.gpsError"), err);
       }
 
       function startGpsTracking(options) {
@@ -1608,13 +1608,13 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           resetMovementState();
           hasReceivedFirstPosition = false;
           isStartingGps = true;
-          setGpsStatus('Pyydetään sijaintia…', 'status-moderate');
-          elGpsAccuracy.textContent = 'Tarkkuus: haetaan…';
-          setStartStatus('Pyydetään sijaintilupaa…');
-          setDebugStage('Pyydetään sijaintilupaa');
+          setGpsStatus(() => t("ui.locationRequest"), 'status-moderate');
+          setLocalizedText(elGpsAccuracy, () => t("ui.accuracyPending"));
+          setStartStatus(() => t("ui.requestPermission"));
+          setDebugStage(() => t("ui.requestPermissionDebug"));
         } else {
           isStartingGps = false;
-          setDebugStage('GPS-seuranta palautetaan');
+          setDebugStage(() => t("ui.restoringGps"));
         }
 
         var options = {
@@ -1624,7 +1624,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         };
 
         watchId = startGeoWatch(navigator.geolocation, handlePositionSuccess, handlePositionError, options);
-        setDebugStage('GPS-seuranta käynnistetty');
+        setDebugStage(() => t("ui.trackingStarted"));
 
         if (!softRestart) {
           navigator.geolocation.getCurrentPosition(function (pos) {
@@ -1638,8 +1638,8 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       function startButtonHandler() {
         // Guard: if an active session already exists, ask user to choose first
         if (sessionActive && activeSession) {
-          if (!window.confirm('Ajossa on jo aktiivinen sessio. Aloitetaanko uusi ajo? Kesken oleva sessio jää tallennetuksi ja voidaan jatkaa myöhemmin.')) {
-            resetStartButton('Uusi sessio');
+          if (!window.confirm(t("ui.newWhileActive"))) {
+            resetStartButton(() => t("ui.newSession"));
             return;
           }
           // Save current session as paused/active so it can be resumed later
@@ -1652,12 +1652,12 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         }
 
         elStartBtn.disabled = true;
-        elStartBtn.textContent = 'Käynnistetään…';
-        setStartStatus('Pyydetään sijaintilupaa…');
-        setDebugStage('Aloita painettu');
+        setLocalizedText(elStartBtn, () => t("ui.starting"));
+        setStartStatus(() => t("ui.requestPermission"));
+        setDebugStage(() => t("ui.startPressed"));
         elGpsErrOverlay.style.display = 'none';
         elRetryBtn.style.display = 'none';
-        setGpsStatus('Pyydetään sijaintia…', 'status-moderate');
+        setGpsStatus(() => t("ui.locationRequest"), 'status-moderate');
 
         startNewSession();
         updateGpsEnvironmentHint();
@@ -1665,19 +1665,19 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         enterRunningUiPendingGps();
 
         if (!window.isSecureContext) {
-          showLocationError('Sijainti vaatii suojatun yhteyden (HTTPS tai localhost).', 'Ei suojattu yhteys');
+          showLocationError(() => t("ui.secureError"), t("ui.notSecure"));
           return;
         }
 
         if (!isGeolocationSupported(navigator)) {
-          showLocationError('Tämä selain ei tue sijaintia.', 'GPS ei tuettu');
+          showLocationError(() => t("ui.noLocation"), t("ui.noGps"));
           return;
         }
 
         try {
           startGpsTracking();
         } catch (error) {
-          showLocationError('GPS-seurannan käynnistäminen epäonnistui.', 'GPS-käynnistys epäonnistui', error);
+          showLocationError(() => t("ui.trackingError"), t("ui.trackingStartDebug"), error);
           return;
         }
 
@@ -1693,7 +1693,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
             startGpsTracking();
             return;
           } catch (error) {
-            showLocationError('GPS-seurannan uudelleenkäynnistys epäonnistui.', 'GPS-uudelleenkäynnistys epäonnistui', error);
+            showLocationError(() => t("ui.retryTrackingError"), t("ui.retryTrackingDebug"), error);
             return;
           }
         }
@@ -1701,13 +1701,13 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         startButtonHandler();
       }
 
-      elStartVersion.textContent = 'Versio ' + APP_VERSION;
+      setLocalizedText(elStartVersion, () => t("ui.versionPrefix") + APP_VERSION);
       loadSessionHistory();
       renderHistory();
       updateStartSummary();
       updateGpsEnvironmentHint();
-      setStartStatus('Valmis');
-      setDebugStage('Valmis');
+      setStartStatus(() => t("ui.ready"));
+      setDebugStage(() => t("ui.ready"));
       setSpeedDisplay(0);
       applyStoredTheme();
       applyStoredHeadingMode();
@@ -1719,7 +1719,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
 
       if (typeof L === 'undefined') {
         mapUnavailable = true;
-        setMapUnavailableMessage('Karttaa ei voitu ladata');
+        setMapUnavailableMessage(() => t("ui.mapError"));
         console.warn('Leaflet ei latautunut. Kartta ei ole käytettävissä.');
       } else {
         initMap();
@@ -1750,7 +1750,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         elFinishSessionBtn.style.display = 'inline-flex';
         elBackToStartBtn.style.display = 'none';
         elStartOverlay.style.display = 'none';
-        setStartStatus('Sessio palautettu automaattisesti');
+        setStartStatus(() => t("ui.autoRestored"));
 
         if (!window.isSecureContext || !isGeolocationSupported(navigator)) {
           return;
@@ -1764,6 +1764,11 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
 
         requestWakeLockSafely();
       }());
+
+      onLanguageChange(function () {
+        renderHistory();
+        updateGpsEnvironmentHint();
+      });
 
       elCenterBtn.addEventListener('click', function () {
         followUser = true;
@@ -1800,15 +1805,15 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       elHistoryBtn.addEventListener('click', toggleHistoryList);
       elClearHistoryBtn.addEventListener('click', function () {
         if (!sessionHistory.length) {
-          setSessionSummary('Ei poistettavia ajoja.');
+          setSessionSummary(() => t("ui.nothingDelete"));
           return;
         }
 
-        if (!window.confirm('Poistetaanko kaikki tallennetut ajot tältä laitteelta?')) {
+        if (!window.confirm(t("ui.clearConfirm"))) {
           return;
         }
 
-        if (!window.confirm('Vahvistus: poistetaanko varmasti kaikki ajot? Tätä ei voi perua.')) {
+        if (!window.confirm(t("ui.clearFinalConfirm"))) {
           return;
         }
 
@@ -1825,7 +1830,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         saveSessionHistory();
         renderHistory();
         updateStartSummary();
-        setSessionSummary('Kaikki tallennetut ajot poistettu.');
+        setSessionSummary(() => t("ui.cleared"));
       });
       elBackToStartBtn.addEventListener('click', returnToStartView);
       elFinishSessionBtn.addEventListener('click', finishSession);
@@ -1877,7 +1882,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         var action = button.getAttribute('data-action');
         var id = button.getAttribute('data-id');
         if (action === 'delete') {
-          if (!window.confirm('Poistetaanko tallennettu ajo?')) {
+          if (!window.confirm(t("ui.deleteConfirm"))) {
             return;
           }
 
@@ -1893,14 +1898,14 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           saveSessionHistory();
           renderHistory();
           updateStartSummary();
-          setSessionSummary('Tallennettu ajo poistettu.');
+          setSessionSummary(() => t("ui.deleted"));
           return;
         }
 
         if (action === 'open') {
           var completed = sessionHistory.find(function (item) { return item.id === id; });
           if (!completed || completed.status !== 'completed') {
-            setSessionSummary('Valittua tallennettua sessiota ei löytynyt.');
+            setSessionSummary(() => t("ui.missingCompleted"));
             return;
           }
 
@@ -1911,11 +1916,11 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         if (action === 'rename') {
           var renameTarget = sessionHistory.find(function (item) { return item.id === id; });
           if (!renameTarget) {
-            setSessionSummary('Valittua sessiota ei löytynyt.');
+            setSessionSummary(() => t("ui.missingSession"));
             return;
           }
 
-          var renamed = window.prompt('Anna sessiolle uusi nimi (valinnainen):', renameTarget.name || '');
+          var renamed = window.prompt(t("ui.renamePrompt"), renameTarget.name || '');
           if (renamed === null) {
             return;
           }
@@ -1930,7 +1935,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           saveSessionHistory();
           renderHistory();
           updateStartSummary();
-          setSessionSummary('Session nimi päivitetty.');
+          setSessionSummary(() => t("ui.renamed"));
           return;
         }
 
@@ -1940,7 +1945,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
 
         var selected = sessionHistory.find(function (item) { return item.id === id; });
         if (!selected || selected.status !== 'active') {
-          setSessionSummary('Valittua keskeneräistä sessiota ei löytynyt.');
+          setSessionSummary(() => t("ui.missingUnfinished"));
           return;
         }
 
@@ -1955,18 +1960,18 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         elStartOverlay.style.display = 'none';
         elHistoryList.style.display = 'none';
         updateRouteLayer();
-        setStartStatus('Sessio palautettu');
-        setSessionSummary('Sessio palautettu: ' + formatDate(selected.startedAt));
+        setStartStatus(() => t("ui.restored"));
+        setSessionSummary(() => t("ui.restoredPrefix") + formatDate(selected.startedAt));
 
         if (!window.isSecureContext || !isGeolocationSupported(navigator)) {
-          showLocationError('Sijaintia ei voitu kaynnistaa jatketulle sessiolle.', 'GPS ei kaynnistynyt');
+          showLocationError(() => t("ui.resumeLocationError"), t("ui.gpsStartFailed"));
           return;
         }
 
         try {
           startGpsTracking();
         } catch (error) {
-          showLocationError('GPS-seurannan kaynnistys epaonnistui jatketulle sessiolle.', 'GPS-kaynnistys epaonnistui', error);
+          showLocationError(() => t("ui.resumeTrackingError"), t("ui.gpsStartupFailed"), error);
           return;
         }
 
