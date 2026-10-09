@@ -247,4 +247,3 @@ localized data errors and Auth publication are integrated. RTDB remains locked.
 Executed: 67 real emulator allow/deny assertions; Batch 1 browser baseline passes.
 No live Firebase operations, rules deployment or physical phone testing occurred.
 Further milestone entries will replace this progress note after the final review.
-

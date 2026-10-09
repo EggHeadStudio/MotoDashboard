@@ -39,7 +39,8 @@ export async function signOut() { auth.currentUser=null; notify(); }
 
 MOCK_FIRESTORE = r"""
 export const getFirestore = app => ({app});
-export const doc = (_,collection,uid) => collection+'/'+uid;
+export const doc = (_, ...parts) => parts.join('/');
+export const collection = (_, ...parts) => parts.join('/');
 export const serverTimestamp = () => ({__serverTimestamp:true});
 function read() { return JSON.parse(localStorage.getItem('__mockProfiles') || '{}'); }
 function write(ref,data) {
@@ -48,9 +49,38 @@ function write(ref,data) {
 }
 export async function runTransaction(_,fn) {
   if(window.__mock.denyProfile) throw Object.assign(new Error('Denied'),{code:'permission-denied'});
-  return fn({get:async ref=>({exists:()=>!!read()[ref],data:()=>read()[ref]}),set:write,update:(ref,changes)=>write(ref,{...read()[ref],...changes})});
+  const staged=[];
+  const result=await fn({get:async ref=>snap(ref,read()[ref]),set:(ref,data)=>staged.push(['set',ref,data]),
+    update:(ref,changes)=>staged.push(['set',ref,{...read()[ref],...changes}]),delete:ref=>staged.push(['delete',ref])});
+  const records=read();
+  for(const [operation,ref,data] of staged) { if(operation==='delete') delete records[ref]; else records[ref]=data; }
+  localStorage.setItem('__mockProfiles',JSON.stringify(records)); window.__mock.writes+=staged.length;
+  return result;
 }
 export async function updateDoc(ref,changes) { write(ref,{...read()[ref],...changes}); }
+function snap(ref,data) { return {id:ref.split('/').at(-1),ref,exists:()=>!!data,data:()=>structuredClone(data)}; }
+export async function getDoc(ref) { return snap(ref,read()[ref]); }
+export const where=(field,op,value)=>({kind:'where',field,op,value});
+export const orderBy=(field,direction='asc')=>({kind:'order',field,direction});
+export const limit=value=>({kind:'limit',value});
+export const startAfter=value=>({kind:'after',value});
+export const query=(path,...filters)=>({path,filters});
+export async function getDocs(input) {
+  const {path,filters=[]}=typeof input==='string'?{path:input}:input;
+  let docs=Object.entries(read()).filter(([key])=>key.startsWith(path+'/') && key.slice(path.length+1).split('/').length===1).map(([key,data])=>snap(key,data));
+  for(const filter of filters) {
+    if(filter.kind==='where') docs=docs.filter(doc=> filter.op==='=='?doc.data()[filter.field]===filter.value:true);
+    if(filter.kind==='order') docs.sort((a,b)=>(a.data()[filter.field]<b.data()[filter.field]?-1:1)*(filter.direction==='desc'?-1:1));
+    if(filter.kind==='after') { const i=docs.findIndex(doc=>doc.id===filter.value.id); if(i>=0) docs=docs.slice(i+1); }
+    if(filter.kind==='limit') docs=docs.slice(0,filter.value);
+  }
+  return {docs,empty:docs.length===0,size:docs.length};
+}
+export async function setDoc(ref,data) { write(ref,data); }
+export async function deleteDoc(ref) { const records=read(); delete records[ref]; localStorage.setItem('__mockProfiles',JSON.stringify(records)); }
+export function writeBatch(db) { const ops=[]; return {set:(ref,data)=>ops.push(['set',ref,data]),delete:ref=>ops.push(['delete',ref]),
+  commit:()=>runTransaction(db,async tx=>{for(const [op,ref,data] of ops) tx[op](ref,data);})}; }
+export const Timestamp={fromMillis:ms=>({seconds:Math.floor(ms/1000),nanoseconds:0})};
 """
 
 

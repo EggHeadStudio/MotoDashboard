@@ -1,6 +1,13 @@
 // Stable keys; user-created content is never translated.
 export const dictionary = {
   "en": {
+    "common.loading": "Loading…", "common.loaded": "Up to date.", "common.refresh": "Refresh", "common.save": "Save", "common.cancel": "Cancel", "common.edit": "Edit", "common.delete": "Delete",
+    "garage.title": "Garage", "garage.add": "Add vehicle", "garage.empty": "Your Garage is empty. Add a vehicle to choose it for your next ride.",
+    "garage.category": "Category", "garage.nickname": "Nickname", "garage.manufacturer": "Manufacturer", "garage.model": "Model", "garage.year": "Model year (optional)", "garage.description": "Description", "garage.visibility": "Visibility preference",
+    "garage.visibilityHint": "Vehicles remain private in this batch. This preference prepares future sharing.",
+    "garage.default": "Default vehicle", "garage.selected": "Selected for next ride", "garage.choose": "Choose for ride", "garage.makeDefault": "Make default", "garage.noVehicle": "Ride without a vehicle", "garage.deleteConfirm": "Delete this vehicle? Existing ride snapshots will remain.",
+    "visibility.private": "Private", "visibility.club": "Club", "visibility.public": "Public", "visibility.unlisted": "Unlisted",
+    "category.motorcycle": "Motorcycle", "category.car": "Car", "category.moped": "Moped", "category.scooter": "Scooter", "category.atv-utv": "ATV / UTV", "category.off-road": "4×4 / Off-road", "category.snowmobile": "Snowmobile", "category.caravan": "Caravan / Motorhome", "category.bicycle": "Bicycle", "category.e-bike": "E-bike", "category.e-scooter": "Electric scooter", "category.other": "Other",
     "data.signIn": "Sign in to your account to use this feature.",
     "data.denied": "Access denied. Check the approved Firestore rules and your permissions.",
     "data.invalid": "Check the fields, lengths, year and HTTPS links and try again.",
@@ -222,6 +229,13 @@ export const dictionary = {
     "ui.finishBeforeDelete": "End the current session before deleting rides."
   },
   "fi": {
+    "common.loading": "Ladataan…", "common.loaded": "Ajan tasalla.", "common.refresh": "Päivitä", "common.save": "Tallenna", "common.cancel": "Peruuta", "common.edit": "Muokkaa", "common.delete": "Poista",
+    "garage.title": "Autotalli", "garage.add": "Lisää ajoneuvo", "garage.empty": "Autotallisi on tyhjä. Lisää ajoneuvo seuraavaa ajoasi varten.",
+    "garage.category": "Luokka", "garage.nickname": "Lempinimi", "garage.manufacturer": "Valmistaja", "garage.model": "Malli", "garage.year": "Vuosimalli (valinnainen)", "garage.description": "Kuvaus", "garage.visibility": "Näkyvyystoive",
+    "garage.visibilityHint": "Ajoneuvot pysyvät tässä erässä yksityisinä. Toive valmistelee tulevaa jakamista.",
+    "garage.default": "Oletusajoneuvo", "garage.selected": "Valittu seuraavaan ajoon", "garage.choose": "Valitse ajoon", "garage.makeDefault": "Aseta oletukseksi", "garage.noVehicle": "Aja ilman ajoneuvoa", "garage.deleteConfirm": "Poistetaanko ajoneuvo? Tallennettujen ajojen ajoneuvotiedot säilyvät.",
+    "visibility.private": "Yksityinen", "visibility.club": "Kerho", "visibility.public": "Julkinen", "visibility.unlisted": "Listaamaton",
+    "category.motorcycle": "Moottoripyörä", "category.car": "Auto", "category.moped": "Mopo", "category.scooter": "Skootteri", "category.atv-utv": "Mönkijä / UTV", "category.off-road": "4×4 / Maastoauto", "category.snowmobile": "Moottorikelkka", "category.caravan": "Asuntovaunu / Matkailuauto", "category.bicycle": "Polkupyörä", "category.e-bike": "Sähköpyörä", "category.e-scooter": "Sähköpotkulauta", "category.other": "Muu",
     "data.signIn": "Kirjaudu tilillesi käyttääksesi tätä toimintoa.",
     "data.denied": "Pääsy evätty. Tarkista hyväksytyt Firestore-säännöt ja käyttöoikeutesi.",
     "data.invalid": "Tarkista kentät, tekstien pituudet, vuosimalli ja HTTPS-linkit ja yritä uudelleen.",

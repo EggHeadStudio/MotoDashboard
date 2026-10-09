@@ -188,4 +188,3 @@ local emulator tests and the live checklist. Realtime Database stays locked.
 No rules or indexes have been deployed by the agent. All services use the dedicated
 MotoDash config; incomplete or mismatched config fails gracefully. Public Garage
 visibility is a future sharing preference: Garage documents remain owner-only.
-

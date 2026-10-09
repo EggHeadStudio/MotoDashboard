@@ -998,3 +998,21 @@
   #start-overlay { justify-content: flex-start; padding-top: 72px; }
   #start-logo { width: 110px; height: 110px; }
 }
+/* Native feature dialogs remain inside the small-screen viewport. */
+.feature-dialog { width: min(620px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); box-sizing: border-box; padding: 16px; border: 1px solid #555; border-radius: 14px; background: #171b20; color: #fff; overflow: auto; }
+.feature-dialog::backdrop { background: #000b; }
+.feature-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.feature-header h2 { margin: 0; font-size: 1.3rem; }
+.feature-dialog button, .feature-dialog input, .feature-dialog select, .feature-dialog textarea { font: inherit; color: #fff; background: #292f36; border: 1px solid #6a7480; border-radius: 7px; padding: 10px; min-height: 44px; box-sizing: border-box; }
+.feature-dialog button { cursor: pointer; margin: 3px; }
+.feature-dialog button:disabled { opacity: .5; }
+.feature-dialog .field { display: grid; gap: 6px; margin: 12px 0; }
+.feature-dialog .field input, .feature-dialog .field select, .feature-dialog .field textarea { width: 100%; }
+.feature-dialog textarea { min-height: 90px; resize: vertical; }
+.feature-card { border: 1px solid #56616c; border-radius: 10px; padding: 12px; margin: 12px 0; overflow-wrap: anywhere; }
+.feature-card h3 { margin: 8px 0; }
+.feature-actions { display: flex; flex-wrap: wrap; gap: 4px; }
+.feature-status { overflow-wrap: anywhere; }
+.muted { color: #b8c4d1; font-size: .9rem; }
+.category-icon { display: inline-grid; place-items: center; width: 36px; height: 36px; border: 2px solid currentColor; border-radius: 50%; font-weight: bold; }
+@media (max-height: 500px) { .feature-dialog { max-height: calc(100dvh - 12px); } }

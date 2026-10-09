@@ -178,6 +178,8 @@ def run():
             output = page.evaluate('async () => (await import("./tests/domain-tests.js")).runTests()')
             print('PASS:', output)
         run_account_tests(browser, base, route_map)
+        from batch2_browser import run_batch2_tests
+        run_batch2_tests(browser, base, route_map)
         run_real_sdk_imports(browser, base, route_map)
         browser.close()
     server.shutdown()

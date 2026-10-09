@@ -1,5 +1,6 @@
 import { createPositionPipeline } from './position-pipeline.js';
 import { initAuthUI } from './auth-ui.js';
+import { initGarageUI } from './garage-ui.js';
 import { initI18n, t, resolveText, setLocalizedText, onLanguageChange, formatNumber, getLocale } from './i18n/i18n.js';
 import {
   APP_VERSION,
@@ -63,6 +64,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
     document.addEventListener('DOMContentLoaded', async function () {
       initI18n();
       initAuthUI();
+      initGarageUI();
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(registrations => Promise.all(
           registrations.filter(registration => registration.scope === new URL('./', document.baseURI).href)
