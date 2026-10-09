@@ -1,4 +1,5 @@
 import { createPositionPipeline } from './position-pipeline.js';
+import { initAuthUI } from './auth-ui.js';
 import { initI18n, t, resolveText, setLocalizedText, onLanguageChange, formatNumber, getLocale } from './i18n/i18n.js';
 import {
   APP_VERSION,
@@ -61,6 +62,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
 
     document.addEventListener('DOMContentLoaded', async function () {
       initI18n();
+      initAuthUI();
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(registrations => Promise.all(
           registrations.filter(registration => registration.scope === new URL('./', document.baseURI).href)
@@ -215,7 +217,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       }) : null;
 
       function setDebugStage(message) {
-        setLocalizedText(elStartDebug, () => 'Debug: ' + resolveText(message));
+        setLocalizedText(elStartDebug, () => t('ui.debugPrefix') + resolveText(message));
       }
 
       function setStartStatus(message) {
@@ -1499,11 +1501,11 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         if (watchId === null) return;
         positionPipeline.reset();
         var message = () => getGpsErrorMessage(err);
-        var debugMessage = err && typeof err.code !== 'undefined' ? t("ui.gpsErrorPrefix") + err.code : t("ui.gpsError");
+        var debugMessage = () => err && typeof err.code !== 'undefined' ? t("ui.gpsErrorPrefix") + err.code : t("ui.gpsError");
 
         if (err && err.code === 1) {
           setDebugStage(() => t("ui.permissionDenied"));
-          showLocationError(message, t("ui.permissionDenied"), err);
+          showLocationError(message, () => t("ui.permissionDenied"), err);
         } else {
           setDebugStage(() => debugMessage);
           showLocationFallback(message, debugMessage, err);
@@ -1572,19 +1574,19 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         enterRunningUiPendingGps();
 
         if (!window.isSecureContext) {
-          showLocationError(() => t("ui.secureError"), t("ui.notSecure"));
+          showLocationError(() => t("ui.secureError"), () => t("ui.notSecure"));
           return;
         }
 
         if (!isGeolocationSupported(navigator)) {
-          showLocationError(() => t("ui.noLocation"), t("ui.noGps"));
+          showLocationError(() => t("ui.noLocation"), () => t("ui.noGps"));
           return;
         }
 
         try {
           startGpsTracking();
         } catch (error) {
-          showLocationError(() => t("ui.trackingError"), t("ui.trackingStartDebug"), error);
+          showLocationError(() => t("ui.trackingError"), () => t("ui.trackingStartDebug"), error);
           return;
         }
 
@@ -1600,7 +1602,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
             startGpsTracking();
             return;
           } catch (error) {
-            showLocationError(() => t("ui.retryTrackingError"), t("ui.retryTrackingDebug"), error);
+            showLocationError(() => t("ui.retryTrackingError"), () => t("ui.retryTrackingDebug"), error);
             return;
           }
         }

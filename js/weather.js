@@ -1,5 +1,5 @@
 import { t, setLocalizedText, formatNumber } from './i18n/i18n.js';
-export function wmoToFinnish(code, wmoCodes) {
+export function wmoDescription(code, wmoCodes) {
   return t(wmoCodes[code] || 'ui.weatherUnavailable');
 }
 
@@ -33,7 +33,7 @@ export function fetchAndRenderWeather(lat, lon, options) {
         var cur = data.current;
         var temp = Math.round(cur.temperature_2m);
         var wind = Math.round(cur.wind_speed_10m);
-        var desc = function () { return wmoToFinnish(cur.weather_code, wmoCodes); };
+        var desc = function () { return wmoDescription(cur.weather_code, wmoCodes); };
         setLocalizedText(weatherRowEl, () => desc());
         setLocalizedText(temperatureRowEl, () => formatNumber(temp, 0) + ' °C');
         setLocalizedText(windRowEl, () => formatNumber(wind, 0) + ' km/h');

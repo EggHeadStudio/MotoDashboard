@@ -1,4 +1,4 @@
-import { t, setLocalizedText, formatNumber } from './i18n/i18n.js';
+import { t, setLocalizedText } from './i18n/i18n.js';
 import { THEME_MAP_STYLES } from './config.js';
 
 function getThemeTileConfig(themeName) {

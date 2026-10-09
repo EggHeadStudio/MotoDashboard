@@ -14,6 +14,7 @@ import tempfile
 import threading
 import urllib.request
 from playwright.sync_api import sync_playwright
+from firebase_mocks import install, run_account_tests
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -36,19 +37,22 @@ def run():
     with sync_playwright() as pw:
         browser = pw.chromium.launch()
         context = browser.new_context(viewport={'width': 390, 'height': 844})
-        context.route('https://unpkg.com/**', lambda route: route.fulfill(
-            body=(cached / route.request.url.rsplit('/', 1)[-1]).read_bytes(),
-            content_type='text/css' if route.request.url.endswith('.css') else 'application/javascript'))
         pixel = base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a7WQAAAAASUVORK5CYII=')
-        context.route(re.compile(r'https://.*(?:tile|openstreetmap).*\.png'), lambda route: route.fulfill(body=pixel, content_type='image/png'))
-        context.route('https://api.open-meteo.com/**', lambda route: route.fulfill(json={'current': {'temperature_2m': 12, 'wind_speed_10m': 5, 'weather_code': 0}}))
+        def route_map(ctx):
+            ctx.route('https://unpkg.com/**', lambda route: route.fulfill(
+                body=(cached / route.request.url.rsplit('/', 1)[-1]).read_bytes(),
+                content_type='text/css' if route.request.url.endswith('.css') else 'application/javascript'))
+            ctx.route(re.compile(r'https://.*(?:tile|openstreetmap).*\.png'), lambda route: route.fulfill(body=pixel, content_type='image/png'))
+            ctx.route('https://api.open-meteo.com/**', lambda route: route.fulfill(json={'current': {'temperature_2m': 12, 'wind_speed_10m': 5, 'weather_code': 0}}))
+        route_map(context)
+        install(context)
         page = context.new_page()
         errors = []
         page.on('pageerror', lambda error: errors.append(str(error)))
         page.add_init_script("""
           window.__geo = { callback: null, active: 0 };
           Object.defineProperty(navigator, 'geolocation', {value: {
-            watchPosition(success) { window.__geo.callback = success; window.__geo.active++; return 1; },
+            watchPosition(success,error) { window.__geo.callback = success; window.__geo.error = error; window.__geo.active++; return 1; },
             clearWatch() { window.__geo.active = 0; },
             getCurrentPosition() {}
           }});
@@ -99,10 +103,17 @@ def run():
         assert not page.evaluate('window.__unhandled'), page.evaluate('window.__unhandled')
         print('PASS: localization, English/Finnish parity, fallback/parameters, dynamic status, refresh persistence, DOM IDs and import paths')
         # Parse/link every existing application module through native browser ES modules.
-        modules = ['js/' + str(p.relative_to(ROOT / 'js')).replace('\\', '/') for p in (ROOT / 'js').glob('*.js')]
+        modules = ['js/' + str(p.relative_to(ROOT / 'js')).replace('\\', '/') for p in (ROOT / 'js').rglob('*.js')]
         page.evaluate('(paths) => Promise.all(paths.map(path => import("./" + path)))', modules)
         print('PASS: browser ES module syntax/linking; no page errors or unhandled rejections')
         page.click('#start-btn')
+        page.evaluate('window.__geo.error({code:1})')
+        permission_en = page.locator('#gps-error-msg').inner_text()
+        page.select_option('#language-select', 'fi')
+        assert page.locator('#gps-error-msg').inner_text() != permission_en, 'GPS error must update language dynamically'
+        assert 'Vianm\u00e4\u00e4ritys' in page.locator('#start-debug').inner_text()
+        page.select_option('#language-select', 'en')
+        page.click('#retry-gps-btn')
         start_time = page.evaluate('Date.now()')
         for n in range(9):
             page.evaluate('(v) => window.__position(...v)', [60 + n * 0.00009, 25, 36, start_time + n * 1000])
@@ -120,6 +131,7 @@ def run():
         page.select_option('#language-select', 'fi')
         assert 'My original ride' in page.locator('#history-list').inner_text()
         assert 'Avaa' in page.locator('#history-list').inner_text()
+        assert 'Nime\u00e4' in page.locator('#history-list').inner_text()
         page.select_option('#language-select', 'en')
         assert not errors, errors
         assert not page.evaluate('window.__unhandled'), page.evaluate('window.__unhandled')
@@ -165,8 +177,43 @@ def run():
         if test_file.exists():
             output = page.evaluate('async () => (await import("./tests/domain-tests.js")).runTests()')
             print('PASS:', output)
+        run_account_tests(browser, base, route_map)
+        run_real_sdk_imports(browser, base, route_map)
         browser.close()
     server.shutdown()
+
+
+def run_real_sdk_imports(browser, base, route_map):
+    cache = Path(tempfile.gettempdir()) / 'motodash-firebase-sdk-tests'
+    cache.mkdir(exist_ok=True)
+    context = browser.new_context()
+    route_map(context)
+    def serve_sdk(route):
+        name = route.request.url.rsplit('/', 1)[-1]
+        path = cache / name
+        if not path.exists():
+            path.write_bytes(urllib.request.urlopen(route.request.url, timeout=30).read())
+        route.fulfill(body=path.read_bytes(), content_type='application/javascript', headers={'Access-Control-Allow-Origin': '*'})
+    context.route('https://www.gstatic.com/firebasejs/13.0.0/**', serve_sdk)
+    # This check only imports/initializes real SDKs. Any cloud API request is forbidden.
+    context.route(re.compile(r'https://.*(?:googleapis|firebaseio|firebasedatabase)\.(?:com|app)/.*'), lambda route: route.abort())
+    page = context.new_page()
+    errors = []
+    page.on('pageerror', lambda e: errors.append(str(e)))
+    page.goto(base, wait_until='networkidle')
+    result = page.evaluate("""async () => {
+      const {getFirebase}=await import('./js/firebase/firebase.js');
+      const [a,b]=await Promise.all([getFirebase(),getFirebase()]);
+      const {db,sdk}=await (await import('./js/firebase/firestore.js')).getFirestoreService();
+      const realtime=await import('https://www.gstatic.com/firebasejs/13.0.0/firebase-database.js');
+      return {same:a===b,project:a.app.options.projectId,name:a.app.name,
+        auth:typeof a.sdk.createUserWithEmailAndPassword, firestore:typeof sdk.runTransaction,
+        realtime:typeof realtime.getDatabase, user:a.auth.currentUser};
+    }""")
+    assert result == {'same': True, 'project': 'motodash-87bf8', 'name': 'MotoDash', 'auth': 'function', 'firestore': 'function', 'realtime': 'function', 'user': None}, result
+    assert not errors, errors
+    context.close()
+    print('PASS: REAL Firebase 13.0.0 browser SDK imports/exports, MotoDash single initialization and Auth persistence setup; cloud APIs blocked, no live Auth/profile/rules test')
 
 
 if __name__ == '__main__':

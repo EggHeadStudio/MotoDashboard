@@ -1,68 +1,182 @@
-# Moto Dashboard
+# MotoDashboard
 
-Moto Dashboard on mobiilioptimoitu, staattinen web-sovellus moottoripyörän ajodatan seuraamiseen. Sovellus toimii ilman taustapalvelinta ja on suunniteltu erityisesti puhelimen selaimessa käytettäväksi GitHub Pagesissa.
+A modular static HTML/CSS/JavaScript dashboard for phone browsers. It deploys directly
+to GitHub Pages without npm, a bundler, an application backend or a build step.
+English is the default; Finnish is available from the language selector.
 
-## Mitä sovellus tekee
+## Features
 
-- Näyttää reaaliaikaisen GPS-nopeuden suurella mittarilla
-- Seuraa aktiivista sessiota: matka, aika, keskinopeus ja huippunopeus
-- Tallentaa ajoreitin kartalle ja näyttää sen myöhemmin
-- Näyttää säätilanteen, lämpötilan ja tuulen Open-Meteo-palvelusta
-- Tarjoaa karttateemoja sekä heading-up / north-up -tilan
-- Mahdollistaa sessioiden aloittamisen, jatkamisen, päättämisen ja historian tarkastelun
-- Säilyttää tiedot selaimessa IndexedDB:n ja localStorage:n avulla
+- GPS speed, accuracy and network status; distance, moving time, average and validated maximum speed.
+- Existing Leaflet maps/providers, themes, automatic heading-up, north-up and manual rotation.
+- Segmented route recording, local history, resume, rename, deletion and completed ride details.
+- Schema v2 IndexedDB storage with localStorage fallback and visible save failures.
+- Open-Meteo weather, temperature and wind.
+- Optional email/password accounts and a minimal private Firebase profile.
+- Install manifest, safe-area layout, optional Fullscreen and Wake Lock.
 
-## Ominaisuudet
+The manifest does not provide offline cold starts or background GPS. No offline
+service worker is installed. Browser suspension and platform support still limit recording.
+Use the vehicle's instruments as the primary speedometer; GPS accuracy varies.
 
-- Reaaliaikainen HUD-näkymä
-- GPS-tila, tarkkuus ja verkkotila
-- Leaflet + OpenStreetMap -kartta
-- Karttateemat: Normaali, Mustavalko, Metsä, Asutus ja Yö
-- Teeman vaihto ja suuntatilan muuttaminen napista
-- Tallennetut ajot, yksittäisen ajon poisto ja historian tyhjennys
-- PWA-tyylinen asennusmahdollisuus ja mobiilikuvaus
+## Local development
 
-## Käyttö
+From the repository root, use an HTTP server, for example with Python 3:
 
-1. Avaa sovellus puhelimen selaimessa.
-2. Salli tarkka sijainti.
-3. Aloita uusi sessio tai jatka aiempaa.
-4. Ajon aikana kartta, nopeus ja tilastot päivittyvät automaattisesti.
-5. Lopeta sessio ja anna nimi, jos haluat tallentaa ajon.
-6. Tarkastele aiempia ajoja aloitusnäytöstä.
+```powershell
+python -m http.server 8000 --bind 127.0.0.1
+```
 
-## Tietojen tallennus ja tietosuoja
+Open `http://localhost:8000/`. Stop with Ctrl+C. Do not use `file://`: modules
+and Firebase expect HTTP, and location requires a secure context. Phone testing
+needs HTTPS; a plain HTTP LAN IP is not equivalent to localhost.
+This is only a development file server; production remains a static site.
 
-- Sessiot ja historia tallentuvat vain tämän laitteen selaimeen.
-- Sovellus ei käytä omaa palvelinta tai backendia.
-- Jos selaimen sivustodata poistetaan, tallennettu historia voi kadota.
-- Säähaun vuoksi koordinaatit lähetetään Open-Meteo-palveluun.
+To check the project subpath, serve the parent folder:
 
-## Projektin rakenne
+```powershell
+python -m http.server 8000 --bind 127.0.0.1 --directory ..
+```
 
-- index.html – käyttöliittymän runko
-- css/dashboard.css – tyylit
-- js/app.js – sovelluksen käynnistys ja päälogiikka
-- js/config.js – vakioarvot ja rajat
-- js/dom.js – DOM-viittaukset ja validointi
-- js/map.js ja js/map-rotation.js – kartta ja rotaatio
-- js/route-recorder.js – reittipisteiden tallennus
-- js/session-manager.js ja js/session-store.js – sessioiden hallinta
-- js/speed.js – nopeuden käsittely
-- js/weather.js – säädata
-- js/utils.js – apufunktiot
-- manifest.webmanifest – PWA-määrittely
+Open `http://localhost:8000/MotoDashboard/`.
 
-## Julkaisu GitHub Pagesissa
+## Firebase setup
 
-Sovellus on tarkoitettu julkaistavaksi GitHub Pagesissa.
+The existing dedicated project is **`motodash-87bf8`**. Configuration is in
+[`firebase-config.js`](firebase-config.js); do not create another project.
+In Firebase Console, select this project, then **Project settings → General → Your apps →
+Web app → SDK setup and configuration → Config**. Compare apiKey, authDomain,
+projectId, storageBucket, messagingSenderId and appId with that file. Find databaseURL
+on **Build → Realtime Database**; the existing URL is the Europe West instance.
+Keep the config export; initialization belongs only to `js/firebase/firebase.js`.
 
-- Repo: https://github.com/EggHeadStudio/MotoDashboard
-- Julkinen sivu: https://eggheadstudio.github.io/MotoDashboard/
+Web configuration identifies the project and is public client configuration.
+Never commit service-account keys or Admin SDK credentials. Auth and Rules enforce access.
+[Firebase configuration guidance](https://firebase.google.com/docs/web/setup#config-object).
 
-## Huomioitavaa
+**Build → Authentication → Sign-in method:** enable **Email/Password**. Review the
+project's password policy and abuse settings. The form checks a six-character registration
+minimum; Firebase enforces the actual policy. Errors are localized. A user can be
+signed in even when a profile write is denied.
+[Password authentication](https://firebase.google.com/docs/auth/web/password-auth).
 
-- GPS- ja heading-tarkkuus riippuvat laitteesta, signaalista ja selaimen oikeuksista.
-- Wake Lock ja Fullscreen ovat käytettävissä vain, jos selain tukee niitä.
-- Sää- ja karttatiedot vaativat verkkoyhteyden.
-- Sovellus on mittaristo-tyyppinen työkalu, ei navigaattori.
+**Authentication → Settings → Authorized domains:** review/add `eggheadstudio.github.io`
+and `localhost`; add `127.0.0.1` if browsing using that host. Enter hostnames without
+HTTPS, ports or `/MotoDashboard/`. Do not assume localhost is already authorized in a
+recently created project. Add a custom domain only if used.
+[Authorized-domain guidance](https://firebase.google.com/docs/auth/web/redirect-best-practices).
+
+The browser SDK is pinned to **13.0.0** using gstatic CDN ES modules.
+`js/firebase/firebase.js` owns one named `MotoDash` initializer and explicit local Auth
+persistence. Account loading never blocks local recording. If the CDN fails, retry;
+reload after restoring connectivity if the browser retains the failed module load.
+[CDN imports](https://firebase.google.com/docs/web/alt-setup),
+[Auth persistence](https://firebase.google.com/docs/auth/web/auth-state-persistence).
+
+### Services used
+
+| Service | Current use |
+| --- | --- |
+| Authentication | Email/password registration, login, logout and persistent state listener. |
+| Cloud Firestore | Own private `users/{uid}` profile; transactional create-if-absent, server timestamps, default memory cache. No persistent profile disk cache. |
+| Realtime Database | Prepared lazy adapter only. No caller, subscription, read, write, presence or live location. |
+| Storage / Analytics / Functions | Not used. A configured bucket does not enable uploads. |
+
+Profiles contain exactly `uid`, `displayName`, `email`, `language`, `createdAt`,
+`updatedAt`. UID/creation time are immutable; language is `en` or `fi`.
+The device's saved language controls the UI and is not overridden on login.
+New profiles use that language; explicit changes while signed in update the profile.
+A failed update keeps the local choice and offers retry in the account panel.
+
+Rides remain in this browser and are not uploaded or linked to an account yet.
+Logout clears the account/profile UI but preserves local rides and settings.
+On a shared device, any user of this browser can see its local history. Future
+UID-scoped cloud ride storage and explicit local ownership are separate work.
+Map providers receive tile requests; weather requests send coordinates to Open-Meteo.
+
+### Security rules: approval required before deployment
+
+[`firestore.rules`](firestore.rules) permits only own-profile get/create and updates
+to displayName/email/language/updatedAt. Exact six-field validation excludes admin/role
+fields. Email must match the Auth token; timestamps use server time. Changed UID/createdAt,
+listing, deletion and all unknown/nested collections are denied.
+[`database.rules.json`](database.rules.json) denies all RTDB reads and writes.
+**Neither rules file has been deployed or tested against a live database.**
+[Firebase field restrictions](https://firebase.google.com/docs/firestore/security/rules-fields).
+
+Review the files and test in Rules Playground where possible, or an independently
+approved Emulator Suite setup: allow exact own-profile get/create/update with server
+timestamps; deny signed-out/other-UID access, extra admin/role fields, changed UID/createdAt,
+unknown collections, listing/deletion and all RTDB requests. Repo mocks do not execute rules.
+
+**Only after explicit approval:**
+
+1. Select `motodash-87bf8` and confirm the intended database.
+2. **Build → Firestore Database → Rules:** back up current rules, paste `firestore.rules`,
+   review/test, then **Publish**. Confirm the default Firestore database is configured.
+   Direct profile-document operations need no query indexes.
+3. **Build → Realtime Database → Rules:** back up current rules, paste
+   `database.rules.json`, review/test and **Publish** for the configured Europe West instance.
+4. Use dedicated test accounts to verify real registration/login/refresh/profile updates
+   and cross-account denial. A signed-in message alone does not prove a Firestore write.
+
+This batch did not inspect/change Console rules, providers, project ownership or regions.
+If profiles fail, check setup, connection and permissions; do not permit global access.
+[Managing/deploying rules](https://firebase.google.com/docs/rules/manage-deploy).
+
+## GitHub Pages
+
+Repository: [EggHeadStudio/MotoDashboard](https://github.com/EggHeadStudio/MotoDashboard).
+Project URL: [MotoDashboard](https://eggheadstudio.github.io/MotoDashboard/).
+
+The existing `.github/workflows/deploy.yml` uploads repository root `.` and deploys
+with GitHub Actions on pushes to `main` or an approved manual workflow run.
+After explicit publishing approval, verify **Repository Settings → Pages → Build and
+deployment → Source: GitHub Actions**, then push the reviewed commits or trigger the
+workflow. A push to `main` can therefore publish automatically. `index.html` is at the
+root; `.nojekyll` is retained. No framework build or Firebase Hosting deployment is required.
+[GitHub Pages publishing instructions](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site).
+
+Scripts/styles/icons/manifest/config use relative paths suitable for `/MotoDashboard/`.
+Verify that URL after publishing and hard-refresh older tabs. Authorized domains uses
+the host `eggheadstudio.github.io`, not the project path.
+No push, Pages deployment or rule publication was performed in this batch.
+
+## Structure
+
+```text
+index.html / css/dashboard.css       Dashboard, language selector and account dialog
+firebase-config.js                  Existing public MotoDash config, export only
+js/app.js                           Dashboard orchestration and recording lifecycle
+js/config.js / dom.js / ui.js        Existing constants and UI helpers
+js/i18n/dictionary.js / i18n.js       en/fi keys, bindings and locale formatting
+js/position-pipeline.js / speed.js   Timestamp/quality gate and speed/movement logic
+js/map.js / map-rotation.js          Existing providers, layers and rotation
+js/route-recorder.js                 Accepted points and segmented rendering
+js/session-manager.js / session-store.js   Schema v2, history and local persistence
+js/weather.js / gps.js / utils.js    Existing weather, GPS and geometry helpers
+js/auth-ui.js                        Account state/form/error UI and language sync
+js/firebase/firebase.js / auth.js    Lazy single initializer and Auth operations
+js/firebase/firestore.js             Lazy Firestore service
+js/firebase/profileRepository.js     Own-profile operations only
+js/firebase/realtime.js              Unused future RTDB boundary
+firestore.rules / database.rules.json     Undeployed least-privilege rules
+tests/                              Development-only Python/native-browser checks
+manifest.webmanifest                Install metadata; no offline worker
+```
+
+## Verification
+
+Python and Playwright are optional development tools, outside the app runtime:
+
+```powershell
+python -m pip install playwright
+python -m playwright install chromium
+python tests/run_browser.py
+```
+
+No npm/build step. Tests serve the real `/MotoDashboard/` path, use real Leaflet with
+tile/weather fixtures and simulate GPS. Auth/profile flows use SDK mocks. A separate
+test downloads/imports the real pinned Firebase modules and initializes services while
+blocking cloud API requests. First run needs internet for cached Leaflet/Firebase files.
+See [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md) for executed checks, remaining
+live setup, limitations and the manual phone checklist.

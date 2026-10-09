@@ -1199,7 +1199,7 @@ After each implementation section:
 
 # SECTION 0 --- EXISTING APPLICATION AUDIT
 
-> **Section 0 audit adaptation (planning only):** Completed as a documentation/source/deployment audit on 2026-10-08. See Section 15 for evidence levels, all findings and untested runtime/device behavior. Human approval remains pending.
+> **Section 0 audit adaptation:** Completed as a documentation/source/deployment audit on 2026-10-08. See Section 15 for baseline evidence. The user approved the bounded Batch 1 implementation on 2026-10-09; current results appear in Section 16 below.
 
 ## Goal
 
@@ -1315,8 +1315,8 @@ STOP after this section.
 
 > **Section 0 audit adaptation (planning only):** Reconcile the existing unused root firebase-config.js for project motodash-87bf8 before creating a project. Use pinned browser ESM imports and one service initializer. Empty firestore.rules is not a security foundation. Decide UID-scoped caches, deny-by-default rules, database regions, Auth domains and the hybrid authorization prerequisite in 15.7 before backend-dependent features.
 
-> Exact Firebase setup will be finalized after the Firebase project is
-> created.
+> Batch 1 reuses the existing dedicated project `motodash-87bf8` and its root
+> web configuration. No project or production setup was created/changed.
 
 ## Goal
 
@@ -1324,19 +1324,19 @@ Connect the prototype safely to Firebase.
 
 ## Tasks
 
--   [ ] Add Firebase configuration in the architecture agreed during
+-   [x] Add Firebase configuration in the architecture agreed during
     setup.
--   [ ] Initialize Firebase only once.
--   [ ] Implement Authentication.
--   [ ] Sign up.
--   [ ] Sign in.
--   [ ] Sign out.
--   [ ] Authentication state handling.
--   [ ] Basic user profile document.
--   [ ] Loading/error states.
--   [ ] Create initial Security Rules.
--   [ ] Verify GitHub Pages compatibility.
--   [ ] Ensure secrets are treated appropriately; understand Firebase
+-   [x] Initialize Firebase only once.
+-   [x] Implement Authentication.
+-   [x] Sign up.
+-   [x] Sign in.
+-   [x] Sign out.
+-   [x] Authentication state handling.
+-   [x] Basic user profile document.
+-   [x] Loading/error states.
+-   [x] Create initial Security Rules.
+-   [x] Verify GitHub Pages compatibility.
+-   [x] Ensure secrets are treated appropriately; understand Firebase
     web config is not a server secret and security relies on Rules/Auth.
 
 ## Checks
@@ -1346,8 +1346,17 @@ Connect the prototype safely to Firebase.
 -   [ ] Logout.
 -   [ ] Refresh preserves auth session.
 -   [ ] Unauthorized data access rejected by rules.
--   [ ] No JS errors.
--   [ ] Existing dashboard remains functional.
+-   [x] No JS errors. (Executed browser/fixture scenarios.)
+-   [x] Existing dashboard remains functional. (Simulated GPS/providers.)
+
+**Batch 1 Milestone 3:** Code and local rules preparation complete. Auth/profile
+flows, refresh persistence, failure/retry and own-UID guards passed using SDK mocks.
+Real Firebase 13.0.0 browser imports/exports, single initialization and Auth local
+persistence setup passed with cloud APIs blocked. The first five live checks above
+remain unchecked: no test accounts, production writes or rules-engine tests were
+performed. Both rules files require user review/approval before deployment.
+Realtime Database remains unused/default-denied; rides remain local. No Garage,
+Clubs, groups, Lobby, QR, billing, backend or build system was implemented.
 
 ### HUMAN CHECKPOINT
 
@@ -1459,6 +1468,12 @@ STOP after this section.
 ------------------------------------------------------------------------
 
 # SECTION 5 --- SESSION RECORDING
+
+> **Batch 1 status:** Existing local recording, timestamp/quality filtering,
+> movement statistics, finish/flush and refresh restoration are implemented and
+> simulated-tested in Section 4A. Checkboxes below describe the future complete
+> account/vehicle/cloud phase, which has not begun. Historical migration is not
+> required under Batch 1; future local-to-account ownership policy remains necessary.
 
 > **Section 0 audit adaptation (planning only):** Extend createSessionRecord, createMovementTracker, createRouteRecorder and createSessionStore through a local-first repository/outbox. Keep local recording usable without Firebase. Add schema versions, UID/vehicle/category, chunked routes, upload revisions and explicit legacy ownership consent. Pull forward a local backup-export subset from Section 6 before migration. No per-GPS-callback cloud writes; no pause UI.
 
@@ -2896,6 +2911,59 @@ Manual audit review / later regression checklist:
   checkpoints. Firebase checks are currently **not applicable**, since
   no connected integration was executed.
 
-**Section 0 is complete as a source/deployment/documentation audit.
-Human approval remains pending. STOP here; do not begin Section 1 or
-implement the proposed repairs/Firebase architecture.**
+**Historical Section 0 checkpoint:** The source/deployment/documentation audit
+was complete at the recorded baseline. Its initial implementation stop was
+superseded only for the user-approved Batch 1 scope described below.
+
+------------------------------------------------------------------------
+
+# 16. Implementation Batch 1 Result (2026-10-09)
+
+This result updates the historical Section 0 audit. Original product requirements
+and future phase boundaries remain intact. The user approved three milestones in
+one session, each with checks and its own local commit; publication remains unapproved.
+
+| Milestone | Implementation | Executed verification | Remaining acceptance |
+| --- | --- | --- | --- |
+| 1: English/Finnish | Central dictionary, `t(key, params)`, English fallback, selectors, local language, dynamic UI/ARIA/weather/history/dialog labels and Intl formatting. User names unchanged. | Dictionary parity/fallback/interpolation, dynamic switching, refresh, module linking and dashboard smoke check. | Physical phone/browser checks. |
+| 2: Reliability / Section 4A | Existing heading functions connected, shortest rotation transitions, fixed control/HUD layer, map accuracy circle; GPS timestamp/quality/dedup gate; segmented routes after stops/outages; accepted peaks; finish cleanup; async schema v2 restore and per-record storage with fallback; visible completed details. | 36 deterministic domain assertions plus real Leaflet/fixture GPS browser scenarios, active refresh, finish, history, theme cycle, north/heading modes and offline labels. | Real GPS, optional APIs, suspension, provider behavior and multi-tab recording. |
+| 3: Firebase/Auth | Dedicated config export; one named lazy CDN initializer; Auth listener/persistence/forms/errors; transactional six-field own profile; language updates; restrictive Firestore and default-deny RTDB files; setup docs. | Mock registration/login/logout/profile/language/failure/retry/refresh and UID guard; real pinned SDK imports/exports and single initialization with cloud APIs blocked; narrow mobile modal. | Console setup verification, rule approval/deployment, rules-engine denial tests and live accounts/profile writes. |
+
+## Architecture after Batch 1
+
+The static frontend retains `app.js`, map/GPS/weather helpers, speed/movement,
+route recorder and session/history modules. New `position-pipeline.js` validates
+samples before metrics; local storage remains independent of Auth. New i18n modules
+bind render callbacks to current language. `auth-ui.js` owns account UI and uses
+`js/firebase/{firebase,auth,firestore,profileRepository,realtime}.js` boundaries.
+Only Auth and own Firestore profile operations have callers; RTDB has none.
+Firebase failures leave local recording usable. No per-GPS cloud writes exist.
+
+Local records use schemaVersion 2, unique IDs and per-record `sessions-v2` storage.
+Legacy formats are not migrated; unrelated settings are retained. Shared local
+history is device/browser-scoped until a separately approved cloud ownership phase.
+Firestore profiles use exactly UID, displayName, email, language, createdAt and
+updatedAt; timestamps are server-generated. Language on this device controls UI;
+explicit signed-in changes update the profile, with visible failure/retry.
+
+## Review and outstanding work
+
+- [x] Retain modular static Pages-compatible paths; no new app runtime/build dependencies.
+- [x] Run native browser syntax/linking, key/path/ID checks and error/rejection monitoring.
+- [x] Verify recorded local/history functionality through simulated browser scenarios.
+- [x] Prepare dedicated-project config and two restrictive rules files.
+- [x] Update README setup and IMPLEMENTATION_STATUS with actual test evidence and limitations.
+- [ ] User reviews/approves rules; no publication has occurred.
+- [ ] Test rules in Rules Playground/emulator and verify live Auth/profile operations.
+- [ ] Manually test physical iPhone/Android, browsers, real GPS, both languages and optional APIs.
+- [ ] User approves a subsequent implementation milestone before any Garage/product expansion.
+
+Detailed created/modified file inventory, manual checklist and next recommended
+checkpoint are in `IMPLEMENTATION_STATUS.md`. SDK mock results do not prove cloud
+permissions. Headless Chromium checks do not prove physical phone, Safari or installed
+PWA behavior. Known limits include no background/offline cold start guarantees,
+conservative distance/time around interruptions, local storage capacity and concurrent
+tabs without a recording lock.
+
+**STOP: Batch 1 is complete as a local implementation and verified preparation.
+Wait for explicit approval before further implementation, pushing or deploying.**

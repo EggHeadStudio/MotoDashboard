@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Moto Dashboard</title>
   <meta name="description" content="A digital dashboard for your rides" data-i18n-content="ui.description">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -26,7 +26,7 @@
   <!-- Map shade overlay -->
   <div class="map-shade"></div>
   <!-- Map tile status -->
-  <div id="map-status" data-i18n="ui.mapLoading">Loading map?</div>
+  <div id="map-status" data-i18n="ui.mapLoading">Loading map…</div>
   <div id="compass-indicator" aria-hidden="true"><span id="compass-needle"></span>N</div>
   <div id="compass-rotating-overlay" aria-hidden="true">
     <div class="compass-rose">
@@ -47,7 +47,7 @@
       </div>
       <div id="weather-panel" class="panel compact-panel is-collapsible-top" role="button" tabindex="0" aria-label="Hide time and weather" data-i18n-aria-label="ui.hideTop">
         <div class="panel-label" data-i18n="ui.weather">Weather</div>
-        <div id="weather-row" class="info-row" aria-live="polite" data-i18n="ui.weatherLoading">Loading weather?</div>
+        <div id="weather-row" class="info-row" aria-live="polite" data-i18n="ui.weatherLoading">Loading weather…</div>
       </div>
       <div id="temperature-panel" class="panel compact-panel is-collapsible-top" role="button" tabindex="0" aria-label="Hide time and weather" data-i18n-aria-label="ui.hideTop">
         <div class="panel-label" data-i18n="ui.temperature">Temperature</div>
@@ -74,7 +74,7 @@
           <div class="session-stat-item"><span class="session-stat-name" data-i18n="ui.distance">Distance</span><span id="stat-distance" class="session-stat-value">0.0 km</span></div>
           <div class="session-stat-item"><span class="session-stat-name" data-i18n="ui.duration">Moving time</span><span id="stat-duration" class="session-stat-value">00:00:00</span></div>
           <div class="session-stat-item"><span class="session-stat-name" data-i18n="ui.average">AVG</span><span id="stat-average" class="session-stat-value">0.0 km/h</span></div>
-          <div class="session-stat-item"><span class="session-stat-name" data-i18n="ui.maximum" data-i18n="ui.maximum">MAX</span><span id="stat-max" class="session-stat-value">0.0 km/h</span></div>
+          <div class="session-stat-item"><span class="session-stat-name" data-i18n="ui.maximum">MAX</span><span id="stat-max" class="session-stat-value">0.0 km/h</span></div>
         </div>
       </div>
       <div id="status-stack">
@@ -115,6 +115,7 @@
       <button id="start-btn" aria-label="Start the application" data-i18n-aria-label="ui.startApp" data-i18n="ui.newSession">New session</button>
       <button id="resume-session-btn" class="start-option-btn secondary" aria-label="Resume the previous session" data-i18n-aria-label="ui.resumeLabel" data-i18n="ui.resume">Resume previous</button>
       <button id="history-btn" class="start-option-btn secondary" aria-label="Show saved rides" data-i18n-aria-label="ui.historyLabel" data-i18n="ui.history">Saved rides</button>
+      <button id="account-btn" class="start-option-btn secondary" data-i18n="auth.open">Sign in / Register</button>
     </div>
     <div id="session-summary" aria-live="polite" data-i18n="ui.noRides">No saved rides yet.</div>
     <div id="history-list" aria-live="polite"></div>
@@ -122,7 +123,7 @@
       <button id="clear-history-btn" class="start-option-btn secondary" aria-label="Delete all saved rides" data-i18n-aria-label="ui.clearLabel" data-i18n="ui.clear">Delete all rides</button>
     </div>
     <div id="start-status" aria-live="assertive" aria-atomic="true" data-i18n="ui.ready">Ready</div>
-    <div id="start-debug" aria-live="polite" aria-atomic="true">Debug: Valmis</div>
+    <div id="start-debug" aria-live="polite" aria-atomic="true"></div>
     <div id="map-fallback-msg" aria-live="polite"></div>
     <div id="start-gps-hint" aria-live="polite"></div>
     <div id="start-version" aria-hidden="true"></div>
@@ -133,6 +134,34 @@
     <div id="gps-error-msg"></div>
     <button id="retry-gps-btn" aria-label="Retry GPS tracking" data-i18n-aria-label="ui.retryLabel" data-i18n="ui.retry">Try again</button>
   </div>
+
+  <dialog id="account-dialog" aria-labelledby="account-title">
+    <div class="account-header">
+      <h2 id="account-title" data-i18n="auth.account">Account</h2>
+      <button id="account-close" type="button" data-i18n="auth.close">Close</button>
+    </div>
+    <label for="account-language" data-i18n="ui.language">Language</label>
+    <select id="account-language"><option value="en">English</option><option value="fi">Suomi</option></select>
+    <p id="auth-identity"></p>
+    <p data-i18n="auth.localRides">Rides stay in this browser. Signing in does not upload them.</p>
+    <form id="auth-form">
+      <label for="auth-mode" data-i18n="auth.action">Action</label>
+      <select id="auth-mode"><option value="login" data-i18n="auth.login">Sign in</option><option value="register" data-i18n="auth.register">Register</option></select>
+      <div id="auth-name-row" hidden>
+        <label for="auth-name" data-i18n="auth.displayName">Display name</label>
+        <input id="auth-name" name="displayName" autocomplete="nickname" maxlength="64">
+      </div>
+      <label for="auth-email" data-i18n="auth.email">Email</label>
+      <input id="auth-email" name="email" type="email" autocomplete="username" maxlength="320" required>
+      <label for="auth-password" data-i18n="auth.password">Password</label>
+      <input id="auth-password" name="password" type="password" autocomplete="current-password" required>
+      <p data-i18n="auth.passwordHint">Registration requires at least 6 characters; the project's password policy may require more.</p>
+      <button id="auth-submit" type="submit" data-i18n="auth.login">Sign in</button>
+    </form>
+    <p id="auth-status" role="status" aria-live="polite"></p>
+    <button id="auth-retry" type="button" data-i18n="auth.retry">Retry connection / profile</button>
+    <button id="auth-logout" type="button" hidden data-i18n="auth.logout">Sign out</button>
+  </dialog>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script type="module" src="./js/app.js"></script>

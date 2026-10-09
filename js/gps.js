@@ -1,4 +1,4 @@
-import { t, setLocalizedText, formatNumber } from './i18n/i18n.js';
+import { t } from './i18n/i18n.js';
 export function isGeolocationSupported(navigatorRef) {
   return !!(navigatorRef && navigatorRef.geolocation);
 }
@@ -18,7 +18,7 @@ export function getGeolocationErrorMessage(error) {
     return t("ui.positionTimeout");
   }
 
-  return error.message || t("ui.trackingError");
+  return t("ui.trackingError");
 }
 
 export function startGeoWatch(geoApi, successCallback, errorCallback, options) {
