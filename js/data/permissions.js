@@ -11,3 +11,6 @@ export function canManageMember(role, actorUid, target, nextRole = target.techni
     && ['host', 'member'].includes(target.technicalRole) && ['host', 'member'].includes(nextRole);
 }
 export const canBrand = isManager;
+export function canAssignRank(role,actorUid,target) {
+  return canManageMember(role,actorUid,target) || (role==='admin' && target.uid===actorUid);
+}

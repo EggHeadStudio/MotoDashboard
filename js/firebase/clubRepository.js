@@ -1,6 +1,6 @@
 import { ownDatabase, boundedRequest, dataError } from './access.js';
-import { clubInput, validId } from '../data/schema.js';
-import { roleFor, isManager, canManageMember } from '../data/permissions.js';
+import { clubInput, validId, text, ROLES } from '../data/schema.js';
+import { roleFor, isManager, canManageMember, canAssignRank } from '../data/permissions.js';
 
 const stamp=sdk=>sdk.serverTimestamp();
 const clubRef=(s,id,...parts)=>s.sdk.doc(s.db,'clubs',id,...parts);
@@ -139,6 +139,38 @@ export async function archiveClub(uid,id) {
     if(role!=='owner') throw dataError('permission-denied');
     const updated={...club,state:'archived',updatedAt:stamp(s.sdk)};
     tx.set(clubRef(s,id),updated);setDirectory(tx,s,updated,club);
+  });
+}
+export async function setMember(uid,id,targetUid,technicalRole,rankId) {
+  idCheck(targetUid);if(!ROLES.includes(technicalRole) || (rankId!==null && !validId(rankId))) throw dataError('invalid-input');
+  await clubTransaction(uid,id,async(tx,s,club,role)=>{
+    const ref=clubRef(s,id,'members',targetUid),member=await tx.get(ref);
+    if(!member.exists()) throw dataError('deleted');
+    const prior=member.data(),roleChanged=technicalRole!==prior.technicalRole;
+    if((roleChanged && !canManageMember(role,uid,prior,technicalRole)) || (!roleChanged && !canAssignRank(role,uid,prior))) throw dataError('permission-denied');
+    if(rankId) {const rank=await tx.get(clubRef(s,id,'ranks',rankId));if(!rank.exists()) throw dataError('invalid-input');}
+    tx.update(ref,{technicalRole,rankId,updatedAt:stamp(s.sdk)});
+  });
+}
+export async function saveRank(uid,id,rankId,input) {
+  const name=text(input.name,64,true),displayOrder=Number(input.displayOrder);
+  if(!Number.isInteger(displayOrder) || displayOrder<0 || displayOrder>999) throw dataError('invalid-input');
+  const target=rankId || crypto.randomUUID();idCheck(target);
+  await clubTransaction(uid,id,async(tx,s,club,role)=>{
+    if(!isManager(role)) throw dataError('permission-denied');
+    const ref=clubRef(s,id,'ranks',target),prior=await tx.get(ref);
+    if(rankId && !prior.exists()) throw dataError('deleted');
+    tx.set(ref,{id:target,name,displayOrder,createdAt:prior.exists()?prior.data().createdAt:stamp(s.sdk),updatedAt:stamp(s.sdk)});
+  });return target;
+}
+export async function getRank(uid,id,rankId) {
+  idCheck(id);idCheck(rankId);const s=await ownDatabase(uid);
+  const rank=await boundedRequest(s.sdk.getDoc(clubRef(s,id,'ranks',rankId)));s.assertCurrent();
+  return rank.exists()?rank.data():null;
+}
+export async function deleteRank(uid,id,rankId) {
+  idCheck(rankId);await clubTransaction(uid,id,(tx,s,club,role)=>{
+    if(!isManager(role)) throw dataError('permission-denied');tx.delete(clubRef(s,id,'ranks',rankId));
   });
 }
 export async function deleteClub(uid,id) {

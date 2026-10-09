@@ -147,5 +147,5 @@ export function initClubUI() {
     view.body.replaceChildren();view.status.textContent='';signedOut();
     if(uid && view.node.open) browse().catch(error=>labelText(view.status,dataErrorKey(error)));
   });
-  onLanguageChange(()=>{if(!editing) {if(selectedId && model) renderClub().catch(error=>labelText(view.status,dataErrorKey(error)));else renderBrowse();}});
+  onLanguageChange(()=>{if(!editing && !selectedId) renderBrowse();});
 }

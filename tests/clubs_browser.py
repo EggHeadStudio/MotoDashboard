@@ -69,6 +69,42 @@ def run_club_tests(browser,base,route_map):
     page.on('dialog',lambda d:d.accept())
     page.click('#club-leave');page.wait_for_selector('#club-create')
     switch(page,'owner@example.test');lookup(page,clubs['open'])
+    page.click('#rank-add');page.fill('#rank-form-name','Captain');page.locator('#rank-form button[type=submit]').click()
+    page.wait_for_selector('#rank-add')
+    rank=page.evaluate('(id)=>Object.values(JSON.parse(localStorage.getItem("__mockProfiles"))).find(v=>v.name==="Captain" && v.displayOrder===0).id',clubs['open'])
+    page.select_option('#member-fixture-1-rankId',rank)
+    page.locator('#member-fixture-1 button[type=submit]').click();page.wait_for_selector('#rank-add')
+    switch(page,'member@example.test');lookup(page,clubs['open'])
+    assert 'Captain' in page.locator('[data-member-uid="fixture-1"]').inner_text()
+    assert not page.locator('#rank-add').count() and not page.locator('#club-admission').count()
+    denial=page.evaluate("""async(id)=>{
+      const {setMember}=await import('./js/firebase/clubRepository.js');const {getAccount}=await import('./js/auth-state.js');
+      try{await setMember(getAccount().uid,id,getAccount().uid,'host',null);return false;}
+      catch(e){return e.code==='permission-denied';}
+    }""",clubs['open']);assert denial
+    switch(page,'owner@example.test');lookup(page,clubs['open'])
+    page.select_option('#member-fixture-1-technicalRole','admin');page.locator('#member-fixture-1 button[type=submit]').click()
+    page.wait_for_selector('#rank-add')
+    switch(page,'member@example.test');lookup(page,clubs['open'])
+    assert page.locator('#rank-add').count() and page.locator('#club-admission').count()
+    assert not page.locator('#member-fixture-0').count() and not page.locator('#member-fixture-1-technicalRole').count()
+    denial=page.evaluate("""async(id)=>{
+      const {setMember}=await import('./js/firebase/clubRepository.js');const {getAccount}=await import('./js/auth-state.js');
+      const uid=getAccount().uid;let n=0;
+      for(const [target,role] of [['fixture-0','member'],[uid,'owner']]) {
+        try{await setMember(uid,id,target,role,null);}catch(e){if(e.code==='permission-denied')n++;}
+      }return n;
+    }""",clubs['open']);assert denial==2
+    page.locator('[data-rank-id]').get_by_role('button',name='Edit',exact=True).click()
+    page.fill('#rank-form-name','Road Lead');page.locator('#rank-form button[type=submit]').click();page.wait_for_selector('#rank-add')
+    assert 'Road Lead' in page.locator('[data-member-uid="fixture-1"]').inner_text()
+    page.locator('[data-rank-id]').get_by_role('button',name='Delete',exact=True).click();page.wait_for_selector('#rank-add')
+    assert 'No rank' in page.locator('[data-member-uid="fixture-1"]').inner_text()
+    switch(page,'owner@example.test');lookup(page,clubs['open'])
+    page.select_option('#member-fixture-1-technicalRole','host');page.locator('#member-fixture-1 button[type=submit]').click();page.wait_for_selector('#rank-add')
+    switch(page,'member@example.test');lookup(page,clubs['open'])
+    assert not page.locator('#rank-add').count() and not page.locator('#club-admission').count()
+    switch(page,'owner@example.test');lookup(page,clubs['open'])
     page.locator('#clubs-dialog').get_by_role('button',name='Archive Club',exact=True).click()
     page.wait_for_function('document.querySelector("#clubs-dialog").textContent.includes("Deletion is blocked")')
     assert not page.locator('#clubs-dialog').get_by_role('button',name='Permanently delete Club',exact=True).count()
@@ -85,3 +121,4 @@ def run_club_tests(browser,base,route_map):
     assert not errors,errors
     context.close()
     print('PASS: MOCK Clubs create/edit/open join, request reject/reapply/approve, multiple memberships, UID invite consumption/private leave, repository ownership denial, archive/deletion policy, Finnish and landscape dialog')
+    print('PASS: MOCK Owner role changes, limited Admin, read-only Host/Member, custom rank assignment/rename/deletion, Captain gives no technical rights, and repository escalation guards')
