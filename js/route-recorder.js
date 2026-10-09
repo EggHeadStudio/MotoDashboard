@@ -1,9 +1,5 @@
 export function createRouteRecorder(config) {
   var haversine = config.haversine;
-  var resumeAnchorGapMs = config.resumeAnchorGapMs;
-  var resumeAnchorDistanceM = config.resumeAnchorDistanceM;
-  var stopGapBreakMs = config.stopGapBreakMs;
-  var stopGapBreakDistanceM = config.stopGapBreakDistanceM;
   var minAcceptedPointDistanceM = config.minAcceptedPointDistanceM;
   var maxPointJumpDistanceM = config.maxPointJumpDistanceM;
   var maxPointJumpSpeedKmh = config.maxPointJumpSpeedKmh;
@@ -85,95 +81,36 @@ export function createRouteRecorder(config) {
   }
 
   function addAcceptedPoint(input) {
-    var lat = input.lat;
-    var lon = input.lon;
-    var accuracy = input.accuracy;
-    var speedKmh = input.speedKmh;
-    var heading = input.heading;
-    var now = input.now;
-    var activeSession = input.activeSession;
-    var sessionActive = input.sessionActive;
-    var map = input.map;
-    var leaflet = input.leaflet;
-    var routeLayer = input.routeLayer;
-    var routeColor = input.routeColor || '#ffcc00';
-    var persistActiveSession = input.persistActiveSession;
-
-    if (!activeSession || !sessionActive) {
-      return { routeLayer: routeLayer, pointAccepted: false };
+    const { lat, lon, accuracy, speedKmh, heading, now, activeSession, sessionActive } = input;
+    let routeLayer = input.routeLayer;
+    if (!activeSession || !sessionActive || activeSession.status !== 'active'
+        || !Number.isFinite(lat) || !Number.isFinite(lon) || !Number.isFinite(now)
+        || !Number.isFinite(speedKmh) || speedKmh < movingSpeedThresholdKmh) {
+      return { routeLayer, pointAccepted: false };
     }
-
-    var point = {
-      latitude: lat,
-      longitude: lon,
-      timestamp: now,
-      accuracy: accuracy,
-      speedKmh: speedKmh || 0,
-      heading: heading || 0
-    };
-
-    var lastPoint = activeSession.lastAcceptedPoint;
-    if (!lastPoint) {
-      activeSession.routePoints.push(point);
-      activeSession.lastAcceptedPoint = point;
-      activeSession.resumeAnchorPending = false;
-      routeLayer = updateRouteLayer({ map: map, leaflet: leaflet, activeSession: activeSession, routeLayer: routeLayer, routeColor: routeColor });
-      persistActiveSession(false);
-      return { routeLayer: routeLayer, pointAccepted: true };
-    }
-
-    if (activeSession.resumeAnchorPending) {
-      var gapMs = point.timestamp - (lastPoint.timestamp || point.timestamp);
-      var gapDistance = haversine(lastPoint.latitude, lastPoint.longitude, lat, lon);
-
-      if (gapMs >= resumeAnchorGapMs || gapDistance >= resumeAnchorDistanceM) {
-        activeSession.routePoints.push({ break: true, timestamp: point.timestamp });
-        activeSession.routePoints.push(point);
-        activeSession.lastAcceptedPoint = point;
-        activeSession.resumeAnchorPending = false;
-        routeLayer = updateRouteLayer({ map: map, leaflet: leaflet, activeSession: activeSession, routeLayer: routeLayer, routeColor: routeColor });
-        persistActiveSession(false);
-        return { routeLayer: routeLayer, pointAccepted: true };
+    const point = { latitude: lat, longitude: lon, timestamp: now, accuracy,
+      speedKmh, heading: Number.isFinite(heading) ? heading : null };
+    const last = activeSession.lastAcceptedPoint;
+    if (last && now <= last.timestamp) return { routeLayer, pointAccepted: false };
+    if (last && !input.segmentBreak) {
+      const distance = haversine(last.latitude, last.longitude, lat, lon);
+      const elapsed = (now - last.timestamp) / 1000;
+      if (distance < minAcceptedPointDistanceM || distance > maxPointJumpDistanceM
+          || distance / elapsed * 3.6 > maxPointJumpSpeedKmh) {
+        return { routeLayer, pointAccepted: false };
       }
-
-      activeSession.resumeAnchorPending = false;
+      activeSession.distanceMeters += distance;
+    } else if (last) {
+      // A stop/outage/resume anchor never contributes gap distance.
+      activeSession.routePoints.push({ break: true, timestamp: now });
     }
-
-    if (activeSession.stopAnchorPending) {
-      var stopGapMs = point.timestamp - (lastPoint.timestamp || point.timestamp);
-      var stopGapDistance = haversine(lastPoint.latitude, lastPoint.longitude, lat, lon);
-      if (stopGapMs >= stopGapBreakMs || stopGapDistance >= stopGapBreakDistanceM) {
-        activeSession.routePoints.push({ break: true, timestamp: point.timestamp });
-      }
-      activeSession.stopAnchorPending = false;
-    }
-
-    var distance = haversine(lastPoint.latitude, lastPoint.longitude, lat, lon);
-    if (distance < minAcceptedPointDistanceM || distance > maxPointJumpDistanceM) {
-      return { routeLayer: routeLayer, pointAccepted: false };
-    }
-
-    var dtSeconds = (point.timestamp - (lastPoint.timestamp || point.timestamp)) / 1000;
-    if (dtSeconds > 0) {
-      var jumpSpeedKmh = (distance / dtSeconds) * 3.6;
-      if (!isFinite(jumpSpeedKmh) || jumpSpeedKmh > maxPointJumpSpeedKmh) {
-        return { routeLayer: routeLayer, pointAccepted: false };
-      }
-    }
-
-    if (speedKmh < movingSpeedThresholdKmh) {
-      return { routeLayer: routeLayer, pointAccepted: false };
-    }
-
-    activeSession.distanceMeters += distance;
     activeSession.routePoints.push(point);
     activeSession.lastAcceptedPoint = point;
-    activeSession.maxSpeedKmh = Math.max(activeSession.maxSpeedKmh, speedKmh || 0);
-
-    routeLayer = updateRouteLayer({ map: map, leaflet: leaflet, activeSession: activeSession, routeLayer: routeLayer, routeColor: routeColor });
-    persistActiveSession(false);
-
-    return { routeLayer: routeLayer, pointAccepted: true };
+    activeSession.maxSpeedKmh = Math.max(activeSession.maxSpeedKmh, speedKmh);
+    routeLayer = updateRouteLayer({ map: input.map, leaflet: input.leaflet,
+      activeSession, routeLayer, routeColor: input.routeColor });
+    input.persistActiveSession(false);
+    return { routeLayer, pointAccepted: true };
   }
 
   return {

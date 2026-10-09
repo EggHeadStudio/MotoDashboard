@@ -26,10 +26,10 @@ export function fetchAndRenderWeather(lat, lon, options) {
     + '&wind_speed_unit=kmh'
     + '&timezone=auto';
 
-  return fetchImpl(url)
-    .then(function (response) { return response.json(); })
+  return fetchImpl(url, { signal: typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(10000) : undefined })
+    .then(function (response) { if (!response.ok) throw new Error('weather-http'); return response.json(); })
     .then(function (data) {
-      if (data && data.current) {
+      if (data && data.current && Number.isFinite(data.current.temperature_2m) && Number.isFinite(data.current.wind_speed_10m)) {
         var cur = data.current;
         var temp = Math.round(cur.temperature_2m);
         var wind = Math.round(cur.wind_speed_10m);

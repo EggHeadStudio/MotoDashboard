@@ -1404,6 +1404,22 @@ STOP after this section.
 
 # SECTION 4 --- EXISTING DASHBOARD INTEGRATION
 
+## Batch 1: Section 4A repair checkpoint (2026-10-09)
+
+- [x] Connect reliable automatic heading and unwrap angle transitions; keep HUD/control layers fixed.
+- [x] Validate and deduplicate GPS timestamps before distance, moving time and maximum speed accounting.
+- [x] Break routes after stops, quality loss, gaps and refresh; never bridge interruption distance.
+- [x] Stop GPS, release Wake Lock, cancel save timer and flush a captured completed record on finish.
+- [x] Introduce schema v2 per-record IndexedDB storage with localStorage fallback, preserving settings.
+- [x] Await authoritative local history before active restoration and show completed ride details.
+- [x] Execute simulated browser scenarios and 36 deterministic domain assertions.
+- [ ] Physical-phone GPS, browser suspension, battery and real-provider checks.
+
+This completes Batch 1 Milestone 2 only. Account/Garage integration, cloud session persistence,
+export and future product requirements below remain pending. No historical migration is needed
+under the user's Batch 1 authorization. Checks used headless Chromium, simulated GPS and
+provider fixtures; they do not establish physical-device or background-recording support.
+
 > **Section 0 audit adaptation (planning only):** Split into a separately approved Section 4A repair checkpoint after Section 1, then account/Garage integration after Section 3. Repair disconnected automatic heading, GPS timestamp/dedup/gap/max accounting, stop lifecycle and asynchronous local restore before cloud session sync. Preserve existing module paths and all original integration requirements; see 15.6 and 15.10.
 
 ## Goal

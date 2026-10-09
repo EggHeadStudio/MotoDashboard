@@ -1,3 +1,4 @@
+import { createPositionPipeline } from './position-pipeline.js';
 import { initI18n, t, resolveText, setLocalizedText, onLanguageChange, formatNumber, getLocale } from './i18n/i18n.js';
 import {
   APP_VERSION,
@@ -10,20 +11,11 @@ import {
   DB_VERSION,
   SESSIONS_STORE_NAME,
   SETTINGS_STORE_NAME,
-  RESUME_ANCHOR_GAP_MS,
-  RESUME_ANCHOR_DISTANCE_M,
   MOVING_SPEED_THRESHOLD_KMH,
-  STOP_SPEED_THRESHOLD_KMH,
   MOVING_ACCURACY_MAX_M,
   MIN_ACCEPTED_POINT_DISTANCE_M,
   MAX_POINT_JUMP_DISTANCE_M,
   MAX_POINT_JUMP_SPEED_KMH,
-  MIN_MOVING_CONFIRMATION_SAMPLES,
-  MIN_STOP_CONFIRMATION_SAMPLES,
-  STOP_GAP_BREAK_MS,
-  STOP_GAP_BREAK_DISTANCE_M,
-  MAX_VALID_SPEED_KMH,
-  MAX_FALLBACK_SPEED_KMH,
   HEADING_MIN_SPEED_KMH,
   HEADING_MIN_DISTANCE_M,
   ROTATION_SMOOTHING,
@@ -43,7 +35,7 @@ import {
   haversine
 } from './utils.js';
 import { fetchAndRenderWeather } from './weather.js';
-import { evaluateSpeedSample, smoothSpeed, createMovementTracker } from './speed.js';
+import { smoothSpeed } from './speed.js';
 import { createRouteRecorder } from './route-recorder.js';
 import {
   computeRotationVisualScale,
@@ -67,14 +59,13 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
 (function () {
     'use strict';
 
-    document.addEventListener('DOMContentLoaded', function () {
+    document.addEventListener('DOMContentLoaded', async function () {
       initI18n();
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function (registrations) {
-          registrations.forEach(function (registration) {
-            registration.unregister();
-          });
-        });
+        navigator.serviceWorker.getRegistrations().then(registrations => Promise.all(
+          registrations.filter(registration => registration.scope === new URL('./', document.baseURI).href)
+            .map(registration => registration.unregister())
+        )).catch(error => console.warn('Service worker cleanup failed', error));
       }
 
       var dom;
@@ -143,6 +134,9 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       var mapPane = null;
       var mapTileLayer = null;
       var posMarker = null;
+      var accuracyCircle = null;
+      var pendingSessionSnapshot = null;
+      var recordingReady = false;
       var logoRingMarker = null;
       var routeLayer = null;
       var watchId = null;
@@ -196,20 +190,10 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       function themeLabel(index) { return t(THEME_NAMES[index]); }
       var themeClasses = THEME_CLASSES;
 
-      var movementTracker = createMovementTracker({
-        movingSpeedThresholdKmh: MOVING_SPEED_THRESHOLD_KMH,
-        stopSpeedThresholdKmh: STOP_SPEED_THRESHOLD_KMH,
-        movingAccuracyMaxM: MOVING_ACCURACY_MAX_M,
-        minMovingConfirmationSamples: MIN_MOVING_CONFIRMATION_SAMPLES,
-        minStopConfirmationSamples: MIN_STOP_CONFIRMATION_SAMPLES
-      });
+      var positionPipeline = createPositionPipeline();
 
       var routeRecorder = createRouteRecorder({
         haversine: haversine,
-        resumeAnchorGapMs: RESUME_ANCHOR_GAP_MS,
-        resumeAnchorDistanceM: RESUME_ANCHOR_DISTANCE_M,
-        stopGapBreakMs: STOP_GAP_BREAK_MS,
-        stopGapBreakDistanceM: STOP_GAP_BREAK_DISTANCE_M,
         minAcceptedPointDistanceM: MIN_ACCEPTED_POINT_DISTANCE_M,
         maxPointJumpDistanceM: MAX_POINT_JUMP_DISTANCE_M,
         maxPointJumpSpeedKmh: MAX_POINT_JUMP_SPEED_KMH,
@@ -339,7 +323,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
               lines.push(t("ui.permissionAllowed"));
             }
 
-            if (!('wakeLock' in navigator)) {
+            if (!navigator.wakeLock || wakeLock && !wakeLock.released) {
               lines.push(t("ui.wakeUnsupported"));
             }
 
@@ -373,22 +357,6 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           var bTime = (b && (b.updatedAt || b.startedAt)) || 0;
           return bTime - aTime;
         });
-      }
-
-      function loadSessionHistoryFromLocalStorage() {
-        sessionHistory = sessionStore.loadSessionHistoryFromLocalStorage();
-      }
-
-      function saveSessionHistoryToLocalStorage() {
-        sessionStore.saveSessionHistoryToLocalStorage(sessionHistory);
-      }
-
-      function loadSessionsFromIndexedDb() {
-        return sessionStore.loadSessionsFromIndexedDb();
-      }
-
-      function saveSessionsToIndexedDb() {
-        return sessionStore.saveSessionsToIndexedDb(sessionHistory);
       }
 
       function readSettingFromLocalStorage(key) {
@@ -534,17 +502,17 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           return;
         }
 
-        renderedMapRotationDeg = normalizeAngle(angleDeg);
+        renderedMapRotationDeg += shortestAngleDelta(normalizeAngle(renderedMapRotationDeg), angleDeg);
         if (elMap) {
           var visualScale = getRotationVisualScale(angleDeg);
-          elMap.style.transform = 'rotate(' + angleDeg + 'deg) scale(' + visualScale + ')';
+          elMap.style.transform = 'rotate(' + renderedMapRotationDeg + 'deg) scale(' + visualScale + ')';
         }
 
         if (elCompassNeedle) {
-          elCompassNeedle.style.transform = 'rotate(' + angleDeg + 'deg)';
+          elCompassNeedle.style.transform = 'rotate(' + renderedMapRotationDeg + 'deg)';
         }
         if (elCompassOverlayNeedle) {
-          elCompassOverlayNeedle.style.transform = 'rotate(' + angleDeg + 'deg)';
+          elCompassOverlayNeedle.style.transform = 'rotate(' + renderedMapRotationDeg + 'deg)';
         }
       }
 
@@ -652,6 +620,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           showMapStatusMessage(() => t("ui.rotationUnsupported"), 1800);
         }
         updateHeadingButtonLabel();
+        setMapDraggingForMode();
         document.body.classList.toggle('heading-menosuunta', headingUpEnabled && mapRotationSupported);
         hideCompassGestureOverlayImmediately();
 
@@ -697,14 +666,14 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         });
       }
 
-      function getReliableHeading(coords, lat, lon, validatedSpeedKmh) {
+      function getReliableHeading(coords, lat, lon, validatedSpeedKmh, segmentBreak) {
         return getReliableHeadingCandidate({
           coords: coords,
           lat: lat,
           lon: lon,
           validatedSpeedKmh: validatedSpeedKmh,
-          activeSessionLastAcceptedPoint: activeSession && activeSession.lastAcceptedPoint ? activeSession.lastAcceptedPoint : null,
-          prevCoords: prevCoords,
+          activeSessionLastAcceptedPoint: !segmentBreak && activeSession ? activeSession.lastAcceptedPoint : null,
+          prevCoords: segmentBreak ? null : prevCoords,
           headingMinSpeedKmh: HEADING_MIN_SPEED_KMH,
           movingAccuracyMaxM: MOVING_ACCURACY_MAX_M,
           headingMinDistanceM: HEADING_MIN_DISTANCE_M,
@@ -833,7 +802,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           var delta = shortestAngleDelta(touchRotationStartAngle, currentTouchAngle);
           currentHeadingDeg = normalizeAngle(touchRotationStartMapAngle + delta);
           applyMapRotationVisual(currentHeadingDeg);
-        }, { passive: true });
+        }, { passive: false });
 
         elMap.addEventListener('touchend', function (event) {
           if (event.touches.length === 0) {
@@ -959,13 +928,12 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       }
 
       function resetMovementState() {
-        movementTracker.reset();
+        positionPipeline.reset();
         movementConfirmed = false;
+        smoothedSpeed = 0;
+        prevCoords = null;
+        lastPositionAt = 0;
         lastReliableHeadingAt = 0;
-      }
-
-      function updateMovementState(validatedSpeedKmh, accuracy) {
-        movementConfirmed = movementTracker.update(validatedSpeedKmh, accuracy, activeSession);
       }
 
       function setSessionSummary(message) {
@@ -999,7 +967,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       }
 
       function updateSessionStatsPanel(session) {
-        if (!session || !sessionActive) {
+        if (!session || (!sessionActive && !sessionHistoryViewActive)) {
           setSessionStatsVisible(false);
           return;
         }
@@ -1015,34 +983,16 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         return routeRecorder.getSessionLastLatLng(session);
       }
 
-      function loadSessionHistory() {
-        loadSessionHistoryFromLocalStorage();
+      async function loadSessionHistory() {
+        sessionHistory = await sessionStore.loadSessions();
         sortSessionHistory();
-
-        var localCount = sessionHistory.length;
-
-        loadSessionsFromIndexedDb().then(function (storedSessions) {
-          if (!Array.isArray(storedSessions)) {
-            return;
-          }
-
-          if (!storedSessions.length && localCount > 0) {
-            saveSessionsToIndexedDb();
-            return;
-          }
-
-          sessionHistory = storedSessions;
-          sortSessionHistory();
-          saveSessionHistoryToLocalStorage();
-          renderHistory();
-          updateStartSummary();
-        });
+        recordingReady = true;
+        elStartBtn.disabled = false;
       }
 
-      function saveSessionHistory() {
-        sortSessionHistory();
-        saveSessionHistoryToLocalStorage();
-        saveSessionsToIndexedDb();
+      function reportStorageError(error) {
+        console.warn('Local storage failed', error);
+        setTextContent(document.getElementById('storage-status'), () => t('ui.storageFailure'));
       }
 
       function renderHistory() {
@@ -1068,8 +1018,13 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
 
         sessionHistoryViewActive = true;
         sessionActive = false;
-        setSessionStatsVisible(false);
-        activeSession = JSON.parse(JSON.stringify(session));
+        clearExistingWatch();
+        releaseWakeLockSafely();
+        activeSession = structuredClone(session);
+        updateSessionStatsPanel(activeSession);
+        applyHeadingModeSettings('lukittu', false);
+        document.getElementById('history-detail').hidden = false;
+        setTextContent(document.getElementById('history-detail'), () => formatCompletedSessionSummary(session, { formatDate, formatDuration, formatSpeedKmh }));
         elFinishSessionBtn.style.display = 'none';
         elBackToStartBtn.style.display = 'inline-flex';
         elStartOverlay.style.display = 'none';
@@ -1081,7 +1036,9 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
 
         var lastLatLng = getSessionLastLatLng(activeSession);
         if (map && lastLatLng) {
-          map.setView(lastLatLng, map.getZoom() < 14 ? 14 : map.getZoom());
+          const points = activeSession.routePoints.filter(p => !p.break).map(p => [p.latitude, p.longitude]);
+          if (points.length > 1) map.fitBounds(points, { padding: [40, 40], maxZoom: 16 });
+          else map.setView(lastLatLng, 16);
         }
 
         setStartStatus(() => t("ui.viewRide"));
@@ -1094,6 +1051,8 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
 
       function returnToStartView() {
         sessionHistoryViewActive = false;
+        document.getElementById('history-detail').hidden = true;
+        applyStoredHeadingMode();
         if (!sessionActive) {
           activeSession = null;
         }
@@ -1142,66 +1101,52 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         });
       }
 
-      function persistActiveSession(force) {
-        if (!activeSession || !sessionActive) {
-          return;
-        }
-
-        activeSession.updatedAt = Date.now();
-        activeSession.averageMovingSpeedKmh = computeAverageMovingSpeed(
-          activeSession.distanceMeters,
-          activeSession.movingDurationMs
-        );
-
-        updateSessionStatsPanel(activeSession);
-
-        var commit = function () {
-          var existing = sessionHistory.find(function (item) { return item.id === activeSession.id; });
-          if (existing) {
-            Object.assign(existing, activeSession);
-          } else {
-            sessionHistory.unshift(activeSession);
-          }
-          saveSessionHistory();
-          renderHistory();
-          updateStartSummary();
-        };
-
-        if (force) {
-          if (sessionSaveTimer) {
-            window.clearTimeout(sessionSaveTimer);
-            sessionSaveTimer = null;
-          }
-          commit();
-          return;
-        }
-
-        if (!sessionSaveTimer) {
-          sessionSaveTimer = window.setTimeout(function () {
-            sessionSaveTimer = null;
-            commit();
-          }, 600);
-        }
+      function cancelSessionSave() {
+        if (sessionSaveTimer) clearTimeout(sessionSaveTimer);
+        sessionSaveTimer = null;
+        pendingSessionSnapshot = null;
       }
 
-      function addAcceptedPoint(lat, lon, accuracy, speedKmh, heading) {
-        var result = routeRecorder.addAcceptedPoint({
-          lat: lat,
-          lon: lon,
-          accuracy: accuracy,
-          speedKmh: speedKmh,
-          heading: heading,
-          now: Date.now(),
-          activeSession: activeSession,
-          sessionActive: sessionActive,
-          map: map,
-          leaflet: typeof L !== 'undefined' ? L : undefined,
-          routeLayer: routeLayer,
-          routeColor: getRouteColorForTheme(currentTheme),
-          persistActiveSession: persistActiveSession
-        });
+      function commitSession(snapshot) {
+        const index = sessionHistory.findIndex(item => item.id === snapshot.id);
+        if (index >= 0) sessionHistory[index] = snapshot;
+        else sessionHistory.unshift(snapshot);
+        sortSessionHistory();
+        renderHistory();
+        updateStartSummary();
+        return sessionStore.saveSession(snapshot).then(() => {
+          setTextContent(document.getElementById('storage-status'), '');
+          return true;
+        }).catch(error => { reportStorageError(error); return false; });
+      }
 
+      function persistActiveSession(force) {
+        if (!activeSession || sessionHistoryViewActive || (!sessionActive && !force)) return Promise.resolve(false);
+        activeSession.updatedAt = Date.now();
+        activeSession.averageMovingSpeedKmh = computeAverageMovingSpeed(activeSession.distanceMeters, activeSession.movingDurationMs);
+        updateSessionStatsPanel(activeSession);
+        pendingSessionSnapshot = structuredClone(activeSession);
+        if (force) {
+          const snapshot = pendingSessionSnapshot;
+          cancelSessionSave();
+          return commitSession(snapshot);
+        }
+        if (!sessionSaveTimer) sessionSaveTimer = setTimeout(() => {
+          const snapshot = pendingSessionSnapshot;
+          cancelSessionSave();
+          if (snapshot) commitSession(snapshot);
+        }, 600);
+        return Promise.resolve(true);
+      }
+
+      function addAcceptedPoint(lat, lon, accuracy, speedKmh, heading, timestamp, segmentBreak) {
+        const result = routeRecorder.addAcceptedPoint({
+          lat, lon, accuracy, speedKmh, heading, now: timestamp, segmentBreak,
+          activeSession, sessionActive, map, leaflet: typeof L !== 'undefined' ? L : undefined,
+          routeLayer, routeColor: getRouteColorForTheme(currentTheme), persistActiveSession
+        });
         routeLayer = result.routeLayer;
+        return result.pointAccepted;
       }
 
       function startNewSession() {
@@ -1223,19 +1168,17 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         persistActiveSession(true);
       }
 
-      function resumePreviousSession() {
-        var latest = sessionHistory.find(function (item) { return item.status === 'active'; });
-        if (!latest) {
-          setSessionSummary(() => t("ui.noActive"));
-          return;
-        }
-
-        activeSession = JSON.parse(JSON.stringify(latest));
-        hasAppliedInitialFollowZoom = false;
+      function resumeSession(session) {
+        if (!recordingReady || !session || session.status !== 'active') return;
+        if (sessionActive) persistActiveSession(true);
+        clearExistingWatch();
+        activeSession = structuredClone(session);
         resetMovementState();
+        hasAppliedInitialFollowZoom = false;
+        followUser = true;
         sessionHistoryViewActive = false;
+        document.getElementById('history-detail').hidden = true;
         setSessionStatsCollapsed(false);
-        activeSession.resumeAnchorPending = true;
         sessionActive = true;
         updateSessionStatsPanel(activeSession);
         elFinishSessionBtn.style.display = 'inline-flex';
@@ -1243,25 +1186,22 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         elHistoryList.style.display = 'none';
         elStartOverlay.style.display = 'none';
         updateRouteLayer();
-        setSessionSummary(() => t("ui.resuming"));
-        setStartStatus(() => t("ui.restored"));
-
+        setStartStatus(() => t('ui.restored'));
         if (!window.isSecureContext || !isGeolocationSupported(navigator)) {
-          showLocationError(() => t("ui.resumeLocationError"), t("ui.gpsStartFailed"));
+          showLocationError(() => t('ui.resumeLocationError'));
           return;
         }
-
-        try {
-          startGpsTracking();
-        } catch (error) {
-          showLocationError(() => t("ui.resumeTrackingError"), t("ui.gpsStartupFailed"), error);
-          return;
-        }
-
+        try { startGpsTracking(); } catch (error) { showLocationError(() => t('ui.resumeTrackingError'), null, error); }
         requestWakeLockSafely();
       }
 
-      function finishSession() {
+      function resumePreviousSession() {
+        const latest = sessionHistory.find(item => item.status === 'active');
+        if (latest) resumeSession(latest);
+        else setSessionSummary(() => t('ui.noActive'));
+      }
+
+      async function finishSession() {
         if (!sessionActive || !activeSession) {
           return;
         }
@@ -1275,10 +1215,14 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           activeSession.name = sanitizeSessionName(nameInput);
         }
 
+        clearExistingWatch();
+        resetMovementState();
+        releaseWakeLockSafely();
         activeSession.status = 'completed';
         activeSession.endedAt = Date.now();
         activeSession.updatedAt = Date.now();
-        persistActiveSession(true);
+        sessionActive = false;
+        const saved = await persistActiveSession(true);
 
         sessionActive = false;
         resetMovementState();
@@ -1288,7 +1232,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         elBackToStartBtn.style.display = 'none';
         elStartOverlay.style.display = 'flex';
         setStartStatus(() => t("ui.completed"));
-        setSessionSummary(() => t("ui.savedLocal") + (activeSession.name ? ': ' + activeSession.name : '.') );
+        setSessionSummary(() => t(saved ? "ui.savedLocal" : "ui.storageFailure") + (activeSession.name ? ': ' + activeSession.name : '.') );
         updateStartSummary();
       }
 
@@ -1381,9 +1325,11 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           logoRingMarker: logoRingMarker,
           lat: lat,
           lon: lon,
-          accuracy: accuracy
+          accuracy: accuracy,
+          accuracyCircle: accuracyCircle
         });
 
+        accuracyCircle = positionUpdate.accuracyCircle;
         posMarker = positionUpdate.posMarker;
         logoRingMarker = positionUpdate.logoRingMarker;
 
@@ -1393,8 +1339,14 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
 
       }
 
+      function releaseWakeLockSafely() {
+        const sentinel = wakeLock;
+        wakeLock = null;
+        if (sentinel && !sentinel.released) sentinel.release().catch(error => console.warn('Wake Lock release failed', error));
+      }
+
       function requestWakeLockSafely() {
-        if (!('wakeLock' in navigator)) {
+        if (!navigator.wakeLock || wakeLock && !wakeLock.released) {
           return;
         }
 
@@ -1505,88 +1457,47 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       }
 
       function handlePositionSuccess(pos) {
-        var coords = pos.coords;
-        var now = Date.now();
-        var lat = coords.latitude;
-        var lon = coords.longitude;
-        var accuracy = coords.accuracy;
-        var validatedSpeedKmh = null;
-        var fallbackKmh = null;
-        var rawGpsKmh = null;
-        var dt = 0;
-        lastPositionAt = now;
-
-        setLocalizedText(elGpsAccuracy, () => t("ui.accuracyPrefix") + formatNumber(Math.round(accuracy), 0) + ' m');
+        if (watchId === null) return; // Ignore late callbacks after stop/end.
+        const sample = positionPipeline.process(pos);
+        if (!sample.accepted) {
+          if (sample.reason === 'accuracy') updateGpsQuality(pos.coords?.accuracy || Infinity);
+          return;
+        }
+        const coords = sample.coords;
+        const lat = coords.latitude, lon = coords.longitude, accuracy = coords.accuracy;
+        const now = sample.timestamp;
+        prevCoords = sample.previousCoords;
+        lastPositionAt = Date.now();
+        setLocalizedText(elGpsAccuracy, () => t('ui.accuracyPrefix') + formatNumber(Math.round(accuracy), 0) + ' m');
         updateGpsQuality(accuracy);
-
-        var speedSample = evaluateSpeedSample({
-          coords: coords,
-          prevCoords: prevCoords,
-          now: now,
-          maxValidSpeedKmh: MAX_VALID_SPEED_KMH,
-          maxFallbackSpeedKmh: MAX_FALLBACK_SPEED_KMH,
-          haversine: haversine
-        });
-
-        validatedSpeedKmh = speedSample.validatedSpeedKmh;
-        rawGpsKmh = speedSample.rawGpsKmh;
-        fallbackKmh = speedSample.fallbackKmh;
-        dt = speedSample.dtSeconds;
-
-        smoothedSpeed = smoothSpeed(smoothedSpeed, validatedSpeedKmh);
-
-        if (sessionActive && activeSession) {
-          updateMovementState(validatedSpeedKmh, accuracy);
-          if (movementConfirmed && validatedSpeedKmh !== null && validatedSpeedKmh >= STOP_SPEED_THRESHOLD_KMH && accuracy <= MOVING_ACCURACY_MAX_M) {
-            activeSession.movingDurationMs += Math.max(1000, (now - (prevCoords ? prevCoords.t : now)));
-            if (activeSession.maxSpeedKmh < smoothedSpeed) {
-              activeSession.maxSpeedKmh = smoothedSpeed;
-            }
-            if (validatedSpeedKmh >= MOVING_SPEED_THRESHOLD_KMH) {
-              addAcceptedPoint(lat, lon, accuracy, smoothedSpeed, coords.heading);
-            }
+        smoothedSpeed = smoothSpeed(smoothedSpeed, sample.validatedSpeedKmh);
+        movementConfirmed = sample.moving;
+        const heading = getReliableHeading(coords, lat, lon, sample.validatedSpeedKmh, sample.segmentBreak);
+        updateMapRotation(heading, sample.moving && sample.validatedSpeedKmh >= HEADING_MIN_SPEED_KMH, now);
+        if (sessionActive && activeSession?.status === 'active') {
+          activeSession.movingDurationMs += sample.movingDeltaMs;
+          if (sample.moving && sample.validatedSpeedKmh >= MOVING_SPEED_THRESHOLD_KMH) {
+            addAcceptedPoint(lat, lon, accuracy, sample.validatedSpeedKmh, coords.heading, now, sample.segmentBreak);
           }
+          persistActiveSession(false);
         }
-
         setSpeedDisplay(smoothedSpeed);
-
-        if (elSpeedDebug) {
-          var rawStr = rawGpsKmh !== null ? rawGpsKmh.toFixed(1) : t("ui.unavailable");
-          var calcStr = fallbackKmh !== null ? fallbackKmh.toFixed(1) : '—';
-          var dtStr = dt > 0 ? dt.toFixed(1) + ' s' : '—';
-          setLocalizedText(elSpeedDebug, () => t('ui.debugLine', { raw: rawStr, calculated: calcStr, display: Math.round(smoothedSpeed), dt: dtStr }));
-        }
-
-        if (accuracy <= 50) {
-          prevCoords = { lat: lat, lon: lon, t: now };
-        } else if (!prevCoords) {
-          prevCoords = { lat: lat, lon: lon, t: now };
-        }
-        lastGoodCoords = { lat: lat, lon: lon };
-
+        lastGoodCoords = { lat, lon };
+        prevCoords = { lat, lon, t: now };
         updateMapPosition(lat, lon, accuracy);
-
-        if (lastWeatherFetch === 0 || (now - lastWeatherFetch) >= 15 * 60 * 1000) {
+        if (lastWeatherFetch === 0 || Date.now() - lastWeatherFetch >= 15 * 60 * 1000) {
           lastWeatherFetch = Date.now();
-          fetchAndRenderWeather(lat, lon, {
-            isOnline: navigator.onLine,
-            weatherRowEl: elWeatherRow,
-            temperatureRowEl: elTemperatureRow,
-            windRowEl: elWindRow,
-            wmoCodes: WMO_CODES,
-            fetchImpl: fetch
-          });
+          fetchAndRenderWeather(lat, lon, { isOnline: navigator.onLine, weatherRowEl: elWeatherRow,
+            temperatureRowEl: elTemperatureRow, windRowEl: elWindRow, wmoCodes: WMO_CODES, fetchImpl: fetch })
+            .then(success => { if (!success) lastWeatherFetch = Date.now() - 14 * 60 * 1000; });
         }
-
-        if (!hasReceivedFirstPosition) {
-          finishGpsStartupSuccess();
-        } else {
-          setDebugStage(() => t("ui.positionReceived"));
-          setStartStatus(() => t("ui.positionReceived"));
-        }
+        if (!hasReceivedFirstPosition) finishGpsStartupSuccess();
+        else { setDebugStage(() => t('ui.positionReceived')); setStartStatus(() => t('ui.positionReceived')); }
       }
 
       function handlePositionError(err) {
+        if (watchId === null) return;
+        positionPipeline.reset();
         var message = () => getGpsErrorMessage(err);
         var debugMessage = err && typeof err.code !== 'undefined' ? t("ui.gpsErrorPrefix") + err.code : t("ui.gpsError");
 
@@ -1604,6 +1515,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       function startGpsTracking(options) {
         var softRestart = !!(options && options.softRestart);
         clearExistingWatch();
+        resetMovementState();
         if (!softRestart) {
           resetMovementState();
           hasReceivedFirstPosition = false;
@@ -1626,16 +1538,11 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         watchId = startGeoWatch(navigator.geolocation, handlePositionSuccess, handlePositionError, options);
         setDebugStage(() => t("ui.trackingStarted"));
 
-        if (!softRestart) {
-          navigator.geolocation.getCurrentPosition(function (pos) {
-            handlePositionSuccess(pos);
-          }, function (err) {
-            handlePositionError(err);
-          }, options);
-        }
+
       }
 
       function startButtonHandler() {
+        if (!recordingReady) return;
         // Guard: if an active session already exists, ask user to choose first
         if (sessionActive && activeSession) {
           if (!window.confirm(t("ui.newWhileActive"))) {
@@ -1702,7 +1609,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       }
 
       setLocalizedText(elStartVersion, () => t("ui.versionPrefix") + APP_VERSION);
-      loadSessionHistory();
+      await loadSessionHistory();
       renderHistory();
       updateStartSummary();
       updateGpsEnvironmentHint();
@@ -1710,10 +1617,9 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       setDebugStage(() => t("ui.ready"));
       setSpeedDisplay(0);
       applyStoredTheme();
-      applyStoredHeadingMode();
       updateClock();
       updateNetwork();
-      window.addEventListener('online', updateNetwork);
+      window.addEventListener('online', function () { updateNetwork(); lastWeatherFetch = 0; });
       window.addEventListener('offline', updateNetwork);
       setInterval(updateClock, 500);
 
@@ -1724,6 +1630,8 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       } else {
         initMap();
       }
+
+      applyStoredHeadingMode();
 
       // Auto-resume: if there is exactly one active session, restore it automatically after reload
       (function autoRestoreActiveSession() {
@@ -1739,30 +1647,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           return;
         }
 
-        activeSession = JSON.parse(JSON.stringify(session));
-        hasAppliedInitialFollowZoom = false;
-        sessionHistoryViewActive = false;
-        activeSession.resumeAnchorPending = true;
-        sessionActive = true;
-        setSessionStatsCollapsed(false);
-        updateSessionStatsPanel(activeSession);
-        updateRouteLayer();
-        elFinishSessionBtn.style.display = 'inline-flex';
-        elBackToStartBtn.style.display = 'none';
-        elStartOverlay.style.display = 'none';
-        setStartStatus(() => t("ui.autoRestored"));
-
-        if (!window.isSecureContext || !isGeolocationSupported(navigator)) {
-          return;
-        }
-
-        try {
-          startGpsTracking();
-        } catch (error) {
-          console.warn('GPS-seurannan automaattinen käynnistys epäonnistui.', error);
-        }
-
-        requestWakeLockSafely();
+        resumeSession(session);
       }());
 
       onLanguageChange(function () {
@@ -1803,7 +1688,8 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       elStartBtn.addEventListener('click', startButtonHandler);
       elResumeSessionBtn.addEventListener('click', resumePreviousSession);
       elHistoryBtn.addEventListener('click', toggleHistoryList);
-      elClearHistoryBtn.addEventListener('click', function () {
+      elClearHistoryBtn.addEventListener('click', async function () {
+        if (sessionActive) { setSessionSummary(() => t('ui.finishBeforeDelete')); return; }
         if (!sessionHistory.length) {
           setSessionSummary(() => t("ui.nothingDelete"));
           return;
@@ -1817,6 +1703,8 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           return;
         }
 
+        cancelSessionSave();
+        try { await sessionStore.clearSessions(); } catch (error) { reportStorageError(error); return; }
         sessionHistory = [];
         if (!sessionActive) {
           activeSession = null;
@@ -1827,10 +1715,9 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           }
         }
 
-        saveSessionHistory();
         renderHistory();
         updateStartSummary();
-        setSessionSummary(() => t("ui.cleared"));
+        setSessionSummary(() => t('ui.cleared'));
       });
       elBackToStartBtn.addEventListener('click', returnToStartView);
       elFinishSessionBtn.addEventListener('click', finishSession);
@@ -1873,7 +1760,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       elTemperaturePanel.addEventListener('keydown', topPanelKeyToggle);
       elWindPanel.addEventListener('keydown', topPanelKeyToggle);
 
-      elHistoryList.addEventListener('click', function (event) {
+      elHistoryList.addEventListener('click', async function (event) {
         var button = event.target.closest('button[data-action]');
         if (!button) {
           return;
@@ -1882,10 +1769,13 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         var action = button.getAttribute('data-action');
         var id = button.getAttribute('data-id');
         if (action === 'delete') {
+          if (sessionActive) { setSessionSummary(() => t('ui.finishBeforeDelete')); return; }
           if (!window.confirm(t("ui.deleteConfirm"))) {
             return;
           }
 
+          cancelSessionSave();
+          try { await sessionStore.deleteSession(id); } catch (error) { reportStorageError(error); return; }
           sessionHistory = sessionHistory.filter(function (item) { return item.id !== id; });
           if (activeSession && activeSession.id === id && !sessionActive) {
             activeSession = null;
@@ -1895,10 +1785,9 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
               routeLayer = null;
             }
           }
-          saveSessionHistory();
           renderHistory();
           updateStartSummary();
-          setSessionSummary(() => t("ui.deleted"));
+          setSessionSummary(() => t('ui.deleted'));
           return;
         }
 
@@ -1932,10 +1821,10 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
             activeSession.updatedAt = renameTarget.updatedAt;
           }
 
-          saveSessionHistory();
+          sessionStore.saveSession(renameTarget).catch(reportStorageError);
           renderHistory();
           updateStartSummary();
-          setSessionSummary(() => t("ui.renamed"));
+          setSessionSummary(() => t('ui.renamed'));
           return;
         }
 
@@ -1949,33 +1838,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           return;
         }
 
-        activeSession = JSON.parse(JSON.stringify(selected));
-        resetMovementState();
-        sessionHistoryViewActive = false;
-        activeSession.resumeAnchorPending = true;
-        sessionActive = true;
-        updateSessionStatsPanel(activeSession);
-        elFinishSessionBtn.style.display = 'inline-flex';
-        elBackToStartBtn.style.display = 'none';
-        elStartOverlay.style.display = 'none';
-        elHistoryList.style.display = 'none';
-        updateRouteLayer();
-        setStartStatus(() => t("ui.restored"));
-        setSessionSummary(() => t("ui.restoredPrefix") + formatDate(selected.startedAt));
-
-        if (!window.isSecureContext || !isGeolocationSupported(navigator)) {
-          showLocationError(() => t("ui.resumeLocationError"), t("ui.gpsStartFailed"));
-          return;
-        }
-
-        try {
-          startGpsTracking();
-        } catch (error) {
-          showLocationError(() => t("ui.resumeTrackingError"), t("ui.gpsStartupFailed"), error);
-          return;
-        }
-
-        requestWakeLockSafely();
+        resumeSession(selected);
       });
 
       document.addEventListener('visibilitychange', function () {
@@ -1985,7 +1848,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         }
 
         if (document.visibilityState === 'visible') {
-          requestWakeLockSafely();
+          if (sessionActive) requestWakeLockSafely();
 
           if (!sessionActive || !isGeolocationSupported(navigator) || !window.isSecureContext) {
             return;
@@ -2015,5 +1878,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           }
         }
       });
+      window.addEventListener('pagehide', () => persistActiveSession(true));
+      document.body.dataset.ready = 'true';
     });
   })();

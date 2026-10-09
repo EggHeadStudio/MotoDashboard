@@ -32,6 +32,13 @@
       padding: 6px;
       font: inherit;
     }
+    #map-controls { position: fixed; inset: 0; z-index: 3; pointer-events: none; }
+    #map-controls .leaflet-control { pointer-events: auto; }
+    #history-detail { position: fixed; top: calc(var(--safe-top) + 60px); left: 12px; right: 12px; z-index: 15; padding: 12px; background: #111; border-radius: 10px; }
+    #storage-status:not(:empty) { position: fixed; bottom: calc(var(--safe-bottom) + 55px); left: 12px; right: 12px; z-index: 65; background: #4d1515; color: #fff; padding: 12px; border-radius: 10px; }
+    #start-overlay { overflow-y: auto; }
+    #start-overlay > * { flex-shrink: 0; }
+    .session-item button { min-height: 44px; }
     body:has(#start-overlay[style*="display: none"]) #language-control {
       top: auto;
       bottom: calc(var(--safe-bottom) + 4px);

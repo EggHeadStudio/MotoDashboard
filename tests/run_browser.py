@@ -124,6 +124,42 @@ def run():
         assert not errors, errors
         assert not page.evaluate('window.__unhandled'), page.evaluate('window.__unhandled')
         print('PASS: simulated recording, Leaflet layers, localized weather, finish/history and unchanged user ride names')
+        if (ROOT / 'js/position-pipeline.js').exists():
+            assert page.evaluate('window.__geo.active') == 0, 'Finish must clear GPS watch'
+            page.click('#history-list button[data-action="open"]')
+            assert page.locator('#history-detail').is_visible()
+            assert page.locator('#session-stats-panel').is_visible()
+            assert not page.locator('#finish-session-btn').is_visible()
+            page.click('#back-to-start-btn')
+            page.click('#start-btn')
+            page.click('#heading-btn')
+            for n in range(4):
+                page.evaluate('(v) => window.__position(...v)', [60 + n * 0.00009, 25, 36, start_time + 20000 + n * 1000])
+            page.wait_for_timeout(900)
+            assert 'rotate(0deg)' not in page.locator('#map').evaluate('(el) => el.style.transform'), 'Automatic heading must rotate map'
+            assert page.locator('#hud').evaluate('(el) => getComputedStyle(el).transform') == 'none'
+            assert page.locator('#map-controls').evaluate('(el) => getComputedStyle(el).transform') == 'none'
+            assert page.locator('.leaflet-overlay-pane svg').count() >= 1
+            for _ in range(5):
+                page.click('#theme-btn')
+            assert page.locator('#theme-btn').inner_text() == 'Theme: Normal'
+            page.reload(wait_until='networkidle')
+            page.wait_for_function('document.body.dataset.ready === "true"')
+            assert page.evaluate('window.__geo.active') == 1, 'Active recording must restore after authoritative load'
+            assert not page.locator('#start-overlay').is_visible()
+            assert page.locator('#heading-btn').inner_text() == 'Direction: heading-up', 'Heading preference survives refresh'
+            page.click('#heading-btn')
+            assert page.locator('#heading-btn').inner_text() == 'Direction: north-up'
+            assert 'rotate(0deg)' in page.locator('#map').evaluate('(el) => el.style.transform')
+            page.evaluate("Object.defineProperty(navigator,'onLine',{value:false,configurable:true}); window.dispatchEvent(new Event('offline'))")
+            assert page.locator('#network-row').inner_text() == 'Offline'
+            page.evaluate("Object.defineProperty(navigator,'onLine',{value:true,configurable:true}); window.dispatchEvent(new Event('online'))")
+            page.click('#finish-session-btn')
+            assert page.evaluate('window.__geo.active') == 0
+            assert not errors, errors
+            assert not page.evaluate('window.__unhandled'), page.evaluate('window.__unhandled')
+            page.screenshot(path=str(Path(tempfile.gettempdir()) / 'motodash-mobile-start.png'))
+            print('PASS: finish cleanup, completed details, automatic heading, fixed HUD/map controls, theme cycle, refresh restore, heading preference and offline status')
         # Additional milestone-specific suites use the same instrumented browser context.
         test_file = ROOT / 'tests' / 'domain-tests.js'
         if test_file.exists():

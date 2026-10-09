@@ -68,7 +68,7 @@ export function createMovementTracker(config) {
     movementConfirmed = false;
   }
 
-  function update(validatedSpeedKmh, accuracy, activeSession) {
+  function update(validatedSpeedKmh, accuracy) {
     var movingCandidate = validatedSpeedKmh !== null
       && validatedSpeedKmh >= movingSpeedThresholdKmh
       && accuracy <= movingAccuracyMaxM;
@@ -81,9 +81,6 @@ export function createMovementTracker(config) {
       stopSampleCount = 0;
       if (!movementConfirmed && movingSampleCount >= minMovingConfirmationSamples) {
         movementConfirmed = true;
-        if (activeSession && activeSession.lastAcceptedPoint) {
-          activeSession.stopAnchorPending = true;
-        }
       }
       return movementConfirmed;
     }

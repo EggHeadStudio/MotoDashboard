@@ -89,7 +89,8 @@ export function getReliableHeadingCandidate(input) {
     return normalizeAngle(coords.heading);
   }
 
-  if (activeSessionLastAcceptedPoint) {
+  if (activeSessionLastAcceptedPoint && validatedSpeedKmh !== null
+      && validatedSpeedKmh >= headingMinSpeedKmh && coords.accuracy <= movingAccuracyMaxM) {
     var sessionPoint = activeSessionLastAcceptedPoint;
     var dSession = haversine(sessionPoint.latitude, sessionPoint.longitude, lat, lon);
     if (dSession >= headingMinDistanceM) {
@@ -97,7 +98,8 @@ export function getReliableHeadingCandidate(input) {
     }
   }
 
-  if (prevCoords) {
+  if (prevCoords && validatedSpeedKmh !== null
+      && validatedSpeedKmh >= headingMinSpeedKmh && coords.accuracy <= movingAccuracyMaxM) {
     var dPrev = haversine(prevCoords.lat, prevCoords.lon, lat, lon);
     if (dPrev >= headingMinDistanceM) {
       return bearingDegrees(prevCoords.lat, prevCoords.lon, lat, lon);

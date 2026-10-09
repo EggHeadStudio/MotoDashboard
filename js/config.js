@@ -40,16 +40,14 @@ export const WMO_CODES = {
   95: 'weather.95', 96: 'weather.96', 99: 'weather.99'
 };
 
-export const SESSION_STORAGE_KEY = 'moto-dashboard-sessions-v1';
+export const SESSION_STORAGE_KEY = 'moto-dashboard-sessions-v2';
 export const SETTINGS_STORAGE_KEY = 'moto-dashboard-settings-v1';
 
 export const DB_NAME = 'moto-dashboard-db';
-export const DB_VERSION = 1;
-export const SESSIONS_STORE_NAME = 'sessions';
+export const DB_VERSION = 2;
+export const SESSIONS_STORE_NAME = 'sessions-v2';
 export const SETTINGS_STORE_NAME = 'settings';
 
-export const RESUME_ANCHOR_GAP_MS = 10 * 60 * 1000;
-export const RESUME_ANCHOR_DISTANCE_M = 1200;
 
 export const MOVING_SPEED_THRESHOLD_KMH = 2.5;
 export const STOP_SPEED_THRESHOLD_KMH = 1.7;
@@ -61,8 +59,6 @@ export const MAX_POINT_JUMP_SPEED_KMH = 220;
 
 export const MIN_MOVING_CONFIRMATION_SAMPLES = 2;
 export const MIN_STOP_CONFIRMATION_SAMPLES = 2;
-export const STOP_GAP_BREAK_MS = 2 * 60 * 1000;
-export const STOP_GAP_BREAK_DISTANCE_M = 300;
 
 export const MAX_VALID_SPEED_KMH = 220;
 export const MAX_FALLBACK_SPEED_KMH = 220;

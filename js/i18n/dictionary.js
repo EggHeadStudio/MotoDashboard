@@ -175,7 +175,9 @@ export const dictionary = {
     "weather.96": "Thunderstorm with hail",
     "weather.99": "Thunderstorm with hail",
     "ui.accuracyInitial": "Accuracy: -",
-    "ui.debugLine": "GPS: {raw} | calculated: {calculated} | display: {display} | dt: {dt}"
+    "ui.debugLine": "GPS: {raw} | calculated: {calculated} | display: {display} | dt: {dt}",
+    "ui.storageFailure": "Could not save this ride. Keep this page open and check browser storage.",
+    "ui.finishBeforeDelete": "End the current session before deleting rides."
   },
   "fi": {
     "ui.ready": "Valmis",
@@ -352,6 +354,8 @@ export const dictionary = {
     "weather.96": "Ukkosta ja raesadetta",
     "weather.99": "Ukkosta ja raesadetta",
     "ui.accuracyInitial": "Tarkkuus: -",
-    "ui.debugLine": "GPS: {raw} | laskettu: {calculated} | näyttö: {display} | dt: {dt}"
+    "ui.debugLine": "GPS: {raw} | laskettu: {calculated} | näyttö: {display} | dt: {dt}",
+    "ui.storageFailure": "Ajon tallennus ei onnistunut. Pidä sivu auki ja tarkista selaimen tallennustila.",
+    "ui.finishBeforeDelete": "Lopeta nykyinen sessio ennen ajojen poistamista."
   }
 };

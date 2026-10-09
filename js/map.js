@@ -48,6 +48,10 @@ export function initLeafletMap(input) {
   ], isFinite(initialZoom) ? initialZoom : 6);
 
   var tileConfig = getThemeTileConfig(themeName);
+  // The map canvas rotates; controls/attribution remain in a fixed sibling.
+  const controls = map.getContainer().querySelector('.leaflet-control-container');
+  const fixedControls = document.getElementById('map-controls');
+  if (controls && fixedControls) fixedControls.appendChild(controls);
   var tileLayer = createTileLayer(L, tileConfig).addTo(map);
 
   tileLayer.on('load', function () {
@@ -175,17 +179,25 @@ export function updateMapPositionLayers(input) {
   var logoRingIcon = input.logoRingIcon;
   var posMarker = input.posMarker || null;
   var logoRingMarker = input.logoRingMarker || null;
+  var accuracyCircle = input.accuracyCircle || null;
   var lat = Number(input.lat);
   var lon = Number(input.lon);
 
   if (!map || !L || !dotIcon) {
     return {
       posMarker: posMarker,
-      logoRingMarker: logoRingMarker
+      logoRingMarker: logoRingMarker,
+      accuracyCircle: accuracyCircle
     };
   }
 
   var latLng = [lat, lon];
+  if (Number.isFinite(input.accuracy)) {
+    if (!accuracyCircle) accuracyCircle = L.circle(latLng, {
+      radius: input.accuracy, color: '#4488cc', weight: 1, fillOpacity: 0.12, interactive: false
+    }).addTo(map);
+    else accuracyCircle.setLatLng(latLng).setRadius(input.accuracy);
+  }
   if (logoRingIcon) {
     if (!logoRingMarker) {
       logoRingMarker = L.marker(latLng, { icon: logoRingIcon, interactive: false, zIndexOffset: -300 }).addTo(map);
@@ -202,6 +214,7 @@ export function updateMapPositionLayers(input) {
 
   return {
     posMarker: posMarker,
-    logoRingMarker: logoRingMarker
+    logoRingMarker: logoRingMarker,
+    accuracyCircle: accuracyCircle
   };
 }

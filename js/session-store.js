@@ -1,252 +1,148 @@
+// Schema v2 only; existing non-session settings are retained.
+export function isSessionRecord(record) {
+  return record?.schemaVersion === 2 && typeof record.id === 'string'
+    && record.id.length > 0 && record.id.length <= 100
+    && ['active', 'completed'].includes(record.status)
+    && Number.isFinite(record.startedAt) && Number.isFinite(record.updatedAt)
+    && ['distanceMeters', 'movingDurationMs', 'maxSpeedKmh', 'averageMovingSpeedKmh']
+      .every(key => Number.isFinite(record[key]) && record[key] >= 0)
+    && (record.name === null || typeof record.name === 'string')
+    && Array.isArray(record.routePoints)
+    && record.routePoints.every(p => p && Number.isFinite(p.timestamp)
+      && (p.break === true || (Number.isFinite(p.latitude) && Math.abs(p.latitude) <= 90
+        && Number.isFinite(p.longitude) && Math.abs(p.longitude) <= 180)));
+}
+
 export function createSessionStore(options) {
-  var sessionStorageKey = options.sessionStorageKey;
-  var settingsStorageKey = options.settingsStorageKey;
-  var dbName = options.dbName;
-  var dbVersion = options.dbVersion;
-  var sessionsStoreName = options.sessionsStoreName;
-  var settingsStoreName = options.settingsStoreName;
-
-  var openDbPromise = null;
-
-  function supportsIndexedDb() {
-    return typeof window.indexedDB !== 'undefined';
+  const { sessionStorageKey, settingsStorageKey, dbName, dbVersion, sessionsStoreName, settingsStoreName } = options;
+  const prefix = sessionStorageKey + ':';
+  const clearedKey = sessionStorageKey + '-cleared-at';
+  let dbPromise = null;
+  let writes = Promise.resolve();
+  function openDb() {
+    if (!globalThis.indexedDB) return Promise.resolve(null);
+    if (dbPromise) return dbPromise;
+    dbPromise = new Promise(resolve => {
+      let request;
+      let settled = false;
+      const finish = db => { if (!settled) { settled = true; clearTimeout(timer); resolve(db); } else db?.close(); };
+      const timer = setTimeout(() => finish(null), 4000);
+      try { request = indexedDB.open(dbName, dbVersion); } catch { finish(null); return; }
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains(sessionsStoreName)) db.createObjectStore(sessionsStoreName, { keyPath: 'id' });
+        if (!db.objectStoreNames.contains(settingsStoreName)) db.createObjectStore(settingsStoreName, { keyPath: 'key' });
+        if (sessionsStoreName !== 'sessions' && db.objectStoreNames.contains('sessions')) db.deleteObjectStore('sessions');
+      };
+      request.onsuccess = () => {
+        const db = request.result;
+        db.onversionchange = () => { db.close(); dbPromise = null; };
+        finish(db);
+      };
+      request.onerror = request.onblocked = () => finish(null);
+    });
+    return dbPromise;
   }
-
-  function openSessionDatabase() {
-    if (!supportsIndexedDb()) {
-      return Promise.resolve(null);
-    }
-
-    if (openDbPromise) {
-      return openDbPromise;
-    }
-
-    openDbPromise = new Promise(function (resolve, reject) {
-      var request;
+  async function transaction(store, mode, action) {
+    const db = await openDb();
+    if (!db) throw new Error('storage-unavailable');
+    return new Promise((resolve, reject) => {
+      let result;
       try {
-        request = window.indexedDB.open(dbName, dbVersion);
-      } catch (error) {
-        reject(error);
-        return;
-      }
-
-      request.onupgradeneeded = function () {
-        var db = request.result;
-        if (!db.objectStoreNames.contains(sessionsStoreName)) {
-          db.createObjectStore(sessionsStoreName, { keyPath: 'id' });
-        }
-        if (!db.objectStoreNames.contains(settingsStoreName)) {
-          db.createObjectStore(settingsStoreName, { keyPath: 'key' });
-        }
-      };
-
-      request.onsuccess = function () {
-        var db = request.result;
-        db.onversionchange = function () {
-          db.close();
-        };
-        resolve(db);
-      };
-
-      request.onblocked = function () {
-        console.warn('IndexedDB on varattu toisessa valilehdessa.');
-      };
-
-      request.onerror = function () {
-        reject(request.error || new Error('IndexedDB:n avaus epaonnistui.'));
-      };
-    }).catch(function (error) {
-      openDbPromise = null;
-      console.warn('IndexedDB ei ole kaytettavissa, kaytetaan localStoragea.', error);
-      return null;
-    });
-
-    return openDbPromise;
-  }
-
-  function loadSessionHistoryFromLocalStorage() {
-    try {
-      var saved = localStorage.getItem(sessionStorageKey);
-      if (!saved) {
-        return [];
-      }
-      var parsed = JSON.parse(saved);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch (error) {
-      console.warn('Sessiohistorian lataus localStoragesta epaonnistui.', error);
-      return [];
-    }
-  }
-
-  function saveSessionHistoryToLocalStorage(sessionHistory) {
-    try {
-      localStorage.setItem(sessionStorageKey, JSON.stringify(sessionHistory));
-    } catch (error) {
-      console.warn('Sessiohistorian tallennus localStorageen epaonnistui.', error);
-    }
-  }
-
-  function loadSessionsFromIndexedDb() {
-    return openSessionDatabase().then(function (db) {
-      if (!db) {
-        return null;
-      }
-
-      return new Promise(function (resolve) {
-        try {
-          var tx = db.transaction(sessionsStoreName, 'readonly');
-          var request = tx.objectStore(sessionsStoreName).getAll();
-          request.onsuccess = function () {
-            resolve(Array.isArray(request.result) ? request.result : []);
-          };
-          request.onerror = function () {
-            console.warn('Sessiohistorian lataus IndexedDB:sta epaonnistui.', request.error);
-            resolve(null);
-          };
-        } catch (error) {
-          console.warn('Sessiohistorian lataus IndexedDB:sta epaonnistui.', error);
-          resolve(null);
-        }
-      });
+        const tx = db.transaction(store, mode);
+        const request = action(tx.objectStore(store));
+        if (request) request.onsuccess = () => { result = request.result; };
+        tx.oncomplete = () => resolve(result);
+        tx.onerror = tx.onabort = () => reject(tx.error || new Error('storage-write-failed'));
+      } catch (error) { reject(error); }
     });
   }
-
-  function saveSessionsToIndexedDb(sessionHistory) {
-    return openSessionDatabase().then(function (db) {
-      if (!db) {
-        return;
+  function fallbackRecords() {
+    const records = [];
+    try {
+      for (let n = 0; n < localStorage.length; n++) {
+        const key = localStorage.key(n);
+        if (!key.startsWith(prefix)) continue;
+        try { records.push(JSON.parse(localStorage.getItem(key))); } catch { /* Invalid local record. */ }
       }
-
-      return new Promise(function (resolve) {
-        try {
-          var tx = db.transaction(sessionsStoreName, 'readwrite');
-          var store = tx.objectStore(sessionsStoreName);
-          var keysRequest = store.getAllKeys();
-
-          keysRequest.onsuccess = function () {
-            var keepMap = Object.create(null);
-            sessionHistory.forEach(function (item) {
-              if (!item || !item.id) {
-                return;
-              }
-              keepMap[item.id] = true;
-              store.put(item);
-            });
-
-            (keysRequest.result || []).forEach(function (id) {
-              if (!keepMap[id]) {
-                store.delete(id);
-              }
-            });
-          };
-
-          keysRequest.onerror = function () {
-            console.warn('Sessiohistorian avainhaku IndexedDB:sta epaonnistui.', keysRequest.error);
-          };
-
-          tx.oncomplete = function () { resolve(); };
-          tx.onabort = function () {
-            console.warn('Sessiohistorian tallennus IndexedDB:hen keskeytyi.', tx.error);
-            resolve();
-          };
-          tx.onerror = function () {
-            console.warn('Sessiohistorian tallennus IndexedDB:hen epaonnistui.', tx.error);
-            resolve();
-          };
-        } catch (error) {
-          console.warn('Sessiohistorian tallennus IndexedDB:hen epaonnistui.', error);
-          resolve();
-        }
-      });
+    } catch { /* In-memory recording remains usable. */ }
+    return records;
+  }
+  function queue(action) {
+    const task = writes.then(action);
+    writes = task.catch(() => {});
+    return task;
+  }
+  async function loadSessions() {
+    let durable = [];
+    try { durable = await transaction(sessionsStoreName, 'readonly', store => store.getAll()); } catch { /* Fallback below. */ }
+    let clearedAt = 0;
+    try { clearedAt = Number(localStorage.getItem(clearedKey)) || 0; } catch { /* Optional. */ }
+    const byId = new Map();
+    for (const record of [...(durable || []), ...fallbackRecords()]) {
+      if (!record || typeof record.id !== 'string' || !(record.updatedAt > clearedAt)) continue;
+      const prior = byId.get(record.id);
+      if (!prior || record.updatedAt >= prior.updatedAt) byId.set(record.id, record);
+    }
+    return [...byId.values()].filter(isSessionRecord);
+  }
+  function saveSession(record) {
+    const snapshot = structuredClone(record);
+    if (!isSessionRecord(snapshot)) return Promise.reject(new Error('invalid-session'));
+    return queue(async () => {
+      try {
+        await transaction(sessionsStoreName, 'readwrite', store => store.put(snapshot));
+        try { localStorage.removeItem(prefix + snapshot.id); } catch { /* Optional cleanup. */ }
+        return 'indexeddb';
+      } catch {
+        localStorage.setItem(prefix + snapshot.id, JSON.stringify(snapshot));
+        return 'localstorage';
+      }
     });
   }
-
-  function readSettingsFromLocalStorage() {
-    try {
-      var raw = localStorage.getItem(settingsStorageKey);
-      if (!raw) {
-        return {};
+  function deleteSession(id) {
+    return queue(async () => {
+      let durable = false;
+      try {
+        await transaction(sessionsStoreName, 'readwrite', store => store.delete(id));
+        durable = true;
+      } catch { /* A local tombstone hides an inaccessible IDB record. */ }
+      try {
+        if (durable) localStorage.removeItem(prefix + id);
+        else localStorage.setItem(prefix + id, JSON.stringify({ id, deleted: true, updatedAt: Date.now() }));
+      } catch {
+        if (!durable) throw new Error('storage-write-failed');
       }
-      var parsed = JSON.parse(raw);
-      return parsed && typeof parsed === 'object' ? parsed : {};
-    } catch (error) {
-      return {};
-    }
+    });
   }
-
+  function clearSessions() {
+    return queue(async () => {
+      let durable = false;
+      try { await transaction(sessionsStoreName, 'readwrite', store => store.clear()); durable = true; } catch { /* Fallback below. */ }
+      try {
+        localStorage.setItem(clearedKey, String(Date.now()));
+        for (const record of fallbackRecords()) if (record?.id) localStorage.removeItem(prefix + record.id);
+      } catch {
+        if (!durable) throw new Error('storage-write-failed');
+      }
+    });
+  }
   function readSettingFromLocalStorage(key) {
-    return readSettingsFromLocalStorage()[key];
+    try { return JSON.parse(localStorage.getItem(settingsStorageKey) || '{}')[key]; } catch { return undefined; }
   }
-
   function writeSettingToLocalStorage(key, value) {
     try {
-      var settings = readSettingsFromLocalStorage();
+      const settings = JSON.parse(localStorage.getItem(settingsStorageKey) || '{}');
       settings[key] = value;
       localStorage.setItem(settingsStorageKey, JSON.stringify(settings));
-    } catch (error) {
-      console.warn('Asetuksen tallennus localStorageen epaonnistui.', error);
-    }
+    } catch { /* Optional preference. */ }
   }
-
-  function loadSettingFromIndexedDb(key) {
-    return openSessionDatabase().then(function (db) {
-      if (!db) {
-        return null;
-      }
-      return new Promise(function (resolve) {
-        try {
-          var tx = db.transaction(settingsStoreName, 'readonly');
-          var request = tx.objectStore(settingsStoreName).get(key);
-          request.onsuccess = function () {
-            resolve(request.result ? request.result.value : null);
-          };
-          request.onerror = function () {
-            console.warn('Asetuksen lataus IndexedDB:sta epaonnistui.', request.error);
-            resolve(null);
-          };
-        } catch (error) {
-          console.warn('Asetuksen lataus IndexedDB:sta epaonnistui.', error);
-          resolve(null);
-        }
-      });
-    });
+  async function loadSettingFromIndexedDb(key) {
+    try { return (await transaction(settingsStoreName, 'readonly', store => store.get(key)))?.value ?? null; } catch { return null; }
   }
-
-  function saveSettingToIndexedDb(key, value) {
-    return openSessionDatabase().then(function (db) {
-      if (!db) {
-        return;
-      }
-
-      return new Promise(function (resolve) {
-        try {
-          var tx = db.transaction(settingsStoreName, 'readwrite');
-          tx.objectStore(settingsStoreName).put({ key: key, value: value, updatedAt: Date.now() });
-          tx.oncomplete = function () { resolve(); };
-          tx.onabort = function () {
-            console.warn('Asetuksen tallennus IndexedDB:hen keskeytyi.', tx.error);
-            resolve();
-          };
-          tx.onerror = function () {
-            console.warn('Asetuksen tallennus IndexedDB:hen epaonnistui.', tx.error);
-            resolve();
-          };
-        } catch (error) {
-          console.warn('Asetuksen tallennus IndexedDB:hen epaonnistui.', error);
-          resolve();
-        }
-      });
-    });
+  async function saveSettingToIndexedDb(key, value) {
+    try { await transaction(settingsStoreName, 'readwrite', store => store.put({ key, value, updatedAt: Date.now() })); } catch { /* localStorage retains preferences. */ }
   }
-
-  return {
-    loadSessionHistoryFromLocalStorage: loadSessionHistoryFromLocalStorage,
-    saveSessionHistoryToLocalStorage: saveSessionHistoryToLocalStorage,
-    loadSessionsFromIndexedDb: loadSessionsFromIndexedDb,
-    saveSessionsToIndexedDb: saveSessionsToIndexedDb,
-    readSettingFromLocalStorage: readSettingFromLocalStorage,
-    writeSettingToLocalStorage: writeSettingToLocalStorage,
-    loadSettingFromIndexedDb: loadSettingFromIndexedDb,
-    saveSettingToIndexedDb: saveSettingToIndexedDb
-  };
+  return { loadSessions, saveSession, deleteSession, clearSessions, flush: () => writes,
+    readSettingFromLocalStorage, writeSettingToLocalStorage, loadSettingFromIndexedDb, saveSettingToIndexedDb };
 }

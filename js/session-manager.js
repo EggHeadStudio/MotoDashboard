@@ -29,7 +29,8 @@ export function createSessionRecord(currentTheme, nowValue, randomValue) {
     : Math.floor(Math.random() * 10000);
 
   return {
-    id: 'ride-' + now + '-' + random,
+    id: globalThis.crypto?.randomUUID?.() || 'ride-' + now + '-' + random,
+    schemaVersion: 2,
     name: null,
     status: 'active',
     startedAt: now,
@@ -41,8 +42,6 @@ export function createSessionRecord(currentTheme, nowValue, randomValue) {
     averageMovingSpeedKmh: 0,
     routePoints: [],
     lastAcceptedPoint: null,
-    stopAnchorPending: false,
-    resumeAnchorPending: false,
     mapTheme: currentTheme
   };
 }
