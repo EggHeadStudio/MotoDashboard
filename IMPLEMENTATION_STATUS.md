@@ -237,3 +237,14 @@ should the next implementation milestone address Section 3 profile/Garage and th
 remaining account/dashboard integration. No next feature has been implemented here.
 
 **STOP after Batch 1. Await explicit approval for further implementation, push or deployment.**
+# Batch 2 progress (2026-10-09)
+
+Authorized scope: eight local milestones, separate commits, no push/deployment.
+M1 adds auth-state.js, firebase/access.js, data/schema.js and permissions.js,
+DATA_MODEL.md, firestore.indexes.json, expanded firestore.rules, and real local
+emulator tests/RULES_TESTING.md + run_rules.py. Dedicated config validation,
+localized data errors and Auth publication are integrated. RTDB remains locked.
+Executed: 67 real emulator allow/deny assertions; Batch 1 browser baseline passes.
+No live Firebase operations, rules deployment or physical phone testing occurred.
+Further milestone entries will replace this progress note after the final review.
+

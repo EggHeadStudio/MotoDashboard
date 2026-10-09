@@ -14,7 +14,7 @@ export function getFirebase() {
 }
 
 async function initialize() {
-  if (firebaseConfig.projectId !== 'motodash-87bf8' || !firebaseConfig.apiKey || !firebaseConfig.appId) {
+  if (!validFirebaseConfig(firebaseConfig)) {
     throw Object.assign(new Error('Invalid MotoDash configuration'), { code: 'app/invalid-config' });
   }
   const [appSDK, sdk] = await Promise.all([
@@ -29,4 +29,12 @@ async function initialize() {
   const auth = sdk.getAuth(app);
   await sdk.setPersistence(auth, sdk.browserLocalPersistence);
   return { app, auth, sdk };
+}
+
+export function validFirebaseConfig(config) {
+  return !!config && config.projectId === 'motodash-87bf8'
+    && ['apiKey', 'authDomain', 'appId', 'messagingSenderId', 'databaseURL']
+      .every(key => typeof config[key] === 'string' && config[key].trim().length > 0)
+    && config.authDomain === 'motodash-87bf8.firebaseapp.com'
+    && config.databaseURL === 'https://motodash-87bf8-default-rtdb.europe-west1.firebasedatabase.app';
 }

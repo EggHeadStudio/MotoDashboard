@@ -180,3 +180,12 @@ test downloads/imports the real pinned Firebase modules and initializes services
 blocking cloud API requests. First run needs internet for cached Leaflet/Firebase files.
 See [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md) for executed checks, remaining
 live setup, limitations and the manual phone checklist.
+# Batch 2 data boundaries
+
+See [DATA_MODEL.md](DATA_MODEL.md) for exact paths, privacy, Club permissions and
+ride lifecycle, and [rules test instructions](tests/RULES_TESTING.md) for isolated
+local emulator tests and the live checklist. Realtime Database stays locked.
+No rules or indexes have been deployed by the agent. All services use the dedicated
+MotoDash config; incomplete or mismatched config fails gracefully. Public Garage
+visibility is a future sharing preference: Garage documents remain owner-only.
+

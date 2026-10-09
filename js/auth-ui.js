@@ -1,6 +1,7 @@
 import { observeAuth, register, login, logout, authErrorKey } from './firebase/auth.js';
 import { ensureProfile, saveProfileLanguage } from './firebase/profileRepository.js';
 import { getLanguage, setLanguage, t, setLocalizedText, onLanguageChange } from './i18n/i18n.js';
+import { publishAuthState } from './auth-state.js';
 
 export function initAuthUI() {
   const dialog = document.getElementById('account-dialog');
@@ -70,6 +71,7 @@ export function initAuthUI() {
       await observeAuth(next => {
         if (user?.uid !== next?.uid) { ++version; profile = null; pendingLanguage = null; }
         user = next;
+        publishAuthState(next);
         if (!busy) void synchronize(next);
         else render();
       }, error => { message = authErrorKey(error); render(); });

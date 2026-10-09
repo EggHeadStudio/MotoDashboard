@@ -205,7 +205,10 @@ def run_real_sdk_imports(browser, base, route_map):
       const {getFirebase}=await import('./js/firebase/firebase.js');
       const [a,b]=await Promise.all([getFirebase(),getFirebase()]);
       const {db,sdk}=await (await import('./js/firebase/firestore.js')).getFirestoreService();
-      const realtime=await import('https://www.gstatic.com/firebasejs/13.0.0/firebase-database.js');
+      const {db:live,sdk:realtime}=await (await import('./js/firebase/realtime.js')).getRealtimeService();
+      if(db.app !== a.app || live.app !== a.app) throw Error('Firebase project/app mismatch');
+      const {validFirebaseConfig}=await import('./js/firebase/firebase.js');
+      if(validFirebaseConfig({}) || validFirebaseConfig({...a.app.options,projectId:'other'})) throw Error('Invalid config accepted');
       return {same:a===b,project:a.app.options.projectId,name:a.app.name,
         auth:typeof a.sdk.createUserWithEmailAndPassword, firestore:typeof sdk.runTransaction,
         realtime:typeof realtime.getDatabase, user:a.auth.currentUser};

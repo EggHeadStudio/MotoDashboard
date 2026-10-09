@@ -1,0 +1,6 @@
+{
+  "indexes": [],
+  "fieldOverrides": [
+    { "collectionGroup": "routeChunks", "fieldPath": "pointsJson", "indexes": [] }
+  ]
+}

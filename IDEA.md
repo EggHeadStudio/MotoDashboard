@@ -2967,3 +2967,28 @@ tabs without a recording lock.
 
 **STOP: Batch 1 is complete as a local implementation and verified preparation.
 Wait for explicit approval before further implementation, pushing or deploying.**
+
+------------------------------------------------------------------------
+
+# 17. Implementation Batch 2 (user-authorized scope, 2026-10-09)
+
+The user's Batch 2 request supersedes the Batch 1 implementation stop only for
+the eight milestones below. All original future product requirements remain.
+No push, Pages publication, rules deployment, Group Sessions, live map, Lobby,
+QR, Official Events, Stripe or subscription enforcement is authorized.
+
+- [x] M1: dedicated-project single app/services, shared Auth state and least-privilege
+  exact schema rules; real local emulator positive/negative tests. Live acceptance pending.
+- [ ] M2: Personal Garage.
+- [ ] M3: dashboard/vehicle snapshot integration.
+- [ ] M4: durable private completed-ride cloud persistence.
+- [ ] M5: account history/detail/JSON/GPX/share.
+- [ ] M6: Clubs and membership lifecycle.
+- [ ] M7: technical roles, separate presentation ranks.
+- [ ] M8: safe branding and Info Wall.
+- [ ] Final Batch 2 regression review/documentation.
+
+Batch 2 data contract: DATA_MODEL.md. Real emulator runner and live/manual
+acceptance instructions: tests/RULES_TESTING.md. Each milestone is checked and
+committed separately; a checked implementation item never implies deployment,
+live Firebase validation or physical phone testing.

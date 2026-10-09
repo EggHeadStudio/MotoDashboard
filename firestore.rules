@@ -28,7 +28,277 @@ service cloud.firestore {
         && request.resource.data.createdAt == resource.data.createdAt;
       allow delete: if false;
     }
-    // Includes nested user collections and every future product collection.
+    function signedIn() { return request.auth != null; }
+    function identifier(value) { return value is string && value.matches('^[A-Za-z0-9_-]{1,100}$'); }
+    function category(value) {
+      return value in ['motorcycle', 'car', 'moped', 'scooter', 'atv-utv', 'off-road', 'snowmobile', 'caravan', 'bicycle', 'e-bike', 'e-scooter', 'other'];
+    }
+    function theme(value) { return value in ['normal', 'monochrome', 'forest', 'urban', 'night']; }
+    function shortText(value, max) { return value is string && value.size() <= max; }
+    function color(value) { return value is string && value.matches('^#[a-fA-F0-9]{6}$'); }
+    function httpsLink(value) { return value == null || (shortText(value, 500) && value.matches('^https://[^\\s]+$')); }
+    function links(value) {
+      return value is map && value.keys().hasAll(['website', 'whatsapp', 'discord', 'instagram', 'facebook'])
+        && value.keys().hasOnly(['website', 'whatsapp', 'discord', 'instagram', 'facebook'])
+        && httpsLink(value.website) && httpsLink(value.whatsapp) && httpsLink(value.discord)
+        && httpsLink(value.instagram) && httpsLink(value.facebook);
+    }
+    function vehicle(data, uid, id) {
+      return data.keys().hasAll(['id', 'ownerUid', 'category', 'nickname', 'manufacturer', 'model', 'modelYear', 'description', 'visibility', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'ownerUid', 'category', 'nickname', 'manufacturer', 'model', 'modelYear', 'description', 'visibility', 'createdAt', 'updatedAt'])
+        && identifier(id) && data.id == id && data.ownerUid == uid && category(data.category)
+        && shortText(data.nickname, 64) && data.nickname.size() > 0
+        && shortText(data.manufacturer, 64) && shortText(data.model, 64) && shortText(data.description, 1000)
+        && (data.modelYear == null || (data.modelYear is int && data.modelYear >= 1885 && data.modelYear <= 2100))
+        && data.visibility in ['private', 'club', 'public'] && data.createdAt is timestamp && data.updatedAt == request.time;
+    }
+    match /users/{uid}/vehicles/{id} {
+      allow read: if owns(uid);
+      allow create: if owns(uid) && vehicle(request.resource.data, uid, id) && request.resource.data.createdAt == request.time;
+      allow update: if owns(uid) && vehicle(request.resource.data, uid, id)
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if owns(uid) && (!existsAfter(/databases/$(database)/documents/users/$(uid)/preferences/garage)
+        || getAfter(/databases/$(database)/documents/users/$(uid)/preferences/garage).data.defaultVehicleId != id);
+    }
+    match /users/{uid}/preferences/garage {
+      allow read: if owns(uid);
+      allow create, update: if owns(uid)
+        && request.resource.data.keys().hasAll(['defaultVehicleId', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['defaultVehicleId', 'updatedAt'])
+        && request.resource.data.updatedAt == request.time
+        && (request.resource.data.defaultVehicleId == null
+          || (identifier(request.resource.data.defaultVehicleId)
+            && existsAfter(/databases/$(database)/documents/users/$(uid)/vehicles/$(request.resource.data.defaultVehicleId))));
+      allow delete: if owns(uid);
+    }
+    function snapshot(data) {
+      return data == null || (data is map && data.keys().hasAll(['nickname', 'manufacturer', 'model', 'category'])
+        && data.keys().hasOnly(['nickname', 'manufacturer', 'model', 'category'])
+        && shortText(data.nickname, 64) && shortText(data.manufacturer, 64) && shortText(data.model, 64) && category(data.category));
+    }
+    function deletedRide(uid, id) { return exists(/databases/$(database)/documents/users/$(uid)/sessionTombstones/$(id)); }
+    function ride(data, uid, id) {
+      return data.keys().hasAll(['id', 'schemaVersion', 'ownerUid', 'vehicleId', 'vehicleSnapshot', 'category', 'name', 'status', 'visibility', 'startedAt', 'endedAt', 'distanceMeters', 'movingDurationMs', 'averageMovingSpeedKmh', 'maxSpeedKmh', 'mapTheme', 'pointCount', 'chunkCount', 'routeHash', 'revisionId', 'baseRevisionId', 'uploadState', 'clientUpdatedAt', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'schemaVersion', 'ownerUid', 'vehicleId', 'vehicleSnapshot', 'category', 'name', 'status', 'visibility', 'startedAt', 'endedAt', 'distanceMeters', 'movingDurationMs', 'averageMovingSpeedKmh', 'maxSpeedKmh', 'mapTheme', 'pointCount', 'chunkCount', 'routeHash', 'revisionId', 'baseRevisionId', 'uploadState', 'clientUpdatedAt', 'createdAt', 'updatedAt'])
+        && identifier(id) && data.id == id && data.schemaVersion == 1 && data.ownerUid == uid
+        && (data.vehicleId == null || identifier(data.vehicleId)) && snapshot(data.vehicleSnapshot)
+        && (data.category == null || category(data.category)) && (data.name == null || shortText(data.name, 64))
+        && data.status == 'completed' && data.visibility == 'private'
+        && data.startedAt is number && data.startedAt > 0 && data.endedAt is number && data.endedAt >= data.startedAt
+        && data.distanceMeters is number && data.distanceMeters >= 0 && data.movingDurationMs is number && data.movingDurationMs >= 0
+        && data.averageMovingSpeedKmh is number && data.averageMovingSpeedKmh >= 0 && data.maxSpeedKmh is number && data.maxSpeedKmh >= 0
+        && theme(data.mapTheme) && data.pointCount is int && data.pointCount >= 0
+        && data.chunkCount is int && data.chunkCount >= 0 && data.chunkCount <= 10000
+        && data.routeHash is string && data.routeHash.matches('^[a-f0-9]{64}$')
+        && data.revisionId is string && data.revisionId.matches('^[a-f0-9]{64}$')
+        && (data.baseRevisionId == null || (data.baseRevisionId is string && data.baseRevisionId.matches('^[a-f0-9]{64}$')))
+        && data.uploadState in ['uploading', 'ready'] && data.clientUpdatedAt is number
+        && data.createdAt is timestamp && data.updatedAt == request.time;
+    }
+    match /users/{uid}/sessions/{id} {
+      allow read: if owns(uid);
+      allow create: if owns(uid) && !deletedRide(uid, id) && ride(request.resource.data, uid, id)
+        && request.resource.data.createdAt == request.time && request.resource.data.uploadState == 'uploading';
+      allow update: if owns(uid) && !deletedRide(uid, id) && ride(request.resource.data, uid, id)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'revisionId', 'baseRevisionId', 'clientUpdatedAt', 'updatedAt', 'uploadState'])
+        && (request.resource.data.revisionId == resource.data.revisionId || request.resource.data.baseRevisionId == resource.data.revisionId)
+        && (resource.data.uploadState == 'uploading' || request.resource.data.uploadState == 'ready');
+      allow delete: if owns(uid) && existsAfter(/databases/$(database)/documents/users/$(uid)/sessionTombstones/$(id));
+      match /routeChunks/{chunk} {
+        allow read: if owns(uid);
+        allow create: if owns(uid) && !deletedRide(uid, id)
+          && getAfter(/databases/$(database)/documents/users/$(uid)/sessions/$(id)).data.uploadState == 'uploading'
+          && request.resource.data.keys().hasAll(['schemaVersion', 'ownerUid', 'sessionId', 'sequence', 'pointCount', 'pointsJson', 'routeHash'])
+          && request.resource.data.keys().hasOnly(['schemaVersion', 'ownerUid', 'sessionId', 'sequence', 'pointCount', 'pointsJson', 'routeHash'])
+          && request.resource.data.schemaVersion == 1 && request.resource.data.ownerUid == uid && request.resource.data.sessionId == id
+          && request.resource.data.sequence is int && request.resource.data.sequence >= 0 && request.resource.data.sequence < 10000
+          && request.resource.data.pointCount is int && request.resource.data.pointCount > 0 && request.resource.data.pointCount <= 128
+          && shortText(request.resource.data.pointsJson, 48000)
+          && request.resource.data.routeHash == getAfter(/databases/$(database)/documents/users/$(uid)/sessions/$(id)).data.routeHash;
+        allow update: if false;
+        allow delete: if owns(uid) && deletedRide(uid, id);
+      }
+    }
+    match /users/{uid}/sessionTombstones/{id} {
+      allow read: if owns(uid);
+      allow create: if owns(uid) && identifier(id)
+        && request.resource.data.keys().hasAll(['id', 'ownerUid', 'deletedAt'])
+        && request.resource.data.keys().hasOnly(['id', 'ownerUid', 'deletedAt'])
+        && request.resource.data.id == id && request.resource.data.ownerUid == uid && request.resource.data.deletedAt == request.time;
+      allow update, delete: if false;
+    }
+    function clubPath(id) { return /databases/$(database)/documents/clubs/$(id); }
+    function memberPath(id, uid) { return /databases/$(database)/documents/clubs/$(id)/members/$(uid); }
+    function clubOwner(id) { return signedIn() && get(clubPath(id)).data.ownerUid == request.auth.uid; }
+    function member(id) { return signedIn() && exists(memberPath(id, request.auth.uid)); }
+    function clubAdmin(id) { return member(id) && get(memberPath(id, request.auth.uid)).data.technicalRole == 'admin'; }
+    function manager(id) { return clubOwner(id) || clubAdmin(id); }
+    function invitation(id, uid) { return /databases/$(database)/documents/clubs/$(id)/invites/$(uid); }
+    function invited(id) { return signedIn() && exists(invitation(id, request.auth.uid)) && get(invitation(id, request.auth.uid)).data.expiresAt > request.time; }
+    function validClub(data, id) {
+      return data.keys().hasAll(['schemaVersion', 'id', 'ownerUid', 'name', 'description', 'category', 'visibility', 'membershipPolicy', 'primaryColor', 'accentColor', 'routeColor', 'mapTheme', 'links', 'state', 'memberCount', 'lastMembershipUid', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['schemaVersion', 'id', 'ownerUid', 'name', 'description', 'category', 'visibility', 'membershipPolicy', 'primaryColor', 'accentColor', 'routeColor', 'mapTheme', 'links', 'state', 'memberCount', 'lastMembershipUid', 'createdAt', 'updatedAt'])
+        && data.schemaVersion == 1 && identifier(id) && data.id == id && data.ownerUid is string
+        && shortText(data.name, 80) && data.name.size() > 0 && shortText(data.description, 2000) && category(data.category)
+        && data.visibility in ['public', 'unlisted', 'private'] && data.membershipPolicy in ['open', 'approval', 'invite', 'private']
+        && (data.membershipPolicy != 'private' || data.visibility == 'private')
+        && (data.visibility != 'private' || data.membershipPolicy in ['invite', 'private'])
+        && color(data.primaryColor) && color(data.accentColor) && (data.routeColor == null || color(data.routeColor))
+        && theme(data.mapTheme) && links(data.links) && data.state in ['active', 'archived']
+        && data.memberCount is int && data.memberCount >= 1 && data.memberCount <= 100000
+        && data.lastMembershipUid is string && data.createdAt is timestamp && data.updatedAt == request.time;
+    }
+    function directoryConsistent(id, data) {
+      return (data.visibility == 'public' && data.state == 'active'
+        && existsAfter(/databases/$(database)/documents/clubDirectory/$(id))
+        && directoryMatches(getAfter(/databases/$(database)/documents/clubDirectory/$(id)).data, id, data))
+        || ((data.visibility != 'public' || data.state != 'active')
+          && !existsAfter(/databases/$(database)/documents/clubDirectory/$(id)));
+    }
+    function directoryMatches(projection, id, data) {
+      return projection.id == id && projection.name == data.name && projection.category == data.category
+        && projection.membershipPolicy == data.membershipPolicy && projection.primaryColor == data.primaryColor
+        && projection.accentColor == data.accentColor;
+    }
+    function countChange(id) {
+      let uid = request.resource.data.lastMembershipUid;
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberCount', 'lastMembershipUid', 'updatedAt'])
+        && ((request.resource.data.memberCount == resource.data.memberCount + 1
+          && !exists(memberPath(id, uid)) && existsAfter(memberPath(id, uid)))
+          || (request.resource.data.memberCount == resource.data.memberCount - 1
+            && uid != resource.data.ownerUid && exists(memberPath(id, uid)) && !existsAfter(memberPath(id, uid))))
+        && (request.auth.uid == uid || manager(id));
+    }
+    match /clubs/{id} {
+      allow get: if signedIn() && (resource.data.visibility != 'private' || member(id) || clubOwner(id) || invited(id));
+      allow list: if signedIn() && resource.data.visibility == 'public' && resource.data.state == 'active';
+      allow create: if signedIn() && validClub(request.resource.data, id) && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.createdAt == request.time && request.resource.data.state == 'active'
+        && request.resource.data.memberCount == 1 && request.resource.data.lastMembershipUid == request.auth.uid
+        && getAfter(memberPath(id, request.auth.uid)).data.technicalRole == 'owner'
+        && directoryConsistent(id, request.resource.data);
+      allow update: if signedIn() && validClub(request.resource.data, id)
+        && request.resource.data.ownerUid == resource.data.ownerUid && request.resource.data.createdAt == resource.data.createdAt
+        && directoryConsistent(id, request.resource.data)
+        && (countChange(id) || (clubOwner(id) && request.resource.data.memberCount == resource.data.memberCount
+          && request.resource.data.lastMembershipUid == resource.data.lastMembershipUid)
+          || (clubAdmin(id) && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['description', 'primaryColor', 'accentColor', 'routeColor', 'mapTheme', 'links', 'updatedAt'])));
+      allow delete: if clubOwner(id) && resource.data.state == 'archived' && resource.data.memberCount == 1
+        && !existsAfter(memberPath(id, request.auth.uid)) && !existsAfter(/databases/$(database)/documents/clubDirectory/$(id));
+      match /members/{uid} {
+        function shape() {
+          let data = request.resource.data;
+          return data.keys().hasAll(['uid', 'technicalRole', 'rankId', 'joinedAt', 'updatedAt'])
+            && data.keys().hasOnly(['uid', 'technicalRole', 'rankId', 'joinedAt', 'updatedAt'])
+            && data.uid == uid && data.technicalRole in ['owner', 'admin', 'host', 'member']
+            && (data.rankId == null || (identifier(data.rankId) && existsAfter(/databases/$(database)/documents/clubs/$(id)/ranks/$(data.rankId))))
+            && data.joinedAt is timestamp && data.updatedAt == request.time;
+        }
+        function indexExists() { return existsAfter(/databases/$(database)/documents/users/$(uid)/clubRefs/$(id)); }
+        function ordinaryAdmission() {
+          let club = get(clubPath(id)).data;
+          return club.state == 'active' && request.resource.data.technicalRole == 'member' && request.resource.data.rankId == null
+            && (manager(id) || (request.auth.uid == uid && (club.membershipPolicy == 'open'
+              || (exists(invitation(id, uid)) && get(invitation(id, uid)).data.expiresAt > request.time && !existsAfter(invitation(id, uid))))));
+        }
+        allow read: if member(id) || clubOwner(id);
+        allow create: if signedIn() && shape() && indexExists() && request.resource.data.joinedAt == request.time
+          && ((!exists(clubPath(id)) && getAfter(clubPath(id)).data.ownerUid == request.auth.uid && uid == request.auth.uid && request.resource.data.technicalRole == 'owner' && request.resource.data.rankId == null)
+            || (ordinaryAdmission() && getAfter(clubPath(id)).data.memberCount == get(clubPath(id)).data.memberCount + 1
+              && getAfter(clubPath(id)).data.lastMembershipUid == uid));
+        allow update: if signedIn() && shape() && request.resource.data.joinedAt == resource.data.joinedAt
+          && ((clubOwner(id) && ((uid == request.auth.uid && request.resource.data.technicalRole == 'owner')
+            || (uid != get(clubPath(id)).data.ownerUid && request.resource.data.technicalRole != 'owner')))
+            || (clubAdmin(id) && ((uid != request.auth.uid && resource.data.technicalRole in ['host', 'member'] && request.resource.data.technicalRole in ['host', 'member'])
+              || (uid == request.auth.uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rankId', 'updatedAt'])))));
+        allow delete: if signedIn() && !existsAfter(/databases/$(database)/documents/users/$(uid)/clubRefs/$(id))
+          && ((uid == get(clubPath(id)).data.ownerUid && clubOwner(id) && get(clubPath(id)).data.state == 'archived'
+            && get(clubPath(id)).data.memberCount == 1 && !existsAfter(clubPath(id)))
+            || (uid != get(clubPath(id)).data.ownerUid && (request.auth.uid == uid || clubOwner(id)
+              || (clubAdmin(id) && resource.data.technicalRole in ['host', 'member']))
+              && getAfter(clubPath(id)).data.memberCount == get(clubPath(id)).data.memberCount - 1
+              && getAfter(clubPath(id)).data.lastMembershipUid == uid));
+      }
+      match /joinRequests/{uid} {
+        function shape() {
+          let data = request.resource.data;
+          return data.keys().hasAll(['uid', 'state', 'requestedAt', 'decidedAt', 'decidedBy'])
+            && data.keys().hasOnly(['uid', 'state', 'requestedAt', 'decidedAt', 'decidedBy']) && data.uid == uid;
+        }
+        allow read: if signedIn() && (request.auth.uid == uid || manager(id));
+        allow create: if owns(uid) && shape() && get(clubPath(id)).data.membershipPolicy == 'approval'
+          && get(clubPath(id)).data.state == 'active' && !exists(memberPath(id, uid))
+          && request.resource.data.state == 'pending' && request.resource.data.requestedAt == request.time
+          && request.resource.data.decidedAt == null && request.resource.data.decidedBy == null;
+        allow update: if manager(id) && shape() && resource.data.state == 'pending'
+          && request.resource.data.requestedAt == resource.data.requestedAt
+          && request.resource.data.state in ['approved', 'rejected'] && request.resource.data.decidedAt == request.time
+          && request.resource.data.decidedBy == request.auth.uid
+          && (request.resource.data.state == 'rejected' || existsAfter(memberPath(id, uid)));
+        allow delete: if signedIn() && (manager(id) || (request.auth.uid == uid && resource.data.state != 'approved'));
+      }
+      match /invites/{uid} {
+        allow get: if signedIn() && (request.auth.uid == uid || manager(id));
+        allow list: if manager(id);
+        allow create, update: if manager(id) && get(clubPath(id)).data.state == 'active'
+          && request.resource.data.keys().hasAll(['uid', 'invitedBy', 'expiresAt', 'createdAt'])
+          && request.resource.data.keys().hasOnly(['uid', 'invitedBy', 'expiresAt', 'createdAt'])
+          && request.resource.data.uid == uid && request.resource.data.invitedBy == request.auth.uid
+          && request.resource.data.expiresAt is timestamp && request.resource.data.expiresAt > request.time
+          && request.resource.data.createdAt == request.time;
+        allow delete: if signedIn() && (manager(id) || (request.auth.uid == uid && existsAfter(memberPath(id, uid))));
+      }
+      match /ranks/{rank} {
+        allow read: if member(id) || clubOwner(id);
+        allow create, update: if manager(id) && identifier(rank)
+          && request.resource.data.keys().hasAll(['id', 'name', 'displayOrder', 'createdAt', 'updatedAt'])
+          && request.resource.data.keys().hasOnly(['id', 'name', 'displayOrder', 'createdAt', 'updatedAt'])
+          && request.resource.data.id == rank && shortText(request.resource.data.name, 64) && request.resource.data.name.size() > 0
+          && request.resource.data.displayOrder is int && request.resource.data.displayOrder >= 0 && request.resource.data.displayOrder <= 999
+          && request.resource.data.createdAt is timestamp && request.resource.data.updatedAt == request.time
+          && ((!exists(/databases/$(database)/documents/clubs/$(id)/ranks/$(rank)) && request.resource.data.createdAt == request.time)
+            || (exists(/databases/$(database)/documents/clubs/$(id)/ranks/$(rank)) && request.resource.data.createdAt == resource.data.createdAt));
+        allow delete: if manager(id);
+      }
+      match /wall/info {
+        allow read: if member(id) || clubOwner(id);
+        allow create, update: if manager(id)
+          && request.resource.data.keys().hasAll(['text', 'updatedBy', 'createdAt', 'updatedAt'])
+          && request.resource.data.keys().hasOnly(['text', 'updatedBy', 'createdAt', 'updatedAt'])
+          && shortText(request.resource.data.text, 4000) && request.resource.data.updatedBy == request.auth.uid
+          && request.resource.data.createdAt is timestamp && request.resource.data.updatedAt == request.time
+          && ((!exists(/databases/$(database)/documents/clubs/$(id)/wall/info) && request.resource.data.createdAt == request.time)
+            || (exists(/databases/$(database)/documents/clubs/$(id)/wall/info) && request.resource.data.createdAt == resource.data.createdAt));
+        allow delete: if manager(id);
+      }
+    }
+    match /users/{uid}/clubRefs/{id} {
+      allow read: if owns(uid);
+      allow create: if signedIn() && (owns(uid) || manager(id)) && existsAfter(memberPath(id, uid))
+        && request.resource.data.keys().hasAll(['uid', 'clubId', 'joinedAt'])
+        && request.resource.data.keys().hasOnly(['uid', 'clubId', 'joinedAt'])
+        && request.resource.data.uid == uid && request.resource.data.clubId == id && request.resource.data.joinedAt == request.time;
+      allow update: if false;
+      allow delete: if signedIn() && (owns(uid) || manager(id)) && !existsAfter(memberPath(id, uid));
+    }
+    match /clubDirectory/{id} {
+      allow read: if signedIn();
+      allow create, update: if signedIn()
+        && getAfter(clubPath(id)).data.visibility == 'public' && getAfter(clubPath(id)).data.state == 'active'
+        && (getAfter(clubPath(id)).data.ownerUid == request.auth.uid || clubAdmin(id))
+        && request.resource.data.keys().hasAll(['id', 'name', 'category', 'membershipPolicy', 'primaryColor', 'accentColor', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['id', 'name', 'category', 'membershipPolicy', 'primaryColor', 'accentColor', 'updatedAt'])
+        && request.resource.data.id == id && request.resource.data.name == getAfter(clubPath(id)).data.name
+        && request.resource.data.category == getAfter(clubPath(id)).data.category
+        && request.resource.data.membershipPolicy == getAfter(clubPath(id)).data.membershipPolicy
+        && request.resource.data.primaryColor == getAfter(clubPath(id)).data.primaryColor
+        && request.resource.data.accentColor == getAfter(clubPath(id)).data.accentColor
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if clubOwner(id) && (!existsAfter(clubPath(id)) || getAfter(clubPath(id)).data.visibility != 'public'
+        || getAfter(clubPath(id)).data.state != 'active');
+    }
+    // System admins, groups, live locations, Lobby and every unknown path stay denied.
     match /{document=**} { allow read, write: if false; }
   }
 }

@@ -1,6 +1,12 @@
 // Stable keys; user-created content is never translated.
 export const dictionary = {
   "en": {
+    "data.signIn": "Sign in to your account to use this feature.",
+    "data.denied": "Access denied. Check the approved Firestore rules and your permissions.",
+    "data.invalid": "Check the fields, lengths, year and HTTPS links and try again.",
+    "data.conflict": "This item changed elsewhere. Refresh it before retrying; your local ride remains saved.",
+    "data.deleted": "This ride has been deleted and cannot be uploaded again.",
+    "data.unavailable": "Could not reach the data service. Check your connection and Firebase setup, then retry.",
     "ui.debugPrefix": "Debug: ",
     "auth.account": "Account",
     "auth.open": "Sign in / Register",
@@ -216,6 +222,12 @@ export const dictionary = {
     "ui.finishBeforeDelete": "End the current session before deleting rides."
   },
   "fi": {
+    "data.signIn": "Kirjaudu tilillesi käyttääksesi tätä toimintoa.",
+    "data.denied": "Pääsy evätty. Tarkista hyväksytyt Firestore-säännöt ja käyttöoikeutesi.",
+    "data.invalid": "Tarkista kentät, tekstien pituudet, vuosimalli ja HTTPS-linkit ja yritä uudelleen.",
+    "data.conflict": "Tietoja muutettiin muualla. Päivitä ne ennen uutta yritystä. Paikallinen ajo on tallessa.",
+    "data.deleted": "Ajo on poistettu, eikä sitä voi lähettää uudelleen.",
+    "data.unavailable": "Yhteys tietopalveluun epäonnistui. Tarkista yhteys ja Firebase-asetukset ja yritä uudelleen.",
     "ui.debugPrefix": "Vianmääritys: ",
     "auth.account": "Tili",
     "auth.open": "Kirjaudu / Rekisteröidy",
