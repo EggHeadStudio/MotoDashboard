@@ -1019,3 +1019,4 @@
 #dashboard-vehicle { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; line-height: 1.5; }
 #selected-vehicle { font-size: 13px; color: #d6e1ef; margin: 8px 0; max-width: 90%; overflow-wrap: anywhere; }
 .ride-vehicle { display: block; margin: 4px 0; }
+.club-description { white-space: pre-wrap; overflow-wrap: anywhere; }

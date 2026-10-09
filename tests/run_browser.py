@@ -13,6 +13,7 @@ import re
 import tempfile
 import threading
 import urllib.request
+import sys
 from playwright.sync_api import sync_playwright
 from firebase_mocks import install, run_account_tests
 
@@ -44,6 +45,10 @@ def run():
                 content_type='text/css' if route.request.url.endswith('.css') else 'application/javascript'))
             ctx.route(re.compile(r'https://.*(?:tile|openstreetmap).*\.png'), lambda route: route.fulfill(body=pixel, content_type='image/png'))
             ctx.route('https://api.open-meteo.com/**', lambda route: route.fulfill(json={'current': {'temperature_2m': 12, 'wind_speed_10m': 5, 'weather_code': 0}}))
+        if '--clubs-only' in sys.argv:
+            from clubs_browser import run_club_tests
+            run_club_tests(browser,base,route_map)
+            browser.close();server.shutdown();return
         route_map(context)
         install(context)
         page = context.new_page()
@@ -184,6 +189,8 @@ def run():
         run_account_tests(browser, base, route_map)
         from batch2_browser import run_batch2_tests
         run_batch2_tests(browser, base, route_map)
+        from clubs_browser import run_club_tests
+        run_club_tests(browser, base, route_map)
         run_real_sdk_imports(browser, base, route_map)
         browser.close()
     server.shutdown()

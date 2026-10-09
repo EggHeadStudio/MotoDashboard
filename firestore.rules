@@ -202,7 +202,7 @@ service cloud.firestore {
             && (manager(id) || (request.auth.uid == uid && (club.membershipPolicy == 'open'
               || (exists(invitation(id, uid)) && get(invitation(id, uid)).data.expiresAt > request.time && !existsAfter(invitation(id, uid))))));
         }
-        allow read: if member(id) || clubOwner(id);
+        allow read: if owns(uid) || member(id) || clubOwner(id);
         allow create: if signedIn() && shape() && indexExists() && request.resource.data.joinedAt == request.time
           && ((!exists(clubPath(id)) && getAfter(clubPath(id)).data.ownerUid == request.auth.uid && uid == request.auth.uid && request.resource.data.technicalRole == 'owner' && request.resource.data.rankId == null)
             || (ordinaryAdmission() && getAfter(clubPath(id)).data.memberCount == get(clubPath(id)).data.memberCount + 1

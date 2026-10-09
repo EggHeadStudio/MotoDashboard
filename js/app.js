@@ -1,5 +1,6 @@
 import { createPositionPipeline } from './position-pipeline.js';
 import { initAuthUI } from './auth-ui.js';
+import { initClubUI } from './club-ui.js';
 import { initGarageUI, selectedVehicle, onVehicleChange } from './garage-ui.js';
 import { vehicleSnapshot } from './data/schema.js';
 import { getAccount, onAccountChange } from './auth-state.js';
@@ -72,6 +73,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       initI18n();
       initAuthUI();
       initGarageUI();
+      initClubUI();
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(registrations => Promise.all(
           registrations.filter(registration => registration.scope === new URL('./', document.baseURI).href)
