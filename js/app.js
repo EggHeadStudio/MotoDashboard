@@ -4,6 +4,10 @@ import { initGarageUI, selectedVehicle, onVehicleChange } from './garage-ui.js';
 import { vehicleSnapshot } from './data/schema.js';
 import { getAccount, onAccountChange } from './auth-state.js';
 import { createSessionSync, queueRide } from './session-sync.js';
+import { listCloudSessions, loadCloudRoute, localFromCloud, cloudDeletionIds } from './firebase/sessionRepository.js';
+import { dataErrorKey } from './firebase/access.js';
+import { sessionFile, shareOrDownload } from './session-export.js';
+import { button } from './ui/forms.js';
 import { initI18n, t, resolveText, setLocalizedText, onLanguageChange, formatNumber, getLocale } from './i18n/i18n.js';
 import {
   APP_VERSION,
@@ -352,6 +356,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       var accountUid = getAccount()?.uid || null;
       var accountEpoch = 0;
       var cloudSync = null;
+      var historyCursor = null, cloudHistoryMore = false, historyLoading = false;
       function accountStore(uid) { return createSessionStore({
         sessionStorageKey: sessionStorageKey,
         settingsStorageKey: settingsStorageKey,
@@ -1040,7 +1045,11 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         renderVehicle();
         applyHeadingModeSettings('lukittu', false);
         document.getElementById('history-detail').hidden = false;
-        setTextContent(document.getElementById('history-detail'), () => formatCompletedSessionSummary(session, { formatDate, formatDuration, formatSpeedKmh }));
+        setTextContent(document.getElementById('history-detail-text'), () => formatCompletedSessionSummary(session, { formatDate, formatDuration, formatSpeedKmh }));
+        document.getElementById('history-detail-actions').replaceChildren(
+          button('rides.json',()=>exportRide(session.id,'json')),
+          button('rides.gpx',()=>exportRide(session.id,'gpx')),
+          button('rides.share',()=>exportRide(session.id,'gpx',true)));
         elFinishSessionBtn.style.display = 'none';
         elBackToStartBtn.style.display = 'inline-flex';
         elStartOverlay.style.display = 'none';
@@ -1713,6 +1722,62 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         setLocalizedText(document.getElementById('cloud-status'), () => t(accountUid ? 'rides.pending' : 'rides.guest'));
         cloudSync?.retry();
       }
+      async function refreshCloudHistory(reset=true) {
+        if (!accountUid || historyLoading) return false;
+        const uid = accountUid, epoch = accountEpoch, store = sessionStore;
+        historyLoading = true;
+        setLocalizedText(document.getElementById('history-status'),()=>t('common.loading'));
+        try {
+          const page = await listCloudSessions(uid,reset?null:historyCursor);
+          const deleted=await cloudDeletionIds(uid);
+          if (epoch !== accountEpoch) return false;
+          for(const local of await store.loadSessions()) {
+            if(deleted.has(local.id) && !local.syncAction) await store.deleteSession(local.id);
+          }
+          for (const remote of page.records) {
+            if (remote.ownerUid !== uid || deleted.has(remote.id)) continue;
+            const local = (await store.loadSessions()).find(item=>item.id===remote.id);
+            if (local?.syncAction) continue;
+            const cached = localFromCloud(remote);
+            if (local && local.routeLoaded !== false && (local.routeHash === remote.routeHash || local.remoteRevisionId === remote.revisionId)) {
+              cached.routePoints = local.routePoints; cached.routeLoaded = true;
+            }
+            if (local) await store.updateSession(remote.id,latest=>latest.syncAction ? null : cached);
+            else await store.saveSession(cached);
+            if (epoch !== accountEpoch) return;
+          }
+          historyCursor=page.cursor; cloudHistoryMore=page.more;
+          document.getElementById('history-more').hidden=!cloudHistoryMore;
+          await loadSessionHistory();
+          if (epoch !== accountEpoch) return;
+          renderHistory(); updateStartSummary();
+          setLocalizedText(document.getElementById('history-status'),()=>t('rides.historyLoaded'));
+          return true;
+        } catch(error) {if(epoch===accountEpoch) setLocalizedText(document.getElementById('history-status'),()=>t(dataErrorKey(error)));return false;}
+        finally {if(epoch===accountEpoch) historyLoading=false;}
+      }
+      async function ensureRideRoute(ride) {
+        if (ride.routeLoaded !== false) return ride;
+        const uid=accountUid,epoch=accountEpoch,store=sessionStore;
+        const full=await loadCloudRoute(uid,ride);
+        if(epoch!==accountEpoch) return null;
+        const cached=await store.updateSession(ride.id,latest=>latest.syncAction ? null : {...latest,routePoints:full.routePoints,routeLoaded:true});
+        if(epoch!==accountEpoch || !cached) return null;
+        const index=sessionHistory.findIndex(item=>item.id===ride.id);
+        if(index>=0) sessionHistory[index]=cached;
+        return cached;
+      }
+      async function exportRide(id,format,share=false) {
+        const epoch=accountEpoch;
+        try {
+          let ride=sessionHistory.find(item=>item.id===id);
+          if(!ride || ride.status!=='completed') return;
+          ride=await ensureRideRoute(ride);
+          if(!ride || epoch!==accountEpoch) return;
+          const key=await shareOrDownload(sessionFile(ride,format),share);
+          if(epoch===accountEpoch) setLocalizedText(document.getElementById('history-status'),()=>t(key));
+        } catch(error) {if(epoch===accountEpoch) setLocalizedText(document.getElementById('history-status'),()=>t(dataErrorKey(error)));}
+      }
       onAccountChange(async ({user}) => {
         const uid = user?.uid || null;
         if (uid === accountUid) return;
@@ -1720,6 +1785,9 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         if (sessionActive) persistActiveSession(true);
         clearExistingWatch(); releaseWakeLockSafely(); resetMovementState(); cancelSessionSave();
         ++accountEpoch; accountUid = uid; recordingReady = false;
+        historyCursor=null;cloudHistoryMore=false;historyLoading=false;
+        document.getElementById('history-more').hidden=true;
+        document.getElementById('history-status').textContent='';
         sessionActive = false; activeSession = null; sessionHistory = [];
         sessionStore = accountStore(uid); cloudSync = null;
         returnToStartView(); renderVehicle();
@@ -1736,11 +1804,15 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           await loadSessionHistory();
           if (epoch !== accountEpoch) return;
           renderHistory(); updateStartSummary(); prepareCloudSync();
+          refreshCloudHistory();
         } catch (error) { if (epoch === accountEpoch) reportStorageError(error); }
       });
       if (recordingReady) prepareCloudSync();
+      if (accountUid) refreshCloudHistory();
       document.getElementById('cloud-retry').addEventListener('click',()=>cloudSync?.retry());
       window.addEventListener('online',()=>cloudSync?.retry());
+      document.getElementById('history-refresh').addEventListener('click',()=>refreshCloudHistory());
+      document.getElementById('history-more').addEventListener('click',()=>refreshCloudHistory(false));
 
       elCenterBtn.addEventListener('click', function () {
         followUser = true;
@@ -1793,7 +1865,12 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         cancelSessionSave();
         const epoch = accountEpoch;
         try {
-          if (accountUid) for (const ride of [...sessionHistory]) await removeRide(ride.id);
+          if (accountUid) {
+            if (!await refreshCloudHistory()) return;
+            while (cloudHistoryMore && epoch === accountEpoch) if (!await refreshCloudHistory(false)) return;
+            if (epoch !== accountEpoch) return;
+            for (const ride of [...sessionHistory]) {if(epoch!==accountEpoch) return;await removeRide(ride.id);}
+          }
           else await sessionStore.clearSessions();
         } catch (error) { reportStorageError(error); return; }
         if (epoch !== accountEpoch) return;
@@ -1860,6 +1937,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
 
         var action = button.getAttribute('data-action');
         var id = button.getAttribute('data-id');
+        if (['json','gpx','share'].includes(action)) {await exportRide(id,action==='json'?'json':'gpx',action==='share');return;}
         if (action === 'delete') {
           if (sessionActive) { setSessionSummary(() => t('ui.finishBeforeDelete')); return; }
           if (!window.confirm(t("ui.deleteConfirm"))) {
@@ -1892,7 +1970,11 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
             return;
           }
 
-          openCompletedSessionView(completed);
+          const epoch=accountEpoch;
+          try {
+            completed=await ensureRideRoute(completed);
+            if(completed && epoch===accountEpoch) openCompletedSessionView(completed);
+          } catch(error) {if(epoch===accountEpoch) setLocalizedText(document.getElementById('history-status'),()=>t(dataErrorKey(error)));}
           return;
         }
 
@@ -1902,6 +1984,11 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
             setSessionSummary(() => t("ui.missingSession"));
             return;
           }
+
+          const epoch=accountEpoch;
+          try {renameTarget=await ensureRideRoute(renameTarget);}
+          catch(error) {setLocalizedText(document.getElementById('history-status'),()=>t(dataErrorKey(error)));return;}
+          if(!renameTarget || epoch!==accountEpoch) return;
 
           var renamed = window.prompt(t("ui.renamePrompt"), renameTarget.name || '');
           if (renamed === null) {

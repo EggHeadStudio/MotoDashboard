@@ -1,5 +1,6 @@
 import { t } from './i18n/i18n.js';
 import { formatDistanceKm } from './utils.js';
+import { dataErrorKey } from './firebase/access.js';
 function escapeHtml(value) {
   return String(value)
     .replace(/&/g, '&amp;')
@@ -68,10 +69,13 @@ export function buildSessionHistoryHtml(sessionHistory, deps) {
       + t('ui.startPrefix') + deps.formatDate(session.startedAt) + ' / ' + t('ui.endPrefix') + (session.endedAt ? deps.formatDate(session.endedAt) : '-') + '<br>'
       + formatDistanceKm(session.distanceMeters || 0) + ' km / ' + deps.formatDuration(session.movingDurationMs || 0)
       + ' / ' + t('ui.avgLabel') + ' ' + deps.formatSpeedKmh(session.averageMovingSpeedKmh) + ' km/h / ' + t('ui.maxLabel') + ' ' + deps.formatSpeedKmh(session.maxSpeedKmh) + ' km/h / '
-      + t('ui.points') + ' ' + (session.routePoints?.length || 0) + ' / ' + state + '</small></div><div>'
+      + t('ui.points') + ' ' + (session.pointCount ?? session.routePoints?.length ?? 0) + ' / ' + state + '</small></div><div>'
       + (session.vehicleSnapshot ? '<small class="ride-vehicle">' + escapeHtml(session.vehicleSnapshot.nickname) + ' / ' + t('category.' + session.vehicleSnapshot.category) + '</small>' : '')
       + (session.status === 'active' ? button('resume', 'ui.resumeShort') : button('open', 'ui.open'))
-      + button('rename', 'ui.rename') + button('delete', 'ui.delete') + '</div></div>';
+      + button('rename', 'ui.rename') + button('delete', 'ui.delete')
+      + (session.status==='completed' ? button('json','rides.json')+button('gpx','rides.gpx')+button('share','rides.share') : '')
+      + (session.syncAction ? '<small class="ride-vehicle">'+t(session.syncError ? dataErrorKey({code:session.syncError}) : 'rides.pending')+'</small>' : '')
+      + '</div></div>';
   }).join('');
 }
 

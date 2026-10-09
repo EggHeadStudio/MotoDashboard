@@ -1,6 +1,7 @@
 // Stable keys; user-created content is never translated.
 export const dictionary = {
   "en": {
+    "rides.json": "Download JSON", "rides.gpx": "Download GPX", "rides.share": "Share GPX", "rides.refresh": "Refresh cloud history", "rides.more": "Load more rides", "rides.shared": "Ride file shared.", "rides.shareCancelled": "Sharing cancelled.", "rides.downloaded": "Ride file downloaded.", "rides.historyLoaded": "Account history loaded.",
     "rides.syncing": "Saving private completed rides…", "rides.pending": "Cloud sync pending. Rides remain saved locally; reconnect and retry.", "rides.synced": "Private ride sync complete.", "rides.guest": "Guest rides stay on this device and are not uploaded.", "rides.retry": "Retry ride sync",
     "garage.noVehicleShort": "No vehicle", "garage.nextVehicle": "Next ride: {name}",
     "common.loading": "Loading…", "common.loaded": "Up to date.", "common.refresh": "Refresh", "common.save": "Save", "common.cancel": "Cancel", "common.edit": "Edit", "common.delete": "Delete",
@@ -231,6 +232,7 @@ export const dictionary = {
     "ui.finishBeforeDelete": "End the current session before deleting rides."
   },
   "fi": {
+    "rides.json": "Lataa JSON", "rides.gpx": "Lataa GPX", "rides.share": "Jaa GPX", "rides.refresh": "Päivitä pilvihistoria", "rides.more": "Lataa lisää ajoja", "rides.shared": "Ajotiedosto jaettu.", "rides.shareCancelled": "Jakaminen peruttu.", "rides.downloaded": "Ajotiedosto ladattu.", "rides.historyLoaded": "Tilin ajohistoria ladattu.",
     "rides.syncing": "Tallennetaan yksityisiä ajoja…", "rides.pending": "Pilvitallennus odottaa. Ajot säilyvät paikallisesti; yhdistä verkkoon ja yritä uudelleen.", "rides.synced": "Yksityiset ajot on synkronoitu.", "rides.guest": "Vieraan ajot säilyvät tällä laitteella, eikä niitä lähetetä pilveen.", "rides.retry": "Yritä ajojen synkronointia",
     "garage.noVehicleShort": "Ei ajoneuvoa", "garage.nextVehicle": "Seuraava ajo: {name}",
     "common.loading": "Ladataan…", "common.loaded": "Ajan tasalla.", "common.refresh": "Päivitä", "common.save": "Tallenna", "common.cancel": "Peruuta", "common.edit": "Muokkaa", "common.delete": "Poista",

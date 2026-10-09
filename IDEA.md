@@ -2982,7 +2982,7 @@ QR, Official Events, Stripe or subscription enforcement is authorized.
 - [x] M2: Personal Garage CRUD, default/next-ride selection, private owner repository, localized mobile dialog; SDK fixture checks pass.
 - [x] M3: compact selected vehicle, pre-start chooser, stable vehicle ID/category/display snapshot; two-vehicle recording and deletion-history checks pass.
 - [x] M4: local account isolation, completed-only private manifests/chunks, durable retry/idempotency/revision conflicts and delete fences; mocked 300-point retry/duplicate/logout checks plus real rules assertions pass.
-- [ ] M5: account history/detail/JSON/GPX/share.
+- [x] M5: paged private cloud history, lazy validated route detail/cache, rename/delete fences, JSON v1/GPX 1.1, file share/download; fresh-storage retrieval, rename/delete/reload and exports checked.
 - [ ] M6: Clubs and membership lifecycle.
 - [ ] M7: technical roles, separate presentation ranks.
 - [ ] M8: safe branding and Info Wall.

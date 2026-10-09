@@ -104,6 +104,58 @@ def run_batch2_tests(browser,base,route_map):
         duplicateWrites:after-before,other:(await otherStore.loadSessions()).length,preserved:(await store.loadSessions()).some(r=>r.id===job.id)};
     }""")
     assert sync_result=={'pending':'upsert','success':None,'chunks':3,'max':128,'duplicateWrites':0,'other':0,'preserved':True},sync_result
+    exports=page.evaluate("""async()=>{
+      const {exportJSON,exportGPX,shareOrDownload,sessionFile}=await import('./js/session-export.js');
+      const s={id:'export-fixture',name:'<script>& Ride',startedAt:1000,endedAt:4000,distanceMeters:10,movingDurationMs:1000,
+        averageMovingSpeedKmh:36,maxSpeedKmh:36,mapTheme:'normal',routePoints:[{latitude:60,longitude:25,timestamp:1000},
+        {break:true,timestamp:2000},{latitude:61,longitude:26,timestamp:3000}]};
+      const json=JSON.parse(exportJSON(s)),xml=new DOMParser().parseFromString(exportGPX(s),'application/xml');
+      const tracks=[...xml.getElementsByTagName('trkpt')];let shared=0;
+      Object.defineProperty(navigator,'canShare',{value:()=>true,configurable:true});
+      Object.defineProperty(navigator,'share',{value:async()=>{shared++;},configurable:true});
+      const result=await shareOrDownload(sessionFile(s,'gpx'),true);
+      Object.defineProperty(navigator,'share',{value:async()=>{throw new DOMException('Cancel','AbortError');},configurable:true});
+      const cancelled=await shareOrDownload(sessionFile(s,'gpx'),true);
+      return {version:json.schemaVersion,format:json.format,segments:xml.getElementsByTagName('trkseg').length,
+        lat:tracks[0].getAttribute('lat'),lon:tracks[0].getAttribute('lon'),time:tracks[0].textContent,
+        name:xml.getElementsByTagName('name')[0].textContent,errors:xml.getElementsByTagName('parsererror').length,
+        shared,result,cancelled};
+    }""")
+    assert exports=={'version':1,'format':'MotoDashboardRide','segments':2,'lat':'60','lon':'25','time':'1970-01-01T00:00:01.000Z',
+        'name':'<script>& Ride','errors':0,'shared':1,'result':'rides.shared','cancelled':'rides.shareCancelled'},exports
+    # Fresh browser storage with the same mocked backend/account proves cloud retrieval.
+    replica=browser.new_context(viewport={'width':390,'height':844});route_map(replica);install(replica)
+    remote=replica.new_page();remote.goto(base,wait_until='networkidle')
+    data=page.evaluate("Object.fromEntries(['__mockProfiles','__mockUser','__mockAccounts'].map(k=>[k,localStorage.getItem(k)]))")
+    remote.evaluate('(data)=>{for(const [k,v] of Object.entries(data)) localStorage.setItem(k,v)}',data)
+    remote.reload(wait_until='networkidle')
+    remote.wait_for_function('document.querySelector("#history-status").textContent==="Account history loaded."')
+    remote.click('#history-btn')
+    chunk=remote.locator('.session-item').filter(has_text='Chunk Test')
+    chunk.get_by_role('button',name='Open',exact=True).click()
+    remote.wait_for_selector('#history-detail',state='visible')
+    assert remote.locator('.leaflet-overlay-pane svg').count()>=1
+    with remote.expect_download() as download:
+        remote.locator('#history-detail-actions').get_by_role('button',name='Download JSON',exact=True).click()
+    from pathlib import Path
+    import json
+    payload=json.loads(Path(download.value.path()).read_text())
+    assert len(payload['routePoints'])==300
+    with remote.expect_download() as download:
+        remote.locator('#history-detail-actions').get_by_role('button',name='Share GPX',exact=True).click()
+    assert download.value.suggested_filename.endswith('.gpx')
+    remote.click('#back-to-start-btn');remote.click('#history-btn')
+    remote.on('dialog',lambda d:d.accept('Renamed Cloud Ride' if d.type=='prompt' else None))
+    remote.locator('.session-item').filter(has_text='Chunk Test').get_by_role('button',name='Rename',exact=True).click()
+    remote.wait_for_function("Object.values(JSON.parse(localStorage.getItem('__mockProfiles'))).some(v=>v.name==='Renamed Cloud Ride' && v.uploadState==='ready')")
+    remote.locator('.session-item').filter(has_text='Renamed Cloud Ride').get_by_role('button',name='Delete',exact=True).click()
+    remote.wait_for_function("!Object.values(JSON.parse(localStorage.getItem('__mockProfiles'))).some(v=>v.name==='Renamed Cloud Ride')")
+    assert remote.evaluate("Object.keys(JSON.parse(localStorage.getItem('__mockProfiles'))).some(k=>k.includes('/sessionTombstones/'))")
+    remote.reload(wait_until='networkidle')
+    remote.wait_for_function('document.querySelector("#history-status").textContent==="Account history loaded."')
+    remote.click('#history-btn')
+    assert 'Renamed Cloud Ride' not in remote.locator('#history-list').inner_text()
+    replica.close()
     page.locator('#garage-dialog article').filter(has_text='Family Car').get_by_role('button',name='Delete',exact=True).click()
     page.wait_for_function('document.querySelectorAll("#garage-dialog article").length===1')
     assert any(r['vehicleSnapshot']['nickname']=='Family Car' for r in rides)
@@ -130,3 +182,4 @@ def run_batch2_tests(browser,base,route_map):
     context.close()
     print('PASS: MOCK Garage motorcycle/car create, edit, default, reload, delete, owner guard, logout isolation, Finnish and 320px dialog')
     print('PASS: MOCK vehicle snapshots in two rides, private completed cloud manifests, 300-point bounded chunks, durable failed-job retry, zero duplicate writes, scoped clear and logout during recording')
+    print('PASS: fresh-storage cloud history/detail/route restore, JSON download/schema, GPX segmentation/coordinates/UTC/XML escaping, Web Share/cancel and download fallback')

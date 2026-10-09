@@ -8,7 +8,7 @@ export function normalizeRoute(points) {
   if (!Array.isArray(points)) throw dataError('invalid-input');
   let previous = 0;
   return points.map(point => {
-    if (!Number.isFinite(point?.timestamp) || point.timestamp <= 0 || point.timestamp < previous) throw dataError('invalid-input');
+    if (!Number.isFinite(point?.timestamp) || point.timestamp <= 0 || point.timestamp > 8640000000000000 || point.timestamp < previous) throw dataError('invalid-input');
     previous = point.timestamp;
     if (point.break === true) return {break:true,timestamp:point.timestamp};
     if (!Number.isFinite(point.latitude) || Math.abs(point.latitude)>90 || !Number.isFinite(point.longitude) || Math.abs(point.longitude)>180)

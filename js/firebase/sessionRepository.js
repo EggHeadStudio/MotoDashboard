@@ -81,8 +81,25 @@ export async function listCloudSessions(uid,cursor=null) {
   service.assertCurrent();return {records:result.docs.map(doc=>doc.data()),cursor:result.docs.at(-1) || null,more:result.size===20};
 }
 export function localFromCloud(record) {
+  if(record.schemaVersion!==1 || record.status!=='completed' || record.visibility!=='private'
+    || !validId(record.id) || !Number.isFinite(record.startedAt) || !Number.isFinite(record.endedAt)
+    || record.endedAt<record.startedAt || !Number.isFinite(record.clientUpdatedAt)
+    || !['distanceMeters','movingDurationMs','averageMovingSpeedKmh','maxSpeedKmh'].every(k=>Number.isFinite(record[k]) && record[k]>=0)
+    || !Number.isInteger(record.pointCount) || record.pointCount<0 || !Number.isInteger(record.chunkCount)
+    || record.chunkCount<0 || record.chunkCount>10000 || !/^[a-f0-9]{64}$/.test(record.routeHash)
+    || !/^[a-f0-9]{64}$/.test(record.revisionId) || !THEMES.includes(record.mapTheme)) throw dataError('invalid-input');
   return {...record,schemaVersion:2,updatedAt:record.clientUpdatedAt,remoteRevisionId:record.revisionId,
     routePoints:[],lastAcceptedPoint:null,routeLoaded:false,syncAction:null};
+}
+export async function cloudDeletionIds(uid) {
+  const service=await ownDatabase(uid);const {db,sdk}=service;
+  const ids=new Set();let cursor=null;
+  do {
+    const filters=[sdk.orderBy('deletedAt')];if(cursor) filters.push(sdk.startAfter(cursor));filters.push(sdk.limit(100));
+    const result=await boundedRequest(sdk.getDocs(sdk.query(sdk.collection(db,'users',uid,'sessionTombstones'),...filters)));
+    service.assertCurrent();result.docs.forEach(doc=>ids.add(doc.id));cursor=result.size===100?result.docs.at(-1):null;
+  } while(cursor);
+  return ids;
 }
 export async function loadCloudRoute(uid,session) {
   if(session.ownerUid!==uid || !validId(session.id)) throw dataError('auth-required');

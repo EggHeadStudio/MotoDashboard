@@ -21,7 +21,7 @@
   <!-- Map -->
   <div id="map" aria-label="Map" data-i18n-aria-label="ui.map" role="img"></div>
   <div id="map-controls"></div>
-  <div id="history-detail" hidden aria-live="polite"></div>
+  <div id="history-detail" hidden aria-live="polite"><div id="history-detail-text"></div><div id="history-detail-actions"></div></div>
   <div id="storage-status" role="status"></div>
   <!-- Map shade overlay -->
   <div class="map-shade"></div>
@@ -123,6 +123,9 @@
     <div id="selected-vehicle" aria-live="polite"></div>
     <div id="cloud-status" role="status"></div>
     <button id="cloud-retry" class="start-option-btn secondary" data-i18n="rides.retry">Retry ride sync</button>
+    <div id="history-status" role="status"></div>
+    <button id="history-refresh" class="start-option-btn secondary" data-i18n="rides.refresh">Refresh cloud history</button>
+    <button id="history-more" class="start-option-btn secondary" hidden data-i18n="rides.more">Load more rides</button>
     <div id="history-list" aria-live="polite"></div>
     <div id="history-actions">
       <button id="clear-history-btn" class="start-option-btn secondary" aria-label="Delete all saved rides" data-i18n-aria-label="ui.clearLabel" data-i18n="ui.clear">Delete all rides</button>
