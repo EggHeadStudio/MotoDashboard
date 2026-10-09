@@ -1,4 +1,226 @@
-# MotoDashboard — Implementation Batch 1 Status
+# MotoDashboard - Implementation Status
+
+Date: 2026-10-09. Current scope: user-authorized **Batch 2**, following Batch 1
+commit `fcfbb81` on `main`. All eight milestones are implemented locally and
+separately committed. A final documentation commit records this review.
+**No GitHub push, Pages deployment, Firebase rules/index publication, live-project
+write or physical phone test was performed.** RTDB remains default-deny.
+
+## Milestones and commits
+
+| Milestone | Implemented locally | Commit |
+| --- | --- | --- |
+| 1: Firebase/security | Dedicated config validation, one app, same-project services, shared Auth state, localized data errors, exact schema/authorization rules and real emulator tests | `244a035` |
+| 2: Personal Garage | 12 categories; view/add/edit/delete/default/choose; validation, owner guard, private Firestore repository, localized mobile dialog and placeholders | `e1169ae` |
+| 3: Dashboard vehicles | Compact selection before starting; immutable historical vehicle ID/display snapshot/category; deletion preserves ride identity | `c4cc85a` |
+| 4: Private cloud rides | Local account scopes, completed-only manifests/immutable bounded chunks, durable retry jobs, stable IDs, revisions, deletion fences and safe Auth changes | `cc9c0b0` |
+| 5: History/export | Paged own cloud history, cached validated route details, rename/delete, JSON v1, segmented GPX 1.1, Web Share/cancellation/download fallback | `57a79b3` |
+| 6: Clubs | Creation/edit/page/discovery, own Club index, open/approval/UID invite/private admission, reject/reapply/approve, multiple memberships, leaving, archive and guarded deletion | `468e776` |
+| 7: Roles/ranks | Central permission helpers, Owner/Admin/Host/Member controls, custom rank CRUD/assignment, no permission from titles or self-promotion | `b9b0783` |
+| 8: Branding/Wall | Controlled readable primary/accent/route colors, category identity, five safe links, plain Info Wall, future theme data and final review fixes | `3ea8edd` |
+
+Each milestone had automated checks before continuing. The final review additionally
+fixed missing-own-membership reads needed for legitimate joining, UID invitation
+form capture before disabling inputs, private-Club directory deletion attempts,
+stale account responses, rank paging/reference display, signed-in active refresh
+restoration, detached localization binding cleanup and explicit name conflict recovery.
+No authorization was broadened to global authenticated writes.
+
+## Current architecture and data
+
+Static `index.html`, one `css/dashboard.css` and native browser ES modules still
+serve directly from repository root. `.github/workflows/deploy.yml` uploads `.`
+on main push/manual dispatch; no workflow change, build, npm dependency, Node
+application runtime, framework, TypeScript or custom application backend was added.
+All app paths remain relative and browser tests run under `/MotoDashboard/`.
+
+The existing Leaflet/maps, Open-Meteo, GPS pipeline, speed/heading/route recorder
+and dashboard lifecycle remain in place. Feature screens are native responsive
+dialogs. `auth-state.js` provides the identity boundary; every repository also
+rechecks SDK Auth and server rules remain authoritative. Firestore uses memory
+cache. Account changes flush the old local record, stop GPS/Wake Lock, hide old
+routes/markers/history/Garage/Clubs and ignore stale responses. Guest rides have
+a separate local scope and are never claimed or uploaded on login.
+
+Local schema remains v2 with optional ownership/vehicle/sync fields. IndexedDB and
+per-record localStorage fallback are filtered by UID; clearing one scope preserves
+other scopes/preferences. Local writes and conditional sync acknowledgement are
+serialized within each store. Active rides remain local. Only completed rides
+upload: cloud schema v1 manifest, <=128 points/48,000 characters per immutable
+route chunk, <=32 chunks per write batch, SHA-256 route hash and ready marker.
+There are no per-GPS Firebase writes. Durable upsert/delete jobs survive refresh
+and retry on login/online/manual retry. A permanent per-ID tombstone prevents
+stale uploads resurrecting deleted rides. Name revision conflicts preserve the
+local copy; confirmed Reload cloud version discards the pending edit, without
+silently overwriting another device. Export a copy first if needed.
+
+History queries return 20 manifests per page; routes fetch in 32-chunk pages only
+for detail/export. Deletions/rename remain queued while disconnected. Delete all
+fetches all account history pages before queuing deletion, aborting if it cannot
+verify the cloud inventory. A saved vehicle snapshot survives Garage deletion.
+
+Clubs use canonical immutable ownerUid, membership subdocuments and private
+account refs, a synchronized minimal discovery projection, join requests and
+7-day UID-addressed invitations. Private Clubs are hidden from unrelated accounts.
+Owner cannot leave/transfer; archive closes admission and discovery. Permanent
+delete requires archive, no other members, bounded child cleanup and final atomic
+founder/index/Club deletion. Admin can manage other Host/Member accounts and
+branding/ranks/requests; cannot change Owner/other Admin/own role or privacy/policy.
+Host/Member have read/self-leave only in this batch. Visible ranks grant no rights.
+
+Branding applies inside the Club page. Six-digit colors choose black/white text
+with at least 4.5:1 contrast; links are parsed/revalidated as HTTPS without
+credentials, with length bounds and noopener/noreferrer. User content uses
+textContent. Info Wall is a 4,000-character plain-text announcement. Placeholder
+logos avoid unconfigured uploads and external image tracking. Prepared theme data
+never changes the current dashboard or starts Group Sessions.
+
+Exact contracts: [DATA_MODEL.md](DATA_MODEL.md), [EXPORT_SCHEMA.md](EXPORT_SCHEMA.md)
+and `firestore.rules`/`firestore.indexes.json`.
+
+## Files created/changed in Batch 2
+
+New app modules:
+
+- `js/auth-state.js`, `js/ui/forms.js`.
+- `js/data/schema.js`, `permissions.js`, `route-codec.js`, `branding.js`.
+- `js/firebase/access.js`, `garageRepository.js`, `sessionRepository.js`, `clubRepository.js`.
+- `js/garage-ui.js`, `club-ui.js`, `club-members-ui.js`, `club-branding-ui.js`.
+- `js/session-sync.js`, `js/session-export.js`.
+
+Modified app/config: `index.html`, `css/dashboard.css`, `js/app.js`,
+`js/auth-ui.js`, `js/firebase/firebase.js`, `js/session-store.js`,
+`js/session-manager.js`, `js/i18n/dictionary.js`, `js/i18n/i18n.js`,
+`firestore.rules`. Added `firestore.indexes.json`. Existing dedicated web config,
+RTDB rules, manifest, deployment workflow and map/GPS/weather modules are retained.
+
+Documentation: `IDEA.md`, `README.md`, this status file, `DATA_MODEL.md`,
+`EXPORT_SCHEMA.md`, `tests/RULES_TESTING.md`.
+Tests: expanded `tests/run_browser.py`/`firebase_mocks.py`; new
+`tests/batch2_browser.py`, `clubs_browser.py`, `run_rules.py`.
+Existing deterministic `tests/domain-tests.js` is retained.
+
+## Executed automated verification
+
+Commands: `python tests/run_browser.py`, `python tests/run_rules.py`, and focused
+`python tests/run_browser.py --clubs-only` after the final URL-bound correction.
+Python Playwright/Chromium and the official Firestore emulator 1.20.2/Java 21 were
+available as development tools outside the app. `git diff --check` passed.
+
+- Native browser parsing/linking of all app modules, relative paths, DOM IDs,
+  English/Finnish dictionary parity/fallback/interpolation, locale refresh and
+  console/unhandled-rejection monitoring passed.
+- 36 deterministic GPS/route/heading/storage/weather assertions passed, plus
+  simulated real-Leaflet recording/finish/history/details/heading/theme/offline/
+  active-refresh/permission-retry browser scenarios.
+- SDK fixtures passed registration/login/logout/profile/language/retry/UID guard;
+  Garage motorcycle/car CRUD/default/selection/reload/logout-login and narrow
+  viewport checks; vehicle snapshots; durable failed upload/retry; 300 points in
+  three bounded chunks; zero duplicate writes; scoped clearing; signed-in active
+  refresh; logout during recording and a different account's hidden history.
+- Fresh local storage restored cloud history and a 300-point route. Cloud rename,
+  conflict detection/confirmed recovery, deletion fences and refresh were checked.
+  JSON downloaded/parsed as schema v1. GPX XML parsed with separate segments,
+  latitude/longitude attributes, UTC timestamps and escaped track names. Web Share
+  success/cancel and actual download fallback passed.
+- Club fixtures passed CRUD, multiple membership policies, request rejection/
+  reapplication/approval, UID invite consumption, private leaving, multiple Clubs,
+  archive/deletion protection, role/rank changes and escalation guards, five links,
+  invalid/credential/expanded URL rejection, color contrast, plain injection strings,
+  Wall reload and unchanged dashboard theme. Portrait/narrow/landscape dialogs fit.
+- Real pinned Firebase 13.0.0 browser modules imported; concurrent initialization
+  returned one MotoDash app; Auth persistence and same-app/project Firestore/RTDB
+  instances and invalid config rejection passed with all cloud APIs blocked.
+- **97 real local Firestore emulator request assertions passed**, including valid
+  transactional schemas, query authorization, unsigned/other-account denials,
+  profile admin-field denial, Garage default integrity, Club role escalation,
+  private membership/Wall, approval/invites, coupled counts/refs, archive/deletion,
+  immutable ride/chunks/revisions, resurrection denial and a 32-chunk batch's
+  access-call budget. These include fixture inspection requests; SDK mocks do
+  not execute rules. The isolated emulator project was `demo-motodash`, never
+  the production project. RTDB default-deny was retained/reviewed, not engine-tested.
+
+## Live acceptance and setup still required
+
+Live Firebase operations: **NOT TESTED**. Physical phones/Safari/installed PWA:
+**NOT TESTED**. No successful cloud authentication, production persistence,
+production rules enforcement or two-device synchronization is claimed.
+
+1. User reviews Batch 1 + 2 diffs and verifies the existing **motodash-87bf8**
+   Console web app config matches `firebase-config.js`: apiKey, authDomain,
+   projectId, appId, messagingSenderId, databaseURL (and existing storageBucket).
+   Values exist; none were invented or taken from another project. Verify default
+   Firestore provisioning/region and the RTDB Europe West instance.
+2. Enable/verify Email/Password and authorized domains `eggheadstudio.github.io`
+   and localhost as appropriate. Account loading and denied writes leave local
+   dashboard recording usable.
+3. User backs up current rules and publishes reviewed `firestore.rules` through
+   Console > Firestore Database > Rules, and reviewed root-deny
+   `database.rules.json` through RTDB > Rules. The agent has not deployed them.
+4. Add the `sessions` COLLECTION query composite index (`uploadState` ascending,
+   `startedAt` descending), and exempt `routeChunks.pointsJson` from single-field
+   indexing as declared in `firestore.indexes.json`. Wait for index readiness.
+5. Follow [exact rules/live checklist](tests/RULES_TESTING.md): real test accounts,
+   two browser profiles/devices, private cross-account reads/writes, Garage CRUD,
+   completed recording/offline/retry/rename/delete, Club admission/role/rank/Wall
+   permissions and all RTDB denial. Playground alone cannot exercise full atomic
+   membership transactions; the real local emulator already covers those.
+6. On physical Android/iPhone and Safari/Chromium, verify portrait/landscape,
+   actual GPS stationary/moving/stopping/gaps, heading/manual map gestures, real
+   providers, permission retry, background/foreground/lock, storage failures,
+   login/logout while recording, share/download and installed-manifest behavior.
+7. User handles publication after review. Main push can automatically deploy Pages;
+   no push or workflow invocation was performed.
+
+## Known limitations and remaining product work
+
+No known failing automated scenario remains. Production configuration/provider/
+SDK-network behavior and physical acceptance are still unverified.
+
+- No multi-tab recording lock: simultaneous recording/edits in one browser can
+  race local writes; use one recording tab pending a concurrency-hardening batch.
+  Cloud metadata revisions detect conflicting remote names; no automatic merge.
+- Local storage is not encrypted. Browser/OS owners can inspect it. Storage quota,
+  forced termination, full-route local snapshots and device suspension remain
+  limits. If local data is erased during an incomplete upload, missing chunks
+  cannot be reconstructed from an uploading-only manifest on another device.
+- Firebase operation deadlines do not cancel SDK operations already submitted;
+  account guards prevent subsequent batches/UI leakage and rules enforce ownership.
+  Cloud sync runs while the page is open; there is no background upload guarantee.
+- Deleted ride tombstones persist as small records to prevent resurrection. They
+  require a future trusted retention/account-deletion policy. Refresh reads their
+  bounded pages; very large histories require measured cost/retention work.
+- GPS/routes are owner-supplied data, unsuitable as trusted Official Event results.
+  Rules bound JSON chunks but cannot parse/cryptographically validate route content;
+  clients check coordinates/timestamps/counts/hash on retrieval/export.
+- Private cloud rides have no public URLs, Replay or import. Garage visibility is
+  stored preference only; uploaded photos/logos/public portfolio are deferred.
+- No ownership transfer, full profile editing, password reset/account deletion,
+  Group Sessions, live locations, Lobby, QR/NFC joining, Official Events, Stripe
+  or subscription enforcement was added. RTDB stays locked; the future hybrid
+  authorization coordinator decision remains required before live sharing.
+- The manifest alone does not provide offline cold start/background GPS. Existing
+  optional Fullscreen/Wake Lock and theme coupling/provider buffers still need
+  physical-device acceptance. Language retry intent after a failed profile write
+  remains in memory and may need another explicit change after refresh.
+
+## Next recommended batch and stop
+
+First review/deploy/test the prepared rules/indexes and verify live persistence and
+physical phones. Then separately approve profile/privacy/account-deletion and
+recording concurrency work. Group Session authorization, admission and explicit
+sharing consent must be designed/tested before any live location or Lobby work.
+
+**STOP: Batch 2 is complete locally. Await explicit approval before additional
+implementation, pushing or deploying.**
+
+---
+
+The following Batch 1 record is historical. Its old statements about shared local
+rides, profile-only rules and missing Garage/Clubs are superseded by the current
+Batch 2 status above; its original test evidence and device limitations remain.
+
+# Historical Batch 1 record (superseded by the current Batch 2 status above)
 
 Date: 2026-10-09. Baseline: `4813196` on `main`.
 Scope: the user's three-milestone Batch 1 attachment, including the explicit removal
@@ -237,13 +459,3 @@ should the next implementation milestone address Section 3 profile/Garage and th
 remaining account/dashboard integration. No next feature has been implemented here.
 
 **STOP after Batch 1. Await explicit approval for further implementation, push or deployment.**
-# Batch 2 progress (2026-10-09)
-
-Authorized scope: eight local milestones, separate commits, no push/deployment.
-M1 adds auth-state.js, firebase/access.js, data/schema.js and permissions.js,
-DATA_MODEL.md, firestore.indexes.json, expanded firestore.rules, and real local
-emulator tests/RULES_TESTING.md + run_rules.py. Dedicated config validation,
-localized data errors and Auth publication are integrated. RTDB remains locked.
-Executed: 67 real emulator allow/deny assertions; Batch 1 browser baseline passes.
-No live Firebase operations, rules deployment or physical phone testing occurred.
-Further milestone entries will replace this progress note after the final review.
