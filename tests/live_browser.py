@@ -50,7 +50,7 @@ def run_live_tests(browser,base,route_map):
     page.check('#live-consent input[name=consent]');page.click('#live-consent button')
     page.wait_for_function('window.__geo.active === 1');assert len(requests)==1
     page.wait_for_selector('.live-rider-label');label=page.locator('.live-rider-label').inner_text()
-    assert 'Other <Rider>' in label and 'Bike' in label and 'Captain' in label
+    assert 'Other <Rider>' in label and 'Bike' in label and 'Captain' in label and 'Last location:' in label
     assert page.locator('.live-rider-label script').count()==0
     assert not page.locator('#start-overlay').is_visible()
     page.click('#live-dashboard');page.wait_for_selector('.live-summary')

@@ -20,6 +20,8 @@ export async function runLiveClientTests() {
   assert(!s.url.includes('?') && requests[0].opts.headers.Authorization==='Bearer fixture-token','tokens only in HTTPS header/first frame');
   assert(s.sent[0].type==='hello' && s.sent[0].ticket.length===64,'ticket handshake');
   s.message({type:'hello',riderId:'self'});s.message({type:'snapshot',participants:[{riderId:'self',status:'ok',position:null}]});
+  s.message({type:'snapshot',serverTime:clock+600000,participants:[{riderId:'self',status:'ok',position:{latitude:60,longitude:25,at:clock+600000-50000}}]});
+  assert(clock-client.getState().participants.get('self').position.at===50000,'phone clock skew preserves stale GPS age');
   const sample=()=>({accepted:true,timestamp:clock,validatedSpeedKmh:36,coords:{latitude:60,longitude:25,accuracy:5,heading:null}});
   client.sample(sample());client.sample(sample());assert(s.sent.filter(m=>m.type==='position').length===1,'no duplicate coordinates');
   clock+=1000;client.sample({...sample(),coords:{...sample().coords,latitude:60.00001}});assert(s.sent.filter(m=>m.type==='position').length===1,'moving throttle');

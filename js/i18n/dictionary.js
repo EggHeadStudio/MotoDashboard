@@ -4,6 +4,7 @@ export const dictionary = {
     "live.counts": "Fresh: {active} · Stale: {stale} · Connected without location: {noFix} · Not connected: {disconnected}",
     "live.separation": "Largest straight-line distance from you: {distance}",
     "live.unknown": "unknown",
+    "live.updated": "Last location: {time} · age {seconds}s",
     "live.regroupHint": "Approximate straight-line separation, not road distance or rider order. Statuses do not dispatch emergency help.",
     "live.summaryHint": "Live presence appears below while sharing. Roster totals above use Refresh.",
 
@@ -285,6 +286,7 @@ export const dictionary = {
     "live.counts": "Tuoreet: {active} · Vanhentuneet: {stale} · Yhteys ilman sijaintia: {noFix} · Ei yhteyttä: {disconnected}",
     "live.separation": "Suurin suora etäisyys sinusta: {distance}",
     "live.unknown": "tuntematon",
+    "live.updated": "Viimeisin sijainti: {time} · ikä {seconds}s",
     "live.regroupHint": "Arvioitu suora etäisyys, ei tietä pitkin laskettu matka tai ajajien järjestys. Tilat eivät lähetä hätäapua.",
     "live.summaryHint": "Reaaliaikainen tila näkyy alla sijaintia jakaessa. Yllä olevan listan tiedot päivittyvät Päivitä-painikkeella.",
 

@@ -1,5 +1,5 @@
 import {liveClient} from './live-client.js';
-import {t,onLanguageChange} from '../i18n/i18n.js';
+import {t,onLanguageChange,getLocale} from '../i18n/i18n.js';
 const STALE=45000,EXPIRE=120000;
 export function attachLiveMap(map,L) {
   const layer=L.layerGroup().addTo(map),markers=new Map();
@@ -11,7 +11,7 @@ export function attachLiveMap(map,L) {
       if(!marker){marker=L.marker([pos.latitude,pos.longitude],{icon:L.divIcon({className:'live-rider-icon',html:'<span class="live-rider-dot" aria-hidden="true"></span>',iconSize:[18,18]})}).addTo(layer);markers.set(id,marker);}
       marker.setLatLng([pos.latitude,pos.longitude]);const label=document.createElement('span');label.className='live-rider-label';
       const name=document.createElement('strong');name.textContent=p.displayName?.trim() || t('identity.member');label.append(name);
-      for(const value of [p.vehicle?.nickname,p.vehicle? t('category.'+p.vehicle.category):null,p.clubIdentity?.name,p.clubIdentity?.rank,t('riderStatus.'+p.status),now-pos.at>STALE?t('live.stale'):null])
+      for(const value of [p.vehicle?.nickname,p.vehicle? t('category.'+p.vehicle.category):null,p.clubIdentity?.name,p.clubIdentity?.rank,t('riderStatus.'+p.status),t('live.updated',{time:new Date(pos.at).toLocaleTimeString(getLocale()),seconds:Math.max(0,Math.floor((now-pos.at)/1000))}),now-pos.at>STALE?t('live.stale'):null])
         if(value){const text=document.createElement('span');text.textContent=value;label.append(text);}
       marker.unbindTooltip();marker.bindTooltip(label,{permanent:true,direction:'top',className:'live-rider-tooltip'});
       marker.setOpacity(now-pos.at>STALE?.45:1);
