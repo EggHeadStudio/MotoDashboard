@@ -5,7 +5,7 @@ let cached=null, loading=null;
 async function publicKeys() {
   if(cached?.until>Date.now()) return cached.keys;
   if(!loading) loading=(async()=>{
-    const response=await fetch(CERTS,{signal:AbortSignal.timeout(5000),redirect:'error'});
+    const response=await fetch(CERTS,{signal:AbortSignal.timeout(5000),redirect:'manual'});
     if(!response.ok) throw Error('keys_unavailable');
     const body=await response.json();const keys=new Map();
     for(const [id,cert] of Object.entries(body)) keys.set(id,await importX509(cert,'RS256'));

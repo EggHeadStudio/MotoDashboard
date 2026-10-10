@@ -12,7 +12,7 @@ async function accessToken(env,signal) {
     const assertion=await new SignJWT({scope:'https://www.googleapis.com/auth/datastore'})
       .setProtectedHeader({alg:'RS256',typ:'JWT'}).setIssuer(sa.client_email)
       .setAudience('https://oauth2.googleapis.com/token').setIssuedAt().setExpirationTime('1h').sign(key);
-    const response=await fetch('https://oauth2.googleapis.com/token',{method:'POST',signal,redirect:'error',
+    const response=await fetch('https://oauth2.googleapis.com/token',{method:'POST',signal,redirect:'manual',
       body:new URLSearchParams({grant_type:'urn:ietf:params:oauth:grant-type:jwt-bearer',assertion})});
     if(!response.ok) throw Error('authority_unavailable');const body=await response.json();
     if(typeof body.access_token!=='string' || !Number.isFinite(body.expires_in)) throw Error('authority_unavailable');
@@ -32,7 +32,7 @@ function decode(value) {
 const fields=value=>Object.fromEntries(Object.entries(value || {}).map(([k,v])=>[k,decode(v)]));
 export async function readDocuments(env,paths,signal,readTime=null) {
   const token=await accessToken(env,signal);
-  const response=await fetch(ROOT+':batchGet',{method:'POST',signal,redirect:'error',
+  const response=await fetch(ROOT+':batchGet',{method:'POST',signal,redirect:'manual',
     headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
     body:JSON.stringify({documents:paths.map(path=>ROOT.replace('https://firestore.googleapis.com/v1/','')+'/'+path),...(readTime?{readTime}:{})})});
   if(!response.ok) throw Error('authority_unavailable');
