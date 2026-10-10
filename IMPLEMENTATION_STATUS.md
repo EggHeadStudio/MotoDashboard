@@ -646,3 +646,18 @@ should the next implementation milestone address Section 3 profile/Garage and th
 remaining account/dashboard integration. No next feature has been implemented here.
 
 **STOP after Batch 1. Await explicit approval for further implementation, push or deployment.**
+
+
+## Batch 3 identity milestone - local result
+
+Safe names replace normal-UI UIDs. New module: js/firebase/displayProfiles.js.
+Own profile initialization atomically maintains a two-field signed-in display projection;
+60-second identity cache clears on account change. Private emails/profiles stay protected.
+Club owners, members, requests and name-based invitation selection use that projection.
+Club links preserve Pages base paths; missing names localize without exposing partial IDs.
+Validation: original Firestore 102 assertions + additional security 137 + identity 16,
+all passed, zero failed/skipped. Full browser suite passed all 15 printed groups, including
+17 registration cases and 36 domain assertions; Club tests now cover owner/member names,
+missing-profile fallback, language switching and hidden diagnostics. Emulator and mock
+evidence only; no live Firebase or physical device claim.
+Remaining Batch 3 milestones are in progress. RTDB live tracking needs a trusted coordinator.

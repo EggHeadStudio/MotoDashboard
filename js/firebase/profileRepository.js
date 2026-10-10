@@ -12,8 +12,13 @@ export async function ensureProfile(user, language, displayName) {
   const { sdk, db, ref } = await ownProfile(user);
   return sdk.runTransaction(db, async transaction => {
     const snapshot = await transaction.get(ref);
+    const displayRef = sdk.doc(db, 'displayProfiles', user.uid);
+    const display = await transaction.get(displayRef);
     if (snapshot.exists()) {
       const profile = snapshot.data();
+      const nextName = displayName ? displayName.trim().slice(0, 64) : profile.displayName;
+      if (!display.exists() || display.data().displayName !== nextName)
+        transaction.set(displayRef, {displayName: nextName, updatedAt: sdk.serverTimestamp()});
       if (displayName && displayName !== profile.displayName) {
         const changes = { displayName: displayName.trim().slice(0, 64), updatedAt: sdk.serverTimestamp() };
         transaction.update(ref, changes);
@@ -29,6 +34,7 @@ export async function ensureProfile(user, language, displayName) {
       createdAt: sdk.serverTimestamp(), updatedAt: sdk.serverTimestamp()
     };
     transaction.set(ref, profile);
+    transaction.set(displayRef, {displayName: profile.displayName, updatedAt: sdk.serverTimestamp()});
     return profile;
   });
 }

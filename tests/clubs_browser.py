@@ -9,7 +9,7 @@ def back(page):
     page.wait_for_selector('#club-create')
 
 def lookup(page,id):
-    page.fill('#club-lookup-id',id);page.locator('#club-lookup button[type=submit]').click()
+    page.fill('#club-lookup-url',page.url.split('#')[0]+'#/club/'+id);page.locator('#club-lookup button[type=submit]').click()
     page.wait_for_function('document.querySelector("#clubs-dialog .feature-status").textContent==="Up to date."')
 
 def switch(page,email,new=False):
@@ -29,6 +29,8 @@ def run_club_tests(browser,base,route_map):
     page.add_init_script("window.__unhandled=[];addEventListener('unhandledrejection',e=>window.__unhandled.push(String(e.reason)))")
     page.goto(base,wait_until='networkidle');register(page,'owner@example.test');open_clubs(page)
     clubs={}
+    assert not page.locator('#start-debug').is_visible()
+    assert 'fixture-0' not in page.locator('#clubs-dialog').inner_text()
     for name,policy,visibility in [('Open Riders','open','public'),('Approval Riders','approval','public'),('Private Riders','private','private')]:
         page.click('#club-create');page.fill('#club-form-name',name);page.fill('#club-form-description','Welcome riders')
         page.select_option('#club-form-membershipPolicy',policy);page.select_option('#club-form-visibility',visibility)
@@ -38,6 +40,10 @@ def run_club_tests(browser,base,route_map):
     lookup(page,clubs['open']);page.click('#club-edit');page.fill('#club-form-description','Updated description')
     page.locator('#club-form button[type=submit]').click();page.wait_for_selector('#club-edit')
     assert 'Updated description' in page.locator('#clubs-dialog').inner_text()
+    assert page.locator('.owner-name').inner_text()=='Garage Rider'
+    assert page.locator('.member-name').first.inner_text()=='Garage Rider'
+    assert page.locator('.profile-avatar').count()>0
+    assert 'fixture-0' not in page.locator('#clubs-dialog').inner_text()
     switch(page,'member@example.test',True)
     lookup(page,clubs['open'])
     outsider=page.evaluate('''async(id)=>{
@@ -67,7 +73,10 @@ def run_club_tests(browser,base,route_map):
     switch(page,'owner@example.test');lookup(page,clubs['approval'])
     page.locator('[data-request-uid="fixture-1"]').get_by_role('button',name='Approve',exact=True).click()
     page.wait_for_function('!document.querySelector("[data-request-uid=fixture-1]")')
-    back(page);lookup(page,clubs['private']);page.fill('#club-invite-uid','fixture-1')
+    back(page);lookup(page,clubs['private'])
+    page.fill('#club-invite-search-name','Garage Rider');page.locator('#club-invite-search button[type=submit]').click()
+    page.wait_for_selector('#club-invite-recipient option',state='attached')
+    page.select_option('#club-invite-recipient','fixture-1')
     page.locator('#club-invite button[type=submit]').click()
     page.wait_for_function('(id)=>Boolean(JSON.parse(localStorage.getItem("__mockProfiles"))["clubs/"+id+"/invites/fixture-1"])',arg=clubs['private'])
     switch(page,'member@example.test')
@@ -84,6 +93,14 @@ def run_club_tests(browser,base,route_map):
     page.locator('#member-fixture-1 button[type=submit]').click();page.wait_for_selector('#rank-add')
     switch(page,'member@example.test');lookup(page,clubs['open'])
     assert 'Captain' in page.locator('[data-member-uid="fixture-1"]').inner_text()
+    assert 'fixture-1' not in page.locator('[data-member-uid="fixture-1"]').inner_text()
+    page.evaluate("()=>{const r=JSON.parse(localStorage.getItem('__mockProfiles'));delete r['displayProfiles/fixture-0'];localStorage.setItem('__mockProfiles',JSON.stringify(r));}")
+    page.reload(wait_until='networkidle');open_clubs(page);lookup(page,clubs['open'])
+    assert page.locator('.owner-name').inner_text()=='Member'
+    assert page.locator('[data-member-uid="fixture-0"] .member-name').inner_text()=='Member'
+    page.select_option('#language-select','fi')
+    assert page.locator('.owner-name').inner_text()=='J\u00e4sen'
+    page.select_option('#language-select','en')
     assert not page.locator('#rank-add').count() and not page.locator('#club-admission').count()
     denial=page.evaluate("""async(id)=>{
       const {setMember}=await import('./js/firebase/clubRepository.js');const {getAccount}=await import('./js/auth-state.js');

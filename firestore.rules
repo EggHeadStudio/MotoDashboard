@@ -29,6 +29,21 @@ service cloud.firestore {
       allow delete: if false;
     }
     function signedIn() { return request.auth != null; }
+    // Display names are discoverable within the signed-in app; private profiles stay private.
+    match /displayProfiles/{uid} {
+      allow get: if signedIn() && (!exists(/databases/$(database)/documents/displayProfiles/$(uid))
+        || resource.data.keys().hasOnly(['displayName', 'updatedAt']));
+      allow list: if signedIn() && request.query.limit != null && request.query.limit <= 30
+        && resource.data.keys().hasOnly(['displayName', 'updatedAt']);
+      allow create, update: if owns(uid)
+        && request.resource.data.keys().hasAll(['displayName', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['displayName', 'updatedAt'])
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() > 0 && request.resource.data.displayName.size() <= 64
+        && request.resource.data.displayName == getAfter(/databases/$(database)/documents/users/$(uid)).data.displayName
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
+    }
     function identifier(value) { return value is string && value.matches('^[A-Za-z0-9_-]{1,100}$'); }
     function category(value) {
       return value in ['motorcycle', 'car', 'moped', 'scooter', 'atv-utv', 'off-road', 'snowmobile', 'caravan', 'bicycle', 'e-bike', 'e-scooter', 'other'];

@@ -3320,3 +3320,16 @@ acceptance. See DEPLOYMENT_CHECKLIST.md and IMPLEMENTATION_STATUS.md for exact g
 
 **STOP: Security fixes complete locally. No further implementation, push, deployment
 or production-data changes are authorized by this document.**
+
+
+## Batch 3 - additional identity milestone (2026-10-10)
+
+Implemented locally: technical IDs remain internal to routing, storage and permissions.
+Club screens now show cached display names, generic avatar, localized role and visible rank.
+Missing names use Member / Jäsen, including owners. Invitations select a display name
+and Clubs open through shared URLs. Normal startup diagnostics are hidden.
+`displayProfiles/{uid}` contains only displayName and updatedAt, readable by signed-in
+users with bounded name search. Private users documents remain owner-only. Own login
+lazily creates the projection; no production backfill was performed.
+Live RTDB tracking remains blocked pending a trusted membership coordinator. No browser
+ACL mirroring, privileged credentials or Cloud Functions are introduced in this batch.

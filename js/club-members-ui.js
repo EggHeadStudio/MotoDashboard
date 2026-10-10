@@ -4,6 +4,7 @@ import { isManager, canManageMember, canAssignRank } from './data/permissions.js
 import { t } from './i18n/i18n.js';
 import { element, button, field, labelText } from './ui/forms.js';
 import { dataErrorKey } from './firebase/access.js';
+import { loadDisplayProfiles } from './firebase/displayProfiles.js';
 
 export function initClubMembersUI() {
   registerClubSection(async ({uid,model,body,status,action,stillCurrent})=>{
@@ -46,12 +47,18 @@ export function initClubMembersUI() {
       const page=await listClubRecords(uid,club.id,'members',memberCursor);if(!stillCurrent()) return;
       const missing=[...new Set(page.records.map(member=>member.rankId).filter(id=>id && !ranks.some(rank=>rank.id===id)))];
       const assigned=await Promise.all(missing.map(rankId=>getRank(uid,club.id,rankId)));
+      const identities=await loadDisplayProfiles(uid,page.records.map(member=>member.uid));
       if(!stillCurrent()) return;ranks.push(...assigned.filter(Boolean));
       memberCursor=page.cursor;
       for(const member of page.records) {
         const card=element('article','feature-card');card.dataset.memberUid=member.uid;
         const rank=ranks.find(rank=>rank.id===member.rankId);
-        card.append(element('p','member-uid',member.uid),labelText(element('p','member-role'),'role.'+member.technicalRole),
+        const identity=element('div','member-identity');
+        const avatar=element('span','profile-avatar','●');avatar.setAttribute('aria-hidden','true');
+        const name=element('strong','member-name',identities.get(member.uid)?.displayName);
+        if(!name.textContent) labelText(name,'identity.member');
+        identity.append(avatar,name);card.append(identity);
+        card.append(labelText(element('p','member-role role-badge'),'role.'+member.technicalRole),
           rank ? element('p','member-rank',rank.name) : labelText(element('p','member-rank'),'members.unassigned'));
         if(canAssignRank(role,uid,member)) {
           const form=element('form');form.id='member-'+member.uid;

@@ -1065,3 +1065,17 @@ publication: [Pages workflow deployment](https://docs.github.com/en/pages/gettin
 
 **STOP. Deployment preparation complete; this document authorizes no implementation,
 commit, push, deployment, production-data changes or live test execution.**
+
+
+## Batch 3 identity deployment addition
+
+**WARNING:** deploy reviewed root firestore.rules before this frontend: profile
+initialization now reads/writes displayProfiles/{uid}. Exactly displayName and updatedAt
+are permitted. Signed-in users can discover names (bounded search); account emails remain
+private. Existing users create their own missing projection on their next login. No
+operator backfill or Console document creation is required; legacy members who have not
+logged in appear as Member / Jäsen. No additional composite index is needed for name
+search. Verify own projection creation and another account's private-profile denial.
+**BLOCKER (live tracking):** database.rules.json stays deny-all. Firestore membership
+cannot authorize RTDB without a trusted coordinator, which this Spark prototype lacks.
+Do not unlock RTDB or claim live location support. No rules were deployed here.

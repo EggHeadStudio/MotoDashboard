@@ -70,7 +70,10 @@ export async function getDocs(input) {
   const {path,filters=[]}=typeof input==='string'?{path:input}:input;
   let docs=Object.entries(read()).filter(([key])=>key.startsWith(path+'/') && key.slice(path.length+1).split('/').length===1).map(([key,data])=>snap(key,data));
   for(const filter of filters) {
-    if(filter.kind==='where') docs=docs.filter(doc=> filter.op==='=='?doc.data()[filter.field]===filter.value:true);
+    if(filter.kind==='where') docs=docs.filter(doc=> {
+      const v=doc.data()[filter.field];
+      return filter.op==='=='?v===filter.value:filter.op==='>='?v>=filter.value:filter.op==='<='?v<=filter.value:filter.op==='>'?v>filter.value:filter.op==='<'?v<filter.value:filter.op==='in'?filter.value.includes(v):true;
+    });
     if(filter.kind==='order') docs.sort((a,b)=>(a.data()[filter.field]<b.data()[filter.field]?-1:1)*(filter.direction==='desc'?-1:1));
     if(filter.kind==='after') { const i=docs.findIndex(doc=>doc.id===filter.value.id); if(i>=0) docs=docs.slice(i+1); }
     if(filter.kind==='limit') docs=docs.slice(0,filter.value);

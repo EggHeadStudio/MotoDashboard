@@ -994,6 +994,9 @@
 #account-dialog button:disabled { opacity: .6; cursor: wait; }
 #account-dialog p { font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
 #auth-status { color: #ffd400; }
+.member-identity { display: flex; align-items: center; gap: 12px; }
+.profile-avatar { display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: #303843; color: #d7e4f2; flex: none; }
+.role-badge { display: inline-block; border: 1px solid #607085; border-radius: 12px; padding: 3px 9px; margin-right: 8px; }
 @media (max-height: 700px) {
   #start-overlay { justify-content: flex-start; padding-top: 72px; }
   #start-logo { width: 110px; height: 110px; }

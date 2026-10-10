@@ -5,6 +5,7 @@ import { isManager } from './data/permissions.js';
 import * as repository from './firebase/clubRepository.js';
 import { dataErrorKey } from './firebase/access.js';
 import { dialog, element, field, button, labelText, runAction } from './ui/forms.js';
+import { loadDisplayProfiles, searchDisplayProfiles } from './firebase/displayProfiles.js';
 
 const sections = new Set();
 export function registerClubSection(render) { sections.add(render); }
@@ -35,11 +36,19 @@ export function initClubUI() {
   function renderBrowse() {
     editing=false;view.body.replaceChildren();
     if(!uid) {signedOut();return;}
-    view.body.append(labelText(element('p','muted'),'clubs.accountUid',{uid}),button('clubs.create',()=>edit(null),'club-create'),
+    view.body.append(button('clubs.create',()=>edit(null),'club-create'),
       button('common.refresh',()=>action(()=>Promise.resolve(),()=>browse())));
     const lookup=element('form');lookup.id='club-lookup';
-    field(lookup,'id','clubs.id',{required:true,max:100});const open=button('ui.open');open.type='submit';lookup.append(open);
-    lookup.addEventListener('submit',event=>{event.preventDefault();const id=new FormData(lookup).get('id');action(()=>Promise.resolve(),()=>openClub(id));});
+    field(lookup,'url','identity.clubLink',{required:true,max:1000,type:'url'});const open=button('ui.open');open.type='submit';lookup.append(open);
+    lookup.addEventListener('submit',event=>{
+      event.preventDefault();const value=new FormData(lookup).get('url');
+      action(()=>{
+        const url=new URL(value),base=new URL('./',document.baseURI);
+        if(url.origin!==base.origin || url.pathname!==base.pathname || !/^#\/club\/[A-Za-z0-9_-]{1,100}$/.test(url.hash))
+          throw Object.assign(new Error('invalid-input'),{code:'invalid-input'});
+        selectedId=url.hash.split('/')[2];
+      },()=>openClub(selectedId));
+    });
     view.body.append(lookup,labelText(element('h3'),'clubs.mine'));
     if(!own.size) view.body.append(labelText(element('p'),'clubs.noMemberships'));
     const card=(club)=>{
@@ -86,8 +95,22 @@ export function initClubUI() {
     identity.append(element('h3','',club.name),labelText(element('p'),'category.'+club.category),element('p','club-description',club.description));
     view.body.replaceChildren(button('clubs.back',()=>action(()=>Promise.resolve(),()=>browse())),
       button('common.refresh',()=>action(()=>Promise.resolve())),identity,
-      labelText(element('p','muted'),'clubs.clubId',{id:club.id}),labelText(element('p'),'policy.'+club.membershipPolicy),
-      labelText(element('p'),'clubs.memberCount',{count:club.memberCount}),labelText(element('p','muted'),'clubs.accountUid',{uid}));
+      labelText(element('p'),'policy.'+club.membershipPolicy),
+      labelText(element('p'),'clubs.memberCount',{count:club.memberCount}),
+      button('identity.shareClub',async()=>{
+        const url=new URL('./',document.baseURI);url.hash='/club/'+club.id;
+        try {
+          if(navigator.share) await navigator.share({title:club.name,url:url.href});
+          else await navigator.clipboard.writeText(url.href);
+          labelText(view.status,'identity.copied');
+        } catch(error) {if(error.name!=='AbortError') labelText(view.status,'identity.copyFailed');}
+      }));
+    if(club.ownerUid) {
+      const names=await loadDisplayProfiles(owner,[club.ownerUid]);if(!current(owner,token)) return;
+      const ownerName=element('span','owner-name',names.get(club.ownerUid)?.displayName);
+      if(!ownerName.textContent) labelText(ownerName,'identity.member');
+      const ownerRow=element('p');ownerRow.append(labelText(element('span'),'role.owner'),': ',ownerName);view.body.append(ownerRow);
+    }
     if(role) view.body.append(labelText(element('p'),'role.'+role));
     if(club.state==='archived') view.body.append(labelText(element('p'),'clubs.archived'));
     if(!membership && club.state==='active') {
@@ -114,19 +137,35 @@ export function initClubUI() {
       const admin=element('section','feature-card');admin.id='club-admission';
       admin.append(labelText(element('h3'),'clubs.admission'));
       const inviteForm=element('form');inviteForm.id='club-invite';
-      field(inviteForm,'uid','clubs.inviteUid',{required:true,max:100});const inviteButton=button('clubs.invite');inviteButton.type='submit';inviteForm.append(inviteButton);
+      const search=element('form');search.id='club-invite-search';
+      field(search,'name','identity.searchName',{required:true,max:64});
+      const find=button('identity.search');find.type='submit';search.append(find);
+      const recipient=field(inviteForm,'recipient','identity.recipient',{required:true,choices:[]});
+      search.addEventListener('submit',event=>{
+        event.preventDefault();const name=new FormData(search).get('name');
+        action(async owner=>{
+          const people=await searchDisplayProfiles(owner,name);if(!current(owner,token)) return;
+          recipient.replaceChildren();
+          for(const person of people.filter(person=>person.uid!==owner)) {
+            const option=element('option','',person.displayName);option.value=person.uid;recipient.append(option);
+          }
+        },()=>labelText(view.status,recipient.children.length?'common.loaded':'identity.notFound'));
+      });
+      const inviteButton=button('identity.invite');inviteButton.type='submit';inviteForm.append(inviteButton);
       inviteForm.addEventListener('submit',event=>{
-        event.preventDefault();const target=new FormData(inviteForm).get('uid');
+        event.preventDefault();const target=new FormData(inviteForm).get('recipient');
         action(owner=>repository.inviteMember(owner,club.id,target));
       });
-      admin.append(inviteForm,labelText(element('p','muted'),'clubs.inviteHint'));view.body.append(admin);
+      admin.append(search,inviteForm,labelText(element('p','muted'),'identity.inviteHint'));view.body.append(admin);
       let cursor=null;
       async function requests() {
         const page=await repository.listClubRecords(owner,club.id,'joinRequests',cursor);
+        const names=await loadDisplayProfiles(owner,page.records.map(row=>row.uid));
         if(!current(owner,token)) return;
         page.records.forEach(row=>{
           const card=element('div','feature-card');card.dataset.requestUid=row.uid;
-          card.append(element('p','',row.uid),button('clubs.approve',()=>action(owner=>repository.decideRequest(owner,club.id,row.uid,true))),
+          const name=element('p','',names.get(row.uid)?.displayName);if(!name.textContent) labelText(name,'identity.member');
+          card.append(name,button('clubs.approve',()=>action(owner=>repository.decideRequest(owner,club.id,row.uid,true))),
             button('clubs.reject',()=>action(owner=>repository.decideRequest(owner,club.id,row.uid,false))));admin.append(card);
         });cursor=page.cursor;
         if(page.more) {const next=button('clubs.more',()=>{next.remove();requests().catch(error=>labelText(view.status,dataErrorKey(error)));});admin.append(next);}
@@ -149,4 +188,14 @@ export function initClubUI() {
     if(uid && view.node.open) browse().catch(error=>labelText(view.status,dataErrorKey(error)));
   });
   onLanguageChange(()=>{if(!editing && !selectedId) renderBrowse();});
+  async function openLinkedClub() {
+    const match=/^#\/club\/([A-Za-z0-9_-]{1,100})$/.exec(location.hash);
+    if(!match) return;
+    if(!view.node.open) view.node.showModal();
+    if(uid) await action(()=>Promise.resolve(),()=>openClub(match[1]));
+    else signedOut();
+  }
+  addEventListener('hashchange',()=>void openLinkedClub());
+  onAccountChange(({user})=>{if(user) void openLinkedClub();});
+  void openLinkedClub();
 }

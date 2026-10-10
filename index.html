@@ -102,7 +102,7 @@
       <button class="hud-btn" id="retry-btn" aria-label="Retry GPS tracking" data-i18n-aria-label="ui.retryLabel" data-i18n="ui.retry">Try again</button>
       <div id="safety-msg" aria-hidden="true" data-i18n="ui.safety">Use your vehicle's instruments as the primary speedometer.</div>
     </div>
-    <div id="speed-debug" style="font-size:10px;color:rgba(255,255,255,0.6);text-align:center;padding:2px 0;pointer-events:none;"></div>
+    <div id="speed-debug" hidden></div>
   </div>
 
   <!-- Start overlay -->
@@ -132,7 +132,7 @@
       <button id="clear-history-btn" class="start-option-btn secondary" aria-label="Delete all saved rides" data-i18n-aria-label="ui.clearLabel" data-i18n="ui.clear">Delete all rides</button>
     </div>
     <div id="start-status" aria-live="assertive" aria-atomic="true" data-i18n="ui.ready">Ready</div>
-    <div id="start-debug" aria-live="polite" aria-atomic="true"></div>
+    <div id="start-debug" hidden></div>
     <div id="map-fallback-msg" aria-live="polite"></div>
     <div id="start-gps-hint" aria-live="polite"></div>
     <div id="start-version" aria-hidden="true"></div>
@@ -152,6 +152,7 @@
     <label for="account-language" data-i18n="ui.language">Language</label>
     <select id="account-language"><option value="en">English</option><option value="fi">Suomi</option></select>
     <p id="auth-identity"></p>
+    <p data-i18n="identity.namesVisible">Your display name is visible to signed-in people. Your private profile and email remain private.</p>
     <p data-i18n="auth.localRides">Rides stay in this browser. Signing in does not upload them.</p>
     <form id="auth-form">
       <label for="auth-mode" data-i18n="auth.action">Action</label>
