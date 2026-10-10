@@ -1921,29 +1921,32 @@ Show active participants together in real time.
 ## Tasks
 
 -   [x] Decide live transport: Cloudflare Worker/Durable Objects/WebSockets (Batch 4).
--   [ ] Start live sharing only after explicit Group Session
+-   [x] Start live sharing only after explicit Group Session
     participation.
--   [ ] Throttle location updates.
--   [ ] Validate locations.
--   [ ] Show active participants.
--   [ ] Marker identity.
--   [ ] Selected vehicle.
--   [ ] Club rank when applicable.
--   [ ] Last-update timestamp.
--   [ ] Stale marker handling.
--   [ ] Stop sharing on leave/end.
--   [ ] Reconnect handling.
--   [ ] Avoid persistent high-frequency location history unless
+-   [x] Throttle location updates.
+-   [x] Validate locations.
+-   [x] Show active participants.
+-   [x] Marker identity.
+-   [x] Selected vehicle.
+-   [x] Club rank when applicable.
+-   [x] Last-update timestamp (localized time and age).
+-   [x] Stale marker handling.
+-   [x] Stop sharing on leave/end.
+-   [x] Reconnect handling.
+-   [x] Avoid persistent high-frequency location history unless
     explicitly needed.
 
 ## Checks
 
--   [ ] Two simulated/users appear.
--   [ ] Updates move markers.
--   [ ] Leaving stops updates.
--   [ ] Stale positions identified.
--   [ ] Unauthorized outsiders cannot read private live locations.
+-   [x] Two simulated/users appear.
+-   [x] Updates move markers.
+-   [x] Leaving stops updates.
+-   [x] Stale positions identified.
+-   [x] Unauthorized outsiders cannot read private live locations (local workerd).
 -   [ ] Firebase usage is not excessive.
+
+Checked items are local implementation/tests only. Real phones/accounts, deployed
+IAM and production usage remain pending; costs and Spark limits are documented.
 
 ### HUMAN CHECKPOINT
 
@@ -1964,22 +1967,26 @@ Add lightweight group coordination.
 
 ## Tasks
 
--   [ ] OK.
--   [ ] Fuel.
--   [ ] Mechanical.
--   [ ] Need help.
--   [ ] Status visible to permitted participants.
--   [ ] Reset status.
--   [ ] Basic regroup/separation calculation.
--   [ ] Avoid noisy alerts.
--   [ ] Clear disclaimer that status is not an emergency service.
+-   [x] OK.
+-   [x] Fuel.
+-   [x] Mechanical.
+-   [x] Need help.
+-   [x] Status visible to permitted participants.
+-   [x] Reset status (select OK).
+-   [x] Basic regroup/separation calculation (fresh straight-line positions).
+-   [x] Avoid noisy alerts (informational summary; no alert threshold).
+-   [x] Clear disclaimer that status is not an emergency service.
 
 ## Checks
 
--   [ ] Status syncs.
--   [ ] Permissions correct.
--   [ ] Regroup handles GPS noise.
--   [ ] No navigation behavior introduced.
+-   [x] Status syncs (trusted Firestore recheck/local transport).
+-   [x] Permissions correct (local tests).
+-   [x] Regroup handles GPS noise (accepted sample quality bounds/stale exclusion;
+    approximate display, no sustained-separation alert claim).
+-   [x] No navigation behavior introduced.
+
+Real mobile accuracy/status/latency acceptance is pending. If alerts are later
+approved, sustained separation and noise behavior need additional measurement.
 
 ### HUMAN CHECKPOINT
 
@@ -3391,3 +3398,41 @@ Publication requires reviewed rules first, all 16 Lobby composite indexes Enable
 and real two-account/two-phone acceptance. RTDB must stay locked. Trusted coordination
 and future trusted subscription entitlements require separate approval/design. See
 DEPLOYMENT_CHECKLIST.md and LIVE_TRACKING.md. Stop here pending explicit user approval.
+
+## Batch 4 — current implementation result and next approval boundary
+
+The user's Batch 4 request explicitly approved local milestones 0–10 and replaces
+the previously blocked RTDB transport with trusted Cloudflare admission. All are
+implemented locally; **STOP here**. Deployment, production acceptance, Stripe,
+subscriptions, Official events, merchandise and major UI redesign are not begun.
+The earlier stop points/results are historical. No agreed future requirement is
+removed by this result; account deletion, privacy/erasure, public media, entitlements
+and the wider product roadmap remain pending under their original constraints.
+
+| Batch 4 milestone | Local result |
+| --- | --- |
+| 0 — audit/plan | Reused Group/participants/bans/displayProfiles and Club lifecycle, existing Auth state, GPS pipeline, Leaflet/dictionary/UI hooks; replaced active RTDB plan while preserving Batch 3 evidence. |
+| 1 — account identity | Mandatory trimmed Unicode 3–30 names, owner editing, missing legacy-name prompt, no email/UID fallback, confirmation retained; Unicode rules/browser regressions. |
+| 2 — separate Worker | cloudflare/ JavaScript, official Wrangler/Miniflare/workerd, SQLite DO binding and migration; no frontend build or automatic deployment. |
+| 3 — verified authentication | Fixed-project RS256 signature/claims/cert verification; Origin/session-bound 30s one-use ticket, no JWT/socket-query shortcuts. |
+| 4 — Firestore authority | Server-only read-only OAuth/IAM REST checks with consistent snapshot/deadline; actual admitted participant, no ban, active session and available Club. |
+| 5 — live room | Serialized hibernatable sockets, isolated room, limits/rates, duplicate replacement, reconnect snapshot, periodic revocation, lease guard and fail-closed outage. |
+| 6 — compact transport | Versioned latest-only JSON, 5s moving / 30s stationary, duplicate suppression, fresh-fix heartbeat, no historical route or repeated identity payload. |
+| 7 — frontend | Explicit consent/admission before GPS, one existing watcher, Leaflet labels and map controls, account/leave/Back/removal/completion cleanup; personal recorder preserved. |
+| 8 — presence/regroup | Four authoritative manual statuses, fresh/stale/no-location/disconnected counts, fresh straight-line separation, EN/FI; no road/order/speed/emergency claim. |
+| 9 — cleanup | Removed only unused js/firebase/realtime.js; import guards replace initializer check; RTDB deny-all emulator coverage retained; frontend-only Pages artifact. |
+| 10 — verification/docs | Full local regressions, measured message fixtures, conservative cost/capacity model, user setup/rollback and live acceptance checklist. |
+
+Detailed audit/module/data/security/test/commit evidence: BATCH_4_RESULT.md.
+Live contract: LIVE_TRACKING.md and cloudflare/PROTOCOL.md. Exact 14-step operator
+guide: CLOUDFLARE_SETUP.md. Existing dashboard closure remains large; live logic
+is isolated in four native modules rather than replacing GPS/recording modules.
+The required trust dependency is implemented locally, not a browser ACL mirror.
+
+Next order, **only after explicit approval**: verify real rules/indexes/domains and
+legacy inventory → approve reader IAM/key/account/budgets → deploy trusted backend
+→ configure actual endpoint → compatible frontend publication → two-account and
+two-phone acceptance. Capacity planning must precede wider use: current Spark
+quota cannot support the modeled 1,000+ active-user workload. No quota workaround
+may weaken revocation. Auth revocation beyond token expiry, global abuse controls,
+complete erasure and production hibernation/mobile behavior remain explicit work.

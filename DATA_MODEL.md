@@ -178,8 +178,45 @@ Sharing route: #/session/{uuid}; addressed invitation route:
 #/session/{uuid}/invite/{token}. Auth return keeps the fragment; invitation resolution
 checks account, token, expiry and usable parent. Acceptance cleans the fragment.
 QR is generated locally by the MIT vendored Nayuki module; no QR service sees URLs.
-No NFC writing, subscription entitlement, Cloud Function or backend exists.
+No NFC writing, subscription entitlement or Cloud Function exists. Batch 4 adds
+the isolated Worker described below.
 
-RTDB database.rules.json remains exactly deny-all. Its proposed live model and
-trusted grant/revocation requirements are specified in LIVE_TRACKING.md. No
-production location data model is enabled, and no client copies Firestore ACLs.
+Historical Batch 3 RTDB proposals are superseded by the following Batch 4 contract.
+RTDB database.rules.json remains exactly deny-all; no client copies Firestore ACLs.
+
+## Batch 4 identity and ephemeral live data
+
+New/changed `users/{uid}.displayName` is trimmed and 3–30 Unicode code points.
+Rules enforce normalized text and RE2 character bounds (string size in the
+emulator counts UTF-16 units). Existing unchanged legacy 1–64-unit names can
+still receive language updates; invalid legacy names prompt an owner correction.
+Owner editing synchronizes the two-field displayProfiles projection. No email
+or UID is used as a visible fallback. Account deletion/export remain future
+requirements; this batch does not implement complete cloud erasure.
+
+No permanent Firestore location path, participant coordinate field, index or
+RTDB ACL is introduced. The Worker reads current groupSessions parent,
+participants/{uid}, bans/{uid}, displayProfiles/{uid}, and optional canonical Club.
+Actual active-session membership is mandatory even for an organizer. Snapshot
+vehicle/Club/rank is display-only; custom ranks never authorize live access.
+An archived Club remains usable consistently with current Group rules; a deleted
+or missing Club revokes access. Trusted read-only IAM bypasses client rules and
+is not scoped to these collections by rules; secret compromise is a residual risk.
+
+| Live data | Location / lifecycle |
+| --- | --- |
+| Verified UID + token expiry | Internal gateway/ticket/attachment only; never client marker text or public frame |
+| Firebase JWT / OAuth token | Request or server-memory cache only; no logs/URL/DO durable storage |
+| Connection ticket | Raw random value returned once and held briefly in browser memory; SHA-256 key in room SQLite, bound UID/origin/session/expiry, consumed once, TTL 30s |
+| Session ID | Internal immutable DO room binding, kept in SQLite; Firestore keeps canonical lifecycle/retired identities |
+| Current rider | Hibernatable attachment: internal UID, fresh opaque riderId, bounded identity/status, lease, token expiry, cadence/sequence, lastSeen, latest position; no route array |
+| Latest position | latitude/longitude/accuracy/heading/speedKmh/sampledAt/receipt at; fresh <=45s, expires >=120s; attachment only, cleared on close/replacement |
+| Public room frame | opaque riderId, safe displayName, selected nickname/category, optional Club name/rank, informational status and admitted-room latest position; no UID/email/invite or approval records |
+| Authority snapshot | Consistent Firestore readTime, checkedAt, 30s lease; rechecked on redemption, transitions and periodic alarms; expires fail-closed |
+
+Attachments survive runtime hibernation, so "ephemeral" does not mean every
+sleep erases them. Only latest state is serialized; no permanent GPS storage or
+historical transmission is created. Future trusted account deletion must revoke
+membership, invalidate live access/tickets, handle active attachments/retained
+room metadata and normal permanent records. No deletion/production migration is
+performed here. See LIVE_TRACKING.md, cloudflare/PROTOCOL.md and CLOUDFLARE_SETUP.md.

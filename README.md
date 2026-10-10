@@ -1,4 +1,17 @@
-> **Batch 4 current architecture:** GitHub Pages frontend, Firebase Auth identity, Firestore persistent authorization/data, Cloudflare Worker + one Durable Object per Group Session + WebSockets for live locations. RTDB stays locked. See LIVE_TRACKING.md; older Batch 3 results below are historical. Cloudflare setup and live acceptance are not completed.
+> **Batch 4 current result:** all milestones implemented locally; Firebase Auth/Firestore plus Cloudflare Worker, Durable Objects and WebSockets. RTDB stays locked. No deployment or live acceptance completed. [Batch 4 report](BATCH_4_RESULT.md) and [Cloudflare setup](CLOUDFLARE_SETUP.md) supersede historical Batch 3 live plans below.
+
+Display names are required, trimmed and 3–30 Unicode characters; owners can edit
+them. Live sharing requires active Group admission and explicit consent, reuses
+the existing GPS watcher/Leaflet map, and shows safe names, vehicle/rank/status,
+freshness and approximate straight-line separation. The endpoint in live-config.js
+is intentionally empty until the operator deploys the backend.
+
+Only cloudflare/ uses npm/Node 22+ (`npm.cmd ci`, `npm.cmd test` inside that
+directory). The static frontend requires no build. GitHub Pages Source must be
+GitHub Actions; its workflow publishes only the frontend allowlist, never the
+server project. See the setup guide for exact reader IAM, secret, budget and
+two-phone acceptance steps. Firestore Spark capacity is insufficient for the
+documented 1,000+ active-user workload without a separate billing decision.
 
 # MotoDashboard
 

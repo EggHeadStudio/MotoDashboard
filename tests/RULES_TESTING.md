@@ -1,5 +1,41 @@
 # Local rules testing and live acceptance
 
+## Current Batch 4 local verification
+
+Use the same fixed demo emulator commands below, never production endpoints.
+Run security, Group and identity runners sequentially because fixtures overlap;
+RTDB remains a deny-all foundation. Current distinct assertion counts are:
+
+| Suite | Passed | Failed | Skipped |
+| --- | ---: | ---: | ---: |
+| Original Firestore | 102 | 0 | 0 |
+| Additional security | 137 | 0 | 0 |
+| Group/Lobby/participation | 273 | 0 | 0 |
+| Identity/name rules | 32 | 0 | 0 |
+| Locked RTDB | 68 | 0 | 0 |
+| Worker Node/workerd | 47 | 0 | 0 |
+| Full browser | 24 groups | 0 | 0 |
+| Pages paths/offline | 2 groups | 0 | 0 |
+
+Emulator assertions: **612**, baseline counted once. Worker includes 12 actual
+local Miniflare/workerd cases with generated signed JWTs and mocked Google/Firestore
+responses, including periodic silent revocation and real-time 30s ticket expiry.
+Browser includes 17 confirmation cases, 36 domain assertions, profile Unicode
+boundaries/legacy correction and consent/GPS/Leaflet integration with mocked live
+transport. Real Firebase browser SDK imports run with cloud APIs blocked. Pages
+checks 182 references / 62 distinct local URLs under /MotoDashboard/.
+
+From cloudflare/, Node 22+, npm and OpenSSL (Git for Windows includes it):
+`npm.cmd ci`, then `npm.cmd test`. It builds a fresh local bundle before testing.
+`npm.cmd run check` is dry-run only. Root `npm.cmd test` was also run and discovers
+the same 47 Worker cases; do not add duplicate coverage to totals. Browser domain
+assertions run in Playwright, not a fabricated Node DOM.
+
+No real Cloudflare deployment, live Firebase account/IAM/rules, hibernation eviction,
+physical phone/camera or production quota test has been completed. The current
+operator procedure is ../CLOUDFLARE_SETUP.md; the following Batch 3 blocked-path
+record is historical. Locked RTDB results still do not demonstrate a live RTDB.
+
 ## Batch 3 local verification (2026-10-10)
 
 Run the Firestore emulator as documented below. Download the official database

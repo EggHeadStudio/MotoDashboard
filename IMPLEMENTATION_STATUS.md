@@ -1,6 +1,6 @@
 # MotoDashboard - Implementation Status
 
-> **Current Batch 3:** independent Group/Lobby/invitation/identity work is implemented locally. Live tracking and its dependent parts remain blocked; RTDB stays deny-all. See [BATCH_3_RESULT.md](BATCH_3_RESULT.md) for current milestones/evidence and [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md) for publication/manual tests. Earlier sections are historical. No push/deployment/production operation occurred.
+> **Current Batch 4:** all milestones implemented locally with Cloudflare live transport and required account names. RTDB stays deny-all. See [BATCH_4_RESULT.md](BATCH_4_RESULT.md), the current Batch 4 section at the end, and [CLOUDFLARE_SETUP.md](CLOUDFLARE_SETUP.md). Earlier Batch 3 blockers/test records are historical. No push/deployment/production operation occurred.
 
 ## Current registration fix and roadmap update - 2026-10-10
 
@@ -815,3 +815,40 @@ Publication requires reviewed rules first, all 16 Lobby composite indexes Enable
 and real two-account/two-phone acceptance. RTDB must stay locked. Trusted coordination
 and future trusted subscription entitlements require separate approval/design. See
 DEPLOYMENT_CHECKLIST.md and LIVE_TRACKING.md. Stop here pending explicit user approval.
+## Batch 4 — current local result (supersedes historical transport blockers)
+
+Milestones 0–10 are complete locally. Full details, files and commits are in
+[BATCH_4_RESULT.md](BATCH_4_RESULT.md); operator steps and estimates in
+[CLOUDFLARE_SETUP.md](CLOUDFLARE_SETUP.md). No push/deployment/production writes.
+Names are normalized Unicode 3–30 at registration and owner editing, with legacy
+correction prompts and unchanged password confirmation. The static frontend
+integrates explicit-consent Cloudflare live state with the existing GPS pipeline
+and Leaflet. No second GPS watcher, RTDB initializer or route replay is added.
+
+The separate Worker cryptographically verifies the pinned Firebase project,
+uses one-use Origin/session-bound tickets, and checks current Firestore admission
+with read-only IAM. One bounded hibernatable DO room per session serializes
+revocation before broadcasts; 30s authority leases expire fail-closed. Latest
+positions only in socket attachments; durable SQLite holds room ID/ticket hashes.
+Four manual statuses, freshness and approximate fresh straight-line separation
+are localized and informational. Public UID labels and token URLs are excluded.
+
+Final evidence: 102 original + 137 security + 273 Group + 32 identity + 68 locked
+RTDB = **612 distinct emulator assertions**; **47 Worker checks**, including 12
+actual local workerd integrations; **24 full browser PASS groups**, including
+17 confirmation and 36 domain assertions; **2 Pages groups**, 182 references /
+62 unique local URLs. Zero final failures/skips. Baseline/root reruns are not
+additional distinct coverage. Signed Worker identities/Google REST and browser
+SDK/transport fixtures are mocks; real Firebase browser SDK import is separately
+verified with cloud API requests blocked. No production success is claimed.
+
+Deployment gates remain: actual account/Worker URL/secret/IAM, production
+rules/indexes/domains/inventory and two-account/two-phone acceptance. Real runtime
+hibernation eviction, mobile suspension and quotas are unverified. Spark read
+quota blocks the modeled 1,000+ user scale. Immediate Firebase token revocation,
+account-wide HTTP abuse controls and full account deletion remain future work.
+The old Batch 3 RTDB coordinator blocker is superseded, not weakened; RTDB stays
+locked. No Stripe/subscriptions/Official/merchandise/redesign implementation.
+
+All preceding earlier milestone/test records are historical snapshots. Use the
+current report/runbook for release decisions. Stop after Batch 4 pending approval.

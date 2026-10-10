@@ -7,7 +7,9 @@ First WebSocket message: {v:1,type:"hello",ticket}. Consume once, recheck curren
 Firestore admission, then send hello (opaque riderId) and snapshot. Unauthenticated
 sockets get no private payload and close within the pending timeout/alarm delay.
 
-All messages have v:1. Client shapes are exact; UTF-8 <=1024 bytes, text only.
+All messages have v:1. Server frames also carry serverTime (Unix ms); the client
+derives displayed age from serverTime minus receipt time, preserving stale state
+despite phone clock skew. Client shapes are exact; UTF-8 <=1024 bytes, text only.
 position: latitude, longitude, accuracy<=100m, heading=null or 0..<360,
 speedKmh=0..220, sampledAt (fresh <=15s, future <=5s), increasing seq.
 Server receipt time establishes freshness. Speed/jump checks are quality bounds,
@@ -22,7 +24,8 @@ status/revalidate request an immediate authority check, at least 10s apart;
 status comes from current Firestore membership, never a supplied foreign UID.
 
 Server categories: hello, snapshot, position, participant_update, participant_left,
-heartbeat, error (safe code), session_ended. Static identity is sent only at
+heartbeat, room_update (participantCount/checkedAt), error (safe code), session_ended.
+Static identity is sent only at
 connection/change/snapshot: safe display name, selected nickname/category, opted-in
 organizing Club/rank, informational status. No emails, UIDs, invite tokens or
 precise meeting instructions. A riderId is transient routing data, never a label.
@@ -48,4 +51,4 @@ No GPS fix or expired fix is represented as a current position. Straight-line
 separation is informational, not road distance/route order or an emergency response.
 
 Future incompatible formats use a new v/path; unknown versions/types fail closed.
-See CLOUDFLARE_SETUP.md for operational checks, cost model and remaining live tests.
+See ../CLOUDFLARE_SETUP.md for operational checks, cost model and remaining live tests.

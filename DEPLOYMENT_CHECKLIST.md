@@ -1,4 +1,43 @@
-> **Batch 4 current architecture:** GitHub Pages frontend, Firebase Auth identity, Firestore persistent authorization/data, Cloudflare Worker + one Durable Object per Group Session + WebSockets for live locations. RTDB stays locked. See LIVE_TRACKING.md; older Batch 3 results below are historical. Cloudflare setup and live acceptance are not completed.
+> **Batch 4 current release gates:** local implementation/tests complete; no deployment or live acceptance. Follow this current section and [CLOUDFLARE_SETUP.md](CLOUDFLARE_SETUP.md). Earlier Batch 3 RTDB coordinator instructions are historical and superseded. RTDB remains deny-all.
+
+## Batch 4 deployment gate — not release ready
+
+| Classification | Finding / resolution |
+| --- | --- |
+| BLOCKER — live setup | No verified Cloudflare account, deployed Worker URL/binding/migration, read-only reader IAM or secret. Operator completes CLOUDFLARE_SETUP.md steps 1–10; current empty live-config.js intentionally disables live publishing. |
+| BLOCKER — publication | Production Auth/domains, revised firestore.rules, all 17 indexes and chunk exemption are unverified. Use the exact root files and Console procedures below; never weaken rules. Publish reviewed rules before compatible frontend only with approval. |
+| BLOCKER pending verification — inventory | B6 remains a read-only production inventory gate. Empty legacy Club inventory makes migration N/A, not other live tests complete. Never delete retained IDs or assume parent deletion removed children. |
+| BLOCKER — acceptance | Actual Firebase/Cloudflare two-account and Android/iPhone tests not run. Complete runbook step 12 and the existing private-data/Club tests; record exact deployed versions. Local workerd/emulator/SDK fixtures do not satisfy this gate. |
+| BLOCKER — larger Spark workload | Modeled authority reads at 1,000+ active users exceed 50k/day free quota. Operator decides billing/budgets or a separately approved usage reduction. No automatic upgrade or weakened lease. 100 users still need peak-day headroom. |
+| WARNING — revocation | Firestore authority is polled with 30s leases, expired sends denied. Firebase Auth disable/revocation is not fetched; signed tokens can remain usable until expiry (<=1h). Immediate global revocation needs later design. |
+| WARNING — operations | IAM reader bypasses rules and can read known private document paths if compromised. Use custom datastore.entities.get only, protect/rotate keys, monitor HTTP abuse and quotas. No account-wide cost/abuse cap or production latency/CPU benchmark. |
+| WARNING — lifecycle | Hibernation is supported but real eviction/mobile background behavior is unverified; no always-on GPS. Account deletion/full erasure and retention operations are future requirements. |
+| INFORMATION — local evidence | 612 emulator assertions + 47 Worker checks (12 real local workerd) + 24 browser groups + 2 Pages groups passed; zero final failures/skips. Historical failure counts are preserved below. |
+| INFORMATION — architecture | Frontend static native ESM; Firebase Auth/Firestore permanent data; Cloudflare latest-only transport; locked RTDB. No Cloud Functions, live GPS Firestore collection or live composite index. |
+
+Exact publication sources: **firestore.rules**, **database.rules.json**,
+**firestore.indexes.json**. Public config: **firebase-config.js** and **live-config.js**
+(actual HTTPS Worker origin is still missing). Server source/config:
+**cloudflare/src/** and **cloudflare/wrangler.jsonc**; encrypted secret name
+**FIRESTORE_SERVICE_ACCOUNT**, fixed project **motodash-87bf8**, exact Origin
+**https://eggheadstudio.github.io** (no project path).
+
+GitHub Pages Settings → Source: **GitHub Actions**, using the existing workflow's
+`_site` frontend allowlist. This supersedes older “branch/root” publication wording
+below. No server files/secrets may enter the artifact. After explicit approval:
+verify inventory/rules/indexes/domains → reader IAM/budget → Worker deploy/secret →
+authenticated admission check → actual live-config.js origin → reviewed frontend
+commit/push and Actions deployment → two-account/two-phone acceptance. No step is
+marked done by local tests. Reader OAuth REST access is checked independently of
+client Firestore rules. Only the operator performs Console/key/billing/deploy/test
+data actions. Runbook step 14 gives safe frontend/Worker/rules rollback; never
+restore pre-security Club rules. No new service worker can cache this frontend.
+
+Estimated Cloudflare Paid monthly ranges: 100 users $5, 1,000 $5–$17.50,
+10,000 $6.20–$68.70 at ten live hours/user/month and ten-user rooms; Firebase/tax
+extra. See reproducible byte/request/duration model and uncertainty in the runbook.
+The historical RTDB-coordinator blocker is resolved by trusted Cloudflare admission;
+this does not certify deployment or close any production acceptance gate.
 
 > **Current Batch 3 preparation:** see [Batch 3 release checklist](#batch-3-release-checklist). Older release-review results below are historical. The user has tested the earlier Firebase-connected app; this batch has not been deployed or live-tested. Live tracking remains blocked.
 
