@@ -1,6 +1,8 @@
 // Stable keys; user-created content is never translated.
 export const dictionary = {
   "en": {
+    "groups.visibility":"Session visibility", "groups.policy":"Joining policy",
+    "groups.moreClubs":"Load more organizing Clubs",
     "groups.overview":"Group overview", "groups.overviewCoverage":"Status summary for {loaded} of {total} participants. Load more participants to expand it.", "groups.statusCount":"{status}: {count}", "groups.checked":"Snapshot checked: {time}", "groups.manualRefresh":"Use Refresh for current membership and statuses. This is not a live presence feed.", "groups.liveUnavailable":"Live tracking is unavailable. Active, stale and offline location counts and separation are unknown. Regroup indications require reliable shared positions.",
     "groups.signIn":"Sign in / register",
     "groups.invitation":"Session invitation", "groups.invitations":"Issued invitations", "groups.inviteInvalid":"This invitation is invalid, revoked, closed or addressed to another account. Ask the organizer for a new invitation.", "groups.inviteExpired":"This invitation has expired. Ask the organizer for a new invitation.", "groups.inviteSignIn":"Sign in or register to continue. Your session link stays here while you sign in.", "groups.qr":"Session invitation QR code", "groups.qrHint":"Scan with your phone camera. Private invitations require the invited account. NFC tags can use this same URL; tag writing is not included.", "groups.openInvitation":"Open invitation", "groups.shareLink":"Share or copy link", "groups.shareSession":"Share session / QR", "groups.showQR":"Invitation link / QR", "groups.revoke":"Revoke invitation", "groups.expires":"Expires: {time}",
@@ -251,6 +253,8 @@ export const dictionary = {
     "ui.finishBeforeDelete": "End the current session before deleting rides."
   },
   "fi": {
+    "groups.visibility":"Istunnon näkyvyys", "groups.policy":"Liittymisehto",
+    "groups.moreClubs":"Lataa lisää järjestäviä kerhoja",
     "groups.overview":"Ryhmän yleiskuva", "groups.overviewCoverage":"Tilayhteenveto {loaded}/{total} osallistujasta. Laajenna sitä lataamalla lisää osallistujia.", "groups.statusCount":"{status}: {count}", "groups.checked":"Tilanne tarkistettu: {time}", "groups.manualRefresh":"Päivitä jäsenyydet ja tilat Päivitä-painikkeella. Tämä ei ole reaaliaikainen läsnäolonäkymä.", "groups.liveUnavailable":"Reaaliaikaista seurantaa ei ole käytössä. Aktiivisten, vanhentuneiden ja offline-sijaintien määrät sekä etäisyydet ovat tuntemattomia. Kokoontumisvihjeet edellyttävät luotettavia jaettuja sijainteja.",
     "groups.signIn":"Kirjaudu / rekisteröidy",
     "groups.invitation":"Istuntokutsu", "groups.invitations":"Lähetetyt kutsut", "groups.inviteInvalid":"Kutsu on virheellinen, peruttu, suljettu tai osoitettu toiselle tilille. Pyydä järjestäjältä uusi kutsu.", "groups.inviteExpired":"Kutsu on vanhentunut. Pyydä järjestäjältä uusi kutsu.", "groups.inviteSignIn":"Kirjaudu tai rekisteröidy jatkaaksesi. Istuntolinkki säilyy kirjautumisen ajan.", "groups.qr":"Istuntokutsun QR-koodi", "groups.qrHint":"Skannaa puhelimen kameralla. Yksityinen kutsu vaatii kutsutun tilin. NFC-tunniste voi käyttää samaa linkkiä; tunnisteen kirjoittamista ei tueta tässä erässä.", "groups.openInvitation":"Avaa kutsu", "groups.shareLink":"Jaa tai kopioi linkki", "groups.shareSession":"Jaa istunto / QR", "groups.showQR":"Kutsulinkki / QR", "groups.revoke":"Peru kutsu", "groups.expires":"Vanhenee: {time}",

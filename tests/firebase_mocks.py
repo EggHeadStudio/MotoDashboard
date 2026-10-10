@@ -68,8 +68,10 @@ export const startAfter=value=>({kind:'after',value});
 export const query=(path,...filters)=>({path,filters});
 export async function getDocs(input) {
   const {path,filters=[]}=typeof input==='string'?{path:input}:input;
+  (window.__mock.queries ||= []).push({path,filters});
   let docs=Object.entries(read()).filter(([key])=>key.startsWith(path+'/') && key.slice(path.length+1).split('/').length===1).map(([key,data])=>snap(key,data));
-  for(const filter of filters) {
+  const stages={where:0,order:1,after:2,limit:3};
+  for(const filter of [...filters].sort((a,b)=>stages[a.kind]-stages[b.kind])) {
     if(filter.kind==='where') docs=docs.filter(doc=> {
       const v=doc.data()[filter.field];
       return filter.op==='=='?v===filter.value:filter.op==='>='?v>=filter.value:filter.op==='<='?v<=filter.value:filter.op==='>'?v>filter.value:filter.op==='<'?v<filter.value:filter.op==='in'?filter.value.includes(v):true;

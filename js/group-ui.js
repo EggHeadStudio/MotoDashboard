@@ -3,7 +3,6 @@ import { t, getLanguage } from './i18n/i18n.js';
 import { CATEGORIES } from './data/schema.js';
 import { ACTIVITIES, GROUP_VISIBILITIES, JOIN_POLICIES, setRouteInvite } from './data/group-session.js';
 import * as repository from './firebase/groupRepository.js';
-import { listClubs, loadClub } from './firebase/clubRepository.js';
 import { dataErrorKey } from './firebase/access.js';
 import { dialog, element, field, button, labelText, runAction } from './ui/forms.js';
 
@@ -47,11 +46,9 @@ export function initGroupUI() {
     labelText(view.status, page.partial ? 'data.unavailable' : 'common.loaded');
   }
   async function edit(group) {
-    const owner=uid, token=++version; const options=[];
+    const owner=uid, token=++version;let clubPage=null;
     if (!group) {
-      const clubs=await listClubs(owner);
-      const roles=await Promise.all(clubs.own.map(club=>loadClub(owner,club.id)));
-      for (const entry of roles) if (entry.club.state==='active' && ['owner','admin','host'].includes(entry.role)) options.push(entry.club);
+      clubPage=await repository.listHostingClubs(owner);
     }
     if(!current(owner,token)) return;
     const form=element('form');form.id='group-form';
@@ -64,13 +61,21 @@ export function initGroupUI() {
     field(form,'endsAt','groups.endTime',{type:'datetime-local',value:group?.endsAt ? localTime(group.endsAt) : ''});
     field(form,'meetingArea','groups.area',{required:true,max:80,value:group?.meetingArea});
     field(form,'meetingLocation','groups.meeting',{max:500,value:group?.meetingLocation});
-    field(form,'visibility','clubs.visibility',{choices:GROUP_VISIBILITIES,prefix:'visibility',value:group?.visibility || 'public'});
-    field(form,'joiningPolicy','clubs.policy',{choices:JOIN_POLICIES,prefix:'policy',value:group?.joiningPolicy || 'open'});
+    field(form,'visibility','groups.visibility',{choices:GROUP_VISIBILITIES,prefix:'visibility',value:group?.visibility || 'public'});
+    field(form,'joiningPolicy','groups.policy',{choices:JOIN_POLICIES,prefix:'policy',value:group?.joiningPolicy || 'open'});
     field(form,'maxParticipants','groups.capacity',{type:'number',min:2,maxValue:50,value:group?.maxParticipants});
     if (!group) {
       const clubs=field(form,'clubId','groups.organizer',{choices:[]});
       const personal=labelText(element('option'),'groups.personal');personal.value='';clubs.append(personal);
-      for(const club of options) {const option=element('option','',club.name);option.value=club.id;clubs.append(option);}
+      const seen=new Set();
+      function appendClubs(values) {for(const club of values)if(!seen.has(club.id)){seen.add(club.id);const option=element('option','',club.name);option.value=club.id;clubs.append(option);}}
+      appendClubs(clubPage.clubs);
+      if(clubPage.more) {
+        const more=button('groups.moreClubs',()=>action(async()=>{
+          const next=await repository.listHostingClubs(owner,clubPage.cursor);if(!current(owner,token))return;
+          clubPage=next;appendClubs(next.clubs);if(!next.more)more.remove();
+        },()=>{}));form.append(more);
+      }
     }
     const save=button('common.save');save.type='submit';form.append(save);
     form.addEventListener('submit',event=>{

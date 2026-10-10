@@ -155,6 +155,71 @@ def run_group_tests(browser,base,route_map):
     page.click('#group-join');page.wait_for_selector('#group-leave')
     assert '/invite/' not in page.url
     page.reload(wait_until='networkidle');page.wait_for_selector('#group-leave')
+    # Cross-page discovery and roster coverage use real query cursors, never global filtering.
+    page.evaluate("""async()=>{
+      const {createGroup}=await import('./js/firebase/groupRepository.js');
+      for(let n=0;n<21;n++) await createGroup('fixture-1',{title:'Paged Ride '+n,description:'',activityType:'ride',category:'bicycle',
+        startsAt:Date.now()+7200000+n*1000,endsAt:null,meetingArea:'Espoo',meetingLocation:'',visibility:'public',joiningPolicy:'open',maxParticipants:null,clubId:null});
+    }""")
+    page.locator('#groups-dialog .feature-header button').click();page.click('#lobby-btn')
+    page.wait_for_function('document.querySelectorAll("[data-lobby-id]").length===20')
+    page.locator('#lobby-dialog').get_by_role('button',name='Load more',exact=True).click()
+    page.wait_for_function('document.querySelectorAll("[data-lobby-id]").length===23')
+    discovered=page.locator('[data-lobby-id]').evaluate_all('(nodes)=>nodes.map(node=>node.dataset.lobbyId)')
+    assert len(set(discovered))==23
+    assert page.evaluate("window.__mock.queries.filter(q=>q.path==='lobbyEvents').every(q=>q.filters.some(f=>f.kind==='limit'&&f.value===20) && q.filters.some(f=>f.field==='visibility'&&f.op==='in') && q.filters.some(f=>f.field==='state'&&f.op==='in'))")
+    page.locator('#lobby-dialog .feature-header button').click()
+    page.evaluate("""(id)=>{const r=JSON.parse(localStorage.getItem('__mockProfiles'));
+      for(let n=0;n<23;n++)r['groupSessions/'+id+'/participants/roster-'+n]={uid:'roster-'+n,vehicleId:null,vehicle:null,clubIdentity:null,status:'fuel',joinedAt:{__serverTimestamp:true},updatedAt:{__serverTimestamp:true}};
+      r['groupSessions/'+id].participantCount=25;r['groupPages/'+id].participantCount=25;
+      localStorage.setItem('__mockProfiles',JSON.stringify(r));}""",ids[1])
+    page.evaluate("()=>{dispatchEvent(new Event('motodash-group-link'));}")
+    page.wait_for_function('document.querySelector("#group-overview").textContent.includes("20 of 25")')
+    page.locator('#group-participants').get_by_role('button',name='Load more',exact=True).click()
+    page.wait_for_function('document.querySelector("#group-overview").textContent.includes("25 of 25")')
+    assert 'Fuel: 23' in page.locator('[data-status-count="fuel"]').inner_text()
+    assert page.locator('[data-participant-uid]').count()==25
+    assert 'roster-' not in page.locator('#groups-dialog').inner_text()
+    switch(page,'host@example.test')
+    club=page.evaluate("""async()=>{return (await import('./js/firebase/clubRepository.js')).createClub('fixture-0',{
+      name:'Prototype Club',description:'',category:'motorcycle',visibility:'public',membershipPolicy:'open',
+      primaryColor:'#123456',accentColor:'#abcdef',routeColor:null,mapTheme:'normal',links:{}});} """)
+    switch(page,'member@example.test')
+    denied=page.evaluate("""async(clubId)=>{await (await import('./js/firebase/clubRepository.js')).joinClub('fixture-1',clubId);
+      try{await (await import('./js/firebase/groupRepository.js')).createGroup('fixture-1',{title:'Forbidden Host',description:'',activityType:'ride',category:'motorcycle',
+        startsAt:Date.now()+3600000,meetingArea:'Espoo',visibility:'public',joiningPolicy:'open',clubId});return false;}catch(e){return e.code==='permission-denied';}}""",club)
+    assert denied
+    switch(page,'host@example.test')
+    rank=page.evaluate("""async(id)=>{const c=await import('./js/firebase/clubRepository.js');
+      const rank=await c.saveRank('fixture-0',id,null,{name:'Captain',displayOrder:0});
+      await c.setMember('fixture-0',id,'fixture-1','host',rank);return rank;}""",club)
+    switch(page,'member@example.test');page.click('#groups-btn');page.wait_for_selector('#group-create');page.click('#group-create');page.wait_for_selector('#group-form')
+    page.fill('#group-form-title','Club Host Ride');page.fill('#group-form-meetingArea','Espoo');page.select_option('#group-form-clubId',club)
+    page.locator('#group-form button[type=submit]').click();page.wait_for_selector('#group-edit')
+    hosted=page.evaluate('Object.values(JSON.parse(localStorage.getItem("__mockProfiles"))).find(row=>row.title==="Club Host Ride" && row.creatorUid).id')
+    page.check('#group-vehicle-shareClub');page.locator('#group-vehicle button[type=submit]').click()
+    page.wait_for_function('document.querySelector("#group-participants").textContent.includes("Captain")')
+    switch(page,'host@example.test')
+    page.evaluate("async([id,rank])=>{await (await import('./js/firebase/clubRepository.js')).setMember('fixture-0',id,'fixture-1','member',rank);}",[club,rank])
+    switch(page,'member@example.test');linked(page,hosted,'Club Host Ride')
+    assert not page.locator('#group-edit').count() and not page.locator('#group-admission').count()
+    assert 'Captain' in page.locator('#group-participants').inner_text()
+    page.evaluate("""()=>{const r=JSON.parse(localStorage.getItem('__mockProfiles'));
+      for(let n=0;n<22;n++){
+        const id='hosting-'+n;r['users/fixture-1/clubRefs/'+id]={uid:'fixture-1',clubId:id,joinedAt:{__serverTimestamp:true}};
+        r['clubs/'+id]={id,ownerUid:'fixture-1',name:'Organizing Club '+n,state:'active',category:'motorcycle',memberCount:1,membershipPolicy:'open'};
+        r['clubPages/'+id]={id,name:'Organizing Club '+n,state:'active',visibility:'public',category:'motorcycle',memberCount:1,membershipPolicy:'open'};
+        r['clubs/'+id+'/members/fixture-1']={uid:'fixture-1',technicalRole:'owner',rankId:null};
+      }localStorage.setItem('__mockProfiles',JSON.stringify(r));}""")
+    page.locator('#groups-dialog').get_by_role('button',name='Back to Group Sessions',exact=True).click();page.wait_for_selector('#group-create')
+    page.click('#group-create');page.wait_for_selector('#group-form')
+    assert 20<=page.locator('#group-form-clubId option').count()<=21 # One bounded page plus personal; demoted membership is excluded.
+    page.locator('#group-form').get_by_role('button',name='Load more organizing Clubs',exact=True).click()
+    page.wait_for_function('document.querySelectorAll("#group-form-clubId option").length===23')
+    assert not page.locator('#group-form').get_by_role('button',name='Load more organizing Clubs',exact=True).count()
+    page.set_viewport_size({'width':320,'height':568})
+    assert page.locator('#groups-dialog').evaluate('(node)=>node.scrollWidth<=node.clientWidth')
+    page.screenshot(path=__import__('os').path.join(__import__('tempfile').gettempdir(),'motodash-batch3-groups.png'))
     assert not errors and not page.evaluate('window.__unhandled'), (errors,page.evaluate('window.__unhandled'))
     context.close()
     print('PASS: MOCK Group Session creation, public/private/approval, edit/start/complete, private meeting details, hidden IDs, Finnish and mobile/landscape')
@@ -162,3 +227,4 @@ def run_group_tests(browser,base,route_map):
     print('PASS: MOCK Lobby discovery, activity/region filters, private/terminal exclusion and safe summaries')
     print('PASS: exact QR round-trip decode, sharing, addressed invite login return, decline/revocation, expiry/wrong-account/rotated-token denial, private acceptance and refresh')
     print('PASS: roster-backed overview counts, localized status totals, snapshot coverage and explicit unknown live presence/separation')
+    print('PASS: Lobby/roster pagination without duplicates, bounded discovery, Club role-based hosting/rank sharing and demoted Host controls')

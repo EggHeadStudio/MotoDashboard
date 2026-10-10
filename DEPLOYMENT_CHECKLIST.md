@@ -1,3 +1,5 @@
+> **Current Batch 3 preparation:** see [Batch 3 release checklist](#batch-3-release-checklist). Older release-review results below are historical. The user has tested the earlier Firebase-connected app; this batch has not been deployed or live-tested. Live tracking remains blocked.
+
 # MotoDashboard deployment checklist and security fix result
 
 Deployment preparation date: 2026-10-10. Reviewed security implementation:
@@ -1109,3 +1111,248 @@ previously public Lobby summaries; opening/joining their bound session is denied
 those summaries requires trusted operator cleanup; no client recursive deletion is added.
 Validation: 234 Group emulator assertions + original 102 passed; focused browser 3 groups
 passed. No live Firebase/deployment/physical-device test was performed.
+
+
+## Batch 3 release checklist
+
+Preparation date: 2026-10-10.
+
+This is the current operator checklist for the locally implemented Batch 3 code.
+Do not label the complete live-tracking release ready: milestones 4/5 and live
+parts of 6/9 remain blocked. No push, Firebase publication, production read/write
+or physical-device/live-project test was performed by the agent.
+
+### Findings
+
+| Level | Finding and correction |
+| --- | --- |
+| BLOCKER - live tracking | No approved trusted coordinator can authorize RTDB from Firestore membership. Keep RTDB deny-all. Review/approve a trusted serialized grant/revoke architecture before milestones 4/5, live markers, presence or regroup. LIVE_TRACKING.md gives the contract and limitations. Do not use a browser ACL mirror or claim local denial tests demonstrate working tracking. |
+| BLOCKER - publication | Updated Firestore rules and all 16 Lobby indexes must be published/Enabled before this frontend. Old rules deny displayProfiles and Group paths; profile initialization and Group UI would fail visibly. Agent did not publish. |
+| BLOCKER - acceptance | Console/deployed state, actual indexes, real account/device security and camera behavior are unverified for this batch. Execute and record the procedure below after explicitly approved publication. Do not tick live tests from emulator results. |
+| WARNING | Signed-in display-name discovery is intentional. Names are not unique; verify the intended invite recipient. Emails/private profiles remain inaccessible to other users. Existing users lazily publish their name on login; absent names use Member / Jäsen. No operator backfill is necessary. |
+| WARNING | Membership/status pages refresh explicitly. Need help is informational, with no emergency dispatch or instant delivery. Known GPS movement blocks controls; without current GPS, stopping is self-confirmed. |
+| WARNING | Club retirement immediately denies its bound sessions/invitations. Harmless previously public Lobby summaries can remain; remove only the corresponding safe summaries through an approved trusted operator procedure. Never delete canonical ID reservations or assume parent deletion removes children. |
+| WARNING | Spark quotas and authenticated-user abuse are operational limits. Queries/pagination cap reads but repeated manual refresh/hosting is not globally rate limited. Monitor Firestore usage. No paid entitlement/App Check/billing/backend was introduced. |
+| INFORMATION | Existing MotoDash project/config remains unchanged; no missing source config field, Monopoly config, Admin key or service-account credential was added. |
+| INFORMATION | Group identity is generated/immutable; terminal states cannot reopen. Removed participants are permanently barred from that session. Creator remains retained organizer. These prototype limitations are deliberate. |
+| INFORMATION | No rules, data migration, Storage upload, new service worker, Cloud Function, RTDB listener, extra GPS watcher or physical NFC write was introduced. |
+
+### Exact configuration and files
+
+- Expected project: **motodash-87bf8**; named browser app **MotoDash**.
+- Root **firebase-config.js**: apiKey, authDomain, databaseURL, projectId,
+  storageBucket, messagingSenderId, appId are present. Compare all seven against
+  Console Project settings > General > Your apps > Web app > SDK configuration.
+  No measurementId is required; no Analytics is implemented. Do not insert Admin
+  JSON/private keys into this browser repository.
+- authDomain: motodash-87bf8.firebaseapp.com.
+- databaseURL: https://motodash-87bf8-default-rtdb.europe-west1.firebasedatabase.app.
+- storageBucket: motodash-87bf8.firebasestorage.app (uploads remain unused).
+- Initialization: js/firebase/firebase.js; Auth adapter: js/firebase/auth.js;
+  Firestore: js/firebase/firestore.js; prepared unused RTDB: js/firebase/realtime.js.
+  All share that single app, with pinned browser Firebase 13.0.0 imports.
+- Exact Firestore rules source: **firestore.rules** in repository root.
+- Exact RTDB rules source: **database.rules.json** in repository root; deny-all.
+- Exact indexes source: **firestore.indexes.json** in repository root.
+
+Fingerprint of reviewed rules, UTF-8 normalized to LF:
+
+- Firestore SHA-256: `d48c0c35ebebf0174007baf952d2a2fd72c1179908276dbfde8d67f9686d12a2`.
+- RTDB SHA-256: `baafba819b7e9cd03209b6e9968d641a58e91e20dfc2d9290a21d92d350cd3a5`.
+
+### Firebase Console publication order (operator only; not executed)
+
+1. Obtain explicit publication approval. Open Console and select motodash-87bf8.
+   Save the current published Firestore/RTDB rules and frontend commit outside
+   the repository as rollback evidence. Review source commits first.
+2. Project settings > General: compare the Web config above. Source fields are
+   present, but actual Console settings remain unverified by this batch.
+3. Authentication > Sign-in method: verify Email/Password enabled.
+   Authentication > Settings > Authorized domains: motodash-87bf8.firebaseapp.com,
+   **eggheadstudio.github.io**, **localhost**; add **127.0.0.1** if using that host.
+   Domains contain neither https:// nor /MotoDashboard/. Google login is not added.
+4. Firestore Database > Data: review existing collection inventory, especially
+   clubs, clubPages, clubDirectory and retained children. Follow earlier section
+   10.1 if any legacy pre-security Club records exist. Do not assume production
+   is empty just because data was not intentionally created. For first Batch 3
+   publication, verify whether groupSessions/groupPages/lobbyEvents already exist;
+   investigate unexpected documents before applying the new contract.
+   An actually empty legacy Club inventory makes that legacy migration NOT
+   APPLICABLE, not completed. This does not waive rules/index/live acceptance.
+5. Firestore Database > Rules: paste the entire root firestore.rules file, review
+   preview, then Publish. Verify that published source includes minimal
+   displayProfiles and exact Group/page/Lobby boundaries plus existing Club
+   retirement/security protections. Never weaken rules to clear an error.
+6. Firestore Database > Indexes > Composite: retain the existing sessions index
+   and create every missing lobbyEvents row below (all ASCENDING). Wait until all
+   required indexes show **Enabled**, not Building. Compare the actual Console
+   state; emulators do not enforce/certify composite-index availability.
+7. Indexes > Single field: retain the routeChunks.pointsJson exemption from
+   firestore.indexes.json, to avoid indexing route JSON.
+8. Realtime Database > the europe-west1 database > Rules: verify/publish the exact
+   database.rules.json deny-all source. If RTDB is not provisioned, do not enable
+   it for this batch. Never switch to test mode or allow all authenticated users.
+9. Do not manually create profiles/ACLs/invitations in Console. Existing users
+   publish their own minimal display record on next login; missing legacy names
+   remain the safe fallback. Group summaries are written atomically by the app.
+10. Publish frontend only after step 5 and indexes are ready, then run live tests.
+    No CLI deployment config or Firebase backend was added by this batch.
+
+### Exact composite indexes
+
+| Collection | Fields in index order | Scope |
+| --- | --- | --- |
+| sessions | uploadState ASCENDING, startedAt DESCENDING | COLLECTION |
+| lobbyEvents | visibility ASCENDING, state ASCENDING, startsAt ASCENDING | COLLECTION |
+| lobbyEvents | visibility ASCENDING, state ASCENDING, clubId ASCENDING, startsAt ASCENDING | COLLECTION |
+| lobbyEvents | visibility ASCENDING, state ASCENDING, meetingArea ASCENDING, startsAt ASCENDING | COLLECTION |
+| lobbyEvents | visibility ASCENDING, state ASCENDING, meetingArea ASCENDING, clubId ASCENDING, startsAt ASCENDING | COLLECTION |
+| lobbyEvents | visibility ASCENDING, state ASCENDING, category ASCENDING, startsAt ASCENDING | COLLECTION |
+| lobbyEvents | visibility ASCENDING, state ASCENDING, category ASCENDING, clubId ASCENDING, startsAt ASCENDING | COLLECTION |
+| lobbyEvents | visibility ASCENDING, state ASCENDING, category ASCENDING, meetingArea ASCENDING, startsAt ASCENDING | COLLECTION |
+| lobbyEvents | visibility ASCENDING, state ASCENDING, category ASCENDING, meetingArea ASCENDING, clubId ASCENDING, startsAt ASCENDING | COLLECTION |
+| lobbyEvents | visibility ASCENDING, state ASCENDING, activityType ASCENDING, startsAt ASCENDING | COLLECTION |
+| lobbyEvents | visibility ASCENDING, state ASCENDING, activityType ASCENDING, clubId ASCENDING, startsAt ASCENDING | COLLECTION |
+| lobbyEvents | visibility ASCENDING, state ASCENDING, activityType ASCENDING, meetingArea ASCENDING, startsAt ASCENDING | COLLECTION |
+| lobbyEvents | visibility ASCENDING, state ASCENDING, activityType ASCENDING, meetingArea ASCENDING, clubId ASCENDING, startsAt ASCENDING | COLLECTION |
+| lobbyEvents | visibility ASCENDING, state ASCENDING, activityType ASCENDING, category ASCENDING, startsAt ASCENDING | COLLECTION |
+| lobbyEvents | visibility ASCENDING, state ASCENDING, activityType ASCENDING, category ASCENDING, clubId ASCENDING, startsAt ASCENDING | COLLECTION |
+| lobbyEvents | visibility ASCENDING, state ASCENDING, activityType ASCENDING, category ASCENDING, meetingArea ASCENDING, startsAt ASCENDING | COLLECTION |
+| lobbyEvents | visibility ASCENDING, state ASCENDING, activityType ASCENDING, category ASCENDING, meetingArea ASCENDING, clubId ASCENDING, startsAt ASCENDING | COLLECTION |
+
+There are 17 composite definitions total: one existing private-history index plus
+16 Lobby combinations. Equality filters are activityType/category/meetingArea/
+clubId; visibility/state are always constrained, startsAt always ordered/ranged.
+Name searches, participant/request/invite pages and private Group refs use default
+single-field indexes. No live-location index or geohash service is used.
+
+### GitHub Pages publication (operator only; not executed)
+
+1. Review git status, local Batch 3 commits and this checklist. Confirm tests pass
+   and explicitly accept the release scope: Group/Lobby/invitations with live
+   tracking unavailable. Preserve the previously deployed frontend SHA.
+2. Verify Firebase rules and indexes first. In a local server at repository root,
+   verify login/profile, Group creation and Lobby against the approved project.
+   Use localhost or add 127.0.0.1 to authorized domains if using that hostname.
+3. After explicit approval, use `git push origin main`. Remote is
+   https://github.com/EggHeadStudio/MotoDashboard.git. The agent did not push.
+4. GitHub repository > Settings > Pages: verify source **Deploy from a branch**,
+   branch **main**, folder **/(root)**. Preserve an existing approved deployment
+   configuration if it differs; this batch needs no application build.
+5. Wait for Pages deployment to complete. Open
+   https://eggheadstudio.github.io/MotoDashboard/ in a fresh browser context.
+6. Network/Console: check HTML/CSS/ES modules/vendor QR/assets load below
+   /MotoDashboard/; pinned Firebase imports must load from gstatic. Test a shared
+   hash URL on a fresh tab. No root-relative app assets or bare imports exist.
+7. Hard reload after deployment. App removes only its exact legacy worker scope;
+   it registers no new caching worker. If a legacy page is stuck before cleanup
+   runs, unregister only /MotoDashboard/ in DevTools and reload. Preserve sibling
+   app workers. Browser cache/CDN publication latency is not a new offline mode.
+8. Verify English/Finnish and mobile portrait/landscape, then live security below.
+
+### Two-account live security procedure (not completed)
+
+Use two real test accounts A/B and two separate browser profiles/phones. Do not
+use the emulator's synthetic credentials. These steps create real test records
+only after operator approval; no production records were created by this batch.
+Use developer Console/Authentication to inspect UIDs only when testing permissions;
+normal screens must display names, never raw identifiers.
+
+1. Register A and B with matching password confirmations. Verify login, reload,
+   logout isolation and language preferences. Invalid confirmation must make no
+   registration request. Verify each private users doc has only permitted fields
+   and displayProfiles contains exactly displayName/updatedAt. B may read A's
+   minimal display record; B must be denied A's private profile.
+2. A creates a Garage vehicle and records a completed personal ride. In B's
+   authenticated browser, use native repository/SDK reads/writes against A's
+   users/{uid}/vehicles and users/{uid}/sessions paths: read, rename, edit, delete
+   and route-chunk access must be denied. Confirm B's own equivalents work.
+3. A creates public/open, approval and private/invite Group Sessions, with
+   approximate public area and distinct precise private meeting instructions.
+   B may read public/approval summaries and Lobby, but not canonical/roster before
+   admission or private summaries without a valid addressed invitation. Check
+   public documents contain none of creatorUid, lastParticipantUid, meetingLocation,
+   roster, email or token fields. Signed-out Firestore reads must fail.
+4. B joins open with their own Garage vehicle. Check one membership/index and
+   counter increment; repeat join must not duplicate. A sees nickname/category
+   only; A still cannot read B's private Garage. B sees permitted precise meeting
+   instructions and roster. Spoofed UID, foreign vehicle snapshot, extra private
+   fields or host/system-admin fields must be denied by rules.
+5. B requests approval; A rejects, B clears/reapplies, A approves. B then joins
+   and selects their own vehicle. B cannot approve their own pending request.
+   A's approval does not read/write B's private Garage.
+6. A sends an addressed private invitation to B via display-name search. Share
+   its URL/QR. B logs out, follows/scans, signs in and returns to the correct
+   session. Accept consumes the invitation and cleans the fragment. Verify
+   decline, revoke, rotated link and a short-lived test invitation after actual
+   expiry. As authenticated organizer A, shorten only the approved test invitation
+   to 30 seconds using SDK updateDoc on groupSessions/{id}/invites/{Buid}, with
+   expiresAt: Timestamp.fromMillis(Date.now()+30000) and createdAt: serverTimestamp().
+   Preserve uid, token and invitedBy. Wait for real expiry; do not weaken rules or
+   edit production clocks. B cannot list
+   another account's invitations. A true wrong-recipient case needs an optional
+   third nonmember account C; with only A/B, A is already an authorized organizer
+   and its access is not evidence that a stranger may use B's link.
+7. B leaves; count/index/membership decrement together. A removes B after a new
+   open join; B cannot rejoin using old approvals/invitations. A cannot write B's
+   rider status or impersonate a participant. Founder cannot self-leave.
+8. A creates a Club; B joins as Member. B cannot create a Club-associated session
+   or grant themselves Host/Admin/Owner. A promotes B to Host; B may create their
+   Club session. Admin/Owner may manage Club sessions, other Hosts cannot take
+   over another Host's session. Assign a visible custom rank, demote B to Member:
+   the rank must not preserve management controls or technical permissions.
+9. Test Club branding, Info Wall and existing retirement protections. Retire an
+   isolated test Club through archive then retirement after other members leave;
+   all bound Group pages/canonical data/invites must become inaccessible. Attempt
+   hard delete/recreate/reactivate of the old ID must fail. Retained private children
+   must not become readable under another Club identity. Do not delete tombstones.
+10. Test Group edit/start/complete/cancel and immutable terminal states. Full
+    sessions reject new joins. Privacy changes remove Lobby atomically. Test all
+    filter combinations/pagination on actual enabled indexes; no unlisted/private
+    session, precise location or participant UID may appear in discovery.
+11. Both phones: select statuses only while stopped. Own status changes work;
+    other-user writes fail. After Refresh, overview counts reflect loaded roster
+    coverage. Need help must state no emergency response. Presence/separation is
+    explicitly unknown; no marker or location-sharing claim is acceptable.
+12. RTDB: authenticated A/B/outsider and signed-out read/write attempts (including
+    own/other liveSessions records and ACL paths) must all fail. Do not enable
+    production tracking to perform a positive participant test. Those positive
+    tests are blocked until an approved coordinator exists.
+13. Both phones: check personal GPS, all five map themes, heading-up/north-up,
+    fixed HUD/controls, weather, route recording/history, Garage, JSON/GPX and
+    sharing. Verify mobile portrait/landscape and real camera QR decoding. Lock/
+    background may suspend browser GPS; do not claim reliable background updates.
+14. Record project, deployed commit/rules fingerprints, index state, accounts,
+    device/browser versions, each allowed/denied result and actual date. Leave
+    every unperformed live/device test unchecked. Cancel test Groups and retire
+    isolated test Clubs safely; physical erasure is a separate approved operation.
+
+### Rollback (operator only; not executed)
+
+1. Stop further publication and record failing commit/source/error evidence.
+2. Restore the last known approved frontend via a reviewed revert commit, push
+   it only with approval, and wait for Pages deployment. Avoid force-pushing shared
+   history. c559371 is the pre-Batch-3 registration baseline; use the actual
+   previously deployed SHA if different.
+3. If rules rollback is required, restore the saved previously published, reviewed
+   source in Console Rules. **Never roll back before eea3d0d's Club security fixes.**
+   The pre-Batch-3 rules close Group/display projection paths by default; that may
+   intentionally disable new screens. Coordinate frontend and rules rollback.
+4. Keep RTDB deny-all. Extra Lobby indexes can remain harmlessly; removal is an
+   optional separately approved operator action. Never delete production canonical
+   Club/Group reservations or retained data to make rollback work.
+5. Hard reload and recheck Auth/private history/Club isolation and known-good GPS.
+   No rollback or live acceptance was executed by the agent.
+
+
+### Batch 3 local evidence (not live acceptance)
+
+Original Firestore 102 + prior security 137 + Group/Lobby 273 + identity 16 +
+RTDB locked foundation 68 = 596 distinct emulator assertions passed; zero failed
+or skipped. Original baseline reruns are counted once. Full browser: 21 groups
+passed, including 17 confirmation cases, 36 domain assertions and 6 Group groups.
+Pages: 2 groups passed; 162 references, 56 local URLs HTTP 200 below /MotoDashboard/.
+Live markers, allowed live writes/reads, presence/coordinator races/reconnection and
+regroup remain blocked, not certified by denial tests. Real Console/production/
+two-account/two-phone/camera tests remain unperformed. Full architecture/modules,
+implemented and blocked milestone table and test scope: BATCH_3_RESULT.md.

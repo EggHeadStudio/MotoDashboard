@@ -3455,3 +3455,33 @@ until milestones 4/5 can securely deliver reliable positions. Status timestamps 
 misrepresented as presence. No road-distance/behind-rider claim, navigation, noisy
 alerts or push notifications are added. Milestone 9 is partial, not completed.
 Focused Group browser suite: 5 groups passed with no failures or skipped cases.
+
+
+### Batch 3 milestone 10 - final local result
+
+See BATCH_3_RESULT.md for the authoritative milestone table, architecture/modules,
+security/data contracts, exact counts and remaining limitations. Independent milestones
+1/2/3/7/8 and technical-ID presentation are complete locally. Milestone 4 is partial/
+blocked; 5 blocked; 6/9 partial with live portions blocked. No agreed live requirement
+was removed or marked complete. Final regression covers implemented and intentionally
+locked paths; complete live acceptance is still blocked.
+
+Final results: 102 original Firestore + 137 previous security + 273 Group/Lobby +
+16 identity + 68 RTDB = 596 distinct emulator assertions passed, zero failed/skipped.
+Baseline repeated inside runners is counted once. Full browser: 21 PASS groups,
+including 17 registration cases, 36 domain assertions and 6 Group integration groups.
+Pages: 2 groups, 162 references, 56 local URLs HTTP 200 under /MotoDashboard/.
+Allowed live reads/writes, markers, presence/coordinator races/reconnect/regroup,
+production rules/indexes/domains/inventory, real accounts and physical phones/cameras
+remain untested. No deployment, production operation or push was performed.
+
+Final integration corrects current Club-role UI management, Auth invitation return,
+private detail clearing on failed loads, bounded organizing-Club pagination, mock
+query cursor/limit ordering and explicit startup synchronization. Normal debug version
+labels stay hidden. Original permissions/security expectations were not weakened.
+
+Publication requires reviewed rules first, all 16 Lobby composite indexes Enabled
+(17 total including existing private history), documented domain/config verification
+and real two-account/two-phone acceptance. RTDB must stay locked. Trusted coordination
+and future trusted subscription entitlements require separate approval/design. See
+DEPLOYMENT_CHECKLIST.md and LIVE_TRACKING.md. Stop here pending explicit user approval.

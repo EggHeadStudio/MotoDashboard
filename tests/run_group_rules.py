@@ -180,6 +180,9 @@ def run():
     r.commit('alice',[r.raw_update('clubs/open/members/carol',membership,{'technicalRole':'member','updatedAt':r.SERVER})])
     host_group=r.read('carol','groupSessions/'+rid)
     r.commit('carol',changes(rid,host_group,{'title':'Rank promoted me','updatedAt':r.SERVER}),False)
+    unprivileged=group('carol');unprivileged.update(clubId='open',clubName='Club open')
+    r.commit('carol',bootstrap(unprivileged),False,label='Member with Captain cannot host Club session')
+    r.commit('alice',changes(rid,host_group,{'title':'Owner edited','updatedAt':r.SERVER}))
     # Retiring a Club closes all bound sessions and stale invitations without child deletion.
     r.create_club('group-bound','alice');bound=group();bound.update(clubId='group-bound',clubName='Club group-bound')
     bid=bound['id'];r.commit('alice',bootstrap(bound));r.commit('alice',[invite(bid,'bob')])
@@ -201,5 +204,19 @@ def run():
     r.commit('alice',changes(lid,fields,{'visibility':'private','joiningPolicy':'invite','updatedAt':r.SERVER}))
     r.read('dave','lobbyEvents/'+lid,False);r.read('dave','groupPages/'+lid,False)
     r.commit('alice',[r.update('lobbyEvents/'+lid,page(public))],False)
+    for key,value in [('category','invalid'),('activityType','official'),('maxParticipants',51),('startsAt',-1),('endsAt',0),('state','deleted'),('schemaVersion',99)]:
+        malformed=group();malformed[key]=value;r.commit('alice',bootstrap(malformed),False,label='Reject invalid Group '+key)
+    extra=group();extra['systemAdmin']=True;r.commit('alice',bootstrap(extra),False)
+    current=group();cid=current['id'];r.commit('alice',bootstrap(current))
+    for actor in [None,'dave','bob']:
+        for path in [f'groupSessions/{cid}/internal/secret',f'groupSessions/{cid}/liveLocations/alice',f'users/alice/groupRefs/{cid}']:
+            r.read(actor,path,False);r.commit(actor,[r.update(path,{'uid':actor or 'anonymous'})],False)
+    for actor in [None,'dave']:
+        r.commit(actor,[invite(cid,'bob')],False)
+        r.commit(actor,[r.update(f'groupSessions/{cid}/joinRequests/bob',dict(uid='bob',state='approved',requestedAt=r.SERVER,decidedAt=r.SERVER,decidedBy=actor))],False)
+    inv=invite(cid,'bob');r.commit('alice',[inv])
+    inv_fields=r.read('alice',f'groupSessions/{cid}/invites/bob')
+    for field,value in [('token','guessable-name'),('uid','carol'),('privateEmail','bob@example.test'),('invitedBy','bob')]:
+        r.commit('alice',[r.raw_update(f'groupSessions/{cid}/invites/bob',inv_fields,{field:value})],False)
     print(f'GROUP RESULT: {r.checks} passed, 0 failed, 0 skipped; localhost emulator only')
 if __name__=='__main__': run()

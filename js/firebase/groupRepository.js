@@ -1,6 +1,7 @@
 import { ownDatabase, boundedRequest, dataError } from './access.js';
 import { validId } from '../data/schema.js';
 import { groupInput, groupPage, lobbyEligible } from '../data/group-session.js';
+import { loadClub } from './clubRepository.js';
 
 const checkId = id => { if (!validId(id)) throw dataError('invalid-input'); };
 const ref = (s, id, ...parts) => s.sdk.doc(s.db, 'groupSessions', id, ...parts);
@@ -46,8 +47,9 @@ export async function loadGroup(uid, id) {
     try {
       const membership = await boundedRequest(s.sdk.getDoc(s.sdk.doc(s.db, 'clubs', group.clubId, 'members', uid)));
       s.assertCurrent();
-      manager ||= membership.exists() && ['owner', 'admin'].includes(membership.data().technicalRole);
-    } catch (error) { if (error.code !== 'permission-denied') throw error; }
+      const role=membership.exists()?membership.data().technicalRole:null;
+      manager=['owner','admin'].includes(role) || (group.creatorUid===uid && role==='host');
+    } catch (error) { manager=false;if (error.code !== 'permission-denied') throw error; }
     if (manager && !participant.exists()) { const canonical = await s.sdk.getDoc(ref(s, id)); s.assertCurrent(); group = canonical.data(); }
   }
   const [request, invitation, banned] = await boundedRequest(Promise.all(['joinRequests', 'invites', 'bans'].map(path=>s.sdk.getDoc(ref(s,id,path,uid)))));
@@ -62,6 +64,15 @@ export async function listMyGroups(uid, cursor = null) {
   const loaded = await Promise.allSettled(records.docs.map(row => loadGroup(uid, row.data().sessionId))); s.assertCurrent();
   return {groups: loaded.filter(row => row.status === 'fulfilled').map(row => row.value.group),
     partial: loaded.some(row => row.status === 'rejected'), cursor: records.docs.at(-1), more: records.size === 20};
+}
+export async function listHostingClubs(uid,cursor=null) {
+  const s=await ownDatabase(uid),filters=[s.sdk.orderBy('joinedAt','desc'),s.sdk.limit(20)];
+  if(cursor) filters.push(s.sdk.startAfter(cursor));
+  const page=await boundedRequest(s.sdk.getDocs(s.sdk.query(s.sdk.collection(s.db,'users',uid,'clubRefs'),...filters)));
+  const results=await Promise.allSettled(page.docs.map(row=>loadClub(uid,row.data().clubId)));s.assertCurrent();
+  return {clubs:results.filter(row=>row.status==='fulfilled').map(row=>row.value)
+    .filter(row=>row.club.state==='active' && ['owner','admin','host'].includes(row.role)).map(row=>row.club),
+    cursor:page.docs.at(-1),more:page.size===20};
 }
 async function groupTransaction(uid, id, fn) {
   checkId(id); const s = await ownDatabase(uid);

@@ -1,5 +1,79 @@
 # Local rules testing and live acceptance
 
+## Batch 3 local verification (2026-10-10)
+
+Run the Firestore emulator as documented below. Download the official database
+emulator outside the repository and run it in a second terminal (Java 21):
+
+```powershell
+Invoke-WebRequest 'https://storage.googleapis.com/firebase-preview-drop/emulator/firebase-database-emulator-v4.11.2.jar' -OutFile "$env:TEMP\motodash-database-emulator-4.11.2.jar"
+java '-Duser.language=en' -jar "$env:TEMP\motodash-database-emulator-4.11.2.jar" --host 127.0.0.1 --port 9000
+```
+
+RTDB binary: 34,495,935 bytes, MD5 2fd771101c0e1f7898c04c9204f2ce63,
+matching Firebase CLI's manifest. Scripts accept only fixed localhost demo
+endpoints, never a production namespace. Local fixture setup uses emulator owner
+bypass, with no actual privileged credential.
+
+```powershell
+python tests/run_security_rules.py
+python tests/run_group_rules.py
+python tests/run_identity_rules.py
+python tests/run_realtime_rules.py
+```
+
+Do not run Firestore runners simultaneously: security/group rebuild fixed demo
+fixtures. Each reruns the original 102 assertions; count that baseline once for
+distinct coverage. Identity reloads actual rules and clears its fixed fixtures.
+RTDB intentionally tests locked reads/writes, not an enabled live ACL. Stop both
+emulator terminals using Ctrl+C afterward.
+
+Browser tests need Python Playwright/Chromium plus Pillow and zxing-cpp for
+independent QR decoding. These are development tools, not app dependencies:
+
+```powershell
+python -m pip install --target "$env:TEMP\motodash-test-tools" playwright Pillow zxing-cpp
+$env:PYTHONPATH="$env:TEMP\motodash-test-tools"
+python -m playwright install chromium
+python tests/run_browser.py
+python tests/run_release_paths.py
+```
+
+Stop after any nonzero script result; PowerShell may otherwise continue after a
+failure. Focused --groups-only/--clubs-only flags are for debugging. Final
+regression runs the full browser runner. Package.json's legacy node --test command
+was not executed (Node/npm unavailable); authored domain assertions run in the
+browser. There are no imported node:test cases.
+
+| Suite | Passed | Failed | Skipped |
+| --- | ---: | ---: | ---: |
+| Original Firestore | 102 | 0 | 0 |
+| Previous additional security | 137 | 0 | 0 |
+| Group/Lobby/participation | 273 | 0 | 0 |
+| Minimal identity projection | 16 | 0 | 0 |
+| RTDB locked foundation | 68 | 0 | 0 |
+| Full browser runner | 21 groups | 0 | 0 |
+| Pages/static/Firebase unavailable | 2 groups | 0 | 0 |
+
+Distinct emulator assertions: **596**, including fixture checks. RTDB includes two
+positive administrative fixture checks; every application operation is deliberately
+denied. Browser groups include 17 password-confirmation cases, 36 domain assertions
+and six Group integration groups. Pages: 162 references and 56 distinct local URLs
+HTTP 200 below /MotoDashboard/.
+
+Earlier test failures were corrected and the complete runner rerun: disabled
+FormData capture, option synchronization, localized nested owner label, startup
+readiness, mock cursor/limit ordering and current Club-role UI checks. Permission
+expectations were not weakened. QR round-trip decoding and invite error cases,
+bounded Lobby/roster/organizing-Club pagination and demoted Host controls pass.
+
+Untested/blocked: allowed live-location operations, live markers, trusted
+revocation/presence/reconnection races, separation/regroup and background tracking.
+These are not skipped runnable tests: those implementations remain blocked, with
+RTDB deny-all. Production rules/indexes/domains/inventory, two-account live security,
+real-camera scanning and two-phone behavior remain unverified. See the current
+Batch 3 section of ../DEPLOYMENT_CHECKLIST.md for operator instructions.
+
 Executed Batch 2 tests use the **real Firestore emulator**, an isolated demo
 project, unsigned emulator-only test identities and REST requests. They do not
 use an Admin credential and do not contact motodash-87bf8. Admin bypass is used

@@ -15,13 +15,26 @@ English is the default; Finnish is available from the language selector.
 - Personal Garage with 12 categories, defaults and saved ride vehicle snapshots.
 - Account-owned completed ride cloud sync with bounded route chunks and durable retries.
 - Private history, JSON/GPX file export and Web Share with download fallback.
-- Clubs, approval/UID invitation membership, technical roles and separate visible ranks.
+- Clubs, approvals/account-addressed invitations, technical roles and separate visible ranks.
 - Controlled Club colors/links and a plain-text Info Wall.
+- Safe member display names, generic avatars and shared Club links; private profiles stay protected.
+- Group Sessions for Ride/Drive/Meet/Event, prototype hosting, lifecycle controls and private participation.
+- Approval/invitation joining, selected vehicle nickname/category sharing and manual rider statuses.
+- Paginated Lobby discovery, session invitation links and locally generated QR codes.
+- Group overview with roster status counts and explicit coverage/presence limitations.
 - Install manifest, safe-area layout, optional Fullscreen and Wake Lock.
 
 The manifest does not provide offline cold starts or background GPS. No offline
 service worker is installed. Browser suspension and platform support still limit recording.
 Use the vehicle's instruments as the primary speedometer; GPS accuracy varies.
+
+**Batch 3 live tracking is blocked.** RTDB remains deny-all because this Spark
+prototype has no trusted Firestore-to-RTDB authorization coordinator. Live markers,
+presence counts and separation/regroup are unavailable. Group membership/status
+screens use explicit Refresh. "Need help" provides no emergency response service.
+See [LIVE_TRACKING.md](LIVE_TRACKING.md) and the current Batch 3 section of
+[DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md) before publishing this frontend.
+No rules, indexes or production data were deployed by this batch.
 
 ## Local development
 

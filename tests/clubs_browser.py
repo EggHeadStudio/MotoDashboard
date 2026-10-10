@@ -2,6 +2,7 @@ from firebase_mocks import install
 from batch2_browser import register
 
 def open_clubs(page):
+    page.wait_for_function('document.body.dataset.ready === "true"')
     page.click('#clubs-btn');page.wait_for_selector('#club-create')
 
 def back(page):
@@ -30,6 +31,7 @@ def run_club_tests(browser,base,route_map):
     page.goto(base,wait_until='networkidle');register(page,'owner@example.test');open_clubs(page)
     clubs={}
     assert not page.locator('#start-debug').is_visible()
+    assert not page.locator('#start-version').is_visible()
     assert 'fixture-0' not in page.locator('#clubs-dialog').inner_text()
     for name,policy,visibility in [('Open Riders','open','public'),('Approval Riders','approval','public'),('Private Riders','private','private')]:
         page.click('#club-create');page.fill('#club-form-name',name);page.fill('#club-form-description','Welcome riders')
