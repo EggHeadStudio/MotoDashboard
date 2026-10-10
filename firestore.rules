@@ -403,6 +403,44 @@ service cloud.firestore {
       let g = getAfter(groupPath(id)).data;
       return !exists(groupPath(id)) && g.creatorUid == request.auth.uid;
     }
+    function groupInvite(id, uid) { return /databases/$(database)/documents/groupSessions/$(id)/invites/$(uid); }
+    function groupRequest(id, uid) { return /databases/$(database)/documents/groupSessions/$(id)/joinRequests/$(uid); }
+    function groupBan(id, uid) { return /databases/$(database)/documents/groupSessions/$(id)/bans/$(uid); }
+    function groupInvited(id) {
+      return groupAvailable(id) && get(groupPath(id)).data.state in ['scheduled', 'active']
+        && exists(groupInvite(id, request.auth.uid)) && get(groupInvite(id, request.auth.uid)).data.expiresAt > request.time;
+    }
+    function groupAdmission(id, uid) {
+      let g = get(groupPath(id)).data;
+      return owns(uid) && groupAvailable(id) && g.state in ['scheduled', 'active'] && !exists(groupBan(id, uid))
+        && (g.joiningPolicy == 'open'
+          || (exists(groupRequest(id, uid)) && get(groupRequest(id, uid)).data.state == 'approved' && g.joiningPolicy == 'approval')
+          || (groupInvited(id) && !existsAfter(groupInvite(id, uid))));
+    }
+    function groupCountChange(id) {
+      let uid = request.resource.data.lastParticipantUid;
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['participantCount', 'lastParticipantUid', 'updatedAt'])
+        && ((request.resource.data.participantCount == resource.data.participantCount + 1
+            && !exists(groupMember(id, uid)) && existsAfter(groupMember(id, uid)) && groupAdmission(id, uid))
+          || (request.resource.data.participantCount == resource.data.participantCount - 1
+            && uid != resource.data.creatorUid && exists(groupMember(id, uid)) && !existsAfter(groupMember(id, uid))
+            && (owns(uid) || (groupManager(id) && existsAfter(groupBan(id, uid))
+              && getAfter(groupBan(id, uid)).data.removedAt == request.time))));
+    }
+    function groupVehicle(data, uid) {
+      return (data.vehicleId == null && data.vehicle == null)
+        || (identifier(data.vehicleId) && data.vehicle is map && data.vehicle.keys().hasAll(['nickname', 'category'])
+          && data.vehicle.keys().hasOnly(['nickname', 'category'])
+          && exists(/databases/$(database)/documents/users/$(uid)/vehicles/$(data.vehicleId))
+          && data.vehicle.nickname == get(/databases/$(database)/documents/users/$(uid)/vehicles/$(data.vehicleId)).data.nickname
+          && data.vehicle.category == get(/databases/$(database)/documents/users/$(uid)/vehicles/$(data.vehicleId)).data.category);
+    }
+    function validParticipant(data, uid) {
+      return data.keys().hasAll(['uid', 'vehicleId', 'vehicle', 'status', 'joinedAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'vehicleId', 'vehicle', 'status', 'joinedAt', 'updatedAt'])
+        && data.uid == uid && data.status in ['ok', 'fuel', 'mechanical', 'help']
+        && data.joinedAt is timestamp && data.updatedAt == request.time;
+    }
     match /groupSessions/{id} {
       allow get: if groupParticipant(id) || groupManager(id);
       allow list: if false;
@@ -415,38 +453,91 @@ service cloud.firestore {
         && ((request.resource.data.clubId == null && request.resource.data.clubName == '')
           || (clubHost(request.resource.data.clubId) && get(clubPath(request.resource.data.clubId)).data.state == 'active'
             && request.resource.data.clubName == get(clubPath(request.resource.data.clubId)).data.name));
-      allow update: if validGroup(request.resource.data, id) && groupProjection(id, request.resource.data)
-        && groupManager(id) && resource.data.state in ['scheduled', 'active']
+      allow update: if groupAvailable(id) && validGroup(request.resource.data, id) && groupProjection(id, request.resource.data)
+        && (groupCountChange(id) || (groupManager(id) && resource.data.state in ['scheduled', 'active']
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title', 'description', 'activityType', 'category',
           'startsAt', 'endsAt', 'meetingArea', 'meetingLocation', 'visibility', 'joiningPolicy', 'maxParticipants', 'state', 'updatedAt'])
         && ((resource.data.state == 'scheduled' && request.resource.data.state in ['scheduled', 'active', 'cancelled'])
-          || (resource.data.state == 'active' && request.resource.data.state in ['active', 'completed', 'cancelled']));
+          || (resource.data.state == 'active' && request.resource.data.state in ['active', 'completed', 'cancelled']))));
       allow delete: if false;
       match /participants/{uid} {
         allow get: if groupAvailable(id) && (owns(uid) || groupParticipant(id) || groupManager(id));
         allow list: if (groupParticipant(id) || groupManager(id)) && request.query.limit != null && request.query.limit <= 50;
-        allow create: if owns(uid) && groupBootstrap(id)
-          && request.resource.data.keys().hasAll(['uid', 'vehicleId', 'vehicle', 'status', 'joinedAt', 'updatedAt'])
-          && request.resource.data.keys().hasOnly(['uid', 'vehicleId', 'vehicle', 'status', 'joinedAt', 'updatedAt'])
-          && request.resource.data.uid == uid && request.resource.data.vehicleId == null && request.resource.data.vehicle == null
+        allow create: if owns(uid) && validParticipant(request.resource.data, uid) && groupVehicle(request.resource.data, uid)
           && request.resource.data.status == 'ok' && request.resource.data.joinedAt == request.time
-          && request.resource.data.updatedAt == request.time && existsAfter(groupIndex(id, uid));
+          && existsAfter(groupIndex(id, uid))
+          && (groupBootstrap(id) || (groupAdmission(id, uid)
+            && getAfter(groupPath(id)).data.participantCount == get(groupPath(id)).data.participantCount + 1
+            && getAfter(groupPath(id)).data.lastParticipantUid == uid));
+        allow update: if owns(uid) && groupAvailable(id) && get(groupPath(id)).data.state in ['scheduled', 'active']
+          && validParticipant(request.resource.data, uid) && request.resource.data.joinedAt == resource.data.joinedAt
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['vehicleId', 'vehicle', 'status', 'updatedAt'])
+          && (request.resource.data.vehicleId == resource.data.vehicleId && request.resource.data.vehicle == resource.data.vehicle
+            || groupVehicle(request.resource.data, uid));
+        allow delete: if groupAvailable(id) && uid != get(groupPath(id)).data.creatorUid
+          && (owns(uid) || groupManager(id)) && !existsAfter(groupIndex(id, uid))
+          && getAfter(groupPath(id)).data.participantCount == get(groupPath(id)).data.participantCount - 1
+          && getAfter(groupPath(id)).data.lastParticipantUid == uid
+          && (owns(uid) || (existsAfter(groupBan(id, uid)) && getAfter(groupBan(id, uid)).data.removedAt == request.time));
+      }
+      match /joinRequests/{uid} {
+        function shape() {
+          return request.resource.data.keys().hasAll(['uid', 'state', 'requestedAt', 'decidedAt', 'decidedBy'])
+            && request.resource.data.keys().hasOnly(['uid', 'state', 'requestedAt', 'decidedAt', 'decidedBy'])
+            && request.resource.data.uid == uid;
+        }
+        allow get: if groupAvailable(id) && (owns(uid) || groupManager(id));
+        allow list: if groupManager(id) && request.query.limit != null && request.query.limit <= 50;
+        allow create: if owns(uid) && groupAvailable(id) && get(groupPath(id)).data.state in ['scheduled', 'active']
+          && get(groupPath(id)).data.joiningPolicy == 'approval' && !exists(groupMember(id, uid)) && !exists(groupBan(id, uid))
+          && shape() && request.resource.data.state == 'pending' && request.resource.data.requestedAt == request.time
+          && request.resource.data.decidedAt == null && request.resource.data.decidedBy == null;
+        allow update: if groupManager(id) && get(groupPath(id)).data.state in ['scheduled', 'active']
+          && shape() && resource.data.state == 'pending' && request.resource.data.requestedAt == resource.data.requestedAt
+          && request.resource.data.state in ['approved', 'rejected'] && request.resource.data.decidedAt == request.time
+          && request.resource.data.decidedBy == request.auth.uid;
+        allow delete: if groupAvailable(id) && (owns(uid) || groupManager(id));
+      }
+      match /invites/{uid} {
+        allow get: if groupAvailable(id) && (owns(uid) || groupManager(id));
+        allow list: if groupManager(id) && request.query.limit != null && request.query.limit <= 50;
+        allow create, update: if groupManager(id) && get(groupPath(id)).data.state in ['scheduled', 'active']
+          && identifier(uid) && !exists(groupBan(id, uid)) && !exists(groupMember(id, uid))
+          && request.resource.data.keys().hasAll(['uid', 'token', 'invitedBy', 'createdAt', 'expiresAt'])
+          && request.resource.data.keys().hasOnly(['uid', 'token', 'invitedBy', 'createdAt', 'expiresAt'])
+          && request.resource.data.uid == uid && uuid(request.resource.data.token) && request.resource.data.invitedBy == request.auth.uid
+          && request.resource.data.createdAt == request.time && request.resource.data.expiresAt is timestamp
+          && request.resource.data.expiresAt > request.time && request.resource.data.expiresAt <= request.time + duration.value(7, 'd');
+        allow delete: if groupAvailable(id) && (owns(uid) || groupManager(id));
+      }
+      match /bans/{uid} {
+        allow get: if groupAvailable(id) && (owns(uid) || groupManager(id));
+        allow list: if false;
+        allow create: if groupManager(id) && uid != get(groupPath(id)).data.creatorUid
+          && exists(groupMember(id, uid)) && !existsAfter(groupMember(id, uid))
+          && request.resource.data.keys().hasAll(['uid', 'removedBy', 'removedAt'])
+          && request.resource.data.keys().hasOnly(['uid', 'removedBy', 'removedAt'])
+          && request.resource.data.uid == uid && request.resource.data.removedBy == request.auth.uid
+          && request.resource.data.removedAt == request.time;
         allow update, delete: if false;
       }
     }
     match /users/{uid}/groupRefs/{id} {
       allow read: if owns(uid);
-      allow create: if owns(uid) && groupBootstrap(id) && existsAfter(groupMember(id, uid))
+      allow create: if owns(uid) && (groupBootstrap(id) || groupAdmission(id, uid)) && existsAfter(groupMember(id, uid))
         && request.resource.data.keys().hasAll(['uid', 'sessionId', 'joinedAt'])
         && request.resource.data.keys().hasOnly(['uid', 'sessionId', 'joinedAt'])
         && request.resource.data.uid == uid && request.resource.data.sessionId == id && request.resource.data.joinedAt == request.time;
-      allow update, delete: if false;
+      allow update: if false;
+      allow delete: if signedIn() && (owns(uid) || groupManager(id)) && !existsAfter(groupMember(id, uid));
     }
     match /groupPages/{id} {
       allow get: if groupAvailable(id) && resource.data == groupSummary(get(groupPath(id)).data)
-        && (resource.data.visibility != 'private' || groupParticipant(id) || groupManager(id));
+        && (resource.data.visibility != 'private' || groupParticipant(id) || groupManager(id) || groupInvited(id));
       allow list: if false;
-      allow create, update: if signedIn() && (groupBootstrap(id) || groupManager(id))
+      allow create, update: if signedIn() && (groupBootstrap(id) || groupManager(id)
+          || (getAfter(groupPath(id)).data.lastParticipantUid == request.auth.uid
+            && (exists(groupMember(id, request.auth.uid)) != existsAfter(groupMember(id, request.auth.uid)))))
         && request.resource.data == groupSummary(getAfter(groupPath(id)).data) && request.resource.data.updatedAt == request.time;
       allow delete: if false;
     }

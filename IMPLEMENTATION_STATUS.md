@@ -690,3 +690,20 @@ than bypassing Club roles; clients cannot self-issue entitlements.
 Validation: 79 Group emulator assertions + previous 102 passed; focused Group browser
 creation/lifecycle/localization/mobile suite passed. No paid system, new GPS watcher,
 route planner, deployment or live Firebase test was added.
+
+
+### Batch 3 milestone 3 - participation
+
+Added js/group-participants-ui.js and repository participation operations. Open join,
+request/approve/reject, invited join/decline, leave, own vehicle selection, bounded
+participant/request pages and organizer removal are enforced by Firestore rules.
+Approval authorizes the requester to join with their own Garage selection; organizers
+never access another user's private Garage or select a vehicle on their behalf.
+Counters, membership and private navigation indexes change atomically. Vehicle sharing
+is explicitly limited to nickname/category. Duplicate membership, impersonation, forged
+snapshots, capacity overflow and role escalation are denied. Creator remains organizer;
+removed participants cannot rejoin this session. IDs remain reserved after terminal states.
+Addressed invitations last at most seven days and are consumed atomically; bearer access
+is not supported. Club retirement also denies its bound Group Sessions and invitations.
+Validation: 190 Group emulator assertions + original 102; focused Group browser 2 groups
+passed, zero failed/skipped. Existing security regression suite retained. No live tracking.

@@ -2,6 +2,18 @@
 from firebase_mocks import install
 from batch2_browser import register
 
+def switch(page,email,new=False):
+    page.evaluate("document.querySelector('#groups-dialog').close();location.hash='' ")
+    page.evaluate("async()=>{await (await import('./js/firebase/auth.js')).logout();}")
+    if new:register(page,email)
+    else:
+        page.evaluate("async(email)=>{await (await import('./js/firebase/auth.js')).login(email,'fixture-password');}",email)
+        page.wait_for_function('document.querySelector("#auth-status").textContent.includes("profile is ready")')
+def linked(page,id,title):
+    page.evaluate("(id)=>{location.hash='/session/'+id;}",id)
+    page.locator('#groups-dialog').get_by_role('heading',name=title,exact=True).wait_for()
+    page.wait_for_function('document.querySelector("#groups-dialog .feature-status").textContent==="Up to date."')
+
 def run_group_tests(browser,base,route_map):
     context=browser.new_context(viewport={'width':390,'height':844});route_map(context);install(context)
     page=context.new_page();errors=[];page.on('pageerror',lambda error:errors.append(str(error)))
@@ -9,7 +21,7 @@ def run_group_tests(browser,base,route_map):
     page.goto(base,wait_until='networkidle');register(page,'host@example.test')
     page.click('#groups-btn');page.wait_for_selector('#group-create')
     ids=[]
-    for title,activity,visibility,policy in [('Morning Ride','ride','public','open'),('Private Meet','meet','private','invite'),('Approval Event','event','approval','approval')]:
+    for title,activity,visibility,policy in [('Morning Ride','ride','public','open'),('Private Meet','meet','private','invite'),('Approval Event','event','approval','approval'),('Open Afternoon','ride','public','open')]:
         page.click('#group-create');page.wait_for_selector('#group-form')
         page.fill('#group-form-title',title);page.fill('#group-form-description','Bring water')
         page.select_option('#group-form-activityType',activity);page.fill('#group-form-meetingArea','Helsinki')
@@ -31,6 +43,36 @@ def run_group_tests(browser,base,route_map):
     assert page.locator('#groups-dialog').bounding_box()['width']<=320
     page.set_viewport_size({'width':844,'height':390})
     assert page.locator('#groups-dialog').bounding_box()['height']<=390
+    page.set_viewport_size({'width':390,'height':844})
+    switch(page,'member@example.test',True);linked(page,ids[3],'Open Afternoon')
+    assert not page.locator('.group-meeting').count() and not page.locator('#group-edit').count()
+    bike=page.evaluate("""async()=>{
+      const {saveVehicle}=await import('./js/firebase/garageRepository.js');
+      return saveVehicle('fixture-1',null,{nickname:'Shared Bike',category:'bicycle',manufacturer:'Private maker',model:'Secret model',description:'Private notes',modelYear:null,visibility:'private'});
+    }""")
+    page.locator('#groups-dialog').get_by_role('button',name='Refresh',exact=True).click()
+    page.wait_for_selector('#group-vehicle-vehicleId option',state='attached');page.select_option('#group-vehicle-vehicleId',bike)
+    page.click('#group-join');page.wait_for_selector('#group-leave')
+    assert 'Shared Bike' in page.locator('#group-participants').inner_text()
+    assert 'Secret model' not in page.locator('#group-participants').inner_text()
+    assert 'fixture-1' not in page.locator('#groups-dialog').inner_text()
+    data=page.evaluate('(id)=>JSON.parse(localStorage.getItem("__mockProfiles"))["groupSessions/"+id+"/participants/fixture-1"]',ids[3])
+    assert set(data['vehicle'])=={'nickname','category'}
+    page.on('dialog',lambda dialog:dialog.accept());page.click('#group-leave')
+    page.wait_for_function('!document.querySelector("#groups-dialog").open')
+    linked(page,ids[2],'Approval Event');page.click('#group-request')
+    page.wait_for_function('document.querySelector("#groups-dialog").textContent.includes("request pending")')
+    switch(page,'host@example.test');linked(page,ids[2],'Approval Event')
+    page.locator('[data-group-request-uid="fixture-1"]').get_by_role('button',name='Approve',exact=True).click()
+    page.wait_for_function('!document.querySelector("[data-group-request-uid=fixture-1]")')
+    switch(page,'member@example.test');linked(page,ids[2],'Approval Event');page.click('#group-join');page.wait_for_selector('#group-leave')
+    switch(page,'host@example.test');linked(page,ids[2],'Approval Event')
+    page.locator('[data-participant-uid="fixture-1"]').get_by_role('button',name='Remove member',exact=True).click()
+    page.wait_for_function('!document.querySelector("[data-participant-uid=fixture-1]")')
+    switch(page,'member@example.test');linked(page,ids[2],'Approval Event')
+    assert 'cannot rejoin' in page.locator('#groups-dialog').inner_text()
+    assert not page.locator('#group-join').count()
     assert not errors and not page.evaluate('window.__unhandled'), (errors,page.evaluate('window.__unhandled'))
     context.close()
     print('PASS: MOCK Group Session creation, public/private/approval, edit/start/complete, private meeting details, hidden IDs, Finnish and mobile/landscape')
+    print('PASS: MOCK session-specific join/leave, minimal Garage snapshot, approvals, participant names, organizer removal and rejoin guard')
