@@ -7,7 +7,7 @@ import { element, labelText, field, button } from './ui/forms.js';
 import { t } from './i18n/i18n.js';
 import { dataErrorKey } from './firebase/access.js';
 import { riderMoving, onRiderMotion } from './rider-motion.js';
-import { RIDER_STATUSES } from './data/group-session.js';
+import { RIDER_STATUSES, currentInviteToken, setRouteInvite, sessionURL } from './data/group-session.js';
 
 export function initGroupParticipantsUI() {
   onRiderMotion(moving=>{
@@ -34,7 +34,13 @@ export function initGroupParticipantsUI() {
         const join=button(participant?'common.save':'groups.join');join.type='submit';join.id='group-join';form.append(join);
         form.addEventListener('submit',event=>{
           event.preventDefault();const vehicleId=input.value || null,share=Boolean(shareClub?.checked);
-          action(owner=>participant?repository.selectGroupVehicle(owner,id,vehicleId,share):repository.joinGroup(owner,id,vehicleId,null,share));
+          action(async owner=>{
+            if(participant) await repository.selectGroupVehicle(owner,id,vehicleId,share);
+            else {
+              await repository.joinGroup(owner,id,vehicleId,currentInviteToken(id),share);
+              if(stillCurrent()) {setRouteInvite(null);if(location.hash.startsWith('#/session/'+id)) history.replaceState(null,'',sessionURL(id));}
+            }
+          });
         });body.append(form,labelText(element('p','muted'),'groups.vehicleConsent'));
       }
       if(!participant && group.joiningPolicy==='approval' && !request) body.append(button('groups.request',()=>action(owner=>repository.requestGroup(owner,id)),'group-request'));

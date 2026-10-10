@@ -1,7 +1,7 @@
 import { getAccount, onAccountChange } from './auth-state.js';
 import { t, getLanguage } from './i18n/i18n.js';
 import { CATEGORIES } from './data/schema.js';
-import { ACTIVITIES, GROUP_VISIBILITIES, JOIN_POLICIES, sessionURL } from './data/group-session.js';
+import { ACTIVITIES, GROUP_VISIBILITIES, JOIN_POLICIES, setRouteInvite } from './data/group-session.js';
 import * as repository from './firebase/groupRepository.js';
 import { listClubs, loadClub } from './firebase/clubRepository.js';
 import { dataErrorKey } from './firebase/access.js';
@@ -15,7 +15,7 @@ const localTime = value => {
 };
 export function initGroupUI() {
   const view = dialog('groups-dialog', 'groups.title');
-  let uid = null, version = 0, selectedId = null, model = null, busy = false;
+  let uid = null, version = 0, selectedId = null, model = null, busy = false, pendingLink=false, waitingForAuth=false;
   const current = (owner, token) => uid === owner && getAccount()?.uid === owner && version === token;
   function action(fn, next = () => selectedId ? open(selectedId) : browse()) {
     if (busy) return Promise.resolve(); busy = true;
@@ -23,9 +23,13 @@ export function initGroupUI() {
     return runAction(view.body, view.status, async () => {
       await fn(owner);
       if (current(owner, token)) await next();
-    }, dataErrorKey).finally(() => {busy = false;});
+    }, dataErrorKey).finally(() => {busy = false;if(pendingLink){pendingLink=false;void linked();}});
   }
-  function signedOut() { view.body.replaceChildren(labelText(element('p'), 'data.signIn')); }
+  function signedOut() {
+    view.body.replaceChildren(labelText(element('p'), 'data.signIn'),button('groups.signIn',()=>{
+      view.node.close();document.getElementById('account-btn').click();
+    }));
+  }
   async function browse(cursor = null) {
     selectedId = null; model = null; const owner = uid, token = ++version;
     if (!uid) {signedOut();return;}
@@ -82,6 +86,7 @@ export function initGroupUI() {
   }
   async function open(id) {
     selectedId=id;const owner=uid,token=++version;
+    model=null;view.body.replaceChildren();
     const loaded=await repository.loadGroup(owner,id);if(!current(owner,token)) return;
     model=loaded;const {group,manager,participant}=model;
     view.body.replaceChildren(button('groups.back',()=>action(()=>Promise.resolve(),()=>browse())),
@@ -107,13 +112,27 @@ export function initGroupUI() {
   });
   onAccountChange(({user})=>{
     if((user?.uid || null)===uid) return;
-    uid=user?.uid || null;version++;selectedId=null;model=null;view.body.replaceChildren();view.status.textContent='';
-    if(!uid) signedOut(); else if(view.node.open) action(()=>Promise.resolve(),()=>browse());
+    uid=user?.uid || null;version++;selectedId=null;model=null;setRouteInvite(null);view.body.replaceChildren();view.status.textContent='';
+    if(!uid) signedOut(); else if(location.hash.startsWith('#/session/')) void linked();
+    else if(view.node.open) action(()=>Promise.resolve(),()=>browse());
   });
   async function linked() {
-    const match=/^#\/session\/([A-Za-z0-9_-]{1,100})$/.exec(location.hash);if(!match) return;
+    const match=/^#\/session\/([A-Za-z0-9_-]{1,100})(?:\/invite\/([A-Za-z0-9_-]{1,100}))?$/.exec(location.hash);
+    if(!match) {
+      setRouteInvite(null);
+      if(location.hash.startsWith('#/session/')) {if(!view.node.open)view.node.showModal();view.body.replaceChildren();labelText(view.status,'groups.inviteInvalid');}
+      return;
+    }
+    if(uid && document.getElementById('account-dialog').open) {waitingForAuth=true;return;}
     if(!view.node.open) view.node.showModal();
-    if(uid) await action(()=>Promise.resolve(),()=>open(match[1]));else signedOut();
+    if(busy) {pendingLink=true;return;}
+    view.body.replaceChildren();model=null;selectedId=null;
+    setRouteInvite(match[2]?{id:match[1],token:match[2]}:null);
+    if(uid) await action(async owner=>{if(match[2]) await repository.resolveGroupInvitation(owner,match[1],match[2]);},()=>open(match[1]));
+    else {signedOut();labelText(view.status,'groups.inviteSignIn');}
   }
-  addEventListener('hashchange',()=>void linked());onAccountChange(({user})=>{if(user) void linked();});void linked();
+  document.getElementById('account-dialog').addEventListener('close',()=>{
+    if(waitingForAuth){waitingForAuth=false;void linked();}
+  });
+  addEventListener('hashchange',()=>void linked());addEventListener('motodash-group-link',()=>void linked());void linked();
 }

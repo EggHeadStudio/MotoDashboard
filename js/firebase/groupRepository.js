@@ -215,3 +215,20 @@ export async function clearGroupRecord(uid,id,path,target=uid) {
   checkId(id);checkId(target);if(!['invites','joinRequests'].includes(path)) throw dataError('invalid-input');
   const s=await ownDatabase(uid);await boundedRequest(s.sdk.deleteDoc(ref(s,id,path,target)));s.assertCurrent();
 }
+export async function resolveGroupInvitation(uid,id,token) {
+  checkId(id);if(typeof token!=='string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(token)) throw dataError('invalid-invite');
+  const s=await ownDatabase(uid);let snapshot;
+  try {
+    const member=await boundedRequest(s.sdk.getDoc(ref(s,id,'participants',uid)));s.assertCurrent();
+    if(member.exists()) return {accepted:true};
+  } catch(error) {if(error.code==='permission-denied') throw dataError('invalid-invite');throw error;}
+  try {snapshot=await boundedRequest(s.sdk.getDoc(ref(s,id,'invites',uid)));}
+  catch(error) {if(error.code==='permission-denied') throw dataError('invalid-invite');throw error;}
+  s.assertCurrent();if(!snapshot.exists() || snapshot.data().token!==token) throw dataError('invalid-invite');
+  if(expiresMillis(snapshot.data().expiresAt)<=Date.now()) throw dataError('expired-invite');
+  try {
+    const page=await boundedRequest(s.sdk.getDoc(pageRef(s,id)));s.assertCurrent();
+    if(!page.exists() || !['scheduled','active'].includes(page.data().state)) throw dataError('invalid-invite');
+  } catch(error) {if(error.code==='permission-denied') throw dataError('invalid-invite');throw error;}
+  return snapshot.data();
+}

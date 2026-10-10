@@ -3424,3 +3424,22 @@ previously public Lobby summaries; opening/joining their bound session is denied
 those summaries requires trusted operator cleanup; no client recursive deletion is added.
 Validation: 234 Group emulator assertions + original 102 passed; focused browser 3 groups
 passed. No live Firebase/deployment/physical-device test was performed.
+
+
+### Batch 3 milestone 8 - addressed invitation URLs and QR
+
+Stable Pages-compatible routes: #/session/{sessionId} and
+#/session/{sessionId}/invite/{token}. Tokens are opaque generated UUIDs; invitations
+remain addressed to a specific authenticated recipient, not bearer admission. Private
+URLs return through sign-in/registration; invalid/expired/revoked/wrong-account/rotated
+links fail visibly. Closing Auth resumes the pending route without stacking over login.
+Acceptance consumes the invite atomically and removes the token from the current URL.
+Hosts may revoke; invitation expiry is bounded to seven days by rules.
+js/group-invites-ui.js provides sharing and QR using vendored MIT Project Nayuki
+js/vendor/qrcodegen.js plus js/ui/qr.js; no server, build or runtime QR CDN. Normal UI
+never prints raw token values. NFC remains future use of this same URL, with no writing.
+Browser tests decode the displayed QR using independent ZXing to verify the exact URL,
+exercise return/decline/revocation/expiry/wrong-account/rotation/acceptance/refresh and
+reject external/malformed QR URLs. 4 focused browser groups and 234 Group emulator
+assertions passed (plus baseline 102); Pages checks passed with 158 references/55 URLs.
+These are local emulator/SDK-fixture tests, not live Firebase or physical camera tests.

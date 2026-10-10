@@ -5,6 +5,7 @@ import { initGroupUI } from './group-ui.js';
 import { initGroupParticipantsUI } from './group-participants-ui.js';
 import { recordRiderMotion } from './rider-motion.js';
 import { initLobbyUI } from './lobby-ui.js';
+import { initGroupInvitesUI } from './group-invites-ui.js';
 import { initClubMembersUI } from './club-members-ui.js';
 import { initClubBrandingUI } from './club-branding-ui.js';
 import { initGarageUI, selectedVehicle, onVehicleChange } from './garage-ui.js';
@@ -83,6 +84,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       initGroupUI();
       initGroupParticipantsUI();
       initLobbyUI();
+      initGroupInvitesUI();
       initClubMembersUI();
       initClubBrandingUI();
       if ('serviceWorker' in navigator) {

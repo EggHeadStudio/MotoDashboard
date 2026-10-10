@@ -34,3 +34,11 @@ export function sessionURL(id, token = null) {
   url.hash = '/session/' + id + (token ? '/invite/' + token : '');
   return url.href;
 }
+let routeInvite=null;
+export function setRouteInvite(value) {routeInvite=value;}
+export const currentInviteToken = id => routeInvite?.id===id ? routeInvite.token : null;
+export function followSessionURL(url) {
+  const target=new URL(url);
+  if(location.hash===target.hash) dispatchEvent(new Event('motodash-group-link'));
+  else location.hash=target.hash;
+}

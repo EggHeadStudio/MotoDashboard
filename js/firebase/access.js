@@ -13,6 +13,8 @@ export async function ownDatabase(uid) {
 }
 export function dataError(code) { return Object.assign(new Error(code), { code }); }
 export function dataErrorKey(error) {
+  if(error?.code==='invalid-invite') return 'groups.inviteInvalid';
+  if(error?.code==='expired-invite') return 'groups.inviteExpired';
   if (['auth-required', 'account-changed'].includes(error?.code)) return 'data.signIn';
   if (error?.code === 'permission-denied') return 'data.denied';
   if (error?.code === 'invalid-input') return 'data.invalid';

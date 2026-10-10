@@ -91,8 +91,68 @@ def run_group_tests(browser,base,route_map):
     switch(page,'member@example.test');linked(page,ids[2],'Approval Event')
     assert 'cannot rejoin' in page.locator('#groups-dialog').inner_text()
     assert not page.locator('#group-join').count()
+    switch(page,'host@example.test');linked(page,ids[1],'Private Meet')
+    page.fill('#group-invite-search-name','Garage Rider');page.locator('#group-invite-search button[type=submit]').click()
+    page.wait_for_selector('#group-invite-recipient option',state='attached');page.select_option('#group-invite-recipient','fixture-1')
+    page.locator('#group-invite button[type=submit]').click()
+    page.locator('[data-invitee-uid="fixture-1"]').get_by_role('button',name='Invitation link / QR',exact=True).click()
+    page.wait_for_selector('.invitation-qr')
+    url=page.locator('#group-share-dialog a').get_attribute('href')
+    from PIL import Image
+    import zxingcpp
+    from io import BytesIO
+    decoded=zxingcpp.read_barcode(Image.open(BytesIO(page.locator('.invitation-qr').screenshot())))
+    assert decoded and decoded.text==url, 'QR must decode to exact invitation URL'
+    token=url.rsplit('/',1)[-1]
+    assert token not in page.locator('#group-share-dialog').inner_text()
+    page.evaluate("Object.defineProperty(navigator,'share',{configurable:true,value:async data=>{window.__groupShared=data;}})")
+    page.locator('#group-share-dialog').get_by_role('button',name='Share or copy link',exact=True).click()
+    page.wait_for_function('Boolean(window.__groupShared)');assert page.evaluate('window.__groupShared.url')==url
+    page.locator('#group-share-dialog .feature-header button').click()
+    page.locator('#groups-dialog .feature-header button').click()
+    page.evaluate("async()=>{await (await import('./js/firebase/auth.js')).logout();}")
+    page.evaluate('(url)=>{location.href=url;}',url)
+    page.locator('#groups-dialog').get_by_role('button',name='Sign in / register',exact=True).click()
+    page.select_option('#auth-mode','login');page.fill('#auth-email','member@example.test');page.fill('#auth-password','fixture-password');page.click('#auth-submit')
+    page.wait_for_function('document.querySelector("#auth-status").textContent.includes("profile is ready")');page.click('#account-close')
+    page.wait_for_selector('#group-join');assert 'Private Meet' in page.locator('#groups-dialog').inner_text()
+    page.click('#group-reject-invite')
+    page.wait_for_function('(id)=>!JSON.parse(localStorage.getItem("__mockProfiles"))["groupSessions/"+id+"/invites/fixture-1"]',arg=ids[1])
+    # A revoked URL must fail visibly and reveal no cached private meeting details.
+    page.evaluate("()=>{dispatchEvent(new Event('motodash-group-link'));}")
+    page.wait_for_function('document.querySelector("#groups-dialog .feature-status").textContent.includes("invalid, revoked")')
+    assert not page.locator('.group-meeting').count()
+    switch(page,'host@example.test');linked(page,ids[1],'Private Meet')
+    new_token=page.evaluate("async(id)=>{return (await import('./js/firebase/groupRepository.js')).inviteGroup('fixture-0',id,'fixture-1');}",ids[1])
+    switch(page,'member@example.test')
+    page.evaluate('(url)=>{location.hash=new URL(url).hash;}',url)
+    page.wait_for_function('document.querySelector("#groups-dialog .feature-status").textContent.includes("invalid, revoked")')
+    new_url=url.rsplit('/',1)[0]+'/'+new_token
+    switch(page,'outsider@example.test',True)
+    page.evaluate('(url)=>{location.hash=new URL(url).hash;}',new_url)
+    page.wait_for_function('document.querySelector("#groups-dialog .feature-status").textContent.includes("invalid, revoked")')
+    assert not page.locator('.group-meeting').count()
+    switch(page,'member@example.test')
+    expiry=page.evaluate("""(id)=>{const records=JSON.parse(localStorage.getItem('__mockProfiles')),key='groupSessions/'+id+'/invites/fixture-1';
+      const previous=records[key].expiresAt;records[key].expiresAt={seconds:Math.floor(Date.now()/1000)-60};
+      localStorage.setItem('__mockProfiles',JSON.stringify(records));return previous;}""",ids[1])
+    page.evaluate('(url)=>{location.hash=new URL(url).hash;}',new_url)
+    page.wait_for_function('document.querySelector("#groups-dialog .feature-status").textContent.includes("has expired")')
+    page.evaluate("""([id,expiry])=>{const records=JSON.parse(localStorage.getItem('__mockProfiles'));records['groupSessions/'+id+'/invites/fixture-1'].expiresAt=expiry;
+      localStorage.setItem('__mockProfiles',JSON.stringify(records));dispatchEvent(new Event('motodash-group-link'));}""",[ids[1],expiry])
+    page.wait_for_selector('#group-join')
+    bad_qr=page.evaluate("""async()=>{const {invitationQR}=await import('./js/ui/qr.js');let denied=0;
+      for(const url of ['https://example.test/#/session/abc',new URL('./',document.baseURI).href+'#/unknown/abc']) {
+        try{invitationQR(url);}catch{denied++;}
+      }return denied;}""")
+    assert bad_qr==2
+    page.evaluate('(url)=>{location.hash=new URL(url).hash;}',new_url);page.wait_for_selector('#group-join')
+    page.click('#group-join');page.wait_for_selector('#group-leave')
+    assert '/invite/' not in page.url
+    page.reload(wait_until='networkidle');page.wait_for_selector('#group-leave')
     assert not errors and not page.evaluate('window.__unhandled'), (errors,page.evaluate('window.__unhandled'))
     context.close()
     print('PASS: MOCK Group Session creation, public/private/approval, edit/start/complete, private meeting details, hidden IDs, Finnish and mobile/landscape')
     print('PASS: MOCK session-specific join/leave, minimal Garage snapshot, approvals, participant names, organizer removal and rejoin guard')
     print('PASS: MOCK Lobby discovery, activity/region filters, private/terminal exclusion and safe summaries')
+    print('PASS: exact QR round-trip decode, sharing, addressed invite login return, decline/revocation, expiry/wrong-account/rotated-token denial, private acceptance and refresh')

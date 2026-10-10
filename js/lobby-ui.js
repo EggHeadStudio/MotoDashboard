@@ -1,6 +1,6 @@
 import { getAccount, onAccountChange } from './auth-state.js';
 import { CATEGORIES } from './data/schema.js';
-import { ACTIVITIES, sessionURL } from './data/group-session.js';
+import { ACTIVITIES, sessionURL, followSessionURL } from './data/group-session.js';
 import { formatGroupTime } from './group-ui.js';
 import { listLobby, findLobbyClubs } from './firebase/lobbyRepository.js';
 import { dataErrorKey } from './firebase/access.js';
@@ -53,7 +53,7 @@ export function initLobbyUI() {
         element('p','',formatGroupTime(event.startsAt)),element('p','',event.clubName || event.hostName),
         labelText(element('p'),'groups.count',{count:event.participantCount}),labelText(element('p'),'policy.'+event.joiningPolicy),
         labelText(element('p'),event.maxParticipants && event.participantCount>=event.maxParticipants?'lobby.full':'lobby.available'),
-        button('ui.open',()=>{view.node.close();location.href=sessionURL(event.id);}));results.append(card);
+        button('ui.open',()=>{view.node.close();followSessionURL(sessionURL(event.id));}));results.append(card);
     }
     if(page.more) {const next=button('clubs.more',()=>action(()=>{next.remove();return load(true);}));results.append(next);}
     labelText(view.status,'common.loaded');
