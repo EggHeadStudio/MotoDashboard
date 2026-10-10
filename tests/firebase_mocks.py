@@ -110,9 +110,11 @@ def run_account_tests(browser, base, route_map):
     page.fill('#auth-name', 'Test Rider')
     page.fill('#auth-email', 'rider@example.test')
     page.fill('#auth-password', 'short')
+    page.fill('#auth-confirm-password', 'short')
     page.click('#auth-submit')
     assert page.evaluate('window.__mock.creates') == 0, 'Native form validation must block short passwords'
     page.fill('#auth-password', 'fixture-password')
+    page.fill('#auth-confirm-password', 'fixture-password')
     page.click('#auth-submit')
     page.wait_for_function("document.querySelector('#auth-status').textContent === 'Signed in. Your profile is ready.'")
     assert page.locator('#auth-identity').inner_text() == 'Signed in as Test Rider'

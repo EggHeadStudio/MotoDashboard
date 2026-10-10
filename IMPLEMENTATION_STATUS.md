@@ -1,6 +1,123 @@
 # MotoDashboard - Implementation Status
 
-## Current Security Fix Batch - 2026-10-10
+## Current registration fix and roadmap update - 2026-10-10
+
+Baseline: `198d72a` (`first new working deployment`), following security commit
+`eea3d0d`. The user reports that the existing application is deployed to GitHub
+Pages, connected to the real MotoDash project and working locally/publicly.
+That report supersedes the older local-only deployment status below; this session
+did not independently certify Console contents, inventory, all two-account security
+paths or physical devices. Historical checklist evidence remains dated evidence.
+
+**Implemented locally:** registration-only required Confirm password input with
+exact matching before the Firebase call. Both fields must be nonempty; original
+six-character validation and Firebase policy errors remain. English/Finnish labels
+and mismatch messages use the central dictionary. Mismatch focuses confirmation,
+marks it invalid and links it to the live status message, preserving both inputs
+for correction. Both registration fields use `new-password`; login continues with
+`current-password` and no confirmation constraint. Existing submission guard blocks
+repeated requests. Both fields clear on successful/failed Auth requests, mode change
+and dialog close. The app adds no password logging/storage, and confirmation is
+never passed to the Firebase adapter/SDK.
+
+Only this registration behavior was implemented. Firebase adapters/configuration,
+Firestore/RTDB rules, indexes, GPS/maps/weather/recording/history/Garage/Clubs,
+stylesheet, manifest and deployment workflow are unchanged.
+
+| Changed file | Purpose |
+| --- | --- |
+| `index.html` | Registration confirmation row and accessible atomic status |
+| `js/auth-ui.js` | Registration validation, focus/error lifecycle and confirmation cleanup |
+| `js/i18n/dictionary.js` | Exact English/Finnish confirmation labels and mismatch errors |
+| `tests/password_confirmation_browser.py` | 17 named registration/login/accessibility/mobile regression cases |
+| `tests/firebase_mocks.py`, `tests/batch2_browser.py` | Fill confirmation in existing successful registration scenarios |
+| `tests/run_browser.py` | Include the new regression suite in the normal full browser run |
+| `IDEA.md`, this file | Immediate fix result, future milestones, priorities and actual validation evidence |
+
+### Verification actually performed
+
+Commands from the repository root:
+
+```powershell
+$env:PYTHONPATH = "$env:TEMP\motodash-test-tools"
+python -u tests/run_browser.py
+python -u tests/run_release_paths.py
+git diff --check
+```
+
+| Final check | Passed | Failed | Skipped |
+| --- | ---: | ---: | ---: |
+| Full Chromium browser regression | 15 PASS groups | 0 | 0 |
+| Confirmation suite, included in the full run | 17 named cases | 0 | 0 |
+| Deterministic GPS/route/heading/storage/weather, included in the full run | 36 assertions | 0 | 0 |
+| Pages/degraded-Firebase regression | 2 PASS groups | 0 | 0 |
+
+Counts overlap as indicated; do not add the included cases to the group total.
+The initial confirmation run failed a close-cleanup assertion because it checked
+before the asynchronous dialog close event; the test now waits for the actual
+cleanup/focus state. The final full run passes with the required expectation intact.
+
+Coverage: matching success, exact whitespace/case mismatch, empty original/confirmation,
+zero SDK registration calls for invalid input, existing minimum, stricter Firebase
+policy errors, English/Finnish live errors/labels, accessible status/focus, duplicate
+submit denial, unchanged login and no password-reset implementation. The synthetic
+SDK receives only Auth/email/password arguments. App local/session storage and profile
+records contain neither test password; synthetic `__mockAccounts` fixture storage is
+explicitly separate and is never a production credential source.
+
+Existing Auth/profile/persistence/error/retry/account-isolation scenarios pass.
+The full suite also covers native JS parsing/linking, dictionary parity/fallback,
+DOM IDs/relative imports, retained dashboard/GPS/maps/weather/recording/history,
+Garage, scoped rides/exports, Club joining/approvals/roles/ranks/branding/Wall and
+real Firebase 13.0.0 SDK imports with cloud APIs blocked.
+Pages checks find 103 references and 44 distinct local URLs returning HTTP 200
+under `/MotoDashboard/`; unavailable Firebase still permits guest recording/history.
+No emulator rerun was needed for this form-only change: authorization/schema files
+are unchanged. The earlier 102 baseline + 137 security results below remain historical,
+not newly executed results. No live Firebase test or production operation was run.
+
+320x568, 390x844 portrait and 568x320 landscape modal bounds, scroll reachability,
+44px controls and keyboard navigation pass. English/Finnish 320px screenshots were
+saved outside the repository and visually inspected. They are simulated Chromium
+viewports, not real phone/software-keyboard/password-manager certification.
+
+### Roadmap additions (planning only)
+
+- SECTION 2: Account Management / Authentication Enhancement groups forgot password,
+  change password, Google popup/redirect/linking and complete account deletion.
+- Complete deletion is mandatory before wider public beta: recent reauthentication,
+  trusted resumable cleanup of personal/Garage/ride/chunk/Club/media data, explicit
+  owned-Club policy, no orphaned records or stale-job resurrection, preserved
+  nonpersonal retired-ID reservations, then coordinated Firebase Auth deletion.
+- SECTION 3 + SECTION 9: later Media & Branding covers all Garage vehicle images,
+  Club logos/banners, rank graphics/presets/hierarchy and optional themed sessions;
+  secure optimized uploads, access rules, replacement/deletion and safe fallbacks.
+- Section 8 explicitly documents the current Blaze requirement for Firebase Storage
+  and Functions deployment, approval for billing/service selection, regional usage
+  costs and monitoring. No service or billing plan was changed.
+- SECTION 16: major modern/premium/minimalist mobile redesign using one design
+  system, after core functionality including Official Activities and before public
+  launch; preserve riding readability, touch/accessibility and both languages.
+- Section 15.10 records the new priorities and beta/launch gates. Group Sessions,
+  Live Group Map, Lobby, QR, Official Activities/rewards and every other agreed
+  original product requirement remain. No existing section was renumbered.
+
+### Manual acceptance remaining and stop
+
+- On physical Android/iPhone browsers, check registration in both languages,
+  software keyboard, scrolling, screen-reader error announcement, tab/focus behavior
+  and password-manager/autofill use with two `new-password` fields.
+- After separately authorized publication, verify this new confirmation flow against
+  live Firebase: mismatch/empty creates no account; a matching policy-compliant
+  password registers; login and stricter-policy feedback work.
+- Continue recording exact Console/index/inventory/two-account/device evidence using
+  DEPLOYMENT_CHECKLIST.md; generic reported functionality is not every security check.
+
+Local commit message: `fix: confirm password during registration` (see `git log -1`).
+No push, deployment, production-data modification or next batch is part of this
+session. **STOP after the local commit; wait for explicit user approval.**
+
+## Historical Security Fix Batch - 2026-10-10
 
 User-authorized security corrections are complete locally. Base commit:
 `a598aec90849c56c13e3a1490875793b9b0937ba`. One separate local security commit

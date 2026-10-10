@@ -165,9 +165,13 @@
       <label for="auth-password" data-i18n="auth.password">Password</label>
       <input id="auth-password" name="password" type="password" autocomplete="current-password" required>
       <p data-i18n="auth.passwordHint">Registration requires at least 6 characters; the project's password policy may require more.</p>
+      <div id="auth-confirm-password-row" hidden>
+        <label for="auth-confirm-password" data-i18n="auth.confirmPassword">Confirm password</label>
+        <input id="auth-confirm-password" name="confirmPassword" type="password" autocomplete="new-password" aria-describedby="auth-status" required disabled>
+      </div>
       <button id="auth-submit" type="submit" data-i18n="auth.login">Sign in</button>
     </form>
-    <p id="auth-status" role="status" aria-live="polite"></p>
+    <p id="auth-status" role="status" aria-live="polite" aria-atomic="true"></p>
     <button id="auth-retry" type="button" data-i18n="auth.retry">Retry connection / profile</button>
     <button id="auth-logout" type="button" hidden data-i18n="auth.logout">Sign out</button>
   </dialog>

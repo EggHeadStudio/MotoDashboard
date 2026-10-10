@@ -12,6 +12,7 @@ export function initAuthUI() {
   const name = document.getElementById('auth-name');
   const email = document.getElementById('auth-email');
   const password = document.getElementById('auth-password');
+  const confirmation = document.getElementById('auth-confirm-password');
   const submit = document.getElementById('auth-submit');
   const signOut = document.getElementById('auth-logout');
   const retry = document.getElementById('auth-retry');
@@ -29,6 +30,9 @@ export function initAuthUI() {
     name.required = signup;
     password.autocomplete = signup ? 'new-password' : 'current-password';
     password.minLength = signup ? 6 : 1;
+    document.getElementById('auth-confirm-password-row').hidden = !signup;
+    confirmation.required = signup;
+    confirmation.disabled = !signup;
     signOut.hidden = !user;
     retry.hidden = connected && (!user || (!!profile && message !== 'auth.languageError'));
     submit.disabled = busy || !ready;
@@ -86,15 +90,33 @@ export function initAuthUI() {
     if (!connected) void connect();
   });
   close.addEventListener('click', () => dialog.close());
+  function clearConfirmationError() {
+    confirmation.removeAttribute('aria-invalid');
+    if (message === 'auth.passwordMismatch') message = 'auth.ready';
+  }
+  function clearPasswords() {
+    password.value = ''; confirmation.value = '';
+    clearConfirmationError();
+  }
+  for (const input of [password, confirmation]) {
+    input.addEventListener('input', () => {
+      if (message === 'auth.passwordMismatch') { clearConfirmationError(); render(); }
+    });
+  }
   dialog.addEventListener('close', () => {
-    password.value = ''; open.focus();
+    clearPasswords(); render(); open.focus();
   });
-  mode.addEventListener('change', () => { password.value = ''; message = 'auth.ready'; render(); });
+  mode.addEventListener('change', () => { clearPasswords(); message = 'auth.ready'; render(); });
   languageSelector.addEventListener('change', () => setLanguage(languageSelector.value));
   retry.addEventListener('click', () => connected ? void synchronize(user) : void connect());
   form.addEventListener('submit', async event => {
     event.preventDefault();
     if (busy || !ready || !form.reportValidity()) return;
+    clearConfirmationError();
+    if (mode.value === 'register' && password.value !== confirmation.value) {
+      confirmation.setAttribute('aria-invalid', 'true');
+      message = 'auth.passwordMismatch'; render(); confirmation.focus(); return;
+    }
     const displayName = name.value.trim();
     if (mode.value === 'register' && !displayName) { message = 'auth.nameRequired'; render(); return; }
     busy = true; message = 'auth.working'; render();
@@ -102,9 +124,9 @@ export function initAuthUI() {
       const next = mode.value === 'register'
         ? await register(email.value, password.value, displayName)
         : await login(email.value, password.value);
-      password.value = '';
+      clearPasswords();
       await synchronize(next, mode.value === 'register' ? displayName : undefined);
-    } catch (error) { password.value = ''; message = authErrorKey(error); }
+    } catch (error) { clearPasswords(); message = authErrorKey(error); }
     busy = false; render();
   });
   signOut.addEventListener('click', async () => {

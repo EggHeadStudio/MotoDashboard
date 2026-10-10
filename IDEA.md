@@ -14,6 +14,13 @@
 > already implemented, and adapt this plan to the actual repository
 > before beginning implementation.
 
+> **Current update, 2026-10-10:** The user reports that the existing application
+> is deployed on GitHub Pages, connected to MotoDash Firebase and working locally
+> and publicly. This session authorizes only registration password confirmation
+> plus the roadmap additions below. Other account features, uploads and the redesign
+> remain planned. Historical audit/batch records retain their original evidence;
+> user-reported deployment does not certify every security/device acceptance path.
+
 ------------------------------------------------------------------------
 
 # 1. Product vision
@@ -178,6 +185,12 @@ Users can:
 
 The prototype should use Firebase Authentication.
 
+Registration requires Password and Confirm password with exact matching before
+Firebase is called. Password reset, password change, Google sign-in and complete
+account deletion belong to the future **Account Management / Authentication
+Enhancement** milestone in SECTION 2. Complete deletion is mandatory before wider
+public beta. All account labels, errors and feedback use the English/Finnish dictionary.
+
 ------------------------------------------------------------------------
 
 ## 4.2 Personal Garage
@@ -224,6 +237,9 @@ Users can:
 The Garage should eventually function as a lightweight public
 showcase/profile, but the prototype must avoid becoming a full
 social-media feed.
+
+Vehicle photos across all categories are planned in the later **Media & Branding**
+milestone in SECTION 3, shared with Club/rank graphics in SECTION 9.
 
 ------------------------------------------------------------------------
 
@@ -1166,6 +1182,30 @@ Potential use:
 This hybrid should be evaluated before implementation rather than
 assumed blindly.
 
+## Media storage and trusted backend cost checkpoint (future)
+
+Before implementing Media & Branding, verify the MotoDash project's actual billing
+plan, bucket provisioning, region, access rules and cost estimate. The checked-in
+`motodash-87bf8.firebasestorage.app` value does not establish that Storage exists.
+Firebase's current policy requires Blaze for Cloud Storage, including default
+buckets; the requirement took effect starting 2026-02-03. Spark must not be assumed
+to support these uploads. No-cost allowances on Blaze depend on usage and bucket
+location; do not assume a European bucket receives the US-region allowance.
+[Official Storage billing requirements](https://firebase.google.com/docs/storage/faqs-storage-changes-announced-sept-2024).
+
+Estimate stored originals/thumbnails, upload/download operations, bandwidth,
+replacement/deletion, abandoned uploads and retention. Require separate approval
+for billing or a different secure storage service. Use usage monitoring and budget
+alerts; alerts alone do not pause services or cap Storage spend.
+[Firebase budget guidance](https://firebase.google.com/docs/projects/billing/avoid-surprise-bills).
+
+Complete account deletion may require a trusted server. Deploying Cloud Functions
+for Firebase requires Blaze; a separately secured operator/server workflow also
+needs an explicit access, reliability and cost review. Current irreversible Club
+retirement remains feasible without Functions, but does not erase personal data.
+[Cloud Functions deployment requirements](https://firebase.google.com/docs/functions/get-started).
+Keep the Pages frontend static and server credentials outside its artifact.
+
 ------------------------------------------------------------------------
 
 # 9. AI implementation workflow
@@ -1360,6 +1400,109 @@ performed. Both rules files require user review/approval before deployment.
 Realtime Database remains unused/default-denied; rides remain local. No Garage,
 Clubs, groups, Lobby, QR, billing, backend or build system was implemented.
 
+## Immediate registration fix (2026-10-10)
+
+- [x] Password confirmation implemented and locally verified in the existing
+  `index.html` / `js/auth-ui.js` form, using centralized en/fi labels and errors.
+- Exact password matching and nonempty fields must precede Firebase registration;
+  preserve the six-character minimum and Firebase's stricter policy/error handling.
+- Both registration password inputs use `type="password"` and `new-password`;
+  login keeps `current-password` and has no confirmation requirement.
+- Provide accessible mismatch feedback, focus confirmation, retain original input
+  on mismatch, block duplicate submissions, and never log/store/send confirmation.
+- Test matching/mismatch/empty/short/policy errors, zero Firebase calls on invalid
+  input, both languages, login, keyboard/mobile layout and no accidental reset flow.
+- This local fix does not authorize publication or another feature batch.
+
+Executed verification: 17 named confirmation cases pass within 15 full browser
+PASS groups, including existing Auth and 36 deterministic domain assertions;
+two Pages/degraded-Firebase groups pass. Zero final failures/skips. SDK fixtures
+test registration behavior; real SDK import checks block cloud APIs. Physical phones,
+password-manager acceptance and live acceptance of this new fix remain manual.
+
+## Future milestone: Account Management / Authentication Enhancement
+
+Extend `js/auth-ui.js`, `js/firebase/auth.js`, the existing account dialog/private
+profile boundary and centralized dictionary. Approve design and tests before
+implementation; keep current email/password accounts and guest recording usable.
+
+### Forgot password (planned)
+
+- [ ] Add a localized "Forgot password?" option to login and a mobile email form.
+- [ ] Use Firebase Authentication password-reset email functionality.
+- [ ] Give localized success/error feedback without revealing whether an email
+  exists; review enumeration protection, email/action templates and return URLs.
+- [ ] Handle rate limiting, network/provider failures and repeated submissions.
+- [ ] Test registered/unregistered addresses with indistinguishable responses,
+  authorized Pages/localhost return paths and English/Finnish.
+
+### Change password (planned)
+
+- [ ] Add an authenticated Account Settings flow with recent reauthentication
+  whenever required; verify current password for email/password accounts as appropriate.
+- [ ] Collect new password and exact confirmation, enforce current Firebase policy
+  and update the password through Firebase Authentication.
+- [ ] Handle provider-specific eligibility, localized errors/retry and expired
+  credentials. Never store or log any current/new/confirmation password.
+- [ ] Test wrong-current-password, mismatch, policy denial and successful update;
+  preserve the existing login/logout/profile behavior.
+
+### Google sign-in (planned)
+
+- [ ] Add the Firebase Google provider with browser-compatible sign-in and a redirect
+  fallback when popup behavior is unsupported or unreliable.
+- [ ] Design/test the redirect return flow for Pages, browser storage restrictions
+  and the existing Auth domain before changing any project configuration.
+- [ ] Link accounts securely, handle credential collisions and prevent duplicate
+  profiles/accounts. Never merge records solely because the user supplies an email.
+- [ ] Preserve email/password login and data ownership; localize all feedback in en/fi.
+- [ ] Test popup success/block/cancel, redirect recovery, existing-account linking,
+  logout/refresh and supported Android/iPhone browsers.
+
+### Complete account deletion (planned; required before wider public beta)
+
+This is an account/privacy requirement, not optional visual polish. The current
+profile rules deny deletion; do not loosen them to provide a partial frontend flow.
+
+- [ ] Add Account Settings "Delete my account" with explicit confirmation and a
+  clear localized explanation that deletion is permanent.
+- [ ] Require recent reauthentication: ask for the password again for email/password
+  accounts; use provider-appropriate reauthentication for Google accounts.
+- [ ] Remove or appropriately anonymize all personal data through a trusted,
+  resumable server-side deletion workflow. Authenticate the target UID independently
+  and prohibit deletion of another account, stale credentials or repeated unsafe jobs.
+- [ ] Delete private profile/preferences, Garage vehicles and personal session
+  manifests plus every route chunk, including incomplete/orphaned uploads.
+- [ ] Delete relevant Club memberships, private `clubRefs`, join requests and approval
+  records; reconcile counts/public projections and revoke invitations/permissions.
+- [ ] Resolve owned Clubs with an explicit approved ownership-transfer or permanent
+  retirement/erasure policy. Current client owner transfer is forbidden; do not delete
+  the owner identity while leaving an unmanaged active Club.
+- [ ] Erase/anonymize personal identifiers and content under the approved policy,
+  including retired Club children and relevant invitation/Wall/rank records.
+  Preserve a minimal nonpersonal retired-ID reservation forever; erasure must never
+  reopen an old Club ID or expose stale private children.
+- [ ] Remove uploaded user/vehicle media and associated references when applicable;
+  define continued ownership of transferred Club media explicitly.
+- [ ] As Group Sessions/live data/Official activities are added, extend the same
+  workflow to participation/host ownership, live ACLs/locations/presence, invitations,
+  personal reward records and other personal references. Revoke live access first.
+- [ ] Stop new writes/uploads and ensure queued offline jobs cannot resurrect erased
+  data. Clear the deleting account's local records/outbox/cache without affecting
+  other account scopes or unrelated preferences. Resolve necessary ride fences safely.
+- [ ] Delete the Firebase Authentication account only as part of the coordinated
+  cleanup. Auth deletion does not automatically remove Firestore documents or
+  subcollections, media, local data or references in other accounts.
+- [ ] Prevent orphaned personal data; verify completion across all affected stores.
+  Use idempotent progress/retries and fail safely on partial failure, with clear
+  localized pending/error/completed feedback. Never claim completion after Auth alone.
+- [ ] Test email/password and Google reauthentication, unauthorized deletion,
+  owned/multiple/retired Clubs, route chunks, media, offline/stale jobs, repeated
+  requests, interrupted jobs and privacy/retired-ID invariants.
+- [ ] Review trusted workflow/IAM and Firebase plan/cost requirements in Section 8.
+  A frontend-only partial deletion is unacceptable; if the trusted workflow is
+  unavailable, wider public beta remains blocked.
+
 ### HUMAN CHECKPOINT
 
 STOP after this section.
@@ -1398,6 +1541,25 @@ Implement the personal identity and vehicle system.
 -   [x] Mobile-friendly empty states.
 
 Image upload may be postponed if Firebase Storage is not yet configured.
+
+## Later milestone: Media & Branding — Garage images (planned)
+
+Shared milestone with SECTION 9; implement after the account lifecycle/deletion
+design and core data/permission flows. Preserve placeholders until the Section 8
+Storage/rules/cost checkpoint is approved.
+
+- [ ] Support motorcycles, cars and every other supported Garage category.
+- [ ] Mobile camera/gallery selection, accessible preview and cancel/retry flow.
+- [ ] Resize/compress and validate dimensions, file size and supported image types;
+  verify safe decoded content and remove sensitive metadata such as GPS EXIF.
+- [ ] Use appropriate image storage with tested owner access controls. Garage records
+  store references/metadata only, never base64 images or large binary fields.
+- [ ] Preserve current private Garage access; future public/Club presentation needs
+  separately authorized media boundaries, not public URLs for private originals.
+- [ ] Support replacement/deletion and safe cleanup of abandoned uploads, removed
+  vehicles and deleted accounts. Partial failures must not leave untracked objects.
+- [ ] Test cross-account denial, malformed/oversized files, offline failures, mobile
+  selection/preview and the actual Firebase Storage Spark/Blaze prerequisites.
 
 ## Checks
 
@@ -1634,6 +1796,9 @@ Separate authorization from community identity.
 -   [x] Custom rank display.
 -   [x] Ensure visible rank never grants technical permission.
 
+Visible rank icons/badges, hierarchy and optional presets are future Media & Branding
+work in SECTION 9. Graphics remain presentation only and never alter technical roles.
+
 ## Checks
 
 -   [x] Member cannot perform Admin action.
@@ -1673,6 +1838,24 @@ Give communities identity without building a social network.
 -   [x] Website link.
 -   [x] Safe URL validation.
 -   [x] Controlled theming only.
+
+## Later milestone: Media & Branding — Club/rank graphics (planned)
+
+Use the same secure upload/optimization service and cost checkpoint as SECTION 3;
+reuse existing Club repositories, permission helpers, branding validation and en/fi.
+
+- [ ] Club logos and banner images with optimized mobile previews/rendering.
+- [ ] Custom rank icons/badges and visible rank hierarchy, with optional preset graphics.
+- [ ] Optional Club-themed session appearance after Group Session/marker integration;
+  keep ride controls and map attribution readable and unrotated.
+- [ ] Secure uploads, server-enforced Club manager permissions, image type/size limits,
+  optimization, replacement/deletion and reliable fallback graphics.
+- [ ] Keep public logos/banners separate from private membership/authorization data.
+  Published graphics must disclose no private UIDs, invitation secrets or locations.
+- [ ] Controlled customization only: no arbitrary user HTML, CSS or JavaScript;
+  sanitize/reject unsafe image formats and preserve contrast/accessibility.
+- [ ] Test Member/Host/outsider denial, authorized managers, rank permission separation,
+  retired Club denial, deletion cleanup and narrow/slow-network rendering.
 
 ## Checks
 
@@ -1902,6 +2085,12 @@ Review the entire prototype before polishing.
 -   [ ] Ensure UI hiding is not used as security.
 -   [ ] Document current privacy limitations.
 
+-   [ ] Verify complete Account Management deletion end to end before wider public
+    beta, including trusted cleanup, reauthentication, orphan prevention and
+    permanent retired-ID reservations (SECTION 2).
+-   [ ] Re-audit account deletion whenever new Group Session/live/media/reward data
+    is added; a new collection must not bypass the deletion inventory.
+
 ### HUMAN CHECKPOINT
 
 STOP after this section.
@@ -1933,6 +2122,29 @@ Make the prototype pleasant and credible on phones.
 -   [ ] Different screen widths checked.
 -   [ ] Optional APIs feature-detected.
 -   [ ] Core app works without Wake Lock/fullscreen/device orientation.
+
+## Complete mobile UI/UX redesign (planned, after core functionality)
+
+This expands the existing polish phase into a major coherent redesign. Schedule
+it after core Group Sessions, Live Group Map, Lobby and Official Activities are
+functional and before public launch; account deletion must already pass the
+wider-public-beta gate. Preserve every working feature and existing safety controls.
+
+- [ ] Modern, premium, minimalist and intuitive design with Apple-inspired quality,
+  without copying Apple proprietary UI assets.
+- [ ] Reusable design system: shared spacing, typography, colors, elevations, icons,
+  controls, cards, navigation, dialogs, feedback and component states. Avoid separate
+  styling conventions for each feature; extract shared CSS/components incrementally.
+- [ ] Consistent spacing, refined typography and clear visual hierarchy.
+- [ ] Polished cards/navigation, elegant icons, subtle animations and smooth mobile
+  transitions; honor reduced motion and avoid animation that distracts while riding.
+- [ ] Coherent light/dark themes, high contrast during riding and large touch targets.
+- [ ] Keep live riding screens especially simple and distraction-free; richer account,
+  Garage, Club and Lobby interactions belong outside the active ride dashboard.
+- [ ] Accessible focus/keyboard/screen-reader flow, text scaling, safe areas,
+  responsive portrait/landscape and support for different phone sizes.
+- [ ] Review English/Finnish labels, loading/empty/error/destructive states, real
+  phone keyboards and performance. Prototype/test the system before broad visual edits.
 
 ### HUMAN CHECKPOINT
 
@@ -2022,6 +2234,17 @@ STOP after this section. Manually verify admin creation, Lobby visibility and at
 # SECTION 18 --- FINAL PROTOTYPE VALIDATION
 
 > **Section 0 audit adaptation (planning only):** Validate retained dashboard plus all new flows using declared environments. Include deterministic GPS-gap/dedup fixtures, rules/emulator tests, Pages subpath/deep-link tests, storage failure/account-switch tests and two-account/device live revocation. Create PROTOTYPE_STATUS.md only in this final implementation phase and report untested devices honestly.
+
+## Additional beta/launch gates (planned)
+
+- [ ] Password confirmation passes local and published registration acceptance.
+- [ ] Account Management / Authentication Enhancement flows pass localized security
+  and browser checks. Complete account deletion is mandatory before wider public beta.
+- [ ] Media & Branding, when approved/enabled, passes access/deletion tests and an
+  explicit Storage/service cost review; do not treat deferred uploads as implemented.
+- [ ] Complete mobile redesign/design system is accepted after core functionality
+  and before public launch. Group Sessions, Live Group Map, Lobby and Official
+  Activities remain required; redesign does not replace their acceptance.
 
 ## Functional validation
 
@@ -2831,6 +3054,37 @@ UTF-8 files are valid; initial PowerShell default-decoding mojibake was
 not evidence of corrupt source content.
 
 ## 15.10 Revised order, section dependencies and validation plan
+
+### Current delivery priorities (2026-10-10; subsequent work requires approval)
+
+The original audit sequence below is retained as historical rationale. Current
+delivery priorities incorporate completed Batch 1/2/security work and the user's
+reported deployment, without renumbering existing sections:
+
+1. **Immediate fix now:** registration password confirmation in SECTION 2 only,
+   regression tests and documentation; no automatic push/deploy.
+2. **Next planned account milestone:** SECTION 2 Account Management / Authentication
+   Enhancement (reset/change/Google/complete deletion) plus SECTION 3 account settings
+   integration. Design trusted deletion and its cost/ownership policies first;
+   complete deletion is a hard gate before wider public beta.
+3. **Retained core platform:** SECTION 10 Group Sessions and sharing/admission
+   authorization; SECTION 13A safe basic Lobby; SECTION 11 Live Group Map only after
+   the approved ACL/rules/coordinator decision; then SECTION 12 status/regroup,
+   remaining SECTION 13 discovery and SECTION 14 QR. Existing recording-concurrency,
+   privacy and real-device acceptance requirements remain.
+4. **Later Media & Branding:** combined SECTION 3 Garage images and SECTION 9
+   logos/banners/rank graphics, after lifecycle/permissions and Storage cost approval.
+   Club-themed session appearance depends on the Group Session/marker foundation.
+5. **Complete core late-prototype work:** SECTION 17 MotoDash Official Activities and
+   safe rewards plus SECTION 15 whole-product privacy/deletion review. Preserve every
+   agreed Official activity/admin/completion requirement and all deferred product ideas.
+6. **After core, before public launch:** SECTION 16 full mobile UI/UX redesign using
+   one reusable design system, then SECTION 18 final end-to-end validation. This
+   moves the major redesign after Official Activities while maintaining accessibility
+   and mobile checks throughout all earlier milestones.
+
+Only step 1's password confirmation is authorized for implementation in this session;
+the other additions are product requirements and planning, not implementation approval.
 
 All original product requirements and HUMAN CHECKPOINTs remain. The
 section-specific audit adaptation notes above define how each phase fits

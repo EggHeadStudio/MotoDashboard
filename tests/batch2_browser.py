@@ -8,6 +8,7 @@ def register(page,email='garage@example.test'):
     page.fill('#auth-name','Garage Rider')
     page.fill('#auth-email',email)
     page.fill('#auth-password','fixture-password')
+    page.fill('#auth-confirm-password','fixture-password')
     page.click('#auth-submit')
     page.wait_for_function('document.querySelector("#auth-status").textContent.includes("profile is ready")')
     page.click('#account-close')
