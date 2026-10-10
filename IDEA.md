@@ -3379,3 +3379,15 @@ Addressed invitations last at most seven days and are consumed atomically; beare
 is not supported. Club retirement also denies its bound Group Sessions and invitations.
 Validation: 190 Group emulator assertions + original 102; focused Group browser 2 groups
 passed, zero failed/skipped. Existing security regression suite retained. No live tracking.
+
+
+### Batch 3 milestone 4 / dependent milestone 5
+
+**BLOCKER for live tracking:** RTDB remains deny-all. LIVE_TRACKING.md specifies the
+ephemeral model and trusted coordination/revocation requirements. No approved backend
+exists on this Spark prototype; browser ACL mirroring is unsafe. Milestone 4 is partial
+(locked foundation and 68 passing emulator checks), milestone 5 is blocked. Allowed
+live participant reads/writes cannot be tested as successful application operations
+until the coordinator exists; the suite verifies intentional denials, not live support.
+No additional watcher, demo mode, Firebase deployment or production operation was added.
+All originally agreed live-map requirements remain planned.

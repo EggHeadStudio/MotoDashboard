@@ -1079,3 +1079,15 @@ search. Verify own projection creation and another account's private-profile den
 **BLOCKER (live tracking):** database.rules.json stays deny-all. Firestore membership
 cannot authorize RTDB without a trusted coordinator, which this Spark prototype lacks.
 Do not unlock RTDB or claim live location support. No rules were deployed here.
+
+
+### Batch 3 milestone 4 / dependent milestone 5
+
+**BLOCKER for live tracking:** RTDB remains deny-all. LIVE_TRACKING.md specifies the
+ephemeral model and trusted coordination/revocation requirements. No approved backend
+exists on this Spark prototype; browser ACL mirroring is unsafe. Milestone 4 is partial
+(locked foundation and 68 passing emulator checks), milestone 5 is blocked. Allowed
+live participant reads/writes cannot be tested as successful application operations
+until the coordinator exists; the suite verifies intentional denials, not live support.
+No additional watcher, demo mode, Firebase deployment or production operation was added.
+All originally agreed live-map requirements remain planned.
