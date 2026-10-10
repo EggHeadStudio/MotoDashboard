@@ -6,8 +6,15 @@ import { selectedVehicle } from './garage-ui.js';
 import { element, labelText, field, button } from './ui/forms.js';
 import { t } from './i18n/i18n.js';
 import { dataErrorKey } from './firebase/access.js';
+import { riderMoving, onRiderMotion } from './rider-motion.js';
+import { RIDER_STATUSES } from './data/group-session.js';
 
 export function initGroupParticipantsUI() {
+  onRiderMotion(moving=>{
+    if(!moving) return;
+    const form=document.getElementById('group-status');
+    if(form) {form.elements.stopped.checked=false;form.querySelector('button[type=submit]').disabled=true;}
+  });
   registerGroupSection(async ({uid,model,body,status,action,stillCurrent})=>{
     const {group,participant,manager,request,invite,banned}=model,id=group.id;
     const active=['scheduled','active'].includes(group.state);
@@ -20,12 +27,14 @@ export function initGroupParticipantsUI() {
         const option=element('option','',vehicle.nickname+' · '+t('category.'+vehicle.category));option.value=vehicle.id;input.append(option);
       }
       input.value=participant?.vehicleId || selectedVehicle()?.id || '';
+      const shareClub=group.clubId?field(form,'shareClub','groups.shareClub',{type:'checkbox'}):null;
+      if(shareClub) shareClub.checked=Boolean(participant?.clubIdentity);
       const admitted=group.joiningPolicy==='open' || (request?.state==='approved') || (invite && (invite.expiresAt.toMillis?.() ?? invite.expiresAt.seconds*1000)>Date.now());
       if(participant || admitted) {
         const join=button(participant?'common.save':'groups.join');join.type='submit';join.id='group-join';form.append(join);
         form.addEventListener('submit',event=>{
-          event.preventDefault();const vehicleId=input.value || null;
-          action(owner=>participant?repository.selectGroupVehicle(owner,id,vehicleId):repository.joinGroup(owner,id,vehicleId));
+          event.preventDefault();const vehicleId=input.value || null,share=Boolean(shareClub?.checked);
+          action(owner=>participant?repository.selectGroupVehicle(owner,id,vehicleId,share):repository.joinGroup(owner,id,vehicleId,null,share));
         });body.append(form,labelText(element('p','muted'),'groups.vehicleConsent'));
       }
       if(!participant && group.joiningPolicy==='approval' && !request) body.append(button('groups.request',()=>action(owner=>repository.requestGroup(owner,id)),'group-request'));
@@ -39,6 +48,18 @@ export function initGroupParticipantsUI() {
       if(confirm(t('groups.leaveConfirm'))) action(owner=>repository.leaveGroup(owner,id),()=>{location.hash='';document.getElementById('groups-dialog').close();});
     },'group-leave'));
     else if(participant) body.append(labelText(element('p','muted'),'groups.founder'));
+    if(participant && active) {
+      const form=element('form');form.id='group-status';
+      field(form,'status','groups.riderStatus',{choices:RIDER_STATUSES,prefix:'riderStatus',value:participant.status});
+      const stopped=field(form,'stopped','groups.stopped',{type:'checkbox',required:true});
+      const save=button('common.save');save.type='submit';save.disabled=true;form.append(save);
+      stopped.addEventListener('change',()=>{save.disabled=!stopped.checked || riderMoving();});
+      form.addEventListener('submit',event=>{
+        event.preventDefault();if(!stopped.checked || riderMoving()) return;
+        const value=form.elements.status.value;stopped.checked=false;save.disabled=true;
+        action(owner=>repository.setRiderStatus(owner,id,value));
+      });body.append(form,labelText(element('p','muted'),'groups.helpNotice'));
+    }
     if(participant || manager) {
       const roster=element('section');roster.id='group-participants';roster.append(labelText(element('h3'),'groups.participants'));body.append(roster);
       async function members(cursor=null) {
@@ -50,6 +71,10 @@ export function initGroupParticipantsUI() {
           const avatar=element('span','profile-avatar','●');avatar.setAttribute('aria-hidden','true');
           const row=element('div','member-identity');row.append(avatar,name);card.append(row);
           if(member.vehicle) card.append(element('p','',member.vehicle.nickname),labelText(element('p'),'category.'+member.vehicle.category));
+          if(member.clubIdentity) {
+            card.append(element('p','',member.clubIdentity.name));
+            if(member.clubIdentity.rank) card.append(element('p','member-rank',member.clubIdentity.rank));
+          }
           card.append(labelText(element('p'),'riderStatus.'+member.status));
           if(manager && member.uid!==group.creatorUid && member.uid!==uid) card.append(button('members.remove',()=>{
             if(confirm(t('members.removeConfirm'))) action(owner=>repository.removeGroupParticipant(owner,id,member.uid));

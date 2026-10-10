@@ -3391,3 +3391,18 @@ live participant reads/writes cannot be tested as successful application operati
 until the coordinator exists; the suite verifies intentional denials, not live support.
 No additional watcher, demo mode, Firebase deployment or production operation was added.
 All originally agreed live-map requirements remain planned.
+
+
+### Batch 3 milestone 6 - rider identity/status (partial)
+
+Group participants show safe display names and selected nickname/category. Users may
+explicitly share the organizing Club name and current visible rank as a bounded
+snapshot, validated against their own canonical membership/rank. These labels grant no
+permissions. Added four localized, owner-only informational statuses. Status controls
+require stopping confirmation and block known motion from the existing accepted GPS
+pipeline; without current GPS this is an advisory confirmation, not verified safety.
+Need help explicitly provides no emergency response service. No extra GPS watch/network
+write is created. Status updates are manual Firestore writes, refreshed explicitly.
+Marker identity and live status delivery remain blocked by milestones 4/5; milestone 6
+is therefore partial. Group emulator and focused browser regression passed; no live
+Firebase, background tracking or physical-device verification is claimed.

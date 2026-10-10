@@ -3,6 +3,7 @@ import { initAuthUI } from './auth-ui.js';
 import { initClubUI } from './club-ui.js';
 import { initGroupUI } from './group-ui.js';
 import { initGroupParticipantsUI } from './group-participants-ui.js';
+import { recordRiderMotion } from './rider-motion.js';
 import { initClubMembersUI } from './club-members-ui.js';
 import { initClubBrandingUI } from './club-branding-ui.js';
 import { initGarageUI, selectedVehicle, onVehicleChange } from './garage-ui.js';
@@ -1534,6 +1535,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         updateGpsQuality(accuracy);
         smoothedSpeed = smoothSpeed(smoothedSpeed, sample.validatedSpeedKmh);
         movementConfirmed = sample.moving;
+        recordRiderMotion(sample);
         const heading = getReliableHeading(coords, lat, lon, sample.validatedSpeedKmh, sample.segmentBreak);
         updateMapRotation(heading, sample.moving && sample.validatedSpeedKmh >= HEADING_MIN_SPEED_KMH, now);
         if (sessionActive && activeSession?.status === 'active') {

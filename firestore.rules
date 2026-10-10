@@ -436,10 +436,20 @@ service cloud.firestore {
           && data.vehicle.category == get(/databases/$(database)/documents/users/$(uid)/vehicles/$(data.vehicleId)).data.category);
     }
     function validParticipant(data, uid) {
-      return data.keys().hasAll(['uid', 'vehicleId', 'vehicle', 'status', 'joinedAt', 'updatedAt'])
-        && data.keys().hasOnly(['uid', 'vehicleId', 'vehicle', 'status', 'joinedAt', 'updatedAt'])
+      return data.keys().hasAll(['uid', 'vehicleId', 'vehicle', 'clubIdentity', 'status', 'joinedAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'vehicleId', 'vehicle', 'clubIdentity', 'status', 'joinedAt', 'updatedAt'])
         && data.uid == uid && data.status in ['ok', 'fuel', 'mechanical', 'help']
         && data.joinedAt is timestamp && data.updatedAt == request.time;
+    }
+    function groupClubIdentity(data, id, uid) {
+      let clubId = getAfter(groupPath(id)).data.clubId;
+      return data.clubIdentity == null || (clubId != null && availableClub(clubId)
+        && exists(memberPath(clubId, uid)) && data.clubIdentity is map
+        && data.clubIdentity.keys().hasAll(['name', 'rank']) && data.clubIdentity.keys().hasOnly(['name', 'rank'])
+        && data.clubIdentity.name == getAfter(groupPath(id)).data.clubName
+        && ((get(memberPath(clubId, uid)).data.rankId == null && data.clubIdentity.rank == null)
+          || (get(memberPath(clubId, uid)).data.rankId != null
+            && data.clubIdentity.rank == get(/databases/$(database)/documents/clubs/$(clubId)/ranks/$(get(memberPath(clubId, uid)).data.rankId)).data.name)));
     }
     match /groupSessions/{id} {
       allow get: if groupParticipant(id) || groupManager(id);
@@ -464,6 +474,7 @@ service cloud.firestore {
         allow get: if groupAvailable(id) && (owns(uid) || groupParticipant(id) || groupManager(id));
         allow list: if (groupParticipant(id) || groupManager(id)) && request.query.limit != null && request.query.limit <= 50;
         allow create: if owns(uid) && validParticipant(request.resource.data, uid) && groupVehicle(request.resource.data, uid)
+          && groupClubIdentity(request.resource.data, id, uid)
           && request.resource.data.status == 'ok' && request.resource.data.joinedAt == request.time
           && existsAfter(groupIndex(id, uid))
           && (groupBootstrap(id) || (groupAdmission(id, uid)
@@ -471,7 +482,8 @@ service cloud.firestore {
             && getAfter(groupPath(id)).data.lastParticipantUid == uid));
         allow update: if owns(uid) && groupAvailable(id) && get(groupPath(id)).data.state in ['scheduled', 'active']
           && validParticipant(request.resource.data, uid) && request.resource.data.joinedAt == resource.data.joinedAt
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['vehicleId', 'vehicle', 'status', 'updatedAt'])
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['vehicleId', 'vehicle', 'clubIdentity', 'status', 'updatedAt'])
+          && (request.resource.data.clubIdentity == resource.data.clubIdentity || groupClubIdentity(request.resource.data, id, uid))
           && (request.resource.data.vehicleId == resource.data.vehicleId && request.resource.data.vehicle == resource.data.vehicle
             || groupVehicle(request.resource.data, uid));
         allow delete: if groupAvailable(id) && uid != get(groupPath(id)).data.creatorUid

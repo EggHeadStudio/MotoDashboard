@@ -24,7 +24,7 @@ export async function createGroup(uid, input) {
     const group = {...data, id, schemaVersion: 1, creatorUid: uid, hostName: identity.data().displayName,
       clubName, state: 'scheduled', participantCount: 1, lastParticipantUid: uid, createdAt: stamp(s), updatedAt: stamp(s)};
     tx.set(ref(s, id), group); tx.set(pageRef(s, id), groupPage(group));
-    tx.set(ref(s, id, 'participants', uid), {uid, vehicleId: null, vehicle: null, status: 'ok', joinedAt: stamp(s), updatedAt: stamp(s)});
+    tx.set(ref(s, id, 'participants', uid), {uid, vehicleId: null, vehicle: null, clubIdentity:null, status: 'ok', joinedAt: stamp(s), updatedAt: stamp(s)});
     tx.set(indexRef(s, uid, id), {uid, sessionId: id, joinedAt: stamp(s)});
   }));
   s.assertCurrent(); return id;
@@ -115,7 +115,15 @@ async function admissionTransaction(uid,id,fn) {
       invite.exists()?invite.data():null,request.exists()?request.data():null,ban.exists());
   }));s.assertCurrent();return result;
 }
-export async function joinGroup(uid,id,vehicleId=null,token=null) {
+async function ownClubIdentity(tx,s,group,share) {
+  if(!share || !group.clubId) return null;
+  const member=await tx.get(s.sdk.doc(s.db,'clubs',group.clubId,'members',s.uid));
+  if(!member.exists()) return null;
+  const rankId=member.data().rankId;
+  const rank=rankId?await tx.get(s.sdk.doc(s.db,'clubs',group.clubId,'ranks',rankId)):null;
+  return {name:group.clubName,rank:rank?.exists()?rank.data().name:null};
+}
+export async function joinGroup(uid,id,vehicleId=null,token=null,shareClub=false) {
   if(vehicleId) checkId(vehicleId);
   await admissionTransaction(uid,id,async(tx,s,group,participant,invite,request,banned)=>{
     if(participant) return;
@@ -126,8 +134,9 @@ export async function joinGroup(uid,id,vehicleId=null,token=null) {
       throw dataError('permission-denied');
     const vehicle=vehicleId ? await tx.get(s.sdk.doc(s.db,'users',uid,'vehicles',vehicleId)) : null;
     if(vehicleId && !vehicle?.exists()) throw dataError('invalid-input');
+    const clubIdentity=await ownClubIdentity(tx,s,group,shareClub);
     tx.set(ref(s,id,'participants',uid),{uid,vehicleId,vehicle:vehicle?.exists()?{nickname:vehicle.data().nickname,category:vehicle.data().category}:null,
-      status:'ok',joinedAt:stamp(s),updatedAt:stamp(s)});
+      clubIdentity,status:'ok',joinedAt:stamp(s),updatedAt:stamp(s)});
     tx.set(indexRef(s,uid,id),{uid,sessionId:id,joinedAt:stamp(s)});
     saveGroup(tx,s,group,{participantCount:group.participantCount+1,lastParticipantUid:uid});
     if(invited) tx.delete(ref(s,id,'invites',uid));
@@ -166,12 +175,22 @@ export async function removeGroupParticipant(uid,id,target) {
     saveGroup(tx,s,group,{participantCount:group.participantCount-1,lastParticipantUid:target});
   });
 }
-export async function selectGroupVehicle(uid,id,vehicleId) {
+export async function selectGroupVehicle(uid,id,vehicleId,shareClub=false) {
   checkId(id);if(vehicleId) checkId(vehicleId);const s=await ownDatabase(uid);
   await boundedRequest(s.sdk.runTransaction(s.db,async tx=>{
+    const group=await tx.get(ref(s,id));
     const vehicle=vehicleId?await tx.get(s.sdk.doc(s.db,'users',uid,'vehicles',vehicleId)):null;
     s.assertCurrent();if(vehicleId && !vehicle?.exists()) throw dataError('invalid-input');
-    tx.update(ref(s,id,'participants',uid),{vehicleId,vehicle:vehicle?.exists()?{nickname:vehicle.data().nickname,category:vehicle.data().category}:null,updatedAt:stamp(s)});
+    const clubIdentity=await ownClubIdentity(tx,s,group.data(),shareClub);
+    tx.update(ref(s,id,'participants',uid),{vehicleId,vehicle:vehicle?.exists()?{nickname:vehicle.data().nickname,category:vehicle.data().category}:null,clubIdentity,updatedAt:stamp(s)});
+  }));s.assertCurrent();
+}
+export async function setRiderStatus(uid,id,status) {
+  checkId(id);if(!['ok','fuel','mechanical','help'].includes(status)) throw dataError('invalid-input');
+  const s=await ownDatabase(uid);await boundedRequest(s.sdk.runTransaction(s.db,async tx=>{
+    const group=await tx.get(ref(s,id));
+    s.assertCurrent();if(!group.exists() || !['scheduled','active'].includes(group.data().state)) throw dataError('permission-denied');
+    tx.update(ref(s,id,'participants',uid),{status,updatedAt:stamp(s)});
   }));s.assertCurrent();
 }
 export async function listGroupRecords(uid,id,path,cursor=null) {

@@ -13,7 +13,7 @@ def group(owner='alice', **changes):
         visibility='public', joiningPolicy='open', maxParticipants=None, state='scheduled', participantCount=1,
         lastParticipantUid=owner, createdAt=r.SERVER, updatedAt=r.SERVER, **changes)
 def page(data): return {k:data[k] for k in PAGE}
-def participant(uid): return dict(uid=uid, vehicleId=None, vehicle=None, status='ok', joinedAt=r.SERVER, updatedAt=r.SERVER)
+def participant(uid): return dict(uid=uid, vehicleId=None, vehicle=None, clubIdentity=None, status='ok', joinedAt=r.SERVER, updatedAt=r.SERVER)
 def index(uid, id): return r.update(f'users/{uid}/groupRefs/{id}', dict(uid=uid, sessionId=id, joinedAt=r.SERVER))
 def bootstrap(g):
     id=g['id'];uid=g['creatorUid']
@@ -144,8 +144,27 @@ def run():
     shared=r.read('alice',f'groupSessions/{vid}/participants/bob');assert set(shared['vehicle']['mapValue']['fields'])=={'nickname','category'}
     join(vid,'carol',False,vehicle=vehicle)
     member=r.read('bob',f'groupSessions/{vid}/participants/bob')
+    for status in ['ok','fuel','mechanical','help']:
+        r.commit('bob',[r.raw_update(f'groupSessions/{vid}/participants/bob',member,{'status':status,'updatedAt':r.SERVER})])
+    r.commit('bob',[r.raw_update(f'groupSessions/{vid}/participants/bob',member,{'status':'emergency-dispatch','updatedAt':r.SERVER})],False)
+    r.commit('carol',[r.raw_update(f'groupSessions/{vid}/participants/bob',member,{'status':'fuel','updatedAt':r.SERVER})],False)
+    r.commit('bob',[r.raw_update(f'groupSessions/{vid}/participants/bob',member,{'clubIdentity':{'name':'Invented Club','rank':'Owner'},'updatedAt':r.SERVER})],False)
     r.commit('bob',[r.raw_update(f'groupSessions/{vid}/participants/bob',member,{'vehicle':{'nickname':'Forged','category':'bicycle'},'updatedAt':r.SERVER})],False)
     r.commit('bob',[r.raw_update(f'groupSessions/{vid}/participants/bob',member,{'vehicle':{'nickname':'City Bike','category':'bicycle','model':'Private model'},'updatedAt':r.SERVER})],False)
+    status_group=r.read('alice','groupSessions/'+vid)
+    r.commit('alice',changes(vid,status_group,{'state':'cancelled','updatedAt':r.SERVER}))
+    r.commit('bob',[r.raw_update(f'groupSessions/{vid}/participants/bob',member,{'status':'fuel','updatedAt':r.SERVER})],False)
+    rank_group=group('carol');rank_group.update(clubId='open',clubName='Club open');rid=rank_group['id']
+    r.commit('carol',bootstrap(rank_group));rank_member=r.read('carol',f'groupSessions/{rid}/participants/carol')
+    r.commit('carol',[r.raw_update(f'groupSessions/{rid}/participants/carol',rank_member,{'clubIdentity':{'name':'Club open','rank':'Captain'},'updatedAt':r.SERVER})])
+    rank_member=r.read('carol',f'groupSessions/{rid}/participants/carol')
+    r.commit('carol',[r.raw_update(f'groupSessions/{rid}/participants/carol',rank_member,{'clubIdentity':{'name':'Club open','rank':'Owner'},'updatedAt':r.SERVER})],False)
+    host_group=r.read('alice','groupSessions/'+rid)
+    r.commit('bob',changes(rid,host_group,{'title':'Admin edited','updatedAt':r.SERVER}))
+    membership=r.read('alice','clubs/open/members/carol')
+    r.commit('alice',[r.raw_update('clubs/open/members/carol',membership,{'technicalRole':'member','updatedAt':r.SERVER})])
+    host_group=r.read('carol','groupSessions/'+rid)
+    r.commit('carol',changes(rid,host_group,{'title':'Rank promoted me','updatedAt':r.SERVER}),False)
     # Retiring a Club closes all bound sessions and stale invitations without child deletion.
     r.create_club('group-bound','alice');bound=group();bound.update(clubId='group-bound',clubName='Club group-bound')
     bid=bound['id'];r.commit('alice',bootstrap(bound));r.commit('alice',[invite(bid,'bob')])
