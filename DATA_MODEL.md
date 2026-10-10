@@ -7,7 +7,7 @@ and client-side deletion/purge. No production migration has been performed.
 
 All paths are relative to the **motodash-87bf8** default Firestore database.
 `firebase-config.js` contains public web configuration, not Admin credentials.
-Auth, Firestore and the prepared RTDB service share the single named MotoDash app.
+Auth and Firestore share the single named MotoDash app. The unused RTDB adapter was removed.
 RTDB remains default-deny, with no application reads/writes or live subscriptions.
 No system administrator privileges can be written by clients.
 

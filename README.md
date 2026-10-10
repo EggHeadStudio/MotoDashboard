@@ -94,7 +94,7 @@ reload after restoring connectivity if the browser retains the failed module loa
 | --- | --- |
 | Authentication | Email/password registration, login, logout and persistent state listener. |
 | Cloud Firestore | Private profile, Garage, completed rides/chunks, Club memberships/roles/ranks/Wall and a minimal public Club directory. Default memory cache; no shared persistent SDK disk cache. |
-| Realtime Database | Prepared lazy adapter only. No caller, subscription, read, write, presence or live location. |
+| Realtime Database | Locked and unused. No frontend initializer/import remains. |
 | Storage / Analytics / Functions | Not used. A configured bucket does not enable uploads. |
 
 Profiles contain exactly `uid`, `displayName`, `email`, `language`, `createdAt`,
@@ -159,7 +159,7 @@ If profiles fail, check setup, connection and permissions; do not permit global 
 Repository: [EggHeadStudio/MotoDashboard](https://github.com/EggHeadStudio/MotoDashboard).
 Project URL: [MotoDashboard](https://eggheadstudio.github.io/MotoDashboard/).
 
-The existing `.github/workflows/deploy.yml` uploads repository root `.` and deploys
+The existing `.github/workflows/deploy.yml` publishes an explicit frontend-only artifact and deploys
 with GitHub Actions on pushes to `main` or an approved manual workflow run.
 After explicit publishing approval, verify **Repository Settings → Pages → Build and
 deployment → Source: GitHub Actions**, then push the reviewed commits or trigger the
@@ -199,7 +199,6 @@ js/firebase/firebase.js / auth.js    Lazy single initializer and Auth operations
 js/firebase/firestore.js             Lazy Firestore service
 js/firebase/profileRepository.js     Own-profile operations only
 js/firebase/{garage,session,club}Repository.js    Scoped product repositories
-js/firebase/realtime.js              Unused future RTDB boundary
 firestore.rules / database.rules.json     Undeployed least-privilege rules
 firestore.indexes.json / DATA_MODEL.md / EXPORT_SCHEMA.md   Data/query/export contract
 tests/                              Development-only Python/native-browser checks

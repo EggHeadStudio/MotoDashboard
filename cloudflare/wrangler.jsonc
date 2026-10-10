@@ -4,6 +4,7 @@
   "main": "src/index.js",
   "compatibility_date": "2026-08-06",
   "workers_dev": true,
+  "send_metrics": false,
   "vars": {
     "FIREBASE_PROJECT_ID": "motodash-87bf8",
     "ALLOWED_ORIGINS": "https://eggheadstudio.github.io"

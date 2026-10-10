@@ -33,8 +33,7 @@ async function initialize() {
 
 export function validFirebaseConfig(config) {
   return !!config && config.projectId === 'motodash-87bf8'
-    && ['apiKey', 'authDomain', 'appId', 'messagingSenderId', 'databaseURL']
+    && ['apiKey', 'authDomain', 'appId', 'messagingSenderId']
       .every(key => typeof config[key] === 'string' && config[key].trim().length > 0)
-    && config.authDomain === 'motodash-87bf8.firebaseapp.com'
-    && config.databaseURL === 'https://motodash-87bf8-default-rtdb.europe-west1.firebasedatabase.app';
+    && config.authDomain === 'motodash-87bf8.firebaseapp.com';
 }

@@ -239,18 +239,19 @@ def run_real_sdk_imports(browser, base, route_map):
       const {getFirebase}=await import('./js/firebase/firebase.js');
       const [a,b]=await Promise.all([getFirebase(),getFirebase()]);
       const {db,sdk}=await (await import('./js/firebase/firestore.js')).getFirestoreService();
-      const {db:live,sdk:realtime}=await (await import('./js/firebase/realtime.js')).getRealtimeService();
-      if(db.app !== a.app || live.app !== a.app) throw Error('Firebase project/app mismatch');
+      if(db.app !== a.app) throw Error('Firebase project/app mismatch');
       const {validFirebaseConfig}=await import('./js/firebase/firebase.js');
       if(validFirebaseConfig({}) || validFirebaseConfig({...a.app.options,projectId:'other'})) throw Error('Invalid config accepted');
       return {same:a===b,project:a.app.options.projectId,name:a.app.name,
-        auth:typeof a.sdk.createUserWithEmailAndPassword, firestore:typeof sdk.runTransaction,
-        realtime:typeof realtime.getDatabase, user:a.auth.currentUser};
+        auth:typeof a.sdk.createUserWithEmailAndPassword, firestore:typeof sdk.runTransaction, user:a.auth.currentUser};
     }""")
-    assert result == {'same': True, 'project': 'motodash-87bf8', 'name': 'MotoDash', 'auth': 'function', 'firestore': 'function', 'realtime': 'function', 'user': None}, result
+    assert result == {'same': True, 'project': 'motodash-87bf8', 'name': 'MotoDash', 'auth': 'function', 'firestore': 'function', 'user': None}, result
+    for source in (ROOT/'js').rglob('*.js'):
+        assert 'firebase-database.js' not in source.read_text(encoding='utf-8')
+        assert 'getRealtimeService' not in source.read_text(encoding='utf-8')
     assert not errors, errors
     context.close()
-    print('PASS: REAL Firebase 13.0.0 browser SDK imports/exports, single MotoDash app, Auth persistence, Firestore/RTDB same app/project and invalid config rejection; cloud APIs blocked')
+    print('PASS: REAL Firebase 13.0.0 Auth/Firestore imports and one MotoDash app; invalid config rejection and no production RTDB initialization/imports; cloud APIs blocked')
 
 
 if __name__ == '__main__':
