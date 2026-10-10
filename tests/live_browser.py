@@ -53,6 +53,13 @@ def run_live_tests(browser,base,route_map):
     assert 'Other <Rider>' in label and 'Bike' in label and 'Captain' in label
     assert page.locator('.live-rider-label script').count()==0
     assert not page.locator('#start-overlay').is_visible()
+    page.click('#live-dashboard');page.wait_for_selector('.live-summary')
+    assert 'Fuel: 1' in page.locator('.live-summary').inner_text()
+    assert 'straight-line' in page.locator('.live-summary').inner_text()
+    page.select_option('#language-select','fi') if page.locator('#language-select').count() else page.evaluate('async()=> (await import("./js/i18n/i18n.js")).setLanguage("fi")')
+    assert 'Suora' in page.locator('.live-summary').inner_text() or 'suora' in page.locator('.live-summary').inner_text()
+    page.evaluate('async()=> (await import("./js/i18n/i18n.js")).setLanguage("en")')
+    page.click('#groups-dialog .feature-close') if page.locator('#groups-dialog .feature-close').count() else page.evaluate('document.querySelector("#groups-dialog").close()')
     at=int(time.time()*1000);page.evaluate('(at)=>window.__position(60,at)',at)
     page.wait_for_timeout(100);assert sum(m['type']=='position' for m in sent)==1
     page.evaluate('(at)=>window.__position(60.00001,at)',at+1000)

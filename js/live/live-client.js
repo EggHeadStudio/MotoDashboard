@@ -12,7 +12,7 @@ export function createLiveClient({endpoint=liveConfig.endpoint,fetchImpl=fetch,m
   identity=async()=>{const {auth}=await getFirebase();const user=auth.currentUser;if(!user || user.uid!==getAccount()?.uid)throw Error('account_changed');return {uid:user.uid,token:await user.getIdToken(true)};},
   account=()=>getAccount()?.uid,now=()=>Date.now()}={}) {
   let state={consent:false,sessionId:null,uid:null,connection:'off',selfId:null,participants:new Map()},
-    ws=null,epoch=0,retryTimer=null,heartbeatTimer=null,handshakeTimer=null,attempt=0,lastSample=null,lastSent=null,seq=0,lastControl=0;
+    ws=null,epoch=0,retryTimer=null,heartbeatTimer=null,handshakeTimer=null,attempt=0,lastSample=null,lastSent=null,seq=0,lastControl=0,lastServerAt=0;
   const listeners=new Set();
   const emit=()=>{for(const listener of listeners)listener(state);};
   function cleanup() {clearTimeout(retryTimer);clearInterval(heartbeatTimer);clearTimeout(handshakeTimer);retryTimer=null;heartbeatTimer=null;handshakeTimer=null;lastSample=null;lastSent=null;}
@@ -47,17 +47,22 @@ export function createLiveClient({endpoint=liveConfig.endpoint,fetchImpl=fetch,m
         try {
           if(typeof event.data!=='string' || event.data.length>65536)throw Error('bad_message');
           const m=JSON.parse(event.data);if(m.v!==1)throw Error('bad_version');
+          lastServerAt=now();
+          const localTime=at=>now()-Math.max(0,(m.serverTime ?? now())-at);
+          const localPosition=p=>p && Number.isFinite(p.at)?{...p,at:localTime(p.at)}:null;
+          const localParticipant=p=>({...p,position:localPosition(p.position)});
           if(m.type==='hello') {
             clearTimeout(handshakeTimer);attempt=0;seq=0;lastSample=null;lastSent=null;
             state={...state,connection:'connected',selfId:m.riderId};
-            heartbeatTimer=setInterval(()=>send({type:'heartbeat',...(lastSample && now()-lastSample.timestamp<=15000?{sampledAt:lastSample.timestamp}:{})}),25000);
+            heartbeatTimer=setInterval(()=>{if(now()-lastServerAt>65000){socket.close();return;}send({type:'heartbeat',...(lastSample && now()-lastSample.timestamp<=15000?{sampledAt:lastSample.timestamp}:{})});},25000);
           } else if(m.type==='snapshot') {
             if(!Array.isArray(m.participants) || m.participants.length>50)throw Error('bad_snapshot');
-            state={...state,participants:new Map(m.participants.map(p=>[p.riderId,p]))};
-          } else if(m.type==='participant_update') state.participants.set(m.participant.riderId,m.participant);
-          else if(m.type==='position') {const p=state.participants.get(m.riderId);if(p)p.position=m.position;}
+            state={...state,participantCount:m.participantCount,participants:new Map(m.participants.map(p=>[p.riderId,localParticipant(p)]))};
+          } else if(m.type==='participant_update') state.participants.set(m.participant.riderId,localParticipant(m.participant));
+          else if(m.type==='room_update')state={...state,participantCount:m.participantCount};
+          else if(m.type==='position') {const p=state.participants.get(m.riderId);if(p)p.position=localPosition(m.position);}
           else if(m.type==='participant_left')state.participants.delete(m.riderId);
-          else if(m.type==='heartbeat' && m.riderId) {const p=state.participants.get(m.riderId);if(p?.position)p.position.at=m.at;}
+          else if(m.type==='heartbeat' && m.riderId) {const p=state.participants.get(m.riderId);if(p?.position)p.position.at=localTime(m.at);}
           else if(m.type==='session_ended'){stop('ended');return;}
           else if(m.type==='error' && m.code!=='unavailable'){stop('accessDenied');return;}
           emit();

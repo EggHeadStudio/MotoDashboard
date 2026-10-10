@@ -75,5 +75,5 @@ export async function authorizeMany(env,id,uids,reader=readDocuments) {
     }
   }
   if(signal.aborted) throw Error('authority_unavailable');
-  return {authorized,ended:!session || session.state!=='active' || Boolean(session.clubId && (!club || club.state==='deleted')),checkedAt:started};
+  return {authorized,participantCount:session?.participantCount || 0,ended:!session || session.state!=='active' || Boolean(session.clubId && (!club || club.state==='deleted')),checkedAt:started};
 }

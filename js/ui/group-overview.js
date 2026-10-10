@@ -1,6 +1,7 @@
 import { RIDER_STATUSES } from '../data/group-session.js';
 import { element, labelText } from './forms.js';
 import { t, setLocalizedText, getLocale } from '../i18n/i18n.js';
+import {liveConfig} from '../../live-config.js';
 
 // Reuse already-loaded roster pages. A status timestamp is not live presence.
 export function renderGroupOverview(root, group, participants) {
@@ -15,5 +16,5 @@ export function renderGroupOverview(root, group, participants) {
     setLocalizedText(row,()=>t('groups.statusCount',{status:t('riderStatus.'+status),count:counts[status]}));list.append(row);
   }
   const snapshot=element('p','muted');setLocalizedText(snapshot,()=>t('groups.checked',{time:new Date(checked).toLocaleString(getLocale())}));
-  root.append(list,labelText(element('p','muted'),'groups.liveUnavailable'),snapshot,labelText(element('p','muted'),'groups.manualRefresh'));
+  root.append(list,labelText(element('p','muted'),liveConfig.endpoint?'live.summaryHint':'groups.liveUnavailable'),snapshot,labelText(element('p','muted'),'groups.manualRefresh'));
 }

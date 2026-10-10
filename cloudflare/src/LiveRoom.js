@@ -1,7 +1,7 @@
 import {DurableObject} from 'cloudflare:workers';
 import {authorizeMany} from './firestoreAuthz.js';
 import {randomTicket,ticketHash,consumeTicket,TICKET_TTL} from './tickets.js';
-import {parseMessage,positionDecision,MAX_RIDERS,LEASE_MS,EXPIRE_MS} from './protocol.js';
+import {parseMessage,positionDecision,publicParticipant,MAX_RIDERS,LEASE_MS,EXPIRE_MS} from './protocol.js';
 
 export class LiveRoom extends DurableObject {
   constructor(ctx,env) {
@@ -11,7 +11,7 @@ export class LiveRoom extends DurableObject {
   sockets() {return this.ctx.getWebSockets();}
   state(ws) {return ws.deserializeAttachment();}
   save(ws,state) {ws.serializeAttachment(state);}
-  send(ws,message) {try {ws.send(JSON.stringify({v:1,...message}));}catch {this.close(ws,'disconnected');}}
+  send(ws,message) {try {ws.send(JSON.stringify({v:1,serverTime:Date.now(),...message}));}catch {this.close(ws,'disconnected');}}
   close(ws,reason) {
     const s=this.state(ws);if(!s || s.closed) return;
     this.save(ws,{...s,closed:true,position:null,uid:null});
@@ -22,7 +22,7 @@ export class LiveRoom extends DurableObject {
   }
   broadcast(message) {for(const ws of this.sockets())if(this.eligible(ws))this.send(ws,message);}
   publicState(s,now=Date.now()) {
-    return {riderId:s.riderId,...s.identity,position:s.position && now-s.position.at<EXPIRE_MS?s.position:null};
+    return publicParticipant(s,now);
   }
   async schedule() {
     if(this.sockets().some(ws=>!this.state(ws)?.closed) || (await this.ctx.storage.list({prefix:'ticket:',limit:1})).size)
@@ -51,6 +51,7 @@ export class LiveRoom extends DurableObject {
     // Prune every revoked receiver before any private broadcast from this check.
     for(const riderId of departed)this.broadcast({type:'participant_left',riderId});
     for(const participant of changedStates)this.broadcast({type:'participant_update',participant});
+    this.broadcast({type:'room_update',participantCount:result.participantCount,checkedAt:result.checkedAt});
   }
   async fetch(request) {
     return this.ctx.blockConcurrencyWhile(async()=>{
@@ -95,7 +96,7 @@ export class LiveRoom extends DurableObject {
           this.save(ws,s);await this.refresh();
           if(!this.eligible(ws))return;
           this.send(ws,{type:'hello',riderId:s.riderId});
-          this.send(ws,{type:'snapshot',participants:this.sockets().filter(other=>this.eligible(other)).map(other=>this.publicState(this.state(other)))});
+          this.send(ws,{type:'snapshot',participantCount:result.participantCount,participants:this.sockets().filter(other=>this.eligible(other)).map(other=>this.publicState(this.state(other)))});
           this.broadcast({type:'participant_update',participant:this.publicState(s)});return;
         }
         if(now-s.bucket>=10000){s.bucket=now;s.messages=0;}

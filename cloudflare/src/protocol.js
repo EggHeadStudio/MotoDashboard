@@ -1,4 +1,8 @@
 export const VERSION=1,MAX_MESSAGE_BYTES=1024,MAX_RIDERS=50,LEASE_MS=30000,STALE_MS=45000,EXPIRE_MS=120000;
+export function publicParticipant(state,now=Date.now()) {
+  return {riderId:state.riderId,...state.identity,
+    position:state.position && now-state.position.at<EXPIRE_MS?state.position:null};
+}
 export function parseMessage(raw) {
   if(typeof raw!=='string' || new TextEncoder().encode(raw).byteLength>MAX_MESSAGE_BYTES) throw Error('bad_message');
   const m=JSON.parse(raw);if(!m || m.v!==VERSION || typeof m.type!=='string') throw Error('bad_message');

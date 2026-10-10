@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {parseMessage,validPosition,positionDecision,EXPIRE_MS,distance} from '../src/protocol.js';
+import {parseMessage,validPosition,positionDecision,publicParticipant,EXPIRE_MS,distance} from '../src/protocol.js';
 const now=Date.now(),m={v:1,type:'position',latitude:60,longitude:25,accuracy:10,heading:null,speedKmh:36,sampledAt:now,seq:1};
 test('bounded exact versioned protocol prevents UID/session impersonation',()=>{
   assert.equal(parseMessage(JSON.stringify(m)).type,'position');
@@ -22,4 +22,9 @@ test('unchanged coordinates are suppressed; stationary cadence remains bounded',
   const stationary={...m,speedKmh:0},old=positionDecision({seq:0,position:null},stationary,now);
   assert.throws(()=>positionDecision({seq:1,position:old,lastPositionAt:now},{...stationary,seq:2,sampledAt:now+10000},now+10000),/rate_limited/);
   assert.equal(positionDecision({seq:1,position:old,lastPositionAt:now},{...stationary,seq:2,sampledAt:now+30000},now+30000),null);
+});
+test('reconnect snapshot cannot include expired positions or private UID',()=>{
+  const state={uid:'private',riderId:'opaque',identity:{displayName:'Alice',status:'ok'},position:{at:now-EXPIRE_MS,latitude:60,longitude:25}};
+  assert.equal(publicParticipant(state,now).position,null);assert(!('uid' in publicParticipant(state,now)));
+  assert(publicParticipant({...state,position:{...state.position,at:now-EXPIRE_MS+1}},now).position);
 });

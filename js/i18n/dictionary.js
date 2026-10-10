@@ -1,6 +1,12 @@
 // Stable keys; user-created content is never translated.
 export const dictionary = {
   "en": {
+    "live.counts": "Fresh: {active} · Stale: {stale} · Connected without location: {noFix} · Not connected: {disconnected}",
+    "live.separation": "Largest straight-line distance from you: {distance}",
+    "live.unknown": "unknown",
+    "live.regroupHint": "Approximate straight-line separation, not road distance or rider order. Statuses do not dispatch emergency help.",
+    "live.summaryHint": "Live presence appears below while sharing. Roster totals above use Refresh.",
+
     "live.title": "Live group map",
     "live.consent": "I agree to share my current location with admitted session participants.",
     "live.privacy": "Sharing uses GPS while this page is open. No background guarantee. Stop sharing at any time.",
@@ -276,6 +282,12 @@ export const dictionary = {
     "ui.finishBeforeDelete": "End the current session before deleting rides."
   },
   "fi": {
+    "live.counts": "Tuoreet: {active} · Vanhentuneet: {stale} · Yhteys ilman sijaintia: {noFix} · Ei yhteyttä: {disconnected}",
+    "live.separation": "Suurin suora etäisyys sinusta: {distance}",
+    "live.unknown": "tuntematon",
+    "live.regroupHint": "Arvioitu suora etäisyys, ei tietä pitkin laskettu matka tai ajajien järjestys. Tilat eivät lähetä hätäapua.",
+    "live.summaryHint": "Reaaliaikainen tila näkyy alla sijaintia jakaessa. Yllä olevan listan tiedot päivittyvät Päivitä-painikkeella.",
+
     "live.title": "Ryhmän reaaliaikainen kartta",
     "live.consent": "Hyväksyn nykyisen sijaintini jakamisen istunnon hyväksytyille osallistujille.",
     "live.privacy": "Jakaminen käyttää GPS:?? sivun ollessa auki. Taustatoimintaa ei taata. Voit lopettaa jakamisen milloin vain.",

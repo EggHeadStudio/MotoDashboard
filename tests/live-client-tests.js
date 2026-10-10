@@ -1,4 +1,5 @@
 import {createLiveClient,liveEndpoint} from '../js/live/live-client.js';
+import {summarizeLive} from '../js/live/live-summary.js';
 const assert=(value,message)=>{if(!value)throw Error(message);};
 const tick=()=>new Promise(resolve=>setTimeout(resolve,0));
 class Socket extends EventTarget {
@@ -30,5 +31,13 @@ export async function runLiveClientTests() {
   assert(liveEndpoint('')===null,'disabled default');for(const value of ['http://evil.test','https://x.test/?token=x','https://user:secret@x.test']) {
     let denied=false;try{liveEndpoint(value);}catch{denied=true;}assert(denied,'bad endpoint denied');
   }
+  const members=new Map([['self',{status:'ok',position:{latitude:60,longitude:25,at:clock}}],
+    ['fresh',{status:'fuel',position:{latitude:60.01,longitude:25,at:clock}}],
+    ['stale',{status:'mechanical',position:{latitude:61,longitude:25,at:clock-50000}}],
+    ['expired',{status:'help',position:{latitude:62,longitude:25,at:clock-120000}}]]);
+  const summary=summarizeLive({selfId:'self',participants:members,participantCount:5},clock);
+  assert(summary.active===2 && summary.stale===1 && summary.noFix===1 && summary.disconnected===1,'honest freshness/presence counts');
+  assert(summary.maxDistance>1000 && summary.maxDistance<1200,'regroup uses fresh straight-line separation only');
+  assert(summary.statuses.help===1,'live informational statuses');
   return 'live-client token placement, throttling, duplicate suppression, scope/late-response cleanup and endpoint guards';
 }
