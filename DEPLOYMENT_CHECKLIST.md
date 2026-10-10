@@ -1,3 +1,5 @@
+> **Batch 4 current architecture:** GitHub Pages frontend, Firebase Auth identity, Firestore persistent authorization/data, Cloudflare Worker + one Durable Object per Group Session + WebSockets for live locations. RTDB stays locked. See LIVE_TRACKING.md; older Batch 3 results below are historical. Cloudflare setup and live acceptance are not completed.
+
 > **Current Batch 3 preparation:** see [Batch 3 release checklist](#batch-3-release-checklist). Older release-review results below are historical. The user has tested the earlier Firebase-connected app; this batch has not been deployed or live-tested. Live tracking remains blocked.
 
 # MotoDashboard deployment checklist and security fix result

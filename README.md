@@ -1,7 +1,9 @@
+> **Batch 4 current architecture:** GitHub Pages frontend, Firebase Auth identity, Firestore persistent authorization/data, Cloudflare Worker + one Durable Object per Group Session + WebSockets for live locations. RTDB stays locked. See LIVE_TRACKING.md; older Batch 3 results below are historical. Cloudflare setup and live acceptance are not completed.
+
 # MotoDashboard
 
 A modular static HTML/CSS/JavaScript dashboard for phone browsers. It deploys directly
-to GitHub Pages without npm, a bundler, an application backend or a build step.
+to GitHub Pages without npm, a bundler or a frontend build step. The live gateway is a separate server component.
 English is the default; Finnish is available from the language selector.
 
 ## Features
@@ -28,13 +30,9 @@ The manifest does not provide offline cold starts or background GPS. No offline
 service worker is installed. Browser suspension and platform support still limit recording.
 Use the vehicle's instruments as the primary speedometer; GPS accuracy varies.
 
-**Batch 3 live tracking is blocked.** RTDB remains deny-all because this Spark
-prototype has no trusted Firestore-to-RTDB authorization coordinator. Live markers,
-presence counts and separation/regroup are unavailable. Group membership/status
-screens use explicit Refresh. "Need help" provides no emergency response service.
-See [LIVE_TRACKING.md](LIVE_TRACKING.md) and the current Batch 3 section of
-[DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md) before publishing this frontend.
-No rules, indexes or production data were deployed by this batch.
+Live groups use a separate Cloudflare Worker/Durable Object service. Configuration,
+secrets and deployment require operator setup; Firebase RTDB stays deny-all.
+Need help is informational and provides no emergency response. See LIVE_TRACKING.md.
 
 ## Local development
 

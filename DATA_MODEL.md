@@ -1,3 +1,5 @@
+> **Batch 4 current architecture:** GitHub Pages frontend, Firebase Auth identity, Firestore persistent authorization/data, Cloudflare Worker + one Durable Object per Group Session + WebSockets for live locations. RTDB stays locked. See LIVE_TRACKING.md; older Batch 3 results below are historical. Cloudflare setup and live acceptance are not completed.
+
 # MotoDashboard data and authorization contract
 
 Security revision: 2026-10-10. Supersedes Batch 2's public canonical Club reads

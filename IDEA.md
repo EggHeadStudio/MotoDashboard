@@ -1,3 +1,5 @@
+> **Current Batch 4 authorization:** implement milestones 0-10 locally with tests and separate commits; no push, deployment or production-data operations. Current live architecture: LIVE_TRACKING.md. Earlier authorization/result records are historical.
+
 # MotoDash Platform --- IDEA.md
 
 > **Purpose of this file:** This is the master product specification and
@@ -5,8 +7,8 @@
 > to be read and followed by an AI coding agent working on the existing
 > repository.
 >
-> **Prototype stack:** Existing static HTML/CSS/JavaScript application +
-> GitHub Pages + Firebase.
+> **Prototype stack:** Existing static HTML/CSS/JavaScript frontend +
+> GitHub Pages + Firebase Auth/Firestore + separate Cloudflare Worker/Durable Objects.
 >
 > **Important:** The current application already contains working
 > functionality. The AI agent MUST audit the existing codebase before
@@ -80,7 +82,7 @@ The prototype must follow these principles throughout development:
     without a reason.
 10. **Static frontend for prototype.** Keep HTML/CSS/JavaScript
     deployable directly to GitHub Pages.
-11. **Firebase for prototype backend.**
+11. **Firebase Auth/Firestore for persistent data; Cloudflare for live groups.**
 12. **Modular architecture.** HTML, CSS and JavaScript may and should be
     separated into logical modules.
 13. **No build step unless explicitly approved later.**
@@ -1071,8 +1073,7 @@ Expected high-level stack:
 -   GitHub Pages
 -   Firebase Authentication
 -   Cloud Firestore
--   Firebase Realtime Database if selected for high-frequency live
-    positions
+-   Cloudflare Worker + Durable Objects + WebSockets for live positions
 -   existing Leaflet map integration
 -   existing map provider during prototype
 -   existing weather provider during prototype
@@ -1171,16 +1172,12 @@ Likely persistent data:
 -   join requests;
 -   invitations.
 
-## Firebase Realtime Database
+## Live transport: Cloudflare (Batch 4 decision)
 
-Potential use:
-
--   active live Group Session locations;
--   ephemeral presence;
--   live status.
-
-This hybrid should be evaluated before implementation rather than
-assumed blindly.
+RTDB is locked and unused. Firebase Auth supplies identity; Firestore supplies
+persistent records and current admission/lifecycle. Cloudflare Worker verifies
+identity and reads authorization; a Durable Object per session transports latest
+positions over WebSockets. See LIVE_TRACKING.md. No Cloud Functions are introduced.
 
 ## Media storage and trusted backend cost checkpoint (future)
 
@@ -1915,7 +1912,7 @@ STOP after this section.
 
 # SECTION 11 --- LIVE GROUP MAP
 
-> **Section 0 audit adaptation (planning only):** Use the approved live repository choice in 15.7: recommended RTDB latest positions/presence only with trusted ACL coordination, otherwise Firestore-only low-frequency live documents. Enforce authorization before listeners/writes; test revoked/ended state, duplicate connections, stale timestamps and reconnect. Do not attach all Lobby clients to live streams.
+> **Batch 4 adaptation:** Cloudflare Worker verifies Firebase identity and Firestore membership; a Durable Object per active session streams latest positions. Consent, revocation, expiry, reconnect and bounded costs precede publication. RTDB remains locked.
 
 ## Goal
 
@@ -1923,8 +1920,7 @@ Show active participants together in real time.
 
 ## Tasks
 
--   [ ] Decide Firestore vs Realtime Database for ephemeral location
-    after measuring/design review.
+-   [x] Decide live transport: Cloudflare Worker/Durable Objects/WebSockets (Batch 4).
 -   [ ] Start live sharing only after explicit Group Session
     participation.
 -   [ ] Throttle location updates.
@@ -2828,104 +2824,14 @@ queries are added, use a reviewed geo-index/bounding-candidate strategy
 and exact distance filtering without scanning all activities or storing
 precise user location solely for discovery.
 
-### Ephemeral Realtime Database state
+### Live architecture - superseding the audit's RTDB recommendation
 
-```text
-liveSessions/{groupId}/control
-  { active, hostUid, authorizationVersion }
-liveSessions/{groupId}/access/{uid}
-  { canRead, canPublish, authorizationVersion }
-liveSessions/{groupId}/locations/{uid}/{connectionId}
-  { latitude, longitude, accuracy, heading: number|null,
-    speedKmh, sampledAt, updatedAt, sequence, vehicleId }
-liveSessions/{groupId}/presence/{uid}/{connectionId}
-  { connectedAt, lastSeenAt }
-liveSessions/{groupId}/statuses/{uid}
-  { code: ok|fuel|mechanical|help, updatedAt }
-```
-
-`control` and `access` are trusted-server-managed. Each admitted user can
-write only their own validated position/presence/status paths, while
-permitted active participants can read only that session's live data.
-No global/root live read; no public Lobby access even for public groups.
-Connection IDs avoid one device/tab disconnect removing another device's
-position; select the latest fresh connection per user for display, with
-a defined one-publisher policy if recording concurrently is disallowed.
-
-Starting tuning proposal: moving-location publication at most once per
-5 seconds and only for fresh accurate valid samples, plus a bounded
-stationary heartbeat (e.g. 30 seconds). Mark stale after approximately
-30 seconds and hide after approximately 2 minutes; tune from two-device
-measurement. These are proposals, not verified thresholds. Stationary
-users still need presence/live position, even when no route point is
-accepted. Keep live validity distinct from route-distance acceptance.
-Use server receipt time for freshness, sample time for movement, bounded
-sequence handling and no backlog replay of old live locations.
-
-Register disconnect cleanup before publishing; explicitly remove own
-live state/unsubscribe on leave, end, logout and sharing disable. Ended
-session control must deny live access, not rely only on every participant
-running cleanup. Reconnect rechecks membership/session state and explicit
-sharing consent before publishing fresh data. RTDB
-[connection/disconnect primitives](https://firebase.google.com/docs/database/web/offline-capabilities)
-support this lifecycle but do not guarantee continuous background GPS.
-Do not mirror full presence into Firestore or persist a second live
-trajectory without a specific requirement.
-
-### Hybrid recommendation and authorization prerequisite
-
-**Recommend Firestore + RTDB for the completed live-group prototype**, but
-do not initialize/use RTDB simply because a databaseURL exists. Firestore
-is suited to durable/queryable records; RTDB offers native presence and
-latest-state streaming. This recommendation follows the application
-workload, not a blanket claim that RTDB is always cheaper. Firebase's
-[database comparison](https://firebase.google.com/docs/database/rtdb-vs-firestore)
-documents the presence distinction. Measure actual update/read/bandwidth
-usage before finalizing Section 11.
-
-Critical design constraint: RTDB rules evaluate RTDB state and Auth;
-they cannot look up Firestore Club/participant documents. Likewise,
-Firestore rules cannot use an RTDB ACL as their document permission
-source. See the RTDB
-[rule-condition model](https://firebase.google.com/docs/database/security/rules-conditions).
-Do not let a client copy its claimed Firestore membership into a
-client-writable privileged RTDB access record.
-
-Recommended solution: a small trusted, event/callable backend coordinates
-group admission, revocation, visibility and end state, validates current
-Firestore authority, and maintains the RTDB ACL. This adds server-side
-code outside the static Pages frontend and requires an explicit setup/
-cost review before implementation. It does not require scheduled Cloud
-Functions and does not introduce a frontend build step. Privileged
-membership/lifecycle writes must use this coordinator; rules prevent
-clients bypassing it.
-
-There is no atomic transaction spanning the two databases. Design for
-idempotent operations and fail-closed partial failure: grant durable
-admission before enabling live access; revoke RTDB live permission/
-close control before reporting successful leave/removal/end and before
-finalizing the durable revocation. Serialize conflicting operations per
-group/participant and use authorization versions so an old grant retry
-cannot reopen revoked access. Failed transitions remain visibly pending
-and are retried/reconciled by a trusted path. An asynchronous Firestore
-trigger alone has a revocation delay and must not be presented as instant
-privacy enforcement. Location already received by another client cannot
-be remotely erased; document this limitation.
-
-If a trusted coordinator is not approved, use **Firestore-only live
-locations initially** (group-scoped latest-location documents authorized
-directly from Firestore participants), at low frequency with stale-state
-handling. Keep the live repository interface replaceable. This preserves
-all live-map requirements without insecure cross-database ACLs; native
-disconnect presence would remain a limitation, addressed by timestamps.
-Alternative RTDB-authoritative group permissions would be a larger model
-change and is not the default recommendation.
-
-Estimate before launch: at one update per 5 seconds, one moving user
-publishes up to 720 updates/hour; 10 users publish 7,200. Listener fanout
-adds reads/bandwidth for each viewer. Benchmark actual payloads, group
-sizes, background/reconnect behavior and budget; never connect every
-Lobby viewer to all live sessions. Unsubscribe off-screen streams.
+The historical audit recommended a trusted Firestore/RTDB coordinator, with a
+Firestore-only alternative. Batch 3 deliberately blocked live work because no
+trusted coordinator existed. Batch 4 explicitly replaces both transport proposals
+with Cloudflare Worker + Durable Objects + WebSockets. RTDB remains deny-all.
+See LIVE_TRACKING.md for the current security contract and milestone order.
+The permanent Firestore records and all privacy/product requirements are preserved.
 
 ### Authorization, rewards and deletion invariants
 
