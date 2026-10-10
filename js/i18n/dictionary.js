@@ -290,7 +290,7 @@ export const dictionary = {
 
     "live.title": "Ryhmän reaaliaikainen kartta",
     "live.consent": "Hyväksyn nykyisen sijaintini jakamisen istunnon hyväksytyille osallistujille.",
-    "live.privacy": "Jakaminen käyttää GPS:?? sivun ollessa auki. Taustatoimintaa ei taata. Voit lopettaa jakamisen milloin vain.",
+    "live.privacy": "Jakaminen käyttää GPS:ää sivun ollessa auki. Taustatoimintaa ei taata. Voit lopettaa jakamisen milloin vain.",
     "live.start": "Aloita sijainnin jakaminen",
     "live.stop": "Lopeta sijainnin jakaminen",
     "live.notConfigured": "Reaaliaikainen palvelu odottaa ylläpitäjän määrityksiä. Oma tallennus toimii.",

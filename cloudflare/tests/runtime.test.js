@@ -60,8 +60,8 @@ async function connect(id=roomA,options={}) {
   const ws=response.webSocket,messages=[];ws.addEventListener('message',event=>messages.push(JSON.parse(event.data)));
   ws.accept();sockets.push(ws);return {ws,messages,status:101};
 }
-async function wait(connection,type,filter=()=>true) {
-  const end=Date.now()+5000;while(Date.now()<end) {
+async function wait(connection,type,filter=()=>true,timeout=5000) {
+  const end=Date.now()+timeout;while(Date.now()<end) {
     const found=connection.messages.find(message=>message.type===type && filter(message));if(found)return found;
     await new Promise(resolve=>setTimeout(resolve,10));
   }
@@ -145,4 +145,22 @@ test('ticket is bound to origin/session and removed participants cannot reconnec
   docs.delete(`groupSessions/${id}/participants/alice`);
   const removed=await connect(id);removed.ws.send(JSON.stringify({v:1,type:'hello',ticket:t.body.ticket}));assert.equal((await wait(removed,'error')).code,'access_denied');
   assert.equal((await ticket('alice',id)).status,403);
+});
+
+test('periodic alarm revokes silent receivers and expires unredeemed tickets',async()=>{
+  const id=crypto.randomUUID();seed(id);const a=await enter('alice',id),b=await enter('bob',id);
+  const unusedId=crypto.randomUUID();seed(unusedId);const unused=await ticket('alice',unusedId);
+  assert.equal(unused.status,200);
+  const removedAt=Date.now();docs.delete(`groupSessions/${id}/participants/bob`);
+  // No revalidate/status/position from either rider: only the real DO alarm can detect this.
+  await wait(a,'participant_left',m=>m.riderId===b.riderId,45000);
+  assert(Date.now()-removedAt<45000,'alarm revocation must be bounded locally');
+  const markerCount=b.messages.filter(m=>m.type==='position').length;
+  while(Date.now()<unused.body.expiresAt+200)await new Promise(resolve=>setTimeout(resolve,100));
+  a.ws.send(JSON.stringify({v:1,type:'position',latitude:60,longitude:25,accuracy:5,heading:null,speedKmh:0,sampledAt:Date.now(),seq:1}));
+  await wait(a,'position');await new Promise(resolve=>setTimeout(resolve,50));
+  assert.equal(b.messages.filter(m=>m.type==='position').length,markerCount,'revoked receiver gets no later coordinates');
+  const expired=await connect(unusedId);expired.ws.send(JSON.stringify({v:1,type:'hello',ticket:unused.body.ticket}));
+  assert.equal((await wait(expired,'error')).code,'invalid_ticket');
+  a.ws.close();b.ws.close();expired.ws.close();
 });

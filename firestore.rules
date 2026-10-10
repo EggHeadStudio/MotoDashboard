@@ -20,13 +20,14 @@ service cloud.firestore {
       allow get: if owns(uid);
       allow list: if false;
       allow create: if owns(uid) && validProfile(uid)
-        && request.resource.data.displayName.size() >= 3 && request.resource.data.displayName.size() <= 30
-        && request.resource.data.displayName.matches('.*\\S.*')
+        // RE2 counts Unicode code points; size() counts UTF-16 units in the emulator.
+        && request.resource.data.displayName.matches('(?s).{3,30}')
+        && request.resource.data.displayName == request.resource.data.displayName.trim()
         && request.resource.data.createdAt == request.time;
       allow update: if owns(uid) && validProfile(uid)
         && (request.resource.data.displayName == resource.data.displayName
-          || (request.resource.data.displayName.size() >= 3 && request.resource.data.displayName.size() <= 30
-            && request.resource.data.displayName.matches('.*\\S.*')))
+          || (request.resource.data.displayName.matches('(?s).{3,30}')
+            && request.resource.data.displayName == request.resource.data.displayName.trim()))
         && request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['displayName', 'email', 'language', 'updatedAt'])
         && request.resource.data.uid == resource.data.uid

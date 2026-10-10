@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-// Native Node cannot import cloudflare:workers. Origin helper lives separately later.
+// Configuration assertion complements the actual workerd route tests.
 test('Worker configuration reserves one SQLite room binding without secrets',async()=>{
   const {readFile}=await import('node:fs/promises');
   const cfg=JSON.parse(await readFile(new URL('../wrangler.jsonc',import.meta.url),'utf8'));

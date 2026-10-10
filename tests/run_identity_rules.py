@@ -43,12 +43,16 @@ def run():
               {'displayName': changed['displayName'], 'updatedAt': r.SERVER}),
               r.update('displayProfiles/identity-owner', {'displayName': changed['displayName'], 'updatedAt': r.SERVER})])
     original = r.read('identity-owner','users/identity-owner')
-    for name in ['ab', ' '*3, 'x'*31]:
+    for name in ['ab', ' '*3, 'x'*31, ' a ', ' Rider ', '\tAB\t', '\U0001f3cd'*31, '\U0001f3cd'*2]:
         r.commit('identity-owner',[r.raw_update('users/identity-owner',original,
                  {'displayName':name,'updatedAt':r.SERVER})],False)
     r.commit('identity-owner',[r.raw_update('users/identity-owner',original,
              {'displayName':'M\u00e4ki \u96ea','updatedAt':r.SERVER}),
              r.update('displayProfiles/identity-owner',{'displayName':'M\u00e4ki \u96ea','updatedAt':r.SERVER})])
+    original=r.read('identity-owner','users/identity-owner')
+    r.commit('identity-owner',[r.raw_update('users/identity-owner',original,
+             {'displayName':'\U0001f3cd'*30,'updatedAt':r.SERVER}),
+             r.update('displayProfiles/identity-owner',{'displayName':'\U0001f3cd'*30,'updatedAt':r.SERVER})])
     # Legacy short name can keep language updates, but cannot be assigned anew.
     legacy=r.read('identity-owner','users/identity-owner')
     r.commit('ADMIN',[r.raw_update('users/identity-owner',legacy,{'displayName':'A'})])
