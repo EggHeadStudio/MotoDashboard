@@ -13,15 +13,22 @@ def group(owner='alice', **changes):
         visibility='public', joiningPolicy='open', maxParticipants=None, state='scheduled', participantCount=1,
         lastParticipantUid=owner, createdAt=r.SERVER, updatedAt=r.SERVER, **changes)
 def page(data): return {k:data[k] for k in PAGE}
+def eligible(data): return data['visibility'] in ['public','approval'] and data['state'] in ['scheduled','active']
 def participant(uid): return dict(uid=uid, vehicleId=None, vehicle=None, clubIdentity=None, status='ok', joinedAt=r.SERVER, updatedAt=r.SERVER)
 def index(uid, id): return r.update(f'users/{uid}/groupRefs/{id}', dict(uid=uid, sessionId=id, joinedAt=r.SERVER))
 def bootstrap(g):
     id=g['id'];uid=g['creatorUid']
-    return [r.update('groupSessions/'+id,g),r.update('groupPages/'+id,page(g)),
+    writes=[r.update('groupSessions/'+id,g),r.update('groupPages/'+id,page(g)),
             r.update(f'groupSessions/{id}/participants/{uid}',participant(uid)),index(uid,id)]
+    if eligible(g):writes.append(r.update('lobbyEvents/'+id,page(g)))
+    return writes
 def changes(id, fields, values):
-    return [r.raw_update('groupSessions/'+id,fields,values),
+    writes=[r.raw_update('groupSessions/'+id,fields,values),
             r.raw_update('groupPages/'+id,page(fields),{k:v for k,v in values.items() if k in PAGE})]
+    new={k:r.decode(v) for k,v in fields.items()};new.update(values)
+    if eligible(new):writes.append(r.raw_update('lobbyEvents/'+id,page(fields),{k:v for k,v in values.items() if k in PAGE}))
+    elif eligible({k:r.decode(v) for k,v in fields.items()}):writes.append(r.delete('lobbyEvents/'+id))
+    return writes
 def join(id,uid,allowed=True,extra=None,vehicle=None):
     fields=r.read('ADMIN','groupSessions/'+id)
     member=participant(uid)
@@ -41,6 +48,14 @@ def invite(id,uid,days=6):
 def limited_query(uid,id,path,allowed=True,limit=20):
     code,body=r.request('POST',f'/groupSessions/{id}:runQuery',uid,{'structuredQuery':{'from':[{'collectionId':path}],'limit':limit}})
     assert code==(200 if allowed else 403),(uid,path,code,body);r.checks+=1
+def lobby_query(uid,allowed=True,limit=20,extra=None):
+    filters=[{'fieldFilter':{'field':{'fieldPath':key},'op':'IN','value':r.value(values)}}
+             for key,values in [('visibility',['public','approval']),('state',['scheduled','active'])]]
+    for key,value in (extra or {}).items(): filters.append({'fieldFilter':{'field':{'fieldPath':key},'op':'EQUAL','value':r.value(value)}})
+    code,body=r.request('POST',':runQuery',uid,{'structuredQuery':{'from':[{'collectionId':'lobbyEvents'}],
+        'where':{'compositeFilter':{'op':'AND','filters':filters}},'orderBy':[{'field':{'fieldPath':'startsAt'},'direction':'ASCENDING'}],'limit':limit}})
+    assert code==(200 if allowed else 403),(uid,code,body);r.checks+=1
+    return body
 def run():
     r.run()  # Loads actual rules and resets localhost demo fixtures, including previous security tests.
     r.checks=0
@@ -172,5 +187,19 @@ def run():
     club=r.read('alice','clubs/group-bound');r.commit('alice',r.club_changes('group-bound',club,{'state':'deleted','updatedAt':r.SERVER})+[r.delete('clubPages/group-bound'),r.delete('users/alice/clubRefs/group-bound')])
     for actor in ['alice','bob','carol']:
         r.read(actor,'groupPages/'+bid,False);r.read(actor,'groupSessions/'+bid,False);r.read(actor,f'groupSessions/{bid}/invites/bob',False)
+    public=group();lid=public['id'];r.commit('alice',bootstrap(public))
+    safe=r.read('dave','lobbyEvents/'+lid);assert set(safe)==set(PAGE)
+    for key in ['creatorUid','lastParticipantUid','meetingLocation','participants','invitationToken']:
+        r.commit('alice',[r.update('lobbyEvents/'+lid,{**page(public),key:'private'})],False)
+    lobby_query('dave');lobby_query(None,False);lobby_query('dave',False,limit=21)
+    for key,value in [('activityType','ride'),('category','motorcycle'),('meetingArea','Helsinki'),('clubId','open')]:lobby_query('dave',extra={key:value})
+    all_rows=lobby_query('dave');discovered=[row['document']['fields'] for row in all_rows if 'document' in row]
+    assert all(row['visibility']['stringValue'] in ['public','approval'] and row['state']['stringValue'] in ['scheduled','active'] for row in discovered)
+    hidden=group();hidden.update(visibility='unlisted');hid=hidden['id'];r.commit('alice',bootstrap(hidden))
+    r.read('dave','lobbyEvents/'+hid,False);r.commit('alice',[r.update('lobbyEvents/'+hid,page(hidden))],False)
+    fields=r.read('alice','groupSessions/'+lid)
+    r.commit('alice',changes(lid,fields,{'visibility':'private','joiningPolicy':'invite','updatedAt':r.SERVER}))
+    r.read('dave','lobbyEvents/'+lid,False);r.read('dave','groupPages/'+lid,False)
+    r.commit('alice',[r.update('lobbyEvents/'+lid,page(public))],False)
     print(f'GROUP RESULT: {r.checks} passed, 0 failed, 0 skipped; localhost emulator only')
 if __name__=='__main__': run()

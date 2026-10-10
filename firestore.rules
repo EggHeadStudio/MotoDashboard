@@ -397,7 +397,15 @@ service cloud.firestore {
         && g.createdAt is timestamp && g.updatedAt == request.time;
     }
     function groupProjection(id, g) {
-      return getAfter(/databases/$(database)/documents/groupPages/$(id)).data == groupSummary(g);
+      return getAfter(/databases/$(database)/documents/groupPages/$(id)).data == groupSummary(g)
+        && ((lobbyEligible(g) && getAfter(/databases/$(database)/documents/lobbyEvents/$(id)).data == groupSummary(g))
+          || (!lobbyEligible(g) && !existsAfter(/databases/$(database)/documents/lobbyEvents/$(id))));
+    }
+    function lobbyEligible(g) { return g.visibility in ['public', 'approval'] && g.state in ['scheduled', 'active']; }
+    function groupProjectionWriter(id) {
+      return signedIn() && (groupBootstrap(id) || groupManager(id)
+        || (getAfter(groupPath(id)).data.lastParticipantUid == request.auth.uid
+          && (exists(groupMember(id, request.auth.uid)) != existsAfter(groupMember(id, request.auth.uid)))));
     }
     function groupBootstrap(id) {
       let g = getAfter(groupPath(id)).data;
@@ -547,11 +555,20 @@ service cloud.firestore {
       allow get: if groupAvailable(id) && resource.data == groupSummary(get(groupPath(id)).data)
         && (resource.data.visibility != 'private' || groupParticipant(id) || groupManager(id) || groupInvited(id));
       allow list: if false;
-      allow create, update: if signedIn() && (groupBootstrap(id) || groupManager(id)
-          || (getAfter(groupPath(id)).data.lastParticipantUid == request.auth.uid
-            && (exists(groupMember(id, request.auth.uid)) != existsAfter(groupMember(id, request.auth.uid)))))
+      allow create, update: if groupProjectionWriter(id)
         && request.resource.data == groupSummary(getAfter(groupPath(id)).data) && request.resource.data.updatedAt == request.time;
       allow delete: if false;
+    }
+    match /lobbyEvents/{id} {
+      allow get: if signedIn() && lobbyEligible(resource.data)
+        && resource.data == groupSummary(get(groupPath(id)).data) && groupAvailable(id);
+      allow list: if signedIn() && request.query.limit != null && request.query.limit <= 20
+        && lobbyEligible(resource.data)
+        && resource.data.keys().hasOnly(['id', 'title', 'description', 'activityType', 'category', 'clubId', 'clubName', 'hostName',
+          'startsAt', 'endsAt', 'meetingArea', 'visibility', 'joiningPolicy', 'maxParticipants', 'state', 'participantCount', 'updatedAt']);
+      allow create, update: if groupProjectionWriter(id) && lobbyEligible(getAfter(groupPath(id)).data)
+        && request.resource.data == groupSummary(getAfter(groupPath(id)).data) && request.resource.data.updatedAt == request.time;
+      allow delete: if groupProjectionWriter(id) && !lobbyEligible(getAfter(groupPath(id)).data);
     }
     // System admins, live locations, Official activities and every unknown path stay denied.
     match /{document=**} { allow read, write: if false; }

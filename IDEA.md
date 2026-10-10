@@ -3406,3 +3406,21 @@ write is created. Status updates are manual Firestore writes, refreshed explicit
 Marker identity and live status delivery remain blocked by milestones 4/5; milestone 6
 is therefore partial. Group emulator and focused browser regression passed; no live
 Firebase, background tracking or physical-device verification is claimed.
+
+
+### Batch 3 milestone 7 - bounded Lobby discovery
+
+Added js/firebase/lobbyRepository.js and js/lobby-ui.js. Lobby lists safe public/approval
+Group summaries, with activity, Garage category, local date, exact approximate-area label
+and optional public Club filters. Queries use visibility/state constraints, start-time
+ordering, limit 20 and document-snapshot pagination; Club-name search is bounded at 10.
+Unlisted/private/terminal sessions are excluded; canonical changes and Lobby summaries
+commit atomically. Firestore queries filter on the server, not the entire global collection.
+firestore.indexes.json now includes 16 lobbyEvents composite indexes for all combinations
+of the four optional equality filters, plus the original private sessions index.
+**WARNING:** create all 16 indexes and wait until Enabled before frontend publication.
+Emulators do not certify production index readiness. Retired Clubs can leave harmless
+previously public Lobby summaries; opening/joining their bound session is denied. Clearing
+those summaries requires trusted operator cleanup; no client recursive deletion is added.
+Validation: 234 Group emulator assertions + original 102 passed; focused browser 3 groups
+passed. No live Firebase/deployment/physical-device test was performed.

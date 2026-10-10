@@ -43,6 +43,17 @@ def run_group_tests(browser,base,route_map):
     assert page.locator('#groups-dialog').bounding_box()['width']<=320
     page.set_viewport_size({'width':844,'height':390})
     assert page.locator('#groups-dialog').bounding_box()['height']<=390
+    page.locator('#groups-dialog .feature-header button').click();page.click('#lobby-btn')
+    page.wait_for_function('document.querySelector("#lobby-dialog .feature-status").textContent==="Up to date."')
+    text=page.locator('#lobby-results').inner_text();assert 'Open Afternoon' in text and 'Approval Event' in text
+    assert 'Private Meet' not in text and 'Morning Ride' not in text and 'Updated Ride' not in text
+    assert 'Private entrance' not in text and 'fixture-0' not in text
+    page.select_option('#lobby-filter-activityType','event');page.locator('#lobby-filter button[type=submit]').click()
+    page.wait_for_function('document.querySelectorAll("[data-lobby-id]").length===1')
+    assert 'Approval Event' in page.locator('#lobby-results').inner_text()
+    page.fill('#lobby-filter-meetingArea','Tampere');page.locator('#lobby-filter button[type=submit]').click()
+    page.wait_for_function('document.querySelector("#lobby-results").textContent.includes("No matching")')
+    page.locator('#lobby-dialog .feature-header button').click()
     page.set_viewport_size({'width':390,'height':844})
     switch(page,'member@example.test',True);linked(page,ids[3],'Open Afternoon')
     assert not page.locator('.group-meeting').count() and not page.locator('#group-edit').count()
@@ -84,3 +95,4 @@ def run_group_tests(browser,base,route_map):
     context.close()
     print('PASS: MOCK Group Session creation, public/private/approval, edit/start/complete, private meeting details, hidden IDs, Finnish and mobile/landscape')
     print('PASS: MOCK session-specific join/leave, minimal Garage snapshot, approvals, participant names, organizer removal and rejoin guard')
+    print('PASS: MOCK Lobby discovery, activity/region filters, private/terminal exclusion and safe summaries')

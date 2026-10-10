@@ -12,6 +12,7 @@ export const GROUP_PAGE_FIELDS = ['id', 'title', 'description', 'activityType', 
 export function groupPage(group) {
   return Object.fromEntries(GROUP_PAGE_FIELDS.map(key => [key, group[key]]));
 }
+export const lobbyEligible = group => ['public', 'approval'].includes(group.visibility) && ['scheduled', 'active'].includes(group.state);
 export function groupInput(input) {
   const startsAt = Number(input.startsAt), endsAt = input.endsAt ? Number(input.endsAt) : null;
   const maxParticipants = input.maxParticipants ? Number(input.maxParticipants) : null;

@@ -1,10 +1,11 @@
 import { ownDatabase, boundedRequest, dataError } from './access.js';
 import { validId } from '../data/schema.js';
-import { groupInput, groupPage } from '../data/group-session.js';
+import { groupInput, groupPage, lobbyEligible } from '../data/group-session.js';
 
 const checkId = id => { if (!validId(id)) throw dataError('invalid-input'); };
 const ref = (s, id, ...parts) => s.sdk.doc(s.db, 'groupSessions', id, ...parts);
 const pageRef = (s, id) => s.sdk.doc(s.db, 'groupPages', id);
+const lobbyRef = (s, id) => s.sdk.doc(s.db, 'lobbyEvents', id);
 const indexRef = (s, uid, id) => s.sdk.doc(s.db, 'users', uid, 'groupRefs', id);
 const stamp = s => s.sdk.serverTimestamp();
 export async function createGroup(uid, input) {
@@ -24,6 +25,7 @@ export async function createGroup(uid, input) {
     const group = {...data, id, schemaVersion: 1, creatorUid: uid, hostName: identity.data().displayName,
       clubName, state: 'scheduled', participantCount: 1, lastParticipantUid: uid, createdAt: stamp(s), updatedAt: stamp(s)};
     tx.set(ref(s, id), group); tx.set(pageRef(s, id), groupPage(group));
+    if(lobbyEligible(group)) tx.set(lobbyRef(s,id),groupPage(group));
     tx.set(ref(s, id, 'participants', uid), {uid, vehicleId: null, vehicle: null, clubIdentity:null, status: 'ok', joinedAt: stamp(s), updatedAt: stamp(s)});
     tx.set(indexRef(s, uid, id), {uid, sessionId: id, joinedAt: stamp(s)});
   }));
@@ -84,6 +86,8 @@ function saveGroup(tx, s, group, changes) {
   const next = {...group, ...changes, updatedAt: stamp(s)};
   tx.update(ref(s, group.id), {...changes, updatedAt: next.updatedAt});
   tx.set(pageRef(s, group.id), groupPage(next));
+  if(lobbyEligible(next)) tx.set(lobbyRef(s,group.id),groupPage(next));
+  else if(lobbyEligible(group)) tx.delete(lobbyRef(s,group.id));
 }
 export async function editGroup(uid, id, input) {
   await groupTransaction(uid, id, (tx, s, group) => {
