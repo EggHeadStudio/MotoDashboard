@@ -4,6 +4,9 @@ import { initClubUI } from './club-ui.js';
 import { initGroupUI } from './group-ui.js';
 import { initGroupParticipantsUI } from './group-participants-ui.js';
 import { recordRiderMotion } from './rider-motion.js';
+import {liveClient,publishLiveSample} from './live/live-client.js';
+import {attachLiveMap} from './live/live-map.js';
+import {initLiveUI} from './live/live-ui.js';
 import { initLobbyUI } from './lobby-ui.js';
 import { initGroupInvitesUI } from './group-invites-ui.js';
 import { initClubMembersUI } from './club-members-ui.js';
@@ -83,6 +86,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       initClubUI();
       initGroupUI();
       initGroupParticipantsUI();
+      initLiveUI();
       initLobbyUI();
       initGroupInvitesUI();
       initClubMembersUI();
@@ -157,6 +161,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       var elCompassOverlayNeedle = document.getElementById('compass-overlay-needle');
 
       var map = null;
+      var liveGpsRequested = false;
       var mapPane = null;
       var mapTileLayer = null;
       var posMarker = null;
@@ -539,6 +544,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         if (elMap) {
           var visualScale = getRotationVisualScale(angleDeg);
           elMap.style.transform = 'rotate(' + renderedMapRotationDeg + 'deg) scale(' + visualScale + ')';
+          elMap.style.setProperty('--live-counter-rotation',(-renderedMapRotationDeg)+'deg');
         }
 
         if (elCompassNeedle) {
@@ -1052,6 +1058,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           return;
         }
 
+        liveClient.stop();
         sessionHistoryViewActive = true;
         sessionActive = false;
         clearExistingWatch();
@@ -1091,6 +1098,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       }
 
       function returnToStartView() {
+        liveClient.stop();
         sessionHistoryViewActive = false;
         document.getElementById('history-detail').hidden = true;
         applyStoredHeadingMode();
@@ -1279,9 +1287,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           activeSession.name = sanitizeSessionName(nameInput);
         }
 
-        clearExistingWatch();
-        resetMovementState();
-        releaseWakeLockSafely();
+        if(!liveGpsRequested) {clearExistingWatch();resetMovementState();releaseWakeLockSafely();}
         activeSession.status = 'completed';
         activeSession.endedAt = Date.now();
         activeSession.updatedAt = Date.now();
@@ -1296,8 +1302,8 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         sessionHistoryViewActive = false;
         setSessionStatsVisible(false);
         elFinishSessionBtn.style.display = 'none';
-        elBackToStartBtn.style.display = 'none';
-        elStartOverlay.style.display = 'flex';
+        elBackToStartBtn.style.display = liveGpsRequested?'inline-flex':'none';
+        elStartOverlay.style.display = liveGpsRequested?'none':'flex';
         setStartStatus(() => t("ui.completed"));
         setSessionSummary(() => t(saved ? "ui.savedLocal" : "ui.storageFailure") + (finished.name ? ': ' + finished.name : '.') );
         updateStartSummary();
@@ -1338,6 +1344,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           });
 
           map = mapInit.map;
+          attachLiveMap(map,L);
           mapPane = mapInit.mapPane;
           mapTileLayer = mapInit.tileLayer;
           mapRotationSupported = !!(elMap && 'transform' in elMap.style);
@@ -1540,6 +1547,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         smoothedSpeed = smoothSpeed(smoothedSpeed, sample.validatedSpeedKmh);
         movementConfirmed = sample.moving;
         recordRiderMotion(sample);
+        publishLiveSample(sample);
         const heading = getReliableHeading(coords, lat, lon, sample.validatedSpeedKmh, sample.segmentBreak);
         updateMapRotation(heading, sample.moving && sample.validatedSpeedKmh >= HEADING_MIN_SPEED_KMH, now);
         if (sessionActive && activeSession?.status === 'active') {
@@ -2066,9 +2074,9 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         }
 
         if (document.visibilityState === 'visible') {
-          if (sessionActive) requestWakeLockSafely();
+          if (sessionActive || liveGpsRequested) requestWakeLockSafely();
 
-          if (!sessionActive || !isGeolocationSupported(navigator) || !window.isSecureContext) {
+          if ((!sessionActive && !liveGpsRequested) || !isGeolocationSupported(navigator) || !window.isSecureContext) {
             return;
           }
 
@@ -2084,7 +2092,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       });
 
       window.addEventListener('pageshow', function () {
-        if (!sessionActive || !window.isSecureContext || !isGeolocationSupported(navigator)) {
+        if ((!sessionActive && !liveGpsRequested) || !window.isSecureContext || !isGeolocationSupported(navigator)) {
           return;
         }
 
@@ -2097,6 +2105,16 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         }
       });
       window.addEventListener('pagehide', () => persistActiveSession(true));
+      liveClient.onChange(state=>{
+        const wanted=state.consent && state.connection==='connected';
+        if(wanted===liveGpsRequested)return;liveGpsRequested=wanted;
+        if(wanted) {
+          if(!map || !window.isSecureContext || !isGeolocationSupported(navigator)) {liveClient.stop('gpsUnavailable');return;}
+          elStartOverlay.style.display='none';document.getElementById('history-detail').hidden=true;
+          if(!sessionActive)elBackToStartBtn.style.display='inline-flex';
+          if(watchId===null)startGpsTracking({softRestart:true});requestWakeLockSafely();
+        }else if(!sessionActive) {clearExistingWatch();resetMovementState();releaseWakeLockSafely();}
+      });
       document.body.dataset.ready = 'true';
     });
   })();

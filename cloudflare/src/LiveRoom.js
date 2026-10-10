@@ -41,7 +41,7 @@ export class LiveRoom extends DurableObject {
       const s=this.state(ws),identity=result.authorized.get(s.uid);
       if(!identity || s.expiresAt<=Date.now() || result.checkedAt+LEASE_MS<=Date.now()) {
         if(result.ended)this.send(ws,{type:'session_ended'});
-        this.close(ws,result.ended?'session_ended':'access_denied');
+        this.close(ws,s.expiresAt<=Date.now()?'token_expired':result.ended?'session_ended':'access_denied');
         departed.push(s.riderId);continue;
       }
       const changed=JSON.stringify(identity)!==JSON.stringify(s.identity);
@@ -130,7 +130,7 @@ export class LiveRoom extends DurableObject {
       for(const ws of this.sockets()) {
         const s=this.state(ws);if(s.closed)continue;
         if(!s.uid && s.pendingUntil<=now || s.uid && (now-s.lastSeen>70000 || s.expiresAt<=now)) {
-          this.close(ws,'disconnected');if(s.uid)this.broadcast({type:'participant_left',riderId:s.riderId});
+          this.close(ws,s.expiresAt<=now?'token_expired':'disconnected');if(s.uid)this.broadcast({type:'participant_left',riderId:s.riderId});
         } else if(s.position && now-s.position.at>=EXPIRE_MS) {
           this.save(ws,{...s,position:null});this.broadcast({type:'position',riderId:s.riderId,position:null});
         }

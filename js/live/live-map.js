@@ -1,0 +1,23 @@
+import {liveClient} from './live-client.js';
+import {t,onLanguageChange} from '../i18n/i18n.js';
+const STALE=45000,EXPIRE=120000;
+export function attachLiveMap(map,L) {
+  const layer=L.layerGroup().addTo(map),markers=new Map();
+  function render() {
+    const s=liveClient.getState(),now=Date.now(),visible=new Set();
+    if(s.consent && s.connection==='connected')for(const [id,p] of s.participants) {
+      const pos=p.position;if(id===s.selfId || !pos || now-pos.at>=EXPIRE || !Number.isFinite(pos.latitude) || !Number.isFinite(pos.longitude))continue;
+      visible.add(id);let marker=markers.get(id);
+      if(!marker){marker=L.marker([pos.latitude,pos.longitude],{icon:L.divIcon({className:'live-rider-icon',html:'<span class="live-rider-dot" aria-hidden="true"></span>',iconSize:[18,18]})}).addTo(layer);markers.set(id,marker);}
+      marker.setLatLng([pos.latitude,pos.longitude]);const label=document.createElement('span');label.className='live-rider-label';
+      const name=document.createElement('strong');name.textContent=p.displayName?.trim() || t('identity.member');label.append(name);
+      for(const value of [p.vehicle?.nickname,p.vehicle? t('category.'+p.vehicle.category):null,p.clubIdentity?.name,p.clubIdentity?.rank,t('riderStatus.'+p.status),now-pos.at>STALE?t('live.stale'):null])
+        if(value){const text=document.createElement('span');text.textContent=value;label.append(text);}
+      marker.unbindTooltip();marker.bindTooltip(label,{permanent:true,direction:'top',className:'live-rider-tooltip'});
+      marker.setOpacity(now-pos.at>STALE?.45:1);
+    }
+    for(const [id,marker] of markers)if(!visible.has(id)){layer.removeLayer(marker);markers.delete(id);}
+  }
+  const off=liveClient.onChange(render),language=onLanguageChange(render),timer=setInterval(render,5000);
+  return ()=>{off();language?.();clearInterval(timer);map.removeLayer(layer);};
+}

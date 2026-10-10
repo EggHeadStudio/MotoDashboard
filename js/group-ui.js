@@ -5,6 +5,8 @@ import { ACTIVITIES, GROUP_VISIBILITIES, JOIN_POLICIES, setRouteInvite } from '.
 import * as repository from './firebase/groupRepository.js';
 import { dataErrorKey } from './firebase/access.js';
 import { dialog, element, field, button, labelText, runAction } from './ui/forms.js';
+// UI mutation hint accelerates server revalidation; it never supplies permissions.
+import {liveClient} from './live/live-client.js';
 
 const sections = new Set();
 export const registerGroupSection = render => sections.add(render);
@@ -21,6 +23,7 @@ export function initGroupUI() {
     const owner = uid, token = version;
     return runAction(view.body, view.status, async () => {
       await fn(owner);
+      liveClient.revalidate();
       if (current(owner, token)) await next();
     }, dataErrorKey).finally(() => {busy = false;if(pendingLink){pendingLink=false;void linked();}});
   }

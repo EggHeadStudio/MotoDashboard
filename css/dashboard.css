@@ -1,6 +1,7 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    :root {
+:root {
+  --live-counter-rotation: 0deg;
       --panel-bg: rgba(0, 0, 0, 0.64);
       --panel-border: rgba(255,255,255,0.10);
       --accent: #ffcc00;
@@ -1032,3 +1033,10 @@
 .invitation-qr { display: block; width: min(320px, 100%); height: auto; margin: 12px auto; shape-rendering: crispEdges; }
 .feature-dialog .field input[type="checkbox"] { width: 44px; justify-self: start; }
 .feature-dialog { overflow-wrap: anywhere; }
+
+.live-rider-dot {display:block;width:18px;height:18px;border:3px solid #fff;border-radius:50%;background:#2863dc;box-shadow:0 1px 5px #000;}
+.live-rider-tooltip {background:transparent;border:0;box-shadow:none;}
+.live-rider-tooltip::before {display:none;}
+.live-rider-label {display:flex;flex-direction:column;max-width:170px;padding:6px 8px;border-radius:8px;background:#101c30;color:#fff;white-space:normal;overflow-wrap:anywhere;transform:rotate(var(--live-counter-rotation));transform-origin:center bottom;}
+
+#live-dashboard {position:fixed;z-index:550;bottom:calc(78px + env(safe-area-inset-bottom));left:12px;max-width:calc(100vw - 24px);min-height:44px;background:#102340;color:#fff;border:1px solid #fff;border-radius:8px;padding:8px 12px;}

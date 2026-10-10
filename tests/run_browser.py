@@ -53,6 +53,13 @@ def run():
             from groups_browser import run_group_tests
             run_group_tests(browser,base,route_map)
             browser.close();server.shutdown();return
+        if '--live-only' in sys.argv:
+            from live_browser import run_live_tests
+            run_live_tests(browser,base,route_map)
+            c=browser.new_context();route_map(c);install(c);p=c.new_page();p.goto(base,wait_until='networkidle')
+            output=p.evaluate('async()=> (await import("./tests/live-client-tests.js")).runLiveClientTests()')
+            print('PASS:',output);c.close()
+            browser.close();server.shutdown();return
         route_map(context)
         install(context)
         page = context.new_page()
@@ -201,6 +208,10 @@ def run():
         run_club_tests(browser, base, route_map)
         from groups_browser import run_group_tests
         run_group_tests(browser,base,route_map)
+        from live_browser import run_live_tests
+        run_live_tests(browser,base,route_map)
+        output=page.evaluate('async()=> (await import("./tests/live-client-tests.js")).runLiveClientTests()')
+        print('PASS:',output)
         run_real_sdk_imports(browser, base, route_map)
         browser.close()
     server.shutdown()

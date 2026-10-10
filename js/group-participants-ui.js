@@ -9,6 +9,7 @@ import { dataErrorKey } from './firebase/access.js';
 import { riderMoving, onRiderMotion } from './rider-motion.js';
 import { RIDER_STATUSES, currentInviteToken, setRouteInvite, sessionURL } from './data/group-session.js';
 import { renderGroupOverview } from './ui/group-overview.js';
+import {liveClient} from './live/live-client.js';
 
 export function initGroupParticipantsUI() {
   onRiderMotion(moving=>{
@@ -52,7 +53,7 @@ export function initGroupParticipantsUI() {
     }
     if(banned) body.append(labelText(element('p'),'groups.removed'));
     if(participant && group.creatorUid!==uid) body.append(button('groups.leave',()=>{
-      if(confirm(t('groups.leaveConfirm'))) action(owner=>repository.leaveGroup(owner,id),()=>{location.hash='';document.getElementById('groups-dialog').close();});
+      if(confirm(t('groups.leaveConfirm'))) {if(liveClient.getState().sessionId===id)liveClient.stop();action(owner=>repository.leaveGroup(owner,id),()=>{location.hash='';document.getElementById('groups-dialog').close();});}
     },'group-leave'));
     else if(participant) body.append(labelText(element('p','muted'),'groups.founder'));
     if(participant && active) {

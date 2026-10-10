@@ -30,7 +30,7 @@ jobs:
       - name: Prepare static frontend artifact
         run: |
           mkdir _site
-          cp index.html firebase-config.js manifest.webmanifest icon.svg EggHeadStudio_logo.png .nojekyll _site/
+          cp index.html firebase-config.js live-config.js manifest.webmanifest icon.svg EggHeadStudio_logo.png .nojekyll _site/
           cp -R css js _site/
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
