@@ -2,6 +2,7 @@ import { observeAuth, register, login, logout, authErrorKey } from './firebase/a
 import { ensureProfile, saveProfileLanguage } from './firebase/profileRepository.js';
 import { getLanguage, setLanguage, t, setLocalizedText, onLanguageChange } from './i18n/i18n.js';
 import { publishAuthState } from './auth-state.js';
+import { validDisplayName } from './data/identity.js';
 
 export function initAuthUI() {
   const dialog = document.getElementById('account-dialog');
@@ -19,6 +20,8 @@ export function initAuthUI() {
   const status = document.getElementById('auth-status');
   const identity = document.getElementById('auth-identity');
   const languageSelector = document.getElementById('account-language');
+  const profileForm = document.getElementById('profile-name-form');
+  const profileName = document.getElementById('profile-name');
   let user = null, profile = null, busy = false, ready = false, connected = false;
   let message = 'auth.loading', version = 0, languageWrites = Promise.resolve();
   let pendingLanguage = null;
@@ -34,6 +37,9 @@ export function initAuthUI() {
     confirmation.required = signup;
     confirmation.disabled = !signup;
     signOut.hidden = !user;
+    profileForm.hidden = !user;
+    profileForm.querySelector('button').disabled = busy;
+    document.getElementById('profile-name-prompt').hidden = !user || validDisplayName(profile?.displayName);
     retry.hidden = connected && (!user || (!!profile && message !== 'auth.languageError'));
     submit.disabled = busy || !ready;
     signOut.disabled = busy || !ready;
@@ -43,20 +49,20 @@ export function initAuthUI() {
     languageSelector.value = getLanguage();
     setLocalizedText(submit, () => t(busy ? 'auth.working' : signup ? 'auth.register' : 'auth.login'));
     setLocalizedText(status, () => t(message));
-    setLocalizedText(identity, () => user ? t('auth.signedInAs', { name: profile?.displayName || user.displayName || user.email }) : t('auth.signedOut'));
+    setLocalizedText(identity, () => user ? t('auth.signedInAs', { name: profile?.displayName?.trim() || t('identity.member') }) : t('auth.signedOut'));
     setLocalizedText(open, () => t(user ? 'auth.account' : 'auth.open'));
   }
 
   async function synchronize(next, displayName) {
     const current = ++version;
-    user = next; profile = null;
+    user = next; profile = null; profileName.value = '';
     message = next ? 'auth.profileLoading' : 'auth.ready'; render();
     if (!next) return;
     try {
       // Bound UI waiting; an SDK operation may still finish later. Rules remain authoritative.
       const result = await deadline(ensureProfile(next, getLanguage(), displayName));
       if (current !== version || user?.uid !== next.uid) return;
-      profile = result; message = 'auth.profileReady';
+      profile = result; profileName.value = result.displayName || ''; message = 'auth.profileReady';
       if (pendingLanguage?.uid === next.uid) {
         try { await queueLanguage(next, pendingLanguage.language); }
         catch { if (current === version) message = 'auth.languageError'; }
@@ -118,7 +124,7 @@ export function initAuthUI() {
       message = 'auth.passwordMismatch'; render(); confirmation.focus(); return;
     }
     const displayName = name.value.trim();
-    if (mode.value === 'register' && !displayName) { message = 'auth.nameRequired'; render(); return; }
+    if (mode.value === 'register' && !validDisplayName(displayName)) { message = 'auth.nameLength'; render(); name.focus(); return; }
     busy = true; message = 'auth.working'; render();
     try {
       const next = mode.value === 'register'
@@ -146,6 +152,12 @@ export function initAuthUI() {
     languageWrites = task.catch(() => {});
     return task;
   }
+  profileForm.addEventListener('submit', async event => {
+    event.preventDefault(); if (busy || !user) return;
+    if (!validDisplayName(profileName.value)) {message='auth.nameLength';render();profileName.focus();return;}
+    const owner=user, value=profileName.value.trim(); busy=true;render();
+    await synchronize(owner,value); busy=false;render();
+  });
   onLanguageChange(language => {
     render();
     const owner = user;

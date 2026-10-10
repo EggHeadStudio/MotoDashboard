@@ -1,6 +1,10 @@
 // Stable keys; user-created content is never translated.
 export const dictionary = {
   "en": {
+    "auth.nameLength": "Enter a display name with 3–30 characters after trimming.",
+    "auth.nameHint": "3–30 characters. Names do not have to be unique.",
+    "auth.chooseName": "Choose a display name for your account.",
+
     "groups.visibility":"Session visibility", "groups.policy":"Joining policy",
     "groups.moreClubs":"Load more organizing Clubs",
     "groups.overview":"Group overview", "groups.overviewCoverage":"Status summary for {loaded} of {total} participants. Load more participants to expand it.", "groups.statusCount":"{status}: {count}", "groups.checked":"Snapshot checked: {time}", "groups.manualRefresh":"Use Refresh for current membership and statuses. This is not a live presence feed.", "groups.liveUnavailable":"Live tracking is unavailable. Active, stale and offline location counts and separation are unknown. Regroup indications require reliable shared positions.",
@@ -253,6 +257,10 @@ export const dictionary = {
     "ui.finishBeforeDelete": "End the current session before deleting rides."
   },
   "fi": {
+    "auth.nameLength": "Anna 3–30 merkin näyttönimi ilman reunavälilyöntejä.",
+    "auth.nameHint": "3–30 merkkiä. Nimen ei tarvitse olla yksilöllinen.",
+    "auth.chooseName": "Valitse tilillesi näyttönimi.",
+
     "groups.visibility":"Istunnon näkyvyys", "groups.policy":"Liittymisehto",
     "groups.moreClubs":"Lataa lisää järjestäviä kerhoja",
     "groups.overview":"Ryhmän yleiskuva", "groups.overviewCoverage":"Tilayhteenveto {loaded}/{total} osallistujasta. Laajenna sitä lataamalla lisää osallistujia.", "groups.statusCount":"{status}: {count}", "groups.checked":"Tilanne tarkistettu: {time}", "groups.manualRefresh":"Päivitä jäsenyydet ja tilat Päivitä-painikkeella. Tämä ei ole reaaliaikainen läsnäolonäkymä.", "groups.liveUnavailable":"Reaaliaikaista seurantaa ei ole käytössä. Aktiivisten, vanhentuneiden ja offline-sijaintien määrät sekä etäisyydet ovat tuntemattomia. Kokoontumisvihjeet edellyttävät luotettavia jaettuja sijainteja.",

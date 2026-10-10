@@ -42,6 +42,18 @@ def run():
     r.commit('identity-owner', [r.raw_update('users/identity-owner', original,
               {'displayName': changed['displayName'], 'updatedAt': r.SERVER}),
               r.update('displayProfiles/identity-owner', {'displayName': changed['displayName'], 'updatedAt': r.SERVER})])
+    original = r.read('identity-owner','users/identity-owner')
+    for name in ['ab', ' '*3, 'x'*31]:
+        r.commit('identity-owner',[r.raw_update('users/identity-owner',original,
+                 {'displayName':name,'updatedAt':r.SERVER})],False)
+    r.commit('identity-owner',[r.raw_update('users/identity-owner',original,
+             {'displayName':'M\u00e4ki \u96ea','updatedAt':r.SERVER}),
+             r.update('displayProfiles/identity-owner',{'displayName':'M\u00e4ki \u96ea','updatedAt':r.SERVER})])
+    # Legacy short name can keep language updates, but cannot be assigned anew.
+    legacy=r.read('identity-owner','users/identity-owner')
+    r.commit('ADMIN',[r.raw_update('users/identity-owner',legacy,{'displayName':'A'})])
+    legacy=r.read('identity-owner','users/identity-owner')
+    r.commit('identity-owner',[r.raw_update('users/identity-owner',legacy,{'language':'fi','updatedAt':r.SERVER})])
     print(f'PASS: identity rules: {r.checks} passed, 0 failed, 0 skipped (local emulator only)')
 
 

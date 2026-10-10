@@ -20,8 +20,13 @@ service cloud.firestore {
       allow get: if owns(uid);
       allow list: if false;
       allow create: if owns(uid) && validProfile(uid)
+        && request.resource.data.displayName.size() >= 3 && request.resource.data.displayName.size() <= 30
+        && request.resource.data.displayName.matches('.*\\S.*')
         && request.resource.data.createdAt == request.time;
       allow update: if owns(uid) && validProfile(uid)
+        && (request.resource.data.displayName == resource.data.displayName
+          || (request.resource.data.displayName.size() >= 3 && request.resource.data.displayName.size() <= 30
+            && request.resource.data.displayName.matches('.*\\S.*')))
         && request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['displayName', 'email', 'language', 'updatedAt'])
         && request.resource.data.uid == resource.data.uid

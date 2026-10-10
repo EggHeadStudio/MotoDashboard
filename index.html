@@ -154,6 +154,12 @@
     <label for="account-language" data-i18n="ui.language">Language</label>
     <select id="account-language"><option value="en">English</option><option value="fi">Suomi</option></select>
     <p id="auth-identity"></p>
+    <form id="profile-name-form" hidden>
+      <p id="profile-name-prompt" data-i18n="auth.chooseName">Choose a display name for your account.</p>
+      <label for="profile-name" data-i18n="auth.displayName">Display name</label>
+      <input id="profile-name" autocomplete="nickname" maxlength="60" required aria-describedby="auth-name-hint">
+      <button type="submit" data-i18n="common.save">Save</button>
+    </form>
     <p data-i18n="identity.namesVisible">Your display name is visible to signed-in people. Your private profile and email remain private.</p>
     <p data-i18n="auth.localRides">Rides stay in this browser. Signing in does not upload them.</p>
     <form id="auth-form">
@@ -161,7 +167,8 @@
       <select id="auth-mode"><option value="login" data-i18n="auth.login">Sign in</option><option value="register" data-i18n="auth.register">Register</option></select>
       <div id="auth-name-row" hidden>
         <label for="auth-name" data-i18n="auth.displayName">Display name</label>
-        <input id="auth-name" name="displayName" autocomplete="nickname" maxlength="64">
+        <input id="auth-name" name="displayName" autocomplete="nickname" maxlength="60" aria-describedby="auth-name-hint">
+        <p id="auth-name-hint" data-i18n="auth.nameHint">3–30 characters. Names do not have to be unique.</p>
       </div>
       <label for="auth-email" data-i18n="auth.email">Email</label>
       <input id="auth-email" name="email" type="email" autocomplete="username" maxlength="320" required>

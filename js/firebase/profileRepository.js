@@ -1,5 +1,6 @@
 import { getFirebase } from './firebase.js';
 import { getFirestoreService } from './firestore.js';
+import { displayNameInput } from '../data/identity.js';
 
 async function ownProfile(user) {
   const { auth } = await getFirebase();
@@ -9,6 +10,7 @@ async function ownProfile(user) {
 }
 
 export async function ensureProfile(user, language, displayName) {
+  if (displayName !== undefined) displayName = displayNameInput(displayName);
   const { sdk, db, ref } = await ownProfile(user);
   return sdk.runTransaction(db, async transaction => {
     const snapshot = await transaction.get(ref);
@@ -16,11 +18,11 @@ export async function ensureProfile(user, language, displayName) {
     const display = await transaction.get(displayRef);
     if (snapshot.exists()) {
       const profile = snapshot.data();
-      const nextName = displayName ? displayName.trim().slice(0, 64) : profile.displayName;
-      if (!display.exists() || display.data().displayName !== nextName)
+      const nextName = displayName ?? profile.displayName;
+      if (nextName?.trim() && (!display.exists() || display.data().displayName !== nextName))
         transaction.set(displayRef, {displayName: nextName, updatedAt: sdk.serverTimestamp()});
       if (displayName && displayName !== profile.displayName) {
-        const changes = { displayName: displayName.trim().slice(0, 64), updatedAt: sdk.serverTimestamp() };
+        const changes = { displayName, updatedAt: sdk.serverTimestamp() };
         transaction.update(ref, changes);
         return { ...profile, ...changes };
       }
@@ -28,7 +30,7 @@ export async function ensureProfile(user, language, displayName) {
     }
     const profile = {
       uid: user.uid,
-      displayName: (displayName || user.displayName || user.email?.split('@')[0] || 'MotoDash').trim().slice(0, 64),
+      displayName: displayNameInput(displayName ?? user.displayName ?? ''),
       email: user.email,
       language: ['en', 'fi'].includes(language) ? language : 'en',
       createdAt: sdk.serverTimestamp(), updatedAt: sdk.serverTimestamp()

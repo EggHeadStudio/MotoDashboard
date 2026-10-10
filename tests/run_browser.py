@@ -193,6 +193,8 @@ def run():
         run_account_tests(browser, base, route_map)
         from password_confirmation_browser import run_confirmation_tests
         run_confirmation_tests(browser, base, route_map)
+        from identity_browser import run_identity_tests
+        run_identity_tests(browser,base,route_map)
         from batch2_browser import run_batch2_tests
         run_batch2_tests(browser, base, route_map)
         from clubs_browser import run_club_tests
