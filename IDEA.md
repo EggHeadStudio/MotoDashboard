@@ -3039,3 +3039,30 @@ The historical audit's hybrid Firestore/RTDB coordinator prerequisite remains.
 
 **STOP: Batch 2 is complete locally. Await explicit approval before further
 implementation, pushing or deploying.**
+
+# 18. Security Fix Batch (user-authorized scope, 2026-10-10)
+
+This request authorizes only the confirmed Club security corrections and related
+regressions/documentation, with a separate local commit. Original product requirements
+remain agreed; no later feature implementation, push or deployment is authorized.
+
+Canonical Club metadata is now protected; a synchronized exact `clubPages/{id}`
+projection supports legitimate nonmember browsing/joining without membership UIDs.
+Club retirement permanently reserves its automatically generated UUID, removes public
+projections and account refs, and denies retained Wall, invites, ranks, approvals
+and memberships. Client hard deletion/recreation/reactivation is denied. The previous
+Batch 2 deletion claim is superseded by this safer Spark-compatible prototype:
+physical erasure requires a future trusted workflow preserving the retired ID.
+
+Verification: 102 baseline emulator assertions plus 137 additional security checks
+pass; the four reported failures now have passing regressions. All 14 browser groups,
+including 36 deterministic assertions, and two Pages/degraded-Firebase groups pass.
+Zero failed or skipped tests. Emulator/browser evidence does not establish production
+Firebase security, deployment, migration or physical-device acceptance.
+
+Next: separately approve existing-data inventory/backfill/old-ID reservations,
+Console/index verification, coordinated rules/frontend rollout and real-account/device
+acceptance. See DEPLOYMENT_CHECKLIST.md and IMPLEMENTATION_STATUS.md for exact gates.
+
+**STOP: Security fixes complete locally. No further implementation, push, deployment
+or production-data changes are authorized by this document.**

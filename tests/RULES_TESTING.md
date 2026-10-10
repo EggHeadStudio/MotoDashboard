@@ -17,6 +17,7 @@ In another terminal at the repository root:
 
 ```powershell
 python tests/run_rules.py
+python tests/run_security_rules.py
 ```
 
 The script reloads current rules and clears **only** the fixed local demo database.
@@ -24,6 +25,21 @@ Never substitute a production endpoint. Stop the emulator with Ctrl+C afterward.
 Tests include valid founder creation, coupled membership/index/count changes,
 approval/invite joining, private reads, Owner/Admin/Host/Member boundaries,
 rank-without-rights, immutable route chunks, delete fences and unauthorized writes.
+
+The additional runner reruns the baseline itself to rebuild known fixtures, then
+collects its own security expectations and exits nonzero on any failure. It includes
+the four failed release-review assertions: safe public metadata has no UID ledger;
+an unrelated founder cannot read old Wall data; stale invitations cannot expose
+the retired Club; stale invitations cannot admit membership. Additional cases cover
+canonical confidentiality, exact page fields, synchronized privacy/count mutations,
+irreversible retirement, forbidden hard deletion/recreation/reactivation, denied
+retained private children and positive legitimate operations. Fixture setup/inspection
+is excluded from its additional result count. All endpoints remain fixed localhost.
+
+Run `python tests/run_browser.py` with Playwright/Chromium, then
+`python tests/run_release_paths.py` to check asset/import paths under
+`/MotoDashboard/`, scoped worker cleanup and guest recording with Firebase blocked.
+SDK product fixtures do not enforce rules. Real authorization checks use the emulator.
 
 ## Manual live acceptance, after user deploys reviewed rules
 
@@ -50,7 +66,13 @@ rank-without-rights, immutable route chunks, delete fences and unauthorized writ
    Host/Member but must not change A, another Admin, own role, Club privacy/policy,
    ownerUid or memberCount without corresponding atomic membership change.
 7. Assign visible Captain rank to Member C; C's wall/branding/role writes must
-   still fail. Test safe links/colors/plain wall, archive and deletion policy.
+   still fail. Test safe links/colors/plain wall, archive and permanent retirement.
+   Public/unlisted nonmembers read only `clubPages/id`, never canonical `clubs/id`.
+   Archive a disposable owner-only Club, retain its Wall/invite, then retire it:
+   every client must be denied those children, the Owner cannot reactivate or remove
+   its canonical reservation, and old invitees cannot read/join. A newly created
+   Club has a fresh UUID and does not inherit any records. Physical operator erasure
+   must preserve the reservation. Existing data must first pass deployment gate B6.
 8. Attempt adding systemAdmin to own profile and writing systemAdmins, unknown
    collections and RTDB paths: all must fail. Retain RTDB lock for this batch.
 

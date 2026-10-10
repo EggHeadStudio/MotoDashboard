@@ -39,7 +39,14 @@ def run_club_tests(browser,base,route_map):
     page.locator('#club-form button[type=submit]').click();page.wait_for_selector('#club-edit')
     assert 'Updated description' in page.locator('#clubs-dialog').inner_text()
     switch(page,'member@example.test',True)
-    lookup(page,clubs['open']);page.click('#club-join');page.wait_for_selector('#club-leave')
+    lookup(page,clubs['open'])
+    outsider=page.evaluate('''async(id)=>{
+      const repo=await import('./js/firebase/clubRepository.js');
+      return (await repo.loadClub('fixture-1',id)).club;
+    }''',clubs['open'])
+    assert 'ownerUid' not in outsider and 'lastMembershipUid' not in outsider
+    assert outsider['description']=='Updated description'
+    page.click('#club-join');page.wait_for_selector('#club-leave')
     assert not page.locator('#club-edit').count()
     denied=page.evaluate("""async(id)=>{
       const repo=await import('./js/firebase/clubRepository.js');const {getAccount}=await import('./js/auth-state.js');
@@ -152,14 +159,27 @@ def run_club_tests(browser,base,route_map):
     }""",clubs['open']);assert denial==2
     switch(page,'owner@example.test');lookup(page,clubs['open'])
     page.locator('#clubs-dialog').get_by_role('button',name='Archive Club',exact=True).click()
-    page.wait_for_function('document.querySelector("#clubs-dialog").textContent.includes("Deletion is blocked")')
-    assert not page.locator('#clubs-dialog').get_by_role('button',name='Permanently delete Club',exact=True).count()
+    page.wait_for_function('document.querySelector("#clubs-dialog").textContent.includes("Retirement is blocked")')
+    assert not page.locator('#clubs-dialog').get_by_role('button',name='Retire Club permanently',exact=True).count()
     back(page);lookup(page,clubs['private'])
     page.locator('#clubs-dialog').get_by_role('button',name='Archive Club',exact=True).click()
-    page.wait_for_selector('#clubs-dialog button:text("Permanently delete Club")')
-    page.locator('#clubs-dialog').get_by_role('button',name='Permanently delete Club',exact=True).click()
+    page.wait_for_selector('#clubs-dialog button:text("Retire Club permanently")')
+    assert 'stored records remain inaccessible' in page.locator('#clubs-dialog').inner_text()
+    page.select_option('#language-select','fi')
+    page.locator('#clubs-dialog').get_by_role('button',name='Sulje kerho lopullisesti',exact=True).wait_for()
+    assert 'Kerhoa ei voi avata uudelleen' in page.locator('#clubs-dialog').inner_text()
+    page.select_option('#language-select','en')
+    page.locator('#clubs-dialog').get_by_role('button',name='Retire Club permanently',exact=True).click()
     page.wait_for_selector('#club-create')
-    assert not page.evaluate('(id)=>JSON.parse(localStorage.getItem("__mockProfiles"))["clubs/"+id]',clubs['private'])
+    retired=page.evaluate('(id)=>JSON.parse(localStorage.getItem("__mockProfiles"))',clubs['private'])
+    assert retired['clubs/'+clubs['private']]['state']=='deleted'
+    assert 'clubPages/'+clubs['private'] not in retired
+    assert 'users/fixture-0/clubRefs/'+clubs['private'] not in retired
+    assert 'clubs/'+clubs['private']+'/members/fixture-0' in retired
+    inaccessible=page.evaluate('''async(id)=>{
+      const repo=await import('./js/firebase/clubRepository.js');
+      try{await repo.loadClub('fixture-0',id);return false;}catch(e){return e.code==='deleted';}
+    }''',clubs['private']);assert inaccessible
     page.select_option('#language-select','fi')
     assert page.locator('#clubs-dialog h2').inner_text()=='Kerhot'
     page.set_viewport_size({'width':844,'height':390})

@@ -98,16 +98,21 @@ def club_data(id,owner,policy='open',visibility='public'):
 def membership(uid,role='member'): return dict(uid=uid,technicalRole=role,rankId=None,joinedAt=SERVER,updatedAt=SERVER)
 def ref(uid,id): return update(f'users/{uid}/clubRefs/{id}',dict(uid=uid,clubId=id,joinedAt=SERVER))
 def directory(c): return {k:c[k] for k in ['id','name','category','membershipPolicy','primaryColor','accentColor','updatedAt']}
+PAGE_FIELDS = ['id','name','description','category','visibility','membershipPolicy','primaryColor','accentColor','routeColor','mapTheme','links','state','memberCount','updatedAt']
+def page(c): return {k:c[k] for k in PAGE_FIELDS}
+def club_changes(id, fields, changes):
+    return [raw_update('clubs/'+id, fields, changes),
+        raw_update('clubPages/'+id, page(fields), {k:v for k,v in changes.items() if k in PAGE_FIELDS})]
 
 def create_club(id,owner,policy='open',visibility='public'):
     c=club_data(id,owner,policy,visibility)
-    writes=[update('clubs/'+id,c),update(f'clubs/{id}/members/{owner}',membership(owner,'owner')),ref(owner,id)]
+    writes=[update('clubs/'+id,c),update('clubPages/'+id,page(c)),update(f'clubs/{id}/members/{owner}',membership(owner,'owner')),ref(owner,id)]
     if visibility=='public': writes.append(update('clubDirectory/'+id,directory(c)))
     commit(owner,writes,label='create '+id)
 
 def join(id,uid,role='member',actor=None,allowed=True,extra=None):
     fields=read('ADMIN','clubs/'+id)
-    writes=[raw_update('clubs/'+id,fields,{'memberCount':decode(fields['memberCount'])+1,'lastMembershipUid':uid,'updatedAt':SERVER}),
+    writes=club_changes(id,fields,{'memberCount':decode(fields['memberCount'])+1,'lastMembershipUid':uid,'updatedAt':SERVER}) + [
         update(f'clubs/{id}/members/{uid}',membership(uid,role)),ref(uid,id)]
     commit(actor or uid,writes+(extra or []),allowed,'join '+id+' '+role)
 
@@ -154,19 +159,19 @@ def run():
     read('dave','clubs/open/wall/info',False)
     create_club('private','alice','private','private')
     query('alice','','clubs',False)
-    query('alice','','clubs',True,{'visibility':'public','state':'active'})
+    query('alice','','clubs',False,{'visibility':'public','state':'active'})
     query('dave','clubs/private','members',False)
     read('dave','clubs/private',False); join('private','dave',allowed=False)
     invite=dict(uid='dave',invitedBy='alice',expiresAt=('2099-01-01T00:00:00Z',),createdAt=SERVER)
     commit('dave',[update('clubs/private/invites/dave',invite)],False)
     commit('alice',[update('clubs/private/invites/dave',{**invite,'expiresAt':('2000-01-01T00:00:00Z',)})],False)
     commit('alice',[update('clubs/private/invites/dave',invite)])
-    read('dave','clubs/private')
+    read('dave','clubs/private',False); read('dave','clubPages/private')
     join('private','dave',extra=[delete('clubs/private/invites/dave')])
     dave=read('alice','clubs/private/members/dave')
     commit('alice',[raw_update('clubs/private/members/dave',dave,{'technicalRole':'admin','updatedAt':SERVER})])
     private=read('dave','clubs/private')
-    commit('dave',[raw_update('clubs/private',private,{'primaryColor':'#111111','description':'Private Admin branding','updatedAt':SERVER})])
+    commit('dave',club_changes('private',private,{'primaryColor':'#111111','description':'Private Admin branding','updatedAt':SERVER}))
     commit('dave',[update('clubs/private/wall/info',dict(text='Private announcement',updatedBy='dave',createdAt=SERVER,updatedAt=SERVER))])
     read('bob','clubs/private/wall/info',False)
     create_club('approval','alice','approval')
@@ -175,18 +180,21 @@ def run():
     req=read('alice','clubs/approval/joinRequests/dave')
     join('approval','dave',actor='alice',extra=[raw_update('clubs/approval/joinRequests/dave',req,{'state':'approved','decidedAt':SERVER,'decidedBy':'alice'})])
     fields=read('alice','clubs/open')
-    commit('bob',[raw_update('clubs/open',fields,{'visibility':'private','membershipPolicy':'private','updatedAt':SERVER}),delete('clubDirectory/open')],False)
-    commit('alice',[raw_update('clubs/open',fields,{'memberCount':999,'updatedAt':SERVER})],False,'forged count')
+    commit('bob',club_changes('open',fields,{'visibility':'private','membershipPolicy':'private','updatedAt':SERVER})+[delete('clubDirectory/open')],False)
+    commit('alice',club_changes('open',fields,{'memberCount':999,'updatedAt':SERVER}),False,'forged count')
     commit('alice',[delete('clubs/open')],False,'delete active members')
     private=read('alice','clubs/private')
-    commit('alice',[raw_update('clubs/private',private,{'state':'archived','updatedAt':SERVER})])
+    commit('alice',club_changes('private',private,{'state':'archived','updatedAt':SERVER}))
     commit('alice',[delete('clubs/private')],False,'archive still has member')
     private=read('alice','clubs/private')
-    commit('dave',[delete('clubs/private/members/dave'),delete('users/dave/clubRefs/private'),
-      raw_update('clubs/private',private,{'memberCount':1,'lastMembershipUid':'dave','updatedAt':SERVER})])
+    commit('dave',[delete('clubs/private/members/dave'),delete('users/dave/clubRefs/private')]+
+      club_changes('private',private,{'memberCount':1,'lastMembershipUid':'dave','updatedAt':SERVER}))
     for group in ['joinRequests','invites','ranks']: query('alice','clubs/private',group)
     commit('alice',[delete('clubs/private/wall/info')])
-    commit('alice',[delete('clubs/private/members/alice'),delete('users/alice/clubRefs/private'),delete('clubDirectory/private'),delete('clubs/private')])
+    commit('alice',[delete('clubs/private/members/alice'),delete('users/alice/clubRefs/private'),delete('clubDirectory/private'),delete('clubs/private')],False,'no hard deletion')
+    private=read('alice','clubs/private')
+    commit('alice',[raw_update('clubs/private',private,{'state':'deleted','updatedAt':SERVER}),delete('users/alice/clubRefs/private'),delete('clubPages/private'),delete('clubDirectory/private')],label='irreversible retirement')
+    read('alice','clubs/private',False); read('alice','clubs/private/members/alice',False)
     ride=dict(id='ride',schemaVersion=1,ownerUid='alice',vehicleId=None,vehicleSnapshot=None,category=None,name='Ride',status='completed',visibility='private',
         startedAt=1000,endedAt=2000,distanceMeters=0,movingDurationMs=0,averageMovingSpeedKmh=0,maxSpeedKmh=0,mapTheme='normal',pointCount=1,
         chunkCount=1,routeHash='a'*64,revisionId='b'*64,baseRevisionId=None,uploadState='uploading',clientUpdatedAt=2000,createdAt=SERVER,updatedAt=SERVER)

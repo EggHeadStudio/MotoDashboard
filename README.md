@@ -118,6 +118,14 @@ Real local Firestore emulator assertions are in `tests/run_rules.py`; browser SD
 remain separate. See [rules tests/manual acceptance](tests/RULES_TESTING.md) and
 [data contract](DATA_MODEL.md). No live Firebase or physical device test is claimed.
 
+The 2026-10-10 security revision makes canonical Club documents member-only and
+adds a safe `clubPages/{id}` projection for nonmembers. It replaces client deletion
+with irreversible retirement: the ID stays reserved, old invitations stop working
+and all retained private data is denied. This is access revocation, not physical
+erasure. Existing Clubs/orphaned subtrees require approved operator inventory and
+safe-page backfill before rollout; follow [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md).
+The additional regression suite is `python tests/run_security_rules.py`.
+
 **Only after explicit approval:**
 
 1. Select `motodash-87bf8` and confirm the intended database.
@@ -174,6 +182,7 @@ js/club-members-ui.js                Role and custom rank controls
 js/club-branding-ui.js               Safe local Club branding and Info Wall
 js/ui/forms.js                       Native dialogs, safe fields and localized actions
 js/data/{schema,permissions,route-codec,branding}.js    Validation/permissions/hashes/contrast
+js/data/club-page.js                 Exact safe Club presentation projection
 js/session-sync.js / session-export.js    Durable jobs and JSON/GPX/file sharing
 js/firebase/firebase.js / auth.js    Lazy single initializer and Auth operations
 js/firebase/firestore.js             Lazy Firestore service

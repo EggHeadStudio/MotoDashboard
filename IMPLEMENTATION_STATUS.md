@@ -1,6 +1,75 @@
 # MotoDashboard - Implementation Status
 
-Date: 2026-10-09. Current scope: user-authorized **Batch 2**, following Batch 1
+## Current Security Fix Batch - 2026-10-10
+
+User-authorized security corrections are complete locally. Base commit:
+`a598aec90849c56c13e3a1490875793b9b0937ba`. One separate local security commit
+contains the following files; no push, rules deployment or production-data changes.
+RTDB, Firebase configuration, indexes and the Pages workflow remain unchanged.
+
+| Changed file | Purpose |
+| --- | --- |
+| `firestore.rules` | Member-only canonical reads, exact safe pages, atomic projection integrity and irreversible retirement/child guards; client hard deletion denied |
+| `js/data/club-page.js` | Explicit presentation-only field selector, without authorization fields |
+| `js/firebase/clubRepository.js` | Safe nonmember reads/joins, synchronized page writes and atomic retirement instead of recursive purge |
+| `js/club-ui.js` | Visible retirement/retention explanation before the destructive action |
+| `js/i18n/dictionary.js` | Matching English/Finnish permanent-retirement labels, explanation and confirmation |
+| `tests/run_rules.py` | Preserve baseline coverage with the stronger privacy/retirement contract |
+| `tests/run_security_rules.py` | Track the four formerly failing security expectations and related positive/negative regressions |
+| `tests/clubs_browser.py` | Safe nonmember model and retained-ID retirement UI/repository regression |
+| `tests/run_release_paths.py` | Portable Pages paths, scoped worker cleanup and unavailable-Firebase guest checks |
+| `DEPLOYMENT_CHECKLIST.md` | Current security results, preserved historical failures, pending release gates and ordered migration/manual acceptance |
+| `DATA_MODEL.md`, `README.md`, `tests/RULES_TESTING.md`, `IDEA.md`, this file | Current data/access/retirement contract, reproducible tests and agreed product scope |
+
+**Root causes and corrections:** canonical public Club gets/queries returned
+`ownerUid` and `lastMembershipUid`. Private canonical reads now require live
+membership/Owner; exact safe `clubPages/{id}` supports public/unlisted/invited browsing.
+No frontend filtering is relied on. Rules require synchronized pages on every
+canonical change and reject malformed pages even on reads.
+
+Previous parent deletion allowed a different founder to reuse an ID, exposing its
+old private Wall and reusing invitations. Repository creation keeps fresh UUIDs,
+independent of names. Archived owner-only Clubs now retire atomically: state deleted,
+page/directory/founder ref removed, canonical ID reservation and private children
+retained. Hard deletion, replacement/reactivation and every retained-child access
+are denied, including former Owner and addressed invite/request read exceptions.
+The four original failed assertions are corrected through authorization changes.
+
+**Executed verification:** baseline emulator **102 passed / 0 failed / 0 skipped**;
+additional security suite **137 passed / 0 failed / 0 skipped**. The additional runner
+rebuilds the baseline first; do not count its repeated baseline run twice. Baseline
+counts include fixture reads, additional counts exclude fixture setup/inspection.
+Full browser suite: **14 PASS groups**, including **36 deterministic assertions**;
+Pages/degraded-Firebase suite: **2 PASS groups**, **103 references**, **44 local URLs
+HTTP 200** under `/MotoDashboard/`. No failed/skipped cases. `git diff --check` passes.
+
+Real rules tests use only emulator 1.20.2/Java 21 at fixed localhost `demo-motodash`.
+Browser product scenarios use SDK fixtures; real pinned SDK imports block cloud API
+requests. Existing creation/edit/join/approval/leave/roles/ranks/branding/Info Wall,
+Garage/private history, localization, dashboard/maps/GPS/weather/recording pass.
+No live-project Auth, Firestore persistence/security, migration or phone success
+is inferred from these results. No real account credentials were created.
+
+**Remaining release blockers:** Console/deployed rules (B3), production indexes
+(B4), real-account/two-account/physical-device acceptance (B5), and approved existing
+Club inventory/backfill/old deleted-orphan ID reservations (B6). Production data was
+not read or modified. Old clients require the coordinated compatible rollout.
+Retirement is irreversible access revocation, not physical erasure; future trusted
+operator erasure must preserve the canonical retired-ID reservation forever.
+Previously disclosed data cannot be retracted. Rules do not constrain IAM/Admin
+bypass; migration/erasure operators must preserve that invariant. SDK transaction
+contention/load and physical-browser acceptance remain manual work.
+
+**NOT RELEASE READY. STOP after this local security commit.** Deployment and
+production-data work require a separately authorized session. Exact procedures:
+[DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md).
+
+## Historical Batch 2 record (2026-10-09)
+
+The test counts below are historical. Current security fixes and the data contract
+above supersede the old public canonical reads and physical Club deletion behavior.
+
+Date: 2026-10-09. Historical scope: user-authorized **Batch 2**, following Batch 1
 commit `fcfbb81` on `main`. All eight milestones are implemented locally and
 separately committed. A final documentation commit records this review.
 **No GitHub push, Pages deployment, Firebase rules/index publication, live-project
@@ -60,11 +129,12 @@ fetches all account history pages before queuing deletion, aborting if it cannot
 verify the cloud inventory. A saved vehicle snapshot survives Garage deletion.
 
 Clubs use canonical immutable ownerUid, membership subdocuments and private
-account refs, a synchronized minimal discovery projection, join requests and
+account refs, synchronized safe-page/discovery projections, join requests and
 7-day UID-addressed invitations. Private Clubs are hidden from unrelated accounts.
 Owner cannot leave/transfer; archive closes admission and discovery. Permanent
-delete requires archive, no other members, bounded child cleanup and final atomic
-founder/index/Club deletion. Admin can manage other Host/Member accounts and
+retirement requires archive and no other members, preserves the canonical ID
+reservation and denies retained children (superseding Batch 2's unsafe purge).
+Admin can manage other Host/Member accounts and
 branding/ranks/requests; cannot change Owner/other Admin/own role or privacy/policy.
 Host/Member have read/self-leave only in this batch. Visible ranks grant no rights.
 

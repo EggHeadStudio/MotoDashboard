@@ -1,24 +1,37 @@
 import { ownDatabase, boundedRequest, dataError } from './access.js';
 import { clubInput, validId, text, ROLES } from '../data/schema.js';
 import { roleFor, isManager, canManageMember, canAssignRank } from '../data/permissions.js';
+import { clubPage } from '../data/club-page.js';
 
 const stamp=sdk=>sdk.serverTimestamp();
 const clubRef=(s,id,...parts)=>s.sdk.doc(s.db,'clubs',id,...parts);
 const indexRef=(s,uid,id)=>s.sdk.doc(s.db,'users',uid,'clubRefs',id);
 const dirRef=(s,id)=>s.sdk.doc(s.db,'clubDirectory',id);
+const pageRef=(s,id)=>s.sdk.doc(s.db,'clubPages',id);
 function idCheck(id) {if(!validId(id)) throw dataError('invalid-input');}
 function projection(club,sdk) {return {id:club.id,name:club.name,category:club.category,membershipPolicy:club.membershipPolicy,
   primaryColor:club.primaryColor,accentColor:club.accentColor,updatedAt:stamp(sdk)};}
 function setDirectory(tx,s,club,previous) {
+  tx.set(pageRef(s,club.id),clubPage(club));
   if(club.visibility==='public' && club.state==='active') tx.set(dirRef(s,club.id),projection(club,s.sdk));
   else if(previous?.visibility==='public' && previous.state==='active') tx.delete(dirRef(s,club.id));
+}
+function changeMembership(tx,s,club,targetUid,delta) {
+  const fields={memberCount:club.memberCount+delta,lastMembershipUid:targetUid,updatedAt:stamp(s.sdk)};
+  tx.update(clubRef(s,club.id),fields);
+  tx.set(pageRef(s,club.id),clubPage({...club,...fields}));
 }
 async function clubTransaction(uid,id,action) {
   idCheck(id);const s=await ownDatabase(uid);
   const result=await boundedRequest(s.sdk.runTransaction(s.db,async tx=>{
-    const [club,actor]=await Promise.all([tx.get(clubRef(s,id)),tx.get(clubRef(s,id,'members',s.uid))]);
-    s.assertCurrent();if(!club.exists()) throw dataError('deleted');
-    const data=club.data(),role=roleFor(data,actor.exists()?actor.data():null,s.uid);
+    const [page,actor]=await Promise.all([tx.get(pageRef(s,id)),tx.get(clubRef(s,id,'members',s.uid))]);
+    s.assertCurrent();if(!page.exists()) throw dataError('deleted');
+    // Nonmembers transact from the safe page; its count is atomically synchronized.
+    // Only current members read the private canonical authorization document.
+    const canonical=actor.exists()?await tx.get(clubRef(s,id)):null;
+    s.assertCurrent();const data=canonical?.exists()?canonical.data():page.data();
+    if(!['active','archived'].includes(data.state)) throw dataError('deleted');
+    const role=actor.exists()?roleFor(data,actor.data(),s.uid):null;
     return action(tx,s,data,role);
   }));s.assertCurrent();return result;
 }
@@ -28,6 +41,7 @@ export async function createClub(uid,input) {
     createdAt:stamp(s.sdk),updatedAt:stamp(s.sdk)};
   const batch=s.sdk.writeBatch(s.db);
   batch.set(clubRef(s,id),club);
+  batch.set(pageRef(s,id),clubPage(club));
   batch.set(clubRef(s,id,'members',s.uid),{uid:s.uid,technicalRole:'owner',rankId:null,joinedAt:stamp(s.sdk),updatedAt:stamp(s.sdk)});
   batch.set(indexRef(s,s.uid,id),{uid:s.uid,clubId:id,joinedAt:stamp(s.sdk)});
   if(club.visibility==='public') batch.set(dirRef(s,id),projection(club,s.sdk));
@@ -43,12 +57,15 @@ export async function editClub(uid,id,input) {
 }
 export async function loadClub(uid,id) {
   idCheck(id);const s=await ownDatabase(uid);
-  const club=await boundedRequest(s.sdk.getDoc(clubRef(s,id)));s.assertCurrent();
-  if(!club.exists()) throw dataError('deleted');
+  const page=await boundedRequest(s.sdk.getDoc(pageRef(s,id)));s.assertCurrent();
+  if(!page.exists() || !['active','archived'].includes(page.data().state)) throw dataError('deleted');
   const [membership,invite,request]=await boundedRequest(Promise.all([
     s.sdk.getDoc(clubRef(s,id,'members',uid)),s.sdk.getDoc(clubRef(s,id,'invites',uid)),s.sdk.getDoc(clubRef(s,id,'joinRequests',uid))]));
-  s.assertCurrent();const data=club.data(),own=membership.exists()?membership.data():null;
-  return {club:data,membership:own,role:roleFor(data,own,uid),invite:invite.exists()?invite.data():null,
+  s.assertCurrent();const own=membership.exists()?membership.data():null;
+  const canonical=own?await boundedRequest(s.sdk.getDoc(clubRef(s,id))):null;
+  s.assertCurrent();const data=canonical?.exists()?canonical.data():page.data();
+  if(!['active','archived'].includes(data.state)) throw dataError('deleted');
+  return {club:data,membership:own,role:own?roleFor(data,own,uid):null,invite:invite.exists()?invite.data():null,
     request:request.exists()?request.data():null};
 }
 export async function listClubs(uid,ownCursor=null,directoryCursor=null) {
@@ -73,7 +90,7 @@ export async function joinClub(uid,id) {
     if(club.state!=='active' || (club.membershipPolicy!=='open' && !invited)) throw dataError('permission-denied');
     tx.set(clubRef(s,id,'members',uid),{uid,technicalRole:'member',rankId:null,joinedAt:stamp(s.sdk),updatedAt:stamp(s.sdk)});
     tx.set(indexRef(s,uid,id),{uid,clubId:id,joinedAt:stamp(s.sdk)});
-    tx.update(clubRef(s,id),{memberCount:club.memberCount+1,lastMembershipUid:uid,updatedAt:stamp(s.sdk)});
+    changeMembership(tx,s,club,uid,1);
     if(invited) tx.delete(clubRef(s,id,'invites',uid));
   });
 }
@@ -102,7 +119,7 @@ export async function decideRequest(uid,id,targetUid,approve) {
     if(approve) {
       tx.set(memberRef,{uid:targetUid,technicalRole:'member',rankId:null,joinedAt:stamp(s.sdk),updatedAt:stamp(s.sdk)});
       tx.set(indexRef(s,targetUid,id),{uid:targetUid,clubId:id,joinedAt:stamp(s.sdk)});
-      tx.update(clubRef(s,id),{memberCount:club.memberCount+1,lastMembershipUid:targetUid,updatedAt:stamp(s.sdk)});
+      changeMembership(tx,s,club,targetUid,1);
     }
     tx.update(requestRef,{state:approve?'approved':'rejected',decidedAt:stamp(s.sdk),decidedBy:uid});
   });
@@ -121,7 +138,7 @@ export async function removeMember(uid,id,targetUid=uid) {
     const ref=clubRef(s,id,'members',targetUid),target=await tx.get(ref);
     if(!target.exists() || targetUid===club.ownerUid || (uid!==targetUid && !canManageMember(role,uid,target.data()))) throw dataError('permission-denied');
     tx.delete(ref);tx.delete(indexRef(s,targetUid,id));
-    tx.update(clubRef(s,id),{memberCount:club.memberCount-1,lastMembershipUid:targetUid,updatedAt:stamp(s.sdk)});
+    changeMembership(tx,s,club,targetUid,-1);
   });
 }
 export async function listClubRecords(uid,id,collectionName,cursor=null) {
@@ -196,20 +213,11 @@ export async function deleteRank(uid,id,rankId) {
   });
 }
 export async function deleteClub(uid,id) {
-  const view=await loadClub(uid,id);
-  if(view.role!=='owner' || view.club.state!=='archived' || view.club.memberCount!==1) throw dataError('permission-denied');
-  const s=await ownDatabase(uid);
-  // Archive blocks new membership. Bounded cleanup can safely resume after failure.
-  for(const name of ['joinRequests','invites','ranks']) while(true) {
-    s.assertCurrent();const docs=await boundedRequest(s.sdk.getDocs(s.sdk.query(s.sdk.collection(s.db,'clubs',id,name),s.sdk.limit(32))));
-    if(docs.empty) break;
-    const batch=s.sdk.writeBatch(s.db);docs.docs.forEach(doc=>batch.delete(doc.ref));
-    s.assertCurrent();await boundedRequest(batch.commit());
-  }
-  s.assertCurrent();const wall=await boundedRequest(s.sdk.getDoc(clubRef(s,id,'wall','info')));
-  if(wall.exists()) {s.assertCurrent();await boundedRequest(s.sdk.deleteDoc(clubRef(s,id,'wall','info')));}
+  // Irreversible retirement: preserve the ID reservation and deny every old child.
+  // Physical erasure needs a future trusted operator workflow, never a client purge.
   await clubTransaction(uid,id,(tx,s,club,role)=>{
-    if(role!=='owner' || club.state!=='archived' || club.memberCount!==1) throw dataError('conflict');
-    tx.delete(clubRef(s,id,'members',uid));tx.delete(indexRef(s,uid,id));tx.delete(dirRef(s,id));tx.delete(clubRef(s,id));
+    if(role!=='owner' || club.state!=='archived' || club.memberCount!==1) throw dataError('permission-denied');
+    tx.update(clubRef(s,id),{state:'deleted',updatedAt:stamp(s.sdk)});
+    tx.delete(pageRef(s,id));tx.delete(indexRef(s,uid,id));tx.delete(dirRef(s,id));
   });
 }

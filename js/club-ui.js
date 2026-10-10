@@ -105,7 +105,7 @@ export function initClubUI() {
     if(role==='owner') {
       view.body.append(button('common.edit',()=>edit(club),'club-edit'),labelText(element('p','muted'),'clubs.ownerPolicy'));
       if(club.state==='active') view.body.append(button('clubs.archive',()=>{if(confirm(t('clubs.archiveConfirm'))) action(owner=>repository.archiveClub(owner,club.id));}));
-      else if(club.memberCount===1) view.body.append(button('clubs.delete',()=>{
+      else if(club.memberCount===1) view.body.append(labelText(element('p','muted'),'clubs.retirementHint'),button('clubs.delete',()=>{
         if(confirm(t('clubs.deleteConfirm',{name:club.name}))) action(owner=>repository.deleteClub(owner,club.id),()=>browse());
       }));
       else view.body.append(labelText(element('p'),'clubs.deleteBlocked'));
