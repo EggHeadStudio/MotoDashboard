@@ -771,3 +771,15 @@ exercise return/decline/revocation/expiry/wrong-account/rotation/acceptance/refr
 reject external/malformed QR URLs. 4 focused browser groups and 234 Group emulator
 assertions passed (plus baseline 102); Pages checks passed with 158 references/55 URLs.
 These are local emulator/SDK-fixture tests, not live Firebase or physical camera tests.
+
+
+### Batch 3 milestone 9 - overview (partial; regroup blocked)
+
+Added js/ui/group-overview.js. Overview reuses already-loaded private roster pages,
+shows authoritative participant count, loaded/total coverage, localized status totals
+and a checked timestamp. Manual refresh is explicit; no extra aggregate reads.
+Active/stale/offline location counts, separation and regroup remain unknown/blocked
+until milestones 4/5 can securely deliver reliable positions. Status timestamps are not
+misrepresented as presence. No road-distance/behind-rider claim, navigation, noisy
+alerts or push notifications are added. Milestone 9 is partial, not completed.
+Focused Group browser suite: 5 groups passed with no failures or skipped cases.

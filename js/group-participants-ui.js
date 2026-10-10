@@ -8,6 +8,7 @@ import { t } from './i18n/i18n.js';
 import { dataErrorKey } from './firebase/access.js';
 import { riderMoving, onRiderMotion } from './rider-motion.js';
 import { RIDER_STATUSES, currentInviteToken, setRouteInvite, sessionURL } from './data/group-session.js';
+import { renderGroupOverview } from './ui/group-overview.js';
 
 export function initGroupParticipantsUI() {
   onRiderMotion(moving=>{
@@ -67,10 +68,13 @@ export function initGroupParticipantsUI() {
       });body.append(form,labelText(element('p','muted'),'groups.helpNotice'));
     }
     if(participant || manager) {
+      const overview=element('section','feature-card');overview.id='group-overview';body.append(overview);const loadedMembers=new Map();
       const roster=element('section');roster.id='group-participants';roster.append(labelText(element('h3'),'groups.participants'));body.append(roster);
       async function members(cursor=null) {
         const page=await repository.listGroupRecords(uid,id,'participants',cursor);
         const names=await loadDisplayProfiles(uid,page.records.map(row=>row.uid));if(!stillCurrent()) return;
+        for(const row of page.records) loadedMembers.set(row.uid,row);
+        renderGroupOverview(overview,group,[...loadedMembers.values()]);
         for(const member of page.records) {
           const card=element('article','feature-card');card.dataset.participantUid=member.uid;
           const name=element('strong','participant-name',names.get(member.uid)?.displayName);if(!name.textContent) labelText(name,'identity.member');
