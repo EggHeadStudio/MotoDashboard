@@ -18,3 +18,8 @@ test('cadence, sequence, physical jump and expiry reanchor',()=>{
   assert(positionDecision(s,{...m,latitude:61,seq:2,sampledAt:now+EXPIRE_MS},now+EXPIRE_MS));
   assert(distance(old,{...old,latitude:60.01})>1000);
 });
+test('unchanged coordinates are suppressed; stationary cadence remains bounded',()=>{
+  const stationary={...m,speedKmh:0},old=positionDecision({seq:0,position:null},stationary,now);
+  assert.throws(()=>positionDecision({seq:1,position:old,lastPositionAt:now},{...stationary,seq:2,sampledAt:now+10000},now+10000),/rate_limited/);
+  assert.equal(positionDecision({seq:1,position:old,lastPositionAt:now},{...stationary,seq:2,sampledAt:now+30000},now+30000),null);
+});

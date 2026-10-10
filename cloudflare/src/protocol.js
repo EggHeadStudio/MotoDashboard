@@ -28,6 +28,7 @@ export function positionDecision(state,m,now) {
   if(old && m.sampledAt<=old.sampledAt) throw Error('bad_position');
   if(old && now-old.at<EXPIRE_MS && distance(old,m)>(m.sampledAt-old.sampledAt)/1000*250/3.6+old.accuracy+m.accuracy) throw Error('bad_position');
   if(old && now-state.lastPositionAt<(m.speedKmh>=3?5000:30000)) throw Error('rate_limited');
+  if(old && old.latitude===m.latitude && old.longitude===m.longitude) return null;
   return {latitude:m.latitude,longitude:m.longitude,accuracy:m.accuracy,heading:m.heading,
     speedKmh:m.speedKmh,sampledAt:m.sampledAt,at:now};
 }

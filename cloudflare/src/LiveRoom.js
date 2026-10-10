@@ -91,7 +91,7 @@ export class LiveRoom extends DurableObject {
           }
           if(this.sockets().filter(other=>this.eligible(other)).length>=MAX_RIDERS)throw Error('room_full');
           s={uid:ticket.uid,riderId:crypto.randomUUID(),origin:s.origin,identity,expiresAt:ticket.expiresAt,
-            leaseUntil:result.checkedAt+LEASE_MS,lastSeen:now,lastPositionAt:0,seq:0,position:null,bucket:now,messages:0,lastControl:0,closed:false};
+            leaseUntil:result.checkedAt+LEASE_MS,lastSeen:now,lastPositionAt:0,lastHeartbeatAt:0,seq:0,position:null,bucket:now,messages:0,lastControl:0,closed:false};
           this.save(ws,s);await this.refresh();
           if(!this.eligible(ws))return;
           this.send(ws,{type:'hello',riderId:s.riderId});
@@ -104,9 +104,11 @@ export class LiveRoom extends DurableObject {
         await this.refresh(m.type==='status' || m.type==='revalidate');if(!this.eligible(ws))return;
         s=this.state(ws);s.lastSeen=now;
         if(m.type==='position') {
-          const position=positionDecision(s,m,now);s.position=position;s.seq=m.seq;s.lastPositionAt=now;
-          this.save(ws,s);this.broadcast({type:'position',riderId:s.riderId,position});
+          const position=positionDecision(s,m,now);s.seq=m.seq;s.lastPositionAt=now;
+          if(position)s.position=position;this.save(ws,s);
+          if(position)this.broadcast({type:'position',riderId:s.riderId,position});
         } else if(m.type==='heartbeat') {
+          if(now-s.lastHeartbeatAt<20000)throw Error('rate_limited');s.lastHeartbeatAt=now;
           if(m.sampledAt!==undefined && (!Number.isSafeInteger(m.sampledAt) || m.sampledAt>now+5000 || now-m.sampledAt>15000))throw Error('bad_position');
           if(m.sampledAt && s.position && m.sampledAt>s.position.sampledAt) {
             s.position={...s.position,sampledAt:m.sampledAt,at:now};this.save(ws,s);
