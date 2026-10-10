@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "motodash-live",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-10",
+  "workers_dev": true,
+  "vars": {
+    "FIREBASE_PROJECT_ID": "motodash-87bf8",
+    "ALLOWED_ORIGINS": "https://eggheadstudio.github.io"
+  },
+  "durable_objects": {"bindings": [{"name":"LIVE_ROOMS", "class_name":"LiveRoom"}]},
+  "migrations": [{"tag":"v1", "new_sqlite_classes":["LiveRoom"]}],
+  "observability": {"enabled": false}
+}
