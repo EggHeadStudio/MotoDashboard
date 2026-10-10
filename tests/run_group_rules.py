@@ -47,6 +47,15 @@ def run():
     for uid, allowed in [('alice',True),('bob',True),('carol',True),('dave',False)]:
         sample=group(uid);sample.update(clubId='open',clubName='Club open')
         r.commit(uid,bootstrap(sample),allowed,label='Club prototype host '+uid)
+        if allowed:
+            club_group=r.read(uid,'groupSessions/'+sample['id'])
+            r.commit(uid,changes(sample['id'],club_group,{'title':'Club hosted ride','updatedAt':r.SERVER}))
+            updated=r.read(uid,'groupSessions/'+sample['id'])
+            r.commit('dave',changes(sample['id'],updated,{'state':'cancelled','updatedAt':r.SERVER}),False)
+            r.commit(uid,changes(sample['id'],updated,{'state':'cancelled','updatedAt':r.SERVER}))
+            retired=r.read(uid,'groupSessions/'+sample['id'])
+            r.commit(uid,changes(sample['id'],retired,{'state':'active','updatedAt':r.SERVER}),False)
+    r.commit('alice',changes(id,r.read('alice','groupSessions/'+id),{'creatorUid':'bob','updatedAt':r.SERVER}),False)
     for activity in ['ride','drive','meet','event']:
         sample=group();sample['activityType']=activity;r.commit('alice',bootstrap(sample))
     for category in ['motorcycle','car','moped','scooter','atv-utv','off-road','snowmobile','caravan','bicycle','e-bike','e-scooter','other']:

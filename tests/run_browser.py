@@ -49,6 +49,10 @@ def run():
             from clubs_browser import run_club_tests
             run_club_tests(browser,base,route_map)
             browser.close();server.shutdown();return
+        if '--groups-only' in sys.argv:
+            from groups_browser import run_group_tests
+            run_group_tests(browser,base,route_map)
+            browser.close();server.shutdown();return
         route_map(context)
         install(context)
         page = context.new_page()
@@ -193,6 +197,8 @@ def run():
         run_batch2_tests(browser, base, route_map)
         from clubs_browser import run_club_tests
         run_club_tests(browser, base, route_map)
+        from groups_browser import run_group_tests
+        run_group_tests(browser,base,route_map)
         run_real_sdk_imports(browser, base, route_map)
         browser.close()
     server.shutdown()

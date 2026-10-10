@@ -1,6 +1,7 @@
 import { createPositionPipeline } from './position-pipeline.js';
 import { initAuthUI } from './auth-ui.js';
 import { initClubUI } from './club-ui.js';
+import { initGroupUI } from './group-ui.js';
 import { initClubMembersUI } from './club-members-ui.js';
 import { initClubBrandingUI } from './club-branding-ui.js';
 import { initGarageUI, selectedVehicle, onVehicleChange } from './garage-ui.js';
@@ -76,6 +77,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       initAuthUI();
       initGarageUI();
       initClubUI();
+      initGroupUI();
       initClubMembersUI();
       initClubBrandingUI();
       if ('serviceWorker' in navigator) {

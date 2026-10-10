@@ -675,3 +675,18 @@ Personal hosting requires authentication; Club hosting requires current Owner/Ad
 Firestore emulator: 56 new assertions passed, zero failed/skipped; previous 102 passed.
 No deployment or real Firebase/device test. Participation/discovery/live map are separate
 subsequent milestones; RTDB remains locked.
+
+
+### Batch 3 milestone 2 - prototype hosting and lifecycle
+
+Mobile Group Sessions dialog supports creation, safe public descriptions, approximate
+area, participants-only meeting instructions, dates, categories, visibility/join policy,
+capacity and permitted Club association. Hosts can edit, start, complete or cancel;
+terminal states cannot reopen. Club Owner/Admin/Host are checked against current
+canonical membership; ordinary members/custom ranks cannot grant hosting rights.
+Personal hosting is authenticated prototype access. Future entitlements must be issued
+by a trusted billing/authorization service and checked by rules, supplementing rather
+than bypassing Club roles; clients cannot self-issue entitlements.
+Validation: 79 Group emulator assertions + previous 102 passed; focused Group browser
+creation/lifecycle/localization/mobile suite passed. No paid system, new GPS watcher,
+route planner, deployment or live Firebase test was added.
