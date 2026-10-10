@@ -349,7 +349,108 @@ service cloud.firestore {
       allow delete: if clubOwner(id) && (!existsAfter(clubPath(id)) || getAfter(clubPath(id)).data.visibility != 'public'
         || getAfter(clubPath(id)).data.state != 'active');
     }
-    // System admins, groups, live locations, Lobby and every unknown path stay denied.
+    // Group identities are immutable UUIDs. Parent documents are never hard-deleted.
+    function groupPath(id) { return /databases/$(database)/documents/groupSessions/$(id); }
+    function groupMember(id, uid) { return /databases/$(database)/documents/groupSessions/$(id)/participants/$(uid); }
+    function groupIndex(id, uid) { return /databases/$(database)/documents/users/$(uid)/groupRefs/$(id); }
+    function uuid(value) { return value is string && value.matches('^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$'); }
+    function groupAvailable(id) {
+      return signedIn() && exists(groupPath(id))
+        && (get(groupPath(id)).data.clubId == null || availableClub(get(groupPath(id)).data.clubId));
+    }
+    function clubHost(id) {
+      return member(id) && get(memberPath(id, request.auth.uid)).data.technicalRole in ['owner', 'admin', 'host'];
+    }
+    function groupManager(id) {
+      let g = get(groupPath(id)).data;
+      return groupAvailable(id) && ((g.creatorUid == request.auth.uid && (g.clubId == null || clubHost(g.clubId)))
+        || (g.clubId != null && manager(g.clubId)));
+    }
+    function groupParticipant(id) { return groupAvailable(id) && exists(groupMember(id, request.auth.uid)); }
+    function groupSummary(g) {
+      return {'id': g.id, 'title': g.title, 'description': g.description, 'activityType': g.activityType,
+        'category': g.category, 'clubId': g.clubId, 'clubName': g.clubName, 'hostName': g.hostName,
+        'startsAt': g.startsAt, 'endsAt': g.endsAt, 'meetingArea': g.meetingArea,
+        'visibility': g.visibility, 'joiningPolicy': g.joiningPolicy, 'maxParticipants': g.maxParticipants,
+        'state': g.state, 'participantCount': g.participantCount, 'updatedAt': g.updatedAt};
+    }
+    function validGroup(g, id) {
+      return g.keys().hasAll(['id', 'schemaVersion', 'creatorUid', 'clubId', 'clubName', 'hostName', 'title', 'description',
+          'activityType', 'category', 'startsAt', 'endsAt', 'meetingArea', 'meetingLocation', 'visibility',
+          'joiningPolicy', 'maxParticipants', 'state', 'participantCount', 'lastParticipantUid', 'createdAt', 'updatedAt'])
+        && g.keys().hasOnly(['id', 'schemaVersion', 'creatorUid', 'clubId', 'clubName', 'hostName', 'title', 'description',
+          'activityType', 'category', 'startsAt', 'endsAt', 'meetingArea', 'meetingLocation', 'visibility',
+          'joiningPolicy', 'maxParticipants', 'state', 'participantCount', 'lastParticipantUid', 'createdAt', 'updatedAt'])
+        && uuid(id) && g.id == id && g.schemaVersion == 1 && identifier(g.creatorUid) && identifier(g.lastParticipantUid)
+        && (g.clubId == null || identifier(g.clubId)) && shortText(g.clubName, 80) && shortText(g.hostName, 64)
+        && g.hostName.size() > 0 && shortText(g.title, 80) && g.title.size() > 0 && shortText(g.description, 2000)
+        && g.activityType in ['ride', 'drive', 'meet', 'event'] && category(g.category)
+        && g.startsAt is int && g.startsAt > 0 && g.startsAt < 4102444800000
+        && (g.endsAt == null || (g.endsAt is int && g.endsAt >= g.startsAt && g.endsAt < 4102444800000))
+        && shortText(g.meetingArea, 80) && g.meetingArea.size() > 0 && shortText(g.meetingLocation, 500)
+        && g.visibility in ['public', 'approval', 'unlisted', 'private'] && g.joiningPolicy in ['open', 'approval', 'invite']
+        && (g.visibility != 'approval' || g.joiningPolicy == 'approval') && (g.visibility != 'private' || g.joiningPolicy == 'invite')
+        && (g.maxParticipants == null || (g.maxParticipants is int && g.maxParticipants >= 2 && g.maxParticipants <= 50))
+        && g.state in ['scheduled', 'active', 'completed', 'cancelled']
+        && g.participantCount is int && g.participantCount >= 1 && g.participantCount <= 50
+        && (g.maxParticipants == null || g.participantCount <= g.maxParticipants)
+        && g.createdAt is timestamp && g.updatedAt == request.time;
+    }
+    function groupProjection(id, g) {
+      return getAfter(/databases/$(database)/documents/groupPages/$(id)).data == groupSummary(g);
+    }
+    function groupBootstrap(id) {
+      let g = getAfter(groupPath(id)).data;
+      return !exists(groupPath(id)) && g.creatorUid == request.auth.uid;
+    }
+    match /groupSessions/{id} {
+      allow get: if groupParticipant(id) || groupManager(id);
+      allow list: if false;
+      allow create: if signedIn() && validGroup(request.resource.data, id) && groupProjection(id, request.resource.data)
+        && request.resource.data.creatorUid == request.auth.uid && request.resource.data.lastParticipantUid == request.auth.uid
+        && request.resource.data.hostName == get(/databases/$(database)/documents/displayProfiles/$(request.auth.uid)).data.displayName
+        && request.resource.data.state == 'scheduled' && request.resource.data.participantCount == 1
+        && request.resource.data.createdAt == request.time && existsAfter(groupMember(id, request.auth.uid))
+        && existsAfter(groupIndex(id, request.auth.uid))
+        && ((request.resource.data.clubId == null && request.resource.data.clubName == '')
+          || (clubHost(request.resource.data.clubId) && get(clubPath(request.resource.data.clubId)).data.state == 'active'
+            && request.resource.data.clubName == get(clubPath(request.resource.data.clubId)).data.name));
+      allow update: if validGroup(request.resource.data, id) && groupProjection(id, request.resource.data)
+        && groupManager(id) && resource.data.state in ['scheduled', 'active']
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title', 'description', 'activityType', 'category',
+          'startsAt', 'endsAt', 'meetingArea', 'meetingLocation', 'visibility', 'joiningPolicy', 'maxParticipants', 'state', 'updatedAt'])
+        && ((resource.data.state == 'scheduled' && request.resource.data.state in ['scheduled', 'active', 'cancelled'])
+          || (resource.data.state == 'active' && request.resource.data.state in ['active', 'completed', 'cancelled']));
+      allow delete: if false;
+      match /participants/{uid} {
+        allow get: if groupAvailable(id) && (owns(uid) || groupParticipant(id) || groupManager(id));
+        allow list: if (groupParticipant(id) || groupManager(id)) && request.query.limit != null && request.query.limit <= 50;
+        allow create: if owns(uid) && groupBootstrap(id)
+          && request.resource.data.keys().hasAll(['uid', 'vehicleId', 'vehicle', 'status', 'joinedAt', 'updatedAt'])
+          && request.resource.data.keys().hasOnly(['uid', 'vehicleId', 'vehicle', 'status', 'joinedAt', 'updatedAt'])
+          && request.resource.data.uid == uid && request.resource.data.vehicleId == null && request.resource.data.vehicle == null
+          && request.resource.data.status == 'ok' && request.resource.data.joinedAt == request.time
+          && request.resource.data.updatedAt == request.time && existsAfter(groupIndex(id, uid));
+        allow update, delete: if false;
+      }
+    }
+    match /users/{uid}/groupRefs/{id} {
+      allow read: if owns(uid);
+      allow create: if owns(uid) && groupBootstrap(id) && existsAfter(groupMember(id, uid))
+        && request.resource.data.keys().hasAll(['uid', 'sessionId', 'joinedAt'])
+        && request.resource.data.keys().hasOnly(['uid', 'sessionId', 'joinedAt'])
+        && request.resource.data.uid == uid && request.resource.data.sessionId == id && request.resource.data.joinedAt == request.time;
+      allow update, delete: if false;
+    }
+    match /groupPages/{id} {
+      allow get: if groupAvailable(id) && resource.data == groupSummary(get(groupPath(id)).data)
+        && (resource.data.visibility != 'private' || groupParticipant(id) || groupManager(id));
+      allow list: if false;
+      allow create, update: if signedIn() && (groupBootstrap(id) || groupManager(id))
+        && request.resource.data == groupSummary(getAfter(groupPath(id)).data) && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
+    }
+    // System admins, live locations, Official activities and every unknown path stay denied.
     match /{document=**} { allow read, write: if false; }
   }
 }

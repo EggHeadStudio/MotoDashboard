@@ -3333,3 +3333,17 @@ users with bounded name search. Private users documents remain owner-only. Own l
 lazily creates the projection; no production backfill was performed.
 Live RTDB tracking remains blocked pending a trusted membership coordinator. No browser
 ACL mirroring, privileged credentials or Cloud Functions are introduced in this batch.
+
+
+### Batch 3 milestone 1 - Group Session security/data foundation
+
+Added js/data/group-session.js and js/firebase/groupRepository.js. Immutable generated
+UUID identity, four states, Ride/Drive/Meet/Event, all existing Garage categories, optional
+Club association and 50-participant prototype ceiling. groupSessions contains private
+authorization and precise meeting details; groupPages contains an exact safe summary
+without membership UIDs or precise locations. Atomic creation includes founder participant
+and private users/{uid}/groupRefs navigation. No hard deletion or identity reuse.
+Personal hosting requires authentication; Club hosting requires current Owner/Admin/Host.
+Firestore emulator: 56 new assertions passed, zero failed/skipped; previous 102 passed.
+No deployment or real Firebase/device test. Participation/discovery/live map are separate
+subsequent milestones; RTDB remains locked.
