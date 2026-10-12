@@ -13,14 +13,19 @@ export async function ownDatabase(uid) {
 }
 export function dataError(code) { return Object.assign(new Error(code), { code }); }
 export function dataErrorKey(error) {
-  if(error?.code==='invalid-invite') return 'groups.inviteInvalid';
-  if(error?.code==='expired-invite') return 'groups.inviteExpired';
-  if (['auth-required', 'account-changed'].includes(error?.code)) return 'data.signIn';
-  if (error?.code === 'permission-denied') return 'data.denied';
-  if (error?.code === 'invalid-input') return 'data.invalid';
-  if (error?.code === 'conflict') return 'data.conflict';
-  if (error?.code === 'deleted') return 'data.deleted';
-  return 'data.unavailable';
+  const code = String(error?.code || '').replace(/^firestore\//, '');
+  if (code === 'failed-precondition') return 'data.indexRequired';
+  if (['unavailable', 'deadline-exceeded', 'network-request-failed'].includes(code)) return 'data.network';
+  if (code === 'invalid-recipient') return 'data.recipient';
+  if (code === 'duplicate-invite') return 'data.duplicateInvite';
+  if(code==='invalid-invite') return 'groups.inviteInvalid';
+  if(code==='expired-invite') return 'groups.inviteExpired';
+  if (['auth-required', 'account-changed', 'unauthenticated'].includes(code)) return 'data.signIn';
+  if (code === 'permission-denied') return 'data.denied';
+  if (code === 'invalid-input') return 'data.invalid';
+  if (code === 'conflict') return 'data.conflict';
+  if (code === 'deleted') return 'data.deleted';
+  return 'data.unexpected';
 }
 export function boundedRequest(promise, milliseconds = 12000) {
   let timer;

@@ -529,6 +529,7 @@ service cloud.firestore {
         allow list: if groupManager(id) && request.query.limit != null && request.query.limit <= 50;
         allow create, update: if groupManager(id) && get(groupPath(id)).data.state in ['scheduled', 'active']
           && identifier(uid) && !exists(groupBan(id, uid)) && !exists(groupMember(id, uid))
+          && exists(/databases/$(database)/documents/displayProfiles/$(uid))
           && request.resource.data.keys().hasAll(['uid', 'token', 'invitedBy', 'createdAt', 'expiresAt'])
           && request.resource.data.keys().hasOnly(['uid', 'token', 'invitedBy', 'createdAt', 'expiresAt'])
           && request.resource.data.uid == uid && uuid(request.resource.data.token) && request.resource.data.invitedBy == request.auth.uid

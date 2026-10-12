@@ -216,9 +216,14 @@ export async function listGroupRecords(uid,id,path,cursor=null) {
   return {records:page.docs.map(row=>row.data()),cursor:page.docs.at(-1),more:page.size===20};
 }
 export async function inviteGroup(uid,id,target) {
-  checkId(target);const token=crypto.randomUUID();
-  await groupTransaction(uid,id,(tx,s,group)=>{
+  if (!validId(target) || target === uid) throw dataError('invalid-recipient');
+  const token=crypto.randomUUID();
+  await groupTransaction(uid,id,async(tx,s,group)=>{
     if(!['scheduled','active'].includes(group.state) || uid===target) throw dataError('permission-denied');
+    const person = await tx.get(s.sdk.doc(s.db,'displayProfiles',target));
+    if (!person.exists()) throw dataError('invalid-recipient');
+    const existing = await tx.get(ref(s,id,'invites',target));
+    if (existing.exists() && expiresMillis(existing.data().expiresAt) > Date.now()) throw dataError('duplicate-invite');
     tx.set(ref(s,id,'invites',target),{uid:target,token,invitedBy:uid,createdAt:stamp(s),expiresAt:s.sdk.Timestamp.fromMillis(Date.now()+7*86400000)});
   });return token;
 }

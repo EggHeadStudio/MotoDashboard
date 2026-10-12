@@ -1,3 +1,4 @@
+import { product } from './product.js';
 // Stable keys; user-created content is never translated.
 export const dictionary = {
   "en": {
@@ -565,3 +566,4 @@ export const dictionary = {
     "ui.finishBeforeDelete": "Lopeta nykyinen sessio ennen ajojen poistamista."
   }
 };
+for (const language of ['en', 'fi']) Object.assign(dictionary[language], product[language]);
