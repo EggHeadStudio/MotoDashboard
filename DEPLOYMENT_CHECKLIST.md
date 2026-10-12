@@ -1,4 +1,4 @@
-> **Latest release gate: Batch 5, 2026-10-12.** Follow the Batch 5 Console and publication instructions at the end of this file. Local tests do not establish deployed Firebase rules/index versions or fix the reported production error. No agent deployment or production-data writes. RTDB stays deny-all; Cloudflare remains the live engine. Earlier release records are historical evidence.
+> **Current prototype deployment: main, 2026-10-12.** Follow [FIREBASE_DEPLOYMENT.md](FIREBASE_DEPLOYMENT.md) and the simplified section at the end of this checklist. Batch 5 and the manual Firebase workflow are published together from main. Existing Pages deployment is preserved. Production has only one composite index; all 18 and current Rules must be deployed and verified. Previous branch/WIF registration procedures are superseded. No agent push/deployment or production-data writes; live acceptance remains pending.
 
 ## Batch 4 deployment gate — not release ready
 
@@ -1411,7 +1411,7 @@ are ready. No live Firebase test is marked complete in this batch.
 
 | Classification | Finding | Required resolution |
 | --- | --- | --- |
-| BLOCKER | Latest production Firestore rules and indexes are unverified. | Compare/publish the complete reviewed rules; verify all 18 composite definitions below are Enabled before Pages publication. |
+| BLOCKER | Latest production Firestore rules and indexes are unverified. | Compare/publish the complete reviewed rules; verify all 18 composite definitions below are Enabled before claiming cloud features ready. The main push publishes Pages; use the manual Firebase run immediately afterward. |
 | BLOCKER | Reported invitation/Lobby failure has no exact Firebase code or live reproduction evidence. | Run the two-account procedure after backend preparation; record safe diagnostic codes and actual results. |
 | WARNING | An Auth account may have no display projection until it successfully signs into this application. | Each test account must open Account settings, finish profile setup and retry failed profile sync. Verify its minimal displayProfiles document. |
 | WARNING | Prefix name searches are case-sensitive, names are not unique. | Enter the beginning of the displayed name with matching case; use distinct display names for the two test accounts. Never search private users by email. |
@@ -1540,9 +1540,11 @@ it hydrates only safe pages. No global scan or paid search service is needed.
 
 ### GitHub Pages publication - operator steps, no local installation
 
-1. Confirm the backend gates above and preserve the previous known-good frontend commit.
-2. Review the local Batch 5 commits and BATCH_5_RESULT.md. **Pushing main starts the
-   existing Pages workflow automatically**, so do not push before Rules/index preparation.
+1. Configure the dedicated deployment account and repository secret using
+   FIREBASE_DEPLOYMENT.md; preserve the previous known-good frontend commit.
+2. Review Batch 5 and the Firebase setup. **Pushing main starts the existing Pages
+   workflow automatically**. The Firebase workflow must then be run manually; cloud
+   features can report permission/index errors until Rules/index preparation completes.
 3. When you explicitly choose to publish, push/upload the reviewed changes to this
    repository's `main` branch. Node/npm/Wrangler are unnecessary for the static frontend.
 4. GitHub repository > Settings > Pages > Build and deployment > Source: **GitHub Actions**.
@@ -1628,3 +1630,68 @@ Primary references: [Firestore query authorization](https://firebase.google.com/
 [Console index management](https://firebase.google.com/docs/firestore/query-data/indexing),
 [index types](https://firebase.google.com/docs/firestore/query-data/index-overview),
 [query disjunction limits](https://firebase.google.com/docs/firestore/query-data/queries#query_limitations).
+
+
+## Simplified prototype Firebase workflow on main - 2026-10-12
+
+This section and [FIREBASE_DEPLOYMENT.md](FIREBASE_DEPLOYMENT.md) are the current
+operator procedure. Main keeps Batch 5; validated deployment tooling was copied from
+firebase-deployment-setup without merging its older frontend or checklist. No new
+branches, registration-only PR, WIF pool or production environment setup is required.
+The existing Pages and Cloudflare workflows are unchanged.
+
+| Classification | Finding / action |
+| --- | --- |
+| BLOCKER | Production has one Enabled sessions composite; 17 definitions are missing. Run the manual reviewed Firebase deployment, then verify all 18 exact definitions are Enabled. |
+| BLOCKER | Current production Rules and the reported invitation/Lobby behavior are not verified. Compare the complete published Rules and perform the two-account tests after indexes are ready. |
+| INFORMATION | Publish main once when approved. This installs the Firebase workflow on GitHub's default branch, makes Run workflow available and starts the existing Pages frontend deployment. |
+| INFORMATION | Firebase uses workflow_dispatch only, defaults to validate, and permits only this repository/main. Production requires operation=deploy and typed confirmation=motodash-87bf8. |
+| INFORMATION | Use one repository secret: FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON, from motodash-firebase-deployer@motodash-87bf8.iam.gserviceaccount.com, with only the custom role in firebase-deployer-role.json. No Cloudflare credential is reused. |
+| INFORMATION | firebase.deploy.json targets only (default) Firestore and references firestore.rules and firestore.indexes.json. Scope rules-only supports reviewed secure rollback. |
+| WARNING | Pages can publish before manual Firebase deployment/index building completes. Refresh and retest cloud features after all indexes are Enabled; publication alone does not establish release readiness. |
+| WARNING | JSON credentials are long-lived; keep private copies outside the repository, rotate at least every 90 days and after exposure, and revoke when no longer needed. |
+| WARNING | First hosted-runner authentication/deployment and all live Firebase/phone checks remain pending. Resolve any missing IAM permission narrowly; do not grant Owner/Editor or weaken Rules. |
+
+### Exact next steps
+
+1. Google Cloud Console, project motodash-87bf8: verify required APIs and the existing
+   (default) database. Create/verify custom role MotoDashFirestoreDeployer using the
+   exact 19 permissions in firebase-deployer-role.json. Create/verify service account
+   motodash-firebase-deployer with only that role, then create its JSON key.
+2. GitHub -> Settings -> Secrets and variables -> Actions -> New repository secret:
+   FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON = entire JSON for that dedicated account.
+   This workflow uses a repository secret; no deployment environment is required.
+3. When you choose to publish, run git switch main, then git push origin main.
+   Keep Pages enabled. The push publishes the frontend but does not run Firebase.
+4. Save current production Rules before deployment. Actions -> Validate or deploy
+   MotoDash Firestore -> Run workflow, branch main, operation deploy, confirmation
+   motodash-87bf8, scope rules-and-indexes. This is the explicit deployment action.
+5. Validation runs automatically before each deploy. Optional operation validate with
+   blank confirmation runs checks only and skips deployment. Only the fixed
+   Firestore Rules/index targets are submitted from that same immutable run SHA.
+6. Console -> Firestore: verify Rules match the run source; wait for all 18 exact
+   composite definitions from the Batch 5 table to be Enabled; retain automatic
+   query-field indexes and the routeChunks.pointsJson single-field exemption.
+7. Verify Pages and execute the existing two-account/phone checks. No live test has
+   been marked completed. Keep Cloudflare and RTDB as currently configured.
+
+For secure rollback, follow FIREBASE_DEPLOYMENT.md: a reviewed schema-compatible
+Rules-only main change, validation and explicit rules-only deploy. Preserve indexes.
+Detailed Console clicks, key rotation and expected failure handling are in that guide.
+
+### Local verification
+
+Passed: 626 distinct Firestore emulator assertions, 10 deployment-contract cases,
+7 confirmation/scope cases and 8 credential-identity cases; zero failed/skipped.
+Workflow YAML, 11 Bash blocks and all 6 action SHA pins checked. Pages: 218 references,
+69 unique local URLs under /MotoDashboard/, plus unavailable-Firebase guest recording/
+history regression. Exact 18 indexes/exemption and reuse of reviewed config/role/
+validator files verified; Batch 5 frontend, Rules, indexes and Pages/Cloudflare
+workflows unchanged. Repository scan found no private-key/service-account JSON material.
+Emulator results verify local Rules behavior, not production indexes or real account
+acceptance. First GitHub runner authentication/deployment remains unperformed.
+No Node/npm/Firebase CLI installation, push or deployment is performed on this computer.
+
+Sources: [GitHub manual/default-branch workflow triggering](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow),
+[Google auth action JSON credentials](https://github.com/google-github-actions/auth),
+[Firebase selective deployment](https://firebase.google.com/docs/cli#deploy_specific_firebase_services).

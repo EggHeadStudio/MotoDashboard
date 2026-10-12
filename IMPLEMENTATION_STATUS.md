@@ -990,3 +990,31 @@ imports are real with cloud API calls blocked; data/live transport uses fixtures
 Real Firebase, enabled indexes and two-phone acceptance remain pending. Local commits
 613b5dc / ef5ebe1 separate foundation and UI, followed by the documentation milestone.
 No next-batch implementation, push or deployment was performed.
+
+
+## Simplified prototype Firebase deployment - 2026-10-12
+
+Prepared on main without altering Batch 5 frontend, Firestore Rules/indexes, existing
+Pages deployment or Cloudflare. Copied the reviewed firebase.deploy.json,
+firebase-deployer-role.json, tools/validate_firebase_deployment.py and
+tests/run_firebase_deployment_contract.py from firebase-deployment-setup. The separate
+workflow .github/workflows/deploy-firebase.yml now dispatches manually on main using
+one dedicated deployment-account repository secret FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON.
+No additional branch, WIF provider or GitHub environment setup is required. Production
+requires deploy selection and exact confirmation motodash-87bf8; every deploy validates
+first, checks out the same run SHA and targets Firestore Rules/indexes only.
+
+FIREBASE_DEPLOYMENT.md and the latest DEPLOYMENT_CHECKLIST.md section supersede the
+previous branch-registration procedure. Publishing main installs the Firebase workflow
+on the default branch and triggers the unchanged Pages workflow; Firebase still needs
+manual dispatch. Current source has all 18 composites; the operator reports only one
+in production. No production deployment or live test is marked completed.
+
+Checks: 626 distinct Firestore assertions and 10 deployment-contract cases passed;
+7 confirmation/scope and 8 dedicated-key identity cases passed; YAML/11 Bash blocks/
+6 action SHA pins checked; Pages passed 218 references/69 unique local URLs and the
+unavailable-Firebase guest recording/history regression. Zero failed/skipped. Reviewed
+config/role/validator files reused exactly; repository scan found no private-key or
+service-account JSON material. No local software installed, new branch created, push,
+deployment or production-data operation. Hosted-runner authentication, index readiness
+and two-account/two-phone acceptance remain pending.

@@ -1,2 +1,12 @@
 /.wrangler/
 /_site/
+
+# Short-lived Google auth files and Firebase development/deployment logs.
+gha-creds-*.json
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
+
+# Development-only Python deployment checks.
+__pycache__/
+*.py[cod]

@@ -1,0 +1,26 @@
+{
+  "title": "MotoDash Firestore Deployment",
+  "description": "Firebase CLI rules/index deployment and metadata only; no application document access, API enablement or database creation.",
+  "stage": "GA",
+  "includedPermissions": [
+    "firebase.projects.get",
+    "resourcemanager.projects.get",
+    "serviceusage.services.get",
+    "serviceusage.services.use",
+    "datastore.databases.getMetadata",
+    "datastore.indexes.create",
+    "datastore.indexes.delete",
+    "datastore.indexes.get",
+    "datastore.indexes.list",
+    "datastore.indexes.update",
+    "datastore.operations.get",
+    "firebaserules.releases.create",
+    "firebaserules.releases.get",
+    "firebaserules.releases.list",
+    "firebaserules.releases.update",
+    "firebaserules.rulesets.create",
+    "firebaserules.rulesets.get",
+    "firebaserules.rulesets.list",
+    "firebaserules.rulesets.test"
+  ]
+}

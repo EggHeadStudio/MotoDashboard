@@ -1,0 +1,164 @@
+name: Validate or deploy MotoDash Firestore
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: 'validate runs local checks only; deploy changes production rules/indexes'
+        required: true
+        default: validate
+        type: choice
+        options: [validate, deploy]
+      confirmation:
+        description: 'For deploy, type exactly motodash-87bf8 after reviewing the main commit'
+        required: false
+        default: ''
+        type: string
+      scope:
+        description: 'rules-only is for a reviewed secure rules rollback; default deploys both'
+        required: true
+        default: rules-and-indexes
+        type: choice
+        options: [rules-and-indexes, rules-only]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: firebase-firestore-motodash-87bf8
+  cancel-in-progress: false
+
+env:
+  FIREBASE_CLI_VERSION: '15.33.0'
+  CI: 'true'
+  FIREBASE_CLI_DISABLE_UPDATE_CHECK: 'true'
+
+jobs:
+  validate:
+    if: github.repository == 'EggHeadStudio/MotoDashboard' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout the selected main revision
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Check explicit production confirmation
+        env:
+          OPERATION: ${{ inputs.operation }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+          DEPLOY_SCOPE: ${{ inputs.scope }}
+        run: |
+          case "$OPERATION" in validate|deploy) ;; *) exit 1 ;; esac
+          case "$DEPLOY_SCOPE" in rules-and-indexes|rules-only) ;; *) exit 1 ;; esac
+          if [[ "$OPERATION" == 'deploy' && "$CONFIRMATION" != 'motodash-87bf8' ]]; then
+            echo '::error::Production requires operation=deploy and confirmation=motodash-87bf8.'
+            exit 1
+          fi
+
+      - name: Set up Node.js on this runner
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+          package-manager-cache: false
+
+      - name: Set up emulator Java on this runner
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Validate deployment config and all index definitions
+        run: |
+          python3 tools/validate_firebase_deployment.py
+          python3 tests/run_firebase_deployment_contract.py
+
+      - name: Install the pinned official Firebase CLI on the runner
+        run: npm install --global "firebase-tools@$FIREBASE_CLI_VERSION"
+
+      - name: Compile actual rules and run all Firestore security suites in a demo emulator
+        # No production identity, secret, or ID-token permission here.
+        # These Python runners are hard-coded to localhost:8185 / demo-motodash.
+        run: >-
+          firebase emulators:exec --only firestore --project demo-motodash
+          --config firebase.deploy.json --non-interactive
+          "python3 tests/run_security_rules.py && python3 tests/run_group_rules.py &&
+          python3 tests/run_identity_rules.py && python3 tests/run_batch5_rules.py"
+
+      - name: Record successful validation and reviewed revision
+        env:
+          REVIEWED_SHA: ${{ github.sha }}
+        run: |
+          echo "Validated revision: $REVIEWED_SHA" >> "$GITHUB_STEP_SUMMARY"
+          echo 'Exact 18 composites and all Firestore emulator suites passed. No production deployment in this job.' >> "$GITHUB_STEP_SUMMARY"
+
+  deploy:
+    needs: validate
+    if: inputs.operation == 'deploy' && inputs.confirmation == 'motodash-87bf8' && github.repository == 'EggHeadStudio/MotoDashboard' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout the same validated revision
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Set up Node.js on this runner
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+          package-manager-cache: false
+
+      - name: Recheck the deployment contract before obtaining credentials
+        run: python3 tools/validate_firebase_deployment.py
+
+      - name: Install the pinned official Firebase CLI before obtaining credentials
+        run: npm install --global "firebase-tools@$FIREBASE_CLI_VERSION"
+
+      - name: Validate the dedicated deployment key without printing it
+        env:
+          DEPLOY_KEY: ${{ secrets.FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          try:
+              key = json.loads(os.environ['DEPLOY_KEY'])
+          except (ValueError, KeyError):
+              raise SystemExit('Configure the FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON repository secret.')
+          if not isinstance(key, dict) or key.get('type') != 'service_account' or key.get('project_id') != 'motodash-87bf8' or key.get('client_email') != 'motodash-firebase-deployer@motodash-87bf8.iam.gserviceaccount.com' or not key.get('private_key'):
+              raise SystemExit('Deployment key must belong to the dedicated MotoDash deployment account.')
+          PY
+
+      - name: Authenticate with the dedicated Firebase deployment account
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          project_id: motodash-87bf8
+          credentials_json: ${{ secrets.FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON }}
+          create_credentials_file: true
+          export_environment_variables: true
+
+      - name: Deploy only the default-database Firestore rules and indexes
+        # No --force: preserve extra remote indexes/exemptions; no logs/artifacts of credentials.
+        env:
+          DEPLOY_SCOPE: ${{ inputs.scope }}
+        run: |
+          case "$DEPLOY_SCOPE" in
+            rules-and-indexes) targets='firestore:rules,firestore:indexes' ;;
+            rules-only) targets='firestore:rules' ;;
+            *) echo '::error::Unsupported deployment scope.'; exit 1 ;;
+          esac
+          firebase deploy --project motodash-87bf8 --config firebase.deploy.json --only "$targets" --non-interactive
+
+      - name: Report deployment separately from index readiness
+        env:
+          REVIEWED_SHA: ${{ github.sha }}
+        run: |
+          echo "Submitted Firestore deployment from revision: $REVIEWED_SHA" >> "$GITHUB_STEP_SUMMARY"
+          echo 'Project: motodash-87bf8; database: (default). Check Firebase Console Rules publication and all 18 indexes Enabled. A successful CLI submission is not index readiness or live application acceptance.' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove local deployment debug logs
+        if: always()
+        run: rm -f firebase-debug.log firestore-debug.log ui-debug.log

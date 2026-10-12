@@ -277,8 +277,11 @@ live sharing still use the existing modules. The frontend remains build-free und
 
 Operators must compare the complete current firestore.rules, verify all 18 composites
 (including the new clubDirectory category/name index) and required single-field indexes
-in motodash-87bf8, then publish the frontend and perform real two-account/phone acceptance.
-See the latest DEPLOYMENT_CHECKLIST.md section for exact browser-only Console instructions.
+in motodash-87bf8 before treating cloud features as ready. Publish the reviewed main
+branch for Pages and the manual Firebase workflow, then deploy Rules/indexes through
+Actions and perform real two-account/phone acceptance. See
+[FIREBASE_DEPLOYMENT.md](FIREBASE_DEPLOYMENT.md) for the simplified Console/Actions setup
+and DEPLOYMENT_CHECKLIST.md for exact indexes and acceptance procedures.
 No local Node/npm/Wrangler installation is needed; Batch 5 requires no Worker deployment.
 
 UI error codes distinguish permission, Firebase precondition/index, network, auth,
@@ -292,3 +295,20 @@ tests/run_security_rules.py, tests/run_group_rules.py, tests/run_identity_rules.
 tests/run_batch5_rules.py, tests/run_realtime_rules.py and tests/run_release_paths.py.
 These use existing development tools/fixtures or fixed localhost demo emulators,
 not production Firebase. No testing tools are installed or shipped with the application.
+
+
+## Manual Firebase deployment for the prototype
+
+Main includes .github/workflows/deploy-firebase.yml, firebase.deploy.json,
+firebase-deployer-role.json and the reviewed validation scripts. Use the dedicated
+motodash-firebase-deployer account with only the custom role and add its JSON as the
+repository secret FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON. No local Node/npm/Firebase
+CLI, deployment branch, WIF provider or environment configuration is needed.
+
+After you push main, the existing Pages workflow deploys the frontend. Firebase is a
+separate manual run: Actions -> Validate or deploy MotoDash Firestore, branch main.
+For an approved deployment choose deploy, type motodash-87bf8 and leave scope
+rules-and-indexes; validation runs automatically first. Validate mode is an optional
+check without deployment. Only Firestore Rules/indexes deploy;
+wait for all 18 indexes Enabled and run live acceptance before claiming cloud readiness.
+See [FIREBASE_DEPLOYMENT.md](FIREBASE_DEPLOYMENT.md) for exact steps and secure rollback.
