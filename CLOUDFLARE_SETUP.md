@@ -1,22 +1,32 @@
 # Cloudflare setup for MotoDashboard Batch 4
 
-Status: implemented and tested locally; **not deployed or release approved**.
+Updated 2026-10-11: **browser-only deployment through GitHub Actions**. You do not
+need to install Node.js, npm, Wrangler, Git or other software on this computer.
+The user reports that **motodash-live already exists** in Cloudflare; the agent
+has not inspected or changed its deployed configuration. Local Batch 4 evidence
+does not certify that existing Worker's deployed code or production readiness.
 Every account, billing, IAM, key, deployment, frontend publication and live-test
 step below requires the **user/operator**. No account ID, deployment ID or Worker
 URL has been supplied. `live-config.js` deliberately has an empty endpoint.
 
 The frontend remains static GitHub Pages native ESM. Only `cloudflare/` uses npm
-and a server bundle. Firebase **motodash-87bf8** Auth/Firestore remains permanent
+and a server bundle, installed on GitHub-hosted runners. Firebase
+**motodash-87bf8** Auth/Firestore remains permanent
 identity/data/authorization; RTDB remains locked. Read DEPLOYMENT_CHECKLIST.md
 before any publication. These instructions describe future actions, not actions
-performed in Batch 4.
+performed in Batch 4 or during workflow preparation. The new workflow is
+[.github/workflows/deploy-cloudflare.yml](.github/workflows/deploy-cloudflare.yml).
+It has **workflow_dispatch only**: publishing repository changes does not start
+Worker deployment. The existing GitHub Pages workflow is independent and unchanged.
 
-## 1. Create and secure your Cloudflare account
+## 1. Select the account containing the existing Worker
 
 Open [Cloudflare dashboard](https://dash.cloudflare.com/), sign up or sign in,
 verify your email and enable MFA. Select your actual account under Workers &
-Pages. A purchased domain is not required for a workers.dev deployment. Do not
-enable automatic repository deployment; this batch has no production CI secrets.
+Pages and open **motodash-live**. Do not create a replacement Worker. A purchased
+domain is not required for workers.dev. Leave Cloudflare Git integration/automatic
+Workers Builds disabled or disconnected for this Worker so pushes cannot deploy it.
+The manual GitHub workflow handles source deployment instead.
 
 ## 2. Select a Workers plan and a budget
 
@@ -27,44 +37,67 @@ and overage budget. A website plan is separate from a Workers plan. Other worker
 in your account share allowances. Review the current pricing links below before
 buying; this document is an estimate, not a billing guarantee.
 
-## 3. Prepare the existing Worker project
+## 3. Create the Cloudflare deployment API token in your browser
 
-Install Node 22+ and npm, and Git for Windows (the tests use its OpenSSL for
-ephemeral signed fixtures). In PowerShell from the repository root:
+Cloudflare profile → API Tokens → Create Token → Create Custom Token. Name it
+for MotoDash GitHub deployment. Grant these **Account** permissions:
 
-```powershell
-Set-Location cloudflare
-npm.cmd ci
-npm.cmd test
-npm.cmd run check
-```
+- **Workers Scripts: Edit** (API permission name Workers Scripts Write).
+- **Account Settings: Read** (account/workers.dev settings).
 
-Stop on a nonzero command result. `test` also regenerates the bundle before
-running Node and actual local Miniflare/workerd tests. `check` is only a dry run;
-it does not publish. The frontend requires neither npm nor a build.
+Account Resources → Include → **Specific account** → the account containing
+motodash-live. No DNS/Zone/Workers Routes permissions are needed because this
+configuration deploys only to workers.dev, not a custom-domain zone. Do not use
+the Global API Key or a broadly scoped administrator token. Durable Object class
+migrations/bindings travel with the Worker upload, not a separate Firebase grant.
+If using the “Edit Cloudflare Workers” template, remove unrelated KV/R2/Zone/User
+permissions and scope the account. Create the token and copy it only into the
+GitHub secret in step 5. Do not paste it into a repository file or issue.
 
 ## 4. Review the Durable Object migration
 
-Open `cloudflare/wrangler.jsonc`. Keep `LiveRoom` exported from `src/index.js` and
+Open `cloudflare/wrangler.jsonc` in GitHub. Keep `LiveRoom` exported from
+`src/index.js` and
 the `v1` migration containing `new_sqlite_classes: ["LiveRoom"]`. Wrangler creates
-the SQLite namespace during the first approved deployment. Do not create a second
-unrelated namespace or remove/reuse migration tags. Future schema migrations need
+the SQLite namespace during the first deployment that adds this class, including
+to an existing starter Worker. If the class/migration was already deployed with
+this same configuration, normal redeployments retain the existing namespace.
+Do not create a second unrelated namespace or remove/reuse migration tags.
+Future schema migrations need
 their own new tag and rollback review. No SQL GPS table is created.
 
-## 5. Review the binding and account selection
+Before the first run, inspect motodash-live → Bindings and the account's Durable
+Objects page. The expected binding is **LIVE_ROOMS → LiveRoom on motodash-live**,
+using **SQLite**, not another Worker's class. If no such namespace exists, let
+Wrangler create it; do not add an unrelated placeholder manually. If an existing
+LiveRoom uses legacy KV, a different migration history, or another class/namespace,
+stop and review that deployed configuration before running the workflow. This
+preparation does not verify remote namespace history and does not delete/rename
+any namespace to bypass a conflict. The current migrations array remains
+supported; switching to a new lifecycle format is unnecessary for GitHub Actions.
+See the [supported migration contract](https://developers.cloudflare.com/durable-objects/reference/durable-object-class-migrations-legacy/).
+
+## 5. Create exactly two GitHub repository Actions secrets
 
 Keep binding name `LIVE_ROOMS`, class `LiveRoom`, Worker name `motodash-live`.
 The entry module uses this binding, with `idFromName(sessionId)`, to isolate rooms.
-No namespace ID is invented or manually pasted. Later, run:
+No namespace ID is invented or manually pasted. In Cloudflare, copy the **Account
+ID** from the account/Worker overview; use the account ID, not a zone ID, script
+ID or namespace ID. Then in GitHub **EggHeadStudio/MotoDashboard** → Settings →
+Secrets and variables → Actions → Repository secrets → New repository secret:
 
-```powershell
-npx.cmd wrangler login
-npx.cmd wrangler whoami
-```
+| Exact name | Value |
+| --- | --- |
+| `CLOUDFLARE_API_TOKEN` | The account-scoped deployment token from step 3 |
+| `CLOUDFLARE_ACCOUNT_ID` | The actual Cloudflare Account ID containing motodash-live |
 
-Confirm the actual account before publishing. If multiple accounts exist, choose
-your intended account explicitly in Wrangler using the actual dashboard value;
-do not copy another project's account. No login was performed by the agent.
+Use **Secrets**, not Variables. No additional GitHub secret or manually created
+GITHUB_TOKEN is required. Firebase's private reader JSON is **not** a GitHub
+secret for this workflow; it stays in Cloudflare in step 7. The workflow checks
+missing secret names without printing values, and gives credentials only to that
+check and the final official deployment action. Tests receive no deployment keys.
+Official action inputs and installed-Wrangler reuse:
+[cloudflare/wrangler-action](https://github.com/cloudflare/wrangler-action).
 
 ## 6. Verify Firebase and permanent rules first
 
@@ -116,58 +149,73 @@ in protected storage. Never put it in firebase-config.js, live-config.js, browse
 code, Git, a ticket, a URL, an issue, or a terminal command literal. Required
 secret JSON fields are `project_id`, `client_email`, `private_key`.
 
-After step 9 creates the fail-closed Worker, enter the path interactively and pipe
-the file to Wrangler's encrypted secret store:
+Use an existing text viewer to obtain the complete downloaded JSON contents;
+no software installation is required. In Cloudflare → Workers & Pages →
+**motodash-live** → Settings → Variables and Secrets → Add:
 
-```powershell
-$readerKeyPath = Read-Host 'Absolute path to the protected reader JSON file'
-Get-Content -LiteralPath $readerKeyPath -Raw | npx.cmd wrangler secret put FIRESTORE_SERVICE_ACCOUNT
-```
+- Type: **Secret**, not Text or JSON/plaintext variable.
+- Name: **FIRESTORE_SERVICE_ACCOUNT**.
+- Value: the **complete reader service-account JSON**, including the three required
+  fields above. Preserve the JSON escaping of private_key; do not paste just the
+  key or an Auth ID token.
 
-Do not print the file or record terminal input. Secret upload creates a new
-Worker version; verify the account/name first. Never enable payload/header logs.
+Save/Deploy the secret using the Dashboard control. This is a separate operator
+configuration action; the workflow never uploads or replaces this secret. If it
+already exists, verify its purpose/IAM and leave it in place rather than exposing
+its value. Dashboard-created Worker secrets persist across normal Wrangler
+deployments. Verify the secret's **name/type** after deployment; do not log its
+value. Secret changes may create a Worker version; verify the account/name first.
+Never enable payload/header logs.
+Dashboard secret controls:
+[Cloudflare Worker secrets](https://developers.cloudflare.com/workers/configuration/secrets/).
 Current observability and Wrangler metrics are off. Hashes of one-use tickets
 are stored temporarily; raw Firebase tokens are not stored/logged by code.
 
-## 8. Run Wrangler locally without production data
+## 8. Add the prepared files to GitHub using the browser
 
-```powershell
-npm.cmd run dev -- --var ALLOWED_ORIGINS:http://localhost:8000
-```
+The agent prepared the workflow and this document locally but did not push them.
+When you approve publishing these files, open the repository in GitHub. Use
+Add file → Upload files/Create new file (or GitHub's browser editor) to commit the
+prepared **.github/workflows/deploy-cloudflare.yml** and **CLOUDFLARE_SETUP.md**
+onto the default branch. Keep the workflow path exact. Ensure the already reviewed
+cloudflare/ source and package-lock.json also exist in that revision. Review
+changes and use the repository's normal PR/merge process if branch protection
+requires it. No local Git, terminal, Node or Wrangler is needed.
 
-This uses local DO storage. `/health` returns the service/version; without the
-secret a ticket returns 503. That is expected fail-closed behavior, not an
-authorization bypass to fix. `npm.cmd test` exercises working admission using
-generated signed identities and mocked Google/Firestore responses, without any
-production key or network call. Use those tests for local development.
+GitHub must allow Actions for this repository and these official actions:
+actions/checkout@v6, actions/setup-node@v6, cloudflare/wrangler-action@v4. The job
+uses ubuntu-latest, Node 22 and npm ci, followed by npm test (dry-run bundle plus
+mock-backed local workerd tests). The Ubuntu runner supplies OpenSSL for generated
+fixture keys. Failed dependency installation/tests stop the job before deployment.
+No private Firebase credential, live project writes or rule deployment is part
+of these tests. Publishing to main may run the existing **GitHub Pages** workflow;
+it does **not** run this Worker workflow. Both deployments remain independent.
 
-For an approved local frontend inspection, serve the repository's parent from
-another terminal at the repository root:
+## 9. Manually deploy the existing Worker from GitHub Actions
 
-```powershell
-python -m http.server 8000 --bind 127.0.0.1 --directory ..
-```
+After recording the account, rules/index/inventory evidence, IAM and budget,
+open GitHub → Actions → **Deploy MotoDash Cloudflare Worker** → Run workflow →
+select the reviewed default/main branch revision → Run workflow. Manual dispatch
+is available once the workflow exists on the repository's default branch. It has
+no push, pull_request or schedule trigger. Concurrent runs are serialized rather
+than cancelling an in-progress Worker deployment.
 
-Open `http://localhost:8000/MotoDashboard/`. A local endpoint is allowed only for
-localhost/127.0.0.1. Do not publish a localhost endpoint. A manually configured
-real Firebase login in this browser is a **real** project operation; it is not
-covered by the mocks. `.dev.vars` is ignored, but production keys should not be
-copied there merely to run tests. Stop local servers with Ctrl+C.
+The official Cloudflare action executes **deploy --config wrangler.jsonc** from
+**cloudflare/**. It uses the lockfile-installed Wrangler (currently 4.149.0),
+the two GitHub secrets and the existing config's **name: motodash-live**. It does
+not deploy a named staging environment or another Worker, change Firebase data,
+publish Firebase Rules, upload the frontend or import private reader credentials.
+Secret output is suppressed; never enable debug tracing or print env/secrets.
 
-## 9. Deploy only after approval
-
-After recording the account, rules/index/inventory evidence, IAM and budget:
-
-```powershell
-npm.cmd run check
-npx.cmd wrangler deploy
-```
-
-The first deployment without a secret safely denies tickets. Then perform the
-secure secret upload in step 7. Record the actual Worker URL, version, migration
-and timestamp printed by Wrangler. Open that actual URL plus `/health`. A healthy
-response proves only routing, not correct Firebase access. Test a valid admitted
-account before enabling the frontend. No such deployment was run in Batch 4.
+Wait for a green run, then in Cloudflare confirm the motodash-live deployment
+version/time, LIVE_ROOMS binding/SQLite namespace, variables and secret name/type.
+Settings → Domains & Routes: confirm the **workers.dev** route is active; the
+existing config sets workers_dev to true. No custom domain is required.
+Record the actual workers.dev URL from the Dashboard and open its `/health` path.
+Health proves routing only, not Firebase access. With the reader secret absent,
+live ticket requests fail closed; do not weaken checks to fix this. Complete the
+admitted-account test before enabling the frontend. No GitHub run or Cloudflare
+deployment was performed while preparing these files.
 
 ## 10. Configure exact allowed origins
 
@@ -175,8 +223,19 @@ Production `ALLOWED_ORIGINS` is **https://eggheadstudio.github.io**. An origin h
 no `/MotoDashboard/` path. Keep exact comma-separated origins, no wildcard, null
 origin or credentials. A different authorized hosting origin requires its actual
 value and review. Remove localhost from production. Apply a reviewed variable
-change by another explicit deployment. CORS and Origin checks protect browser
-connections; they do not replace identity/Firestore authorization and are not
+change in **cloudflare/wrangler.jsonc** via GitHub, then run this manual workflow
+again. Wrangler's versioned configuration is authoritative for these nonsecret
+variables; a Dashboard-only edit can be overwritten by the next deployment.
+In motodash-live → Settings → Variables and Secrets, verify these **Text** values
+after deployment (the config supplies them; no duplicate GitHub secrets needed):
+
+| Name | Exact value |
+| --- | --- |
+| `FIREBASE_PROJECT_ID` | `motodash-87bf8` |
+| `ALLOWED_ORIGINS` | `https://eggheadstudio.github.io` |
+
+CORS and Origin checks protect browser connections; they do not replace
+identity/Firestore authorization and are not
 protection against a nonbrowser client forging an Origin.
 
 ## 11. Set the frontend endpoint and publish the static artifact
@@ -187,7 +246,9 @@ derives the WSS `/v1/sessions/{id}/connect` URL. Never paste a token. Until this
 setting is supplied, live sharing shows a localized setup message and makes no
 live requests; guest and personal GPS/recording still work.
 
-Review the change, commit it separately, and push **only after explicit approval**.
+When separately approved, edit this public file through GitHub's browser editor
+and commit the reviewed endpoint change. No terminal command or private value
+is needed. This frontend change is independent of running the Worker workflow.
 GitHub repository Settings → Pages → Source: **GitHub Actions**. The existing
 `.github/workflows/deploy.yml` copies an explicit frontend allowlist to `_site`;
 do not publish repository root or add cloudflare/, node_modules, tests or secrets.
@@ -254,7 +315,9 @@ units. Watch Firebase Firestore Usage plus Google Cloud billing/budget alerts fo
 reads/egress. Alerts notify; they are not guaranteed hard spending caps. No
 automatic billing upgrade or resource purge is implemented.
 
-Reproduce estimates with `node tools/estimate-cost.js` inside cloudflare/.
+The reproducible model is in cloudflare/tools/estimate-cost.js. Reading the script
+and estimates in GitHub requires no local tools; any future model execution can
+use a GitHub-hosted runner instead of this computer.
 Measured UTF-8 serialized fixtures: client position **167 bytes**, server position
 **263**, fanout heartbeat **121**, own ack **72**, room_update **103**, ten-rider
 snapshot **3,841**. These are representative message sizes, not captured production
@@ -336,14 +399,16 @@ and disable routing, then verify sockets no longer receive positions after the
 current 30s lease. Route changes alone must not be assumed to close existing
 sockets. Do not log JWTs to debug. Rotate any potentially exposed secret.
 
-Worker dashboard → deployed Worker → Deployments → Rollback to a known secure
-compatible version, or use `npx.cmd wrangler rollback` and select the recorded
-version. Confirm the binding/secret/current rules remain compatible. First release
+Worker dashboard → **motodash-live** → Deployments → Rollback to a known secure
+compatible recorded version using Dashboard controls. Confirm the binding/secret/
+current rules remain compatible. Do not run the manual workflow immediately after
+rollback unless its selected source revision is the intended version. First release
 has no older secure Worker: disable live instead. Rollbacks do not undo namespace
 migrations or erase data; do not delete namespaces to achieve rollback.
 
-For frontend, create a reviewed revert commit restoring the secure version or
-empty endpoint and publish through the same GitHub Actions workflow after approval.
+For frontend, use GitHub's browser editor to restore the reviewed secure files or
+set live-config.js endpoint to an empty string, commit the reviewed rollback after
+approval, and let the existing Pages workflow publish it.
 Avoid force-pushing main. Old tabs may need refresh; there is no new offline cache.
 
 Firestore Console → Rules: restore **only** a reviewed secure compatible saved
@@ -351,3 +416,13 @@ rules revision. Never restore rules from before Club confidentiality/retired-ID
 fixes just to make UI work. Keeping current secure rules with disabled live is
 preferable. Keep RTDB deny-all. Rules rollback does not restore/delete documents,
 change indexes or undo product writes. No production restore/purge is automated.
+
+## Workflow preparation verification — 2026-10-11
+
+The workflow and existing config are checked locally for YAML syntax, manual-only
+trigger, action input names, working directory, credential references and room
+binding/migration/export alignment. No new software is installed for deployment;
+Node/npm/Wrangler installation in this workflow is confined to GitHub runners.
+This is configuration validation, not a GitHub-hosted run or a production test.
+No push, workflow dispatch, Cloudflare change or Firebase operation is performed.
+The frontend workflow and cloudflare/wrangler.jsonc are unchanged.
