@@ -1,4 +1,4 @@
-> **2026-10-12 production endpoint preparation:** the user confirms that motodash-live was deployed through GitHub Actions with its binding, project/origin variables and encrypted reader secret. The endpoint is configured in this checkout; publishing this frontend update and two-phone acceptance remain pending. Historical [Batch 4 results](BATCH_4_RESULT.md) remain local evidence; [Cloudflare setup](CLOUDFLARE_SETUP.md) documents browser-only deployment.
+> **Latest: Batch 5, 2026-10-12.** MotoDash now has Home, Discover, Rides, Clubs and Profile navigation, a shared charcoal/gold design system, vehicle/community/event cards and clearer invitation/Lobby errors. These changes are local. Review [Batch 5 results](BATCH_5_RESULT.md) and the latest [deployment checklist](DEPLOYMENT_CHECKLIST.md) before publishing. The production Firebase error is not yet verified as fixed.
 
 Display names are required, trimmed and 3–30 Unicode characters; owners can edit
 them. Live sharing requires active Group admission and explicit consent, reuses
@@ -259,3 +259,36 @@ local emulator tests and the live checklist. Realtime Database stays locked.
 No rules or indexes have been deployed by the agent. All services use the dedicated
 MotoDash config; incomplete or mismatched config fails gracefully. Public Garage
 visibility is a future sharing preference: Garage documents remain owner-only.
+
+
+## Batch 5 navigation and operator preparation
+
+- **Home:** Start Ride, selected vehicle, actual upcoming groups, owned Clubs and latest ride.
+- **Discover:** real featured public/approval activities, Rides/Meets/Events/Clubs tabs,
+  category chips and collapsed server filters. Empty states contain no demo activities.
+- **Rides:** existing private/local history and Group Sessions; sync/storage is contextual.
+- **Clubs:** create/find/open/join/request/manage, branding, private Wall and member/rank cards.
+- **Profile:** current display identity, Account settings (private email/name editing),
+  language, Garage, loaded saved-ride statistics, memberships and logout.
+
+Personal dashboard/GPS/weather/map/heading/recording/history/export and opt-in Cloudflare
+live sharing still use the existing modules. The frontend remains build-free under
+/MotoDashboard/; css/ and js/ are copied by the unchanged Pages workflow.
+
+Operators must compare the complete current firestore.rules, verify all 18 composites
+(including the new clubDirectory category/name index) and required single-field indexes
+in motodash-87bf8, then publish the frontend and perform real two-account/phone acceptance.
+See the latest DEPLOYMENT_CHECKLIST.md section for exact browser-only Console instructions.
+No local Node/npm/Wrangler installation is needed; Batch 5 requires no Worker deployment.
+
+UI error codes distinguish permission, Firebase precondition/index, network, auth,
+recipient, duplicate/expired/invalid-or-revoked invite and unexpected failures. The
+reported production error has not been proven fixed. Each invitation recipient must
+finish application profile setup; name-prefix search is case-sensitive, names need
+not be unique. Private users/ membership documents are never a public search surface.
+
+Development-only checks: tests/run_browser.py (or --batch5-only),
+tests/run_security_rules.py, tests/run_group_rules.py, tests/run_identity_rules.py,
+tests/run_batch5_rules.py, tests/run_realtime_rules.py and tests/run_release_paths.py.
+These use existing development tools/fixtures or fixed localhost demo emulators,
+not production Firebase. No testing tools are installed or shipped with the application.

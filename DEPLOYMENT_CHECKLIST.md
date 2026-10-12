@@ -1,4 +1,4 @@
-> **Batch 4 current release gates:** local implementation/tests complete; no deployment or live acceptance. Follow this current section and [CLOUDFLARE_SETUP.md](CLOUDFLARE_SETUP.md). Earlier Batch 3 RTDB coordinator instructions are historical and superseded. RTDB remains deny-all.
+> **Latest release gate: Batch 5, 2026-10-12.** Follow the Batch 5 Console and publication instructions at the end of this file. Local tests do not establish deployed Firebase rules/index versions or fix the reported production error. No agent deployment or production-data writes. RTDB stays deny-all; Cloudflare remains the live engine. Earlier release records are historical evidence.
 
 ## Batch 4 deployment gate — not release ready
 
@@ -1397,3 +1397,234 @@ Live markers, allowed live writes/reads, presence/coordinator races/reconnection
 regroup remain blocked, not certified by denial tests. Real Console/production/
 two-account/two-phone/camera tests remain unperformed. Full architecture/modules,
 implemented and blocked milestone table and test scope: BATCH_3_RESULT.md.
+
+
+## Batch 5 - exact browser-only Firebase and Pages publication procedure
+
+This section supersedes earlier index counts and frontend navigation instructions.
+The user reports a generic Finnish invitation/Lobby error and cannot confirm that
+all current Batch 3 rules/indexes were published. Its production cause is **unverified**.
+Creating a Group in production does not prove recipient-search or discovery indexes
+are ready. No live Firebase test is marked complete in this batch.
+
+### Findings and release gates
+
+| Classification | Finding | Required resolution |
+| --- | --- | --- |
+| BLOCKER | Latest production Firestore rules and indexes are unverified. | Compare/publish the complete reviewed rules; verify all 18 composite definitions below are Enabled before Pages publication. |
+| BLOCKER | Reported invitation/Lobby failure has no exact Firebase code or live reproduction evidence. | Run the two-account procedure after backend preparation; record safe diagnostic codes and actual results. |
+| WARNING | An Auth account may have no display projection until it successfully signs into this application. | Each test account must open Account settings, finish profile setup and retry failed profile sync. Verify its minimal displayProfiles document. |
+| WARNING | Prefix name searches are case-sensitive, names are not unique. | Enter the beginning of the displayed name with matching case; use distinct display names for the two test accounts. Never search private users by email. |
+| WARNING | Trusted/Admin writes bypass rules; list-query shape predicates are not field redaction. | Inspect safe collections for exact schemas; never place email, membership UIDs, secrets or precise locations in discovery documents. Client writes remain strictly validated. |
+| WARNING | An earlier claim of an empty database predates the user's reported production Group creation. | Verify individual collections; do not assume the entire database is empty or delete test/real records as a migration. |
+| WARNING | Real iOS/Android GPS, keyboard, QR camera, background suspension and live acceptance remain pending. | Complete the phone checklist in BATCH_5_RESULT.md. |
+| INFORMATION | No new Worker deployment or frontend build is needed for Batch 5. | Keep existing live-config.js, Worker bindings/secrets and the separate manual Worker workflow. |
+| INFORMATION | RTDB is unused and locked. | Keep database.rules.json deny-all; do not enable live-location RTDB reads/writes. |
+
+### Project, files and Console checks
+
+1. Open [Firebase Console](https://console.firebase.google.com/project/motodash-87bf8/overview).
+   Select project **motodash-87bf8** (MotoDash), never another project's similarly
+   named application. Project settings > General > Your apps > Web app > SDK
+   setup/configuration must match `firebase-config.js`: `apiKey`, `authDomain`
+   (`motodash-87bf8.firebaseapp.com`), `projectId`, `appId`, `messagingSenderId`,
+   `storageBucket`, and the existing `databaseURL`. All fields are present locally;
+   their actual Console values must still be compared by the operator. The web
+   configuration is public, not an Admin credential. Keep the reader service-account
+   key exclusively in the encrypted Cloudflare secret; never paste it into GitHub
+   files, browser code or Action logs.
+2. Build > Authentication > Sign-in method: enable **Email/Password** (not email-link
+   sign-in). Review the password policy and ensure registration passwords meet it.
+   Authentication > Settings > Authorized domains: add/verify
+   `eggheadstudio.github.io` and `localhost`. Enter hostnames, without HTTPS or
+   `/MotoDashboard/`. The Firebase Auth default domain remains authorized.
+3. Build > Firestore Database: confirm the **(default)** database exists and review
+   its current Rules and Indexes tabs. Save the currently published rules as a
+   private operator rollback record with its publication time, before changing them.
+4. Compare the deployed rules with the **entire `firestore.rules` in this checkout**.
+   The required paths include minimal `displayProfiles`, private `users`/Garage/ride
+   history, private canonical `clubs`, safe `clubPages`/`clubDirectory`, retained Club
+   identities, private canonical `groupSessions`, addressed subcollection invitations,
+   `groupPages`, `lobbyEvents`, owner-only groupRefs and the default-deny wildcard.
+   Batch 5 tightens Group invite writes to require an existing displayProfiles target.
+   Do not publish a partial snippet or a permissive `allow read, write` workaround.
+5. When you choose to deploy, paste the entire file into Firestore > Rules, review
+   the Console compiler result and click **Publish**. Confirm publication time and
+   retain this exact repository commit reference. Rules compilation is not a live
+   authorization test. The agent has not clicked Publish.
+6. Build > Realtime Database > Rules: compare the complete **database.rules.json**:
+   root `.read: false`, `.write: false`. Retain the existing locked policy. If an
+   operator must restore it, use the Console editor/Publish separately. No RTDB data,
+   new binding or frontend RTDB initialization is required.
+7. Firestore > Data: inspect without editing. `/displayProfiles/{uid}` contains only
+   `displayName` and `updatedAt`. `/clubDirectory/{id}` contains exactly `id`, `name`,
+   `category`, `membershipPolicy`, `primaryColor`, `accentColor`, `updatedAt`.
+   `/clubPages/{id}` contains only the 14 fields defined by `publicPage()` in the
+   rules. `/groupPages` and `/lobbyEvents` contain only `groupSummary()` fields;
+   never `creatorUid`, `lastParticipantUid`, `meetingLocation` or invitation tokens.
+   Canonical authorization UIDs belong in protected canonical documents/subcollections.
+   If old unsafe public records are found, pause publication and plan trusted cleanup;
+   do not loosen rules or recursively delete from clients. If the Club collections
+   are verified empty, Club legacy migration is **not applicable**, with the observed
+   date recorded. Existing Group data still requires its own safe-schema check.
+
+### Exact indexes to verify/create
+
+The source is **firestore.indexes.json**: 18 composite definitions, all **Collection**
+query scope. The previous 17 definitions remain; Batch 5 adds `clubDirectory`
+`category ASC, name ASC`. Do not create collection-group indexes for these queries.
+
+Firestore > Indexes > Composite > **Add index**. Enter the Collection ID and fields
+in the exact order/direction below, choose Collection scope, then Create. Skip exact
+matches already Enabled. Building is not ready: wait until every required index is
+**Enabled**. Repeat for each missing row. The Console implicitly adds document-name
+ordering; do not invent an extra application field. A Firebase missing-index creation
+link may also prefill the form, but confirm its project, scope and field ordering.
+
+| # | Collection ID | Ordered fields |
+| --- | --- | --- |
+| 1 | `sessions` | `uploadState` ASC, `startedAt` DESC |
+| 2 | `lobbyEvents` | `visibility` ASC, `state` ASC, `startsAt` ASC |
+| 3 | `lobbyEvents` | `visibility` ASC, `state` ASC, `clubId` ASC, `startsAt` ASC |
+| 4 | `lobbyEvents` | `visibility` ASC, `state` ASC, `meetingArea` ASC, `startsAt` ASC |
+| 5 | `lobbyEvents` | `visibility` ASC, `state` ASC, `meetingArea` ASC, `clubId` ASC, `startsAt` ASC |
+| 6 | `lobbyEvents` | `visibility` ASC, `state` ASC, `category` ASC, `startsAt` ASC |
+| 7 | `lobbyEvents` | `visibility` ASC, `state` ASC, `category` ASC, `clubId` ASC, `startsAt` ASC |
+| 8 | `lobbyEvents` | `visibility` ASC, `state` ASC, `category` ASC, `meetingArea` ASC, `startsAt` ASC |
+| 9 | `lobbyEvents` | `visibility` ASC, `state` ASC, `category` ASC, `meetingArea` ASC, `clubId` ASC, `startsAt` ASC |
+| 10 | `lobbyEvents` | `visibility` ASC, `state` ASC, `activityType` ASC, `startsAt` ASC |
+| 11 | `lobbyEvents` | `visibility` ASC, `state` ASC, `activityType` ASC, `clubId` ASC, `startsAt` ASC |
+| 12 | `lobbyEvents` | `visibility` ASC, `state` ASC, `activityType` ASC, `meetingArea` ASC, `startsAt` ASC |
+| 13 | `lobbyEvents` | `visibility` ASC, `state` ASC, `activityType` ASC, `meetingArea` ASC, `clubId` ASC, `startsAt` ASC |
+| 14 | `lobbyEvents` | `visibility` ASC, `state` ASC, `activityType` ASC, `category` ASC, `startsAt` ASC |
+| 15 | `lobbyEvents` | `visibility` ASC, `state` ASC, `activityType` ASC, `category` ASC, `clubId` ASC, `startsAt` ASC |
+| 16 | `lobbyEvents` | `visibility` ASC, `state` ASC, `activityType` ASC, `category` ASC, `meetingArea` ASC, `startsAt` ASC |
+| 17 | `lobbyEvents` | `visibility` ASC, `state` ASC, `activityType` ASC, `category` ASC, `meetingArea` ASC, `clubId` ASC, `startsAt` ASC |
+| 18 | `clubDirectory` | `category` ASC, `name` ASC |
+
+Firestore > Indexes > Single field: retain the automatic collection-scope indexes
+for `displayProfiles.displayName` ASC (recipient prefix search), `clubDirectory.name`
+ASC (name prefix/browse), `category` and other query fields, owned `clubRefs.joinedAt`
+DESC / `groupRefs.joinedAt` DESC, and Group `participants.joinedAt`, `invites.createdAt`,
+`joinRequests.requestedAt` ASC. No new composite index is needed for a range and order
+on the **same** displayName/name field. Existing Club admission queries use `state`
+plus default document-name order. Retain the source exemption for
+`routeChunks.pointsJson` (indexes disabled); do not disable discovery fields or use a
+blanket collection exemption. The emulator does **not** require production indexes,
+so passing local query tests cannot certify this Console configuration.
+
+Lobby uses `visibility IN [public, approval]`, `state IN [scheduled, active]`, optional
+activity/category/area/Club equality filters and `startsAt` date bounds/order, limit 20.
+The Rides tab additionally uses `activityType IN [ride, drive]` (eight disjunctions).
+Meets/Events select their single activity. Exact area labels are not geospatial search.
+Public Club discovery uses category equality, name order, limit 20 and document cursors;
+it hydrates only safe pages. No global scan or paid search service is needed.
+
+### Diagnose the reported failures without exposing credentials
+
+- `MD-PERMISSION`: backend authorization denied; verify account, role, admission,
+  session state and complete deployed rules. Never bypass membership or make users public.
+- `MD-PRECONDITION`: Firebase `failed-precondition`; often an index, but other Firebase
+  preconditions can produce this code. Verify index status and obtain the actual safe
+  Firebase code/index link before attributing the production cause.
+- `MD-NETWORK`: unavailable/deadline/network failure; retry with connectivity restored.
+- `MD-AUTH`: sign in with the required account.
+- `MD-RECIPIENT`: no valid registered recipient selected; finish their profile setup.
+- `MD-INVITE-EXISTS`: use the existing invite or revoke it before issuing a new one.
+- `MD-INVITE-EXPIRED`: host must issue a new invitation.
+- `MD-INVITE-INVALID`: invalid/revoked/wrong-account/rotated token. An absent record cannot
+  safely distinguish revocation from an arbitrary invalid token; the UI states both.
+- `MD-UNEXPECTED`: a different failure. Record operation, time and safe code. If using
+  browser DevTools, do not share tokens, request headers, emails, location payloads or
+  private records. UI status never prints raw Firebase error messages or index URLs.
+
+### GitHub Pages publication - operator steps, no local installation
+
+1. Confirm the backend gates above and preserve the previous known-good frontend commit.
+2. Review the local Batch 5 commits and BATCH_5_RESULT.md. **Pushing main starts the
+   existing Pages workflow automatically**, so do not push before Rules/index preparation.
+3. When you explicitly choose to publish, push/upload the reviewed changes to this
+   repository's `main` branch. Node/npm/Wrangler are unnecessary for the static frontend.
+4. GitHub repository > Settings > Pages > Build and deployment > Source: **GitHub Actions**.
+5. Actions > **Deploy to GitHub Pages**: inspect the main-branch run, or use its existing
+   Run workflow button. The unchanged `.github/workflows/deploy.yml` copies index.html,
+   public Firebase/live configuration, manifest/icon/logo and the complete `css/` and
+   `js/` directories. It does not publish cloudflare/, rules, tests or secrets.
+6. Wait for success, open **https://eggheadstudio.github.io/MotoDashboard/**, refresh both
+   phones and verify the five navigation labels and Start Ride. No new service worker
+   is installed; exact-scope cleanup preserves sibling apps. If old assets persist,
+   reload/bypass cache or close the installed web app and reopen; preserve private local
+   rides before considering clearing browser storage.
+7. Do **not** run Deploy Cloudflare Worker for these frontend-only changes. Keep
+   `https://motodash-live.old-sound-55f2.workers.dev`, LIVE_ROOMS, the MotoDash project,
+   exact allowed origin and encrypted reader secret as already configured.
+
+### Two-account live Firebase acceptance - all items pending
+
+Use two disposable test accounts A/B in separate browser profiles or on two phones.
+These steps intentionally create test data only when the operator elects to run them;
+the agent performed none of them. Use distinct public display names and agreed test
+vehicles/locations. Do not use real people's private records for denial probes.
+
+1. Sign A and B into the published Pages app; Account settings must show profile ready.
+   Verify their own minimal displayProfiles records in Console. Rename one display name
+   and verify Home/Profile update; each email appears only inside its own Account settings.
+2. A creates a future **private/invite** Group from Rides > Group Sessions. A expands
+   Send invitation, searches B's exact display-name prefix and selects B. Unknown names
+   leave Send disabled; names/UIDs from private user documents must not be exposed.
+3. A sends the invite, opens its link/QR and shares with B. Repeat while it is valid:
+   UI/repository reports `MD-INVITE-EXISTS`; it does not silently invalidate B's link.
+4. B opens the link signed out, signs into B, closes Account settings and returns to the
+   correct private Group. B explicitly joins with their own optional vehicle; token is
+   consumed/removed from the current URL. B sees precise meeting instructions only after
+   admission. Verify a wrong-account link denies access and exposes no private meeting data.
+5. For a second invite, A revokes before B accepts; its link must fail. Create another
+   disposable invite for the expiry test: verify expiresAt and test after expiry, or use
+   a **separate nonproduction** project with trusted fixture setup. Do not alter production
+   timestamps to force expiry or claim the live seven-day test complete early.
+6. A creates future public/open and approval-required test activities of Ride/Drive/Meet/
+   Event types. Discover includes them in the correct tabs, excludes private/unlisted
+   and terminal sessions, respects category/local-date/exact-area/Club filters, and
+   offers bounded Load more when enough disposable records exist. Missing-index/denial
+   states must be visible; do not intentionally remove production indexes/rules to force
+   these states. Those failure states are covered locally by fixtures.
+7. Test Clubs with A as Owner and B as ordinary member: public branding/description/count,
+   approval/join/leave, private Wall/membership confidentiality and no technical privilege
+   from a visible custom rank. Verify Group host rights against actual technical roles.
+8. For **direct SDK authorization** checks, use browser DevTools on the Pages origin while
+   signed in as B. Import `./js/firebase/firestore.js`, call `getFirestoreService()` and
+   use its `sdk`/`db` directly (avoid repository guards when testing the server rule itself).
+   With Console-known IDs belonging only to disposable A test data, getDoc/updateDoc
+   against `users/A`, its vehicles and sessions must return `permission-denied`. Reads
+   of A's Club private membership/Wall must deny when B is an outsider. A custom-rank
+   member must fail attempts to set owner/admin/host or change protected branding/Wall.
+   A profile `systemAdmin` field write must deny. Do not log returned documents/tokens.
+   If any forbidden write unexpectedly succeeds, stop testing, record the safe error /
+   operation and use the owning test account to repair only its disposable data.
+9. Test both allowed and denied operations: A edits A's vehicle/history; B edits B's;
+   Owner/Admin authorized Club actions succeed; ordinary member actions fail. Test
+   archive/retirement only on disposable Clubs, preserving non-reusable tombstones.
+10. Run the two-phone live Group procedure in BATCH_5_RESULT.md. Record actual devices,
+    release commit, rules publication time, index status, operations and safe errors.
+    Console/Admin access and emulator results do not substitute for authenticated
+    client acceptance. Leave this checklist pending until those observations exist.
+
+### Rollback
+
+Frontend: publish a reviewed revert to the prior frontend commit through the existing
+Pages workflow, or run it on a reviewed rollback branch. Preserve the public live endpoint
+and security-correct data/repository compatibility; restoring code from before the security
+fix may reintroduce leaks. Do not undo rules/indexes merely to make an old frontend run.
+
+Rules: use Firestore Console Rules history or the saved pre-publication snapshot only if
+it is a **known secure, schema-compatible** version. Review/compiler-check/publish manually.
+If no such version exists, keep current protections and repair/revert the frontend;
+a deny-all emergency policy stops application cloud operations rather than exposing data.
+RTDB rollback stays deny-all. Keep already-built indexes during investigation; removing
+indexes is not a useful frontend rollback. No Worker rollback is required for Batch 5.
+
+Primary references: [Firestore query authorization](https://firebase.google.com/docs/firestore/security/rules-query),
+[field/document access boundaries](https://firebase.google.com/docs/firestore/security/rules-fields),
+[Console index management](https://firebase.google.com/docs/firestore/query-data/indexing),
+[index types](https://firebase.google.com/docs/firestore/query-data/index-overview),
+[query disjunction limits](https://firebase.google.com/docs/firestore/query-data/queries#query_limitations).

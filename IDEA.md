@@ -1,4 +1,4 @@
-> **Current Batch 4 authorization:** implement milestones 0-10 locally with tests and separate commits; no push, deployment or production-data operations. Current live architecture: LIVE_TRACKING.md. Earlier authorization/result records are historical.
+> **Current Batch 5 authorization (2026-10-12):** implement the premium mobile UI and invitation/Lobby corrections locally, with logical commits and regression checks. No push, Firebase/Worker deployment or production-data writes. Stop after Batch 5. This moves the UI redesign ahead of future paid/Official/hardware work; all previously agreed requirements remain in the roadmap. See BATCH_5_RESULT.md and the latest DEPLOYMENT_CHECKLIST.md section.
 
 # MotoDash Platform --- IDEA.md
 
@@ -3436,3 +3436,35 @@ two-phone acceptance. Capacity planning must precede wider use: current Spark
 quota cannot support the modeled 1,000+ active-user workload. No quota workaround
 may weaken revocation. Auth revocation beyond token expiry, global abuse controls,
 complete erasure and production hibernation/mobile behavior remain explicit work.
+
+
+## Batch 5 product implementation and sequencing - 2026-10-12
+
+This user-authorized batch moves the premium UI/navigation redesign and invitation/Lobby
+corrections before paid subscriptions, Official Sessions, uploads, NFC and merchandise.
+It changes presentation and directly related validation only. No previously agreed
+product requirement is removed. Future Google sign-in, password reset, account deletion,
+profile/vehicle/Club media, sophisticated discovery and Official/billing entitlements
+remain planned and still require their trusted security architecture.
+
+1. Diagnose the current minimal displayProfiles recipient search and all bounded Lobby
+   filter/index combinations, keep private profiles/canonical identities protected and
+   tighten unknown-recipient admission. Provide safe distinct error diagnostics.
+2. Introduce central product design tokens and SVG/components, accessible page navigation,
+   native single-layer sheets and preservation of private invitation routes through Auth.
+3. Build Home/Profile from existing owned references, vehicle selection, current display
+   identity and account-scoped loaded ride history; keep email inside Account settings.
+4. Present Garage/Clubs/Group Sessions through reusable showcase/community/activity cards,
+   current role/rank/member identity, private Wall and contextual management disclosures.
+5. Make Discover a priority surface for real public/approval Ride/Drive/Meet/Event and
+   public Club results; use requested category chips, bounded server filters, safe
+   projections, snapshot pagination and honest empty/loading/error states.
+6. Verify the existing dashboard/GPS/heading/weather/recording/history/live engine,
+   English/Finnish, mobile/text/keyboard/modal/route behavior and authorization regressions.
+7. Document Console prerequisites and real two-account/phone acceptance, commit locally
+   and stop. No deployment, production writes or next batch are authorized.
+
+Implementation: BATCH_5_RESULT.md. Current source is firestore.rules and 18 composite
+indexes in firestore.indexes.json. Production error/deployed versions are unverified;
+DEPLOYMENT_CHECKLIST.md lists the release gates. Existing Cloudflare live architecture,
+consent, role authorization, GPS watcher and origin controls remain authoritative.

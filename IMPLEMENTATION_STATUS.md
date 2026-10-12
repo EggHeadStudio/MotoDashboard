@@ -1,5 +1,7 @@
 # MotoDashboard - Implementation Status
 
+> **Latest: Batch 5 local preparation, 2026-10-12.** Five-destination mobile shell, shared dark/gold design system, Home/Profile/Discover and feature cards are implemented. Invitation validation and safe Firebase error diagnostics are improved; a category/name Club directory index is added. Production rules/index versions and the reported production failure remain unverified. No push/deployment/data changes. See BATCH_5_RESULT.md for final evidence and limitations.
+
 > **Current 2026-10-12 endpoint preparation:** user-confirmed production Worker deployment; public production endpoint configured locally, with frontend publication and authenticated two-phone acceptance pending. See the current production-endpoint section at the end. Earlier Batch 3/4 no-deployment records are historical agent evidence. This task performs no push/deploy or production data writes; RTDB stays locked.
 
 ## Current registration fix and roadmap update - 2026-10-10
@@ -955,3 +957,36 @@ Authenticated two-account live admission, reader IAM failures, real GPS/mobile
 suspension/latency and production quota acceptance remain manual. Prior Spark
 capacity and token-revocation/operational limitations are not cleared by health
 or CORS checks. STOP after this endpoint preparation; no push/deploy is authorized.
+
+
+## Batch 5 - current implementation, 2026-10-12
+
+Completed locally: shared dark/gold tokens/components/SVG icons; Home/Discover/Rides/
+Clubs/Profile navigation and single native modal layer; actual bounded owned Home
+overview, live display-name updates, Profile/Garage/loaded ride statistics; Garage
+showcases and selected/default badges; Club/member/rank/branding/Wall presentation;
+activity cards/details and contextual invitation management; public activity/Club
+Discover tabs/chips/server filters/pagination/empty/error states; English/Finnish.
+
+Direct corrections: safe distinct Firebase MD diagnostics; Send disabled without a
+search-selected recipient; registered display projection required for Group invitations
+in repository and Rules; existing invitation token preserved on duplicate send; added
+category/name clubDirectory index, total 18 composites. Unknown production error and
+unverified deployed rules/indexes remain release blockers, not claimed resolved.
+
+No new Admin credentials, new GPS watcher, frontend framework/build, permissive rules,
+production operations, Worker changes or workflow changes. Future account/media/Official/
+billing/hardware requirements remain planned. Detailed final checks, changed files,
+limitations, manual phone steps and logical commits: BATCH_5_RESULT.md.
+
+
+Batch 5 final local evidence: 626 distinct Firestore assertions (102 baseline + 137
+security + 273 Groups/Lobby + 32 identity + 82 new query/authorization/index-source),
+68 locked-RTDB checks and 47 Worker tests passed, zero failed/skipped. Full browser
+runner passed 24 existing regression groups and 20 named Batch 5 cases; Pages passed
+two groups, 218 literal references / 69 unique local URLs under /MotoDashboard/.
+No emulator baseline reruns or nested browser assertions are double-counted. SDK
+imports are real with cloud API calls blocked; data/live transport uses fixtures.
+Real Firebase, enabled indexes and two-phone acceptance remain pending. Local commits
+613b5dc / ef5ebe1 separate foundation and UI, followed by the documentation milestone.
+No next-batch implementation, push or deployment was performed.
