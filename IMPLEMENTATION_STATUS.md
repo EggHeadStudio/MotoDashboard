@@ -1,6 +1,6 @@
 # MotoDashboard - Implementation Status
 
-> **Current Batch 4:** all milestones implemented locally with Cloudflare live transport and required account names. RTDB stays deny-all. See [BATCH_4_RESULT.md](BATCH_4_RESULT.md), the current Batch 4 section at the end, and [CLOUDFLARE_SETUP.md](CLOUDFLARE_SETUP.md). Earlier Batch 3 blockers/test records are historical. No push/deployment/production operation occurred.
+> **Current 2026-10-12 endpoint preparation:** user-confirmed production Worker deployment; public production endpoint configured locally, with frontend publication and authenticated two-phone acceptance pending. See the current production-endpoint section at the end. Earlier Batch 3/4 no-deployment records are historical agent evidence. This task performs no push/deploy or production data writes; RTDB stays locked.
 
 ## Current registration fix and roadmap update - 2026-10-10
 
@@ -852,3 +852,106 @@ locked. No Stripe/subscriptions/Official/merchandise/redesign implementation.
 
 All preceding earlier milestone/test records are historical snapshots. Use the
 current report/runbook for release decisions. Stop after Batch 4 pending approval.
+
+## Production Cloudflare endpoint preparation — 2026-10-12
+
+The user confirms successful GitHub Actions deployment of **motodash-live** at
+**https://motodash-live.old-sound-55f2.workers.dev**, with LIVE_ROOMS present,
+FIREBASE_PROJECT_ID=motodash-87bf8, ALLOWED_ORIGINS=https://eggheadstudio.github.io
+and FIRESTORE_SERVICE_ACCOUNT configured as an encrypted secret. This supersedes
+historical absence-of-backend/empty-endpoint assumptions; it does not certify
+authenticated Firestore admission, reader IAM contents or physical-phone behavior.
+
+Changed public **live-config.js** to that exact origin. Existing live-client.js
+already POSTs tickets to `https://motodash-live.old-sound-55f2.workers.dev/v1/sessions/{id}/ticket`
+and opens `wss://motodash-live.old-sound-55f2.workers.dev/v1/sessions/{id}/connect`.
+Firebase ID token stays in the HTTPS Authorization header; only a one-use ticket
+is sent as the first socket frame. No credentials/query tokens, second GPS watch,
+Firestore live location collection or weakened Origin/admission rule is added.
+The GitHub Pages workflow already includes live-config.js in its frontend
+allowlist, so /MotoDashboard/ requires no workflow or asset-path modification.
+Worker code/config, Firebase config/rules/services and GPS implementation are unchanged.
+
+Local test transport now intercepts the **actual configured production hostname**
+without substituting live-config.js. HTTP/socket replies and Firebase product
+operations remain fixtures, with no production location or account writes.
+New regressions cover network errors, HTTP 503/403, visible reconnect/denial state,
+no GPS before successful admission, actual logout event, noncreator leaving,
+organizer completion and a remote session_ended frame, marker/consent cleanup,
+Back/access denial and preservation of an independent personal recording.
+The account dialog is opened directly in the fixture for logout during sharing;
+its normal entry button lives on the start screen, where Back already stops sharing.
+Group tests now verify the configured-but-off state with no live markers instead
+of the previous unconfigured-service message. Test-only fullscreen is disabled
+to keep headless browser window geometry stable; application fullscreen is unchanged.
+
+Read-only production browser checks passed: `/health` 200 with service
+motodash-live/protocol 1; root GET without Origin 403 origin_denied; Pages Origin
+OPTIONS preflight 204 with Authorization allowed; different Origin preflight 403.
+These requests carried no token/position, created no socket or Group and did not
+call Firestore. An initial stock urllib health request received Cloudflare 1010;
+the normal Chromium request succeeded. No authenticated production test is claimed.
+
+Current automated evidence: full browser **24 PASS groups**, including the expanded
+live cases and existing 17 password-confirmation/36 domain assertions; Pages
+**2 PASS groups**, 182 references/62 unique local URLs HTTP 200 under /MotoDashboard/;
+Worker **47 checks**, including 12 actual local workerd cases with mocked Google/
+Firestore/OAuth. Zero final failures/skips. Focused live runner also passes 2 groups,
+which are included in the full browser count. Firestore/RTDB rules did not change;
+their prior 612 assertions are historical evidence, not claimed rerun for this edit.
+No new software installed, agent push/deployment/rule publication or production
+data write. The changes are committed locally; frontend publication is pending.
+
+### Remaining manual actions and exact two-phone test — NOT COMPLETED
+
+After explicit approval, publish the reviewed frontend files through GitHub's
+browser editor/upload or the repository's normal process, and wait for the existing
+Pages workflow to finish. The Worker needs no code redeployment for this update.
+Verify actual Firebase rules/indexes/domains and the reader's get-only IAM if not
+already verified. No secret needs to be added to the frontend or GitHub for this edit.
+Use these steps on Android Chromium and iPhone Safari over HTTPS; both phones
+remain foreground with GPS permission. Record deployed frontend/Worker versions,
+device/browser, time and result, without recording tokens or private coordinates:
+
+1. Open **https://eggheadstudio.github.io/MotoDashboard/** on both phones and
+   refresh after Pages publication. Sign in as distinct accounts **A** and **B**.
+   Confirm English/Finnish, Garage selection and ordinary personal recording still
+   work. An account needs a valid display name; no built-in test credentials exist.
+2. **A** creates a **public/open Ride Group Session**, category Motorcycle,
+   capacity at least 2, with a convenient meeting area. Share its session link/QR
+   to **B**. A presses **Start session** to make it Active. B opens the link and
+   presses **Join session** (optionally selects a Garage vehicle). Before joining or explicit
+   sharing consent, B must see no private live positions and send no live location.
+3. In the Active Group, **both** check the sharing-consent box and press
+   **Start live sharing**, then grant GPS if prompted. Both should show Connected
+   and the other account's readable marker/name, optional vehicle/rank, status,
+   last-update time/age. No UID/email labels or token URLs. Only admitted accounts
+   may enter the room; public Group discovery does not grant room access.
+4. Walk safely a short distance with screens open. Verify updates around five
+   seconds while moving, fewer updates while stationary, map themes/heading/weather
+   and the personal recorder. In the Group dialog, while stopped, change Fuel,
+   Mechanical, Need help and back to OK, acknowledging the stopped checkbox;
+   verify the other phone updates on the trusted recheck. Separation is fresh
+   straight-line distance, not road distance/rider order or emergency assistance.
+5. **B** chooses **Stop live sharing**; B's consent/markers clear and A loses B's
+   marker. Start sharing again with fresh consent. B then uses **Leave session**;
+   the connection/watch/markers stop. Rejoin the still-active open Group and consent
+   again. B uses **Back → Account → Sign out**: sharing stays off; A loses B's
+   marker. Sign B back in, open the Group and consent again; never auto-share merely
+   because B logged in. Independent personal recording may keep its own GPS watch
+   until finished, but no location may be sent to the live room after sharing stops.
+6. Briefly disable B's network, then restore it. Verify visible connection loss/
+   reconnect, stale position rather than falsely fresh GPS, and a fresh snapshot
+   with no historical route replay. Locations are stale after 45s and expire at
+   120s; an actual disconnected socket clears its marker. Phone suspension can
+   stop GPS and is not a background-tracking guarantee. Retry with fresh consent
+   if bounded retries have ended in service unavailable.
+7. With both sharing, **A** presses **Complete session**. A stops locally;
+   B must stop/clear when the trusted Worker detects the terminal state (30s
+   authority lease; expired leases receive no private frames). Neither can restart
+   sharing in that ended session. Create a new Group for any further test.
+
+Authenticated two-account live admission, reader IAM failures, real GPS/mobile
+suspension/latency and production quota acceptance remain manual. Prior Spark
+capacity and token-revocation/operational limitations are not cleared by health
+or CORS checks. STOP after this endpoint preparation; no push/deploy is authorized.

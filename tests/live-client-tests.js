@@ -18,6 +18,8 @@ export async function runLiveClientTests() {
   for(let n=0;n<100 && !sockets.length;n++)await new Promise(r=>setTimeout(r,10));
   const s=sockets[0];assert(s,'ticket response opens a socket');s.open();
   assert(!s.url.includes('?') && requests[0].opts.headers.Authorization==='Bearer fixture-token','tokens only in HTTPS header/first frame');
+  assert(requests[0].url==='https://live.example.test/v1/sessions/12345678-1234-4123-8123-123456789012/ticket'
+    && s.url==='wss://live.example.test/v1/sessions/12345678-1234-4123-8123-123456789012/connect','HTTPS ticket and WSS room protocols');
   assert(s.sent[0].type==='hello' && s.sent[0].ticket.length===64,'ticket handshake');
   s.message({type:'hello',riderId:'self'});s.message({type:'snapshot',participants:[{riderId:'self',status:'ok',position:null}]});
   s.message({type:'snapshot',serverTime:clock+600000,participants:[{riderId:'self',status:'ok',position:{latitude:60,longitude:25,at:clock+600000-50000}}]});
@@ -28,6 +30,15 @@ export async function runLiveClientTests() {
   clock+=4000;client.sample({...sample(),coords:{...sample().coords,latitude:60.0005}});assert(s.sent.filter(m=>m.type==='position').length===2,'moving cadence');
   uid='bob';client.sample({...sample(),coords:{...sample().coords,latitude:60.001}});assert(s.sent.filter(m=>m.type==='position').length===2,'account cannot reuse consent');
   client.stop();assert(!client.getState().consent && client.getState().participants.size===0 && s.readyState===3,'stop removes private state');
+  for(const failure of ['network',503,403]) {
+    const broken=createLiveClient({endpoint:'https://live.example.test',account:()=>uid,identity:async()=>({uid,token:'fixture'}),
+      fetchImpl:async()=>{if(failure==='network')throw Error('offline');return new Response('',{status:failure});},
+      makeSocket:()=>{throw Error('socket must not open after a failed ticket');}});
+    broken.start(uid,'12345678-1234-4123-8123-123456789012');await tick();await tick();
+    const state=broken.getState();assert(state.connection===(failure===403?'accessDenied':'reconnecting'),'ticket failure has visible safe state');
+    assert(!state.participants.size && (failure!==403 || !state.consent),'ticket failure cannot retain private positions or denied consent');
+    broken.sample(sample());broken.stop();
+  }
   let release;const racing=createLiveClient({endpoint:'https://live.example.test',account:()=>uid,identity:()=>new Promise(r=>release=r),makeSocket:()=>{throw Error('stale socket opened');}});
   racing.start(uid,'12345678-1234-4123-8123-123456789012');racing.stop();release({uid,token:'fixture'});await tick();assert(!racing.getState().consent,'late identity ignored');
   assert(liveEndpoint('')===null,'disabled default');for(const value of ['http://evil.test','https://x.test/?token=x','https://user:secret@x.test']) {

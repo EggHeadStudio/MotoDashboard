@@ -1,17 +1,34 @@
-> **Batch 4 current result:** all milestones implemented locally; Firebase Auth/Firestore plus Cloudflare Worker, Durable Objects and WebSockets. RTDB stays locked. No deployment or live acceptance completed. [Batch 4 report](BATCH_4_RESULT.md) and [Cloudflare setup](CLOUDFLARE_SETUP.md) supersede historical Batch 3 live plans below.
+> **2026-10-12 production endpoint preparation:** the user confirms that motodash-live was deployed through GitHub Actions with its binding, project/origin variables and encrypted reader secret. The endpoint is configured in this checkout; publishing this frontend update and two-phone acceptance remain pending. Historical [Batch 4 results](BATCH_4_RESULT.md) remain local evidence; [Cloudflare setup](CLOUDFLARE_SETUP.md) documents browser-only deployment.
 
 Display names are required, trimmed and 3–30 Unicode characters; owners can edit
 them. Live sharing requires active Group admission and explicit consent, reuses
 the existing GPS watcher/Leaflet map, and shows safe names, vehicle/rank/status,
-freshness and approximate straight-line separation. The endpoint in live-config.js
-is intentionally empty until the operator deploys the backend.
+freshness and approximate straight-line separation. `live-config.js` now points to
+**https://motodash-live.old-sound-55f2.workers.dev**. Ticket requests use HTTPS;
+the client derives WSS for sockets, independent of the /MotoDashboard/ frontend
+path. No credential is stored in this public configuration. Setting endpoint to
+an empty string disables live sharing. A direct Worker root navigation returning
+origin_denied is expected; it is not an instruction to relax Origin validation.
 
-Only cloudflare/ uses npm/Node 22+ (`npm.cmd ci`, `npm.cmd test` inside that
-directory). The static frontend requires no build. GitHub Pages Source must be
+Only cloudflare/ uses npm/Node 22+, installed by the manual GitHub Actions workflow
+on its runner; no local installation is required. The static frontend requires
+no build. GitHub Pages Source must be
 GitHub Actions; its workflow publishes only the frontend allowlist, never the
 server project. See the setup guide for exact reader IAM, secret, budget and
 two-phone acceptance steps. Firestore Spark capacity is insufficient for the
 documented 1,000+ active-user workload without a separate billing decision.
+
+The agent verified read-only production health/CORS responses, not authenticated
+production membership or GPS sharing. Current local browser regressions load this
+production config but intercept HTTP/WebSocket transport; no test coordinates or
+Firebase writes are sent to production. Worker code, Firebase services/rules,
+GPS pipeline, consent requirements and deployment workflows are unchanged.
+
+After approval, publish the reviewed frontend update through GitHub and wait for
+the existing Pages workflow. Refresh both phones at
+**https://eggheadstudio.github.io/MotoDashboard/**. Do not redeploy the Worker for
+this endpoint-only update. Exact two-phone acceptance steps are in the current
+production-endpoint section of [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md).
 
 # MotoDashboard
 

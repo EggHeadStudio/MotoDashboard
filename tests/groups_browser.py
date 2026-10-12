@@ -72,7 +72,9 @@ def run_group_tests(browser,base,route_map):
     page.locator('#group-status button[type=submit]').click()
     page.wait_for_function('document.querySelector("[data-participant-uid=fixture-1]").textContent.includes("Need help")')
     assert 'Need help: 1' in page.locator('[data-status-count="help"]').inner_text()
-    assert 'separation are unknown' in page.locator('#group-overview').inner_text()
+    assert 'Live presence appears below while sharing' in page.locator('#group-overview').inner_text()
+    assert page.locator('#group-live-state').inner_text()=='Location sharing is off.'
+    assert page.locator('.live-rider-label').count()==0
     assert '2 of 2' in page.locator('#group-overview').inner_text()
     page.select_option('#language-select','fi');assert 'Tarvitsen apua: 1' in page.locator('[data-status-count="help"]').inner_text()
     page.select_option('#language-select','en')
