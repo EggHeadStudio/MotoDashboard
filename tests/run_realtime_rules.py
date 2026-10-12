@@ -19,7 +19,7 @@ def request(method,path,actor=None,value=None):
     except urllib.error.HTTPError as error: return error.code,json.load(error)
 def run():
     rules=json.loads(Path(__file__).resolve().parents[1].joinpath('database.rules.json').read_text())
-    assert rules=={'rules':{'.read':False,'.write':False}},'Live tracking must remain locked without trusted ACL coordinator'
+    assert rules=={'rules':{'.read':False,'.write':False}},'RTDB must remain locked; live transport uses Cloudflare'
     code,body=request('PUT','.settings/rules','ADMIN',rules);assert code==200,(code,body)
     fixture={'uid':'participant','latitude':60.17,'longitude':24.94,'heading':90,'speed':0,'timestamp':123456789,'status':'ok'}
     code,body=request('PUT','liveSessions/fixture/participants/participant','ADMIN',fixture);assert code==200,(code,body)
@@ -36,5 +36,5 @@ def run():
                       {**fixture,'secret':'not allowed'},{**fixture,'uid':'other'},{**fixture,'extra':'x'*10000}]:
         code,body=request('PATCH','liveSessions/fixture/participants/participant','participant',malformed)
         assert code==401,(code,body);checks+=1
-    print(f'RTDB RESULT: {checks} passed, 0 failed, 0 skipped; locked foundation only, authorized live operations BLOCKED')
+    print(f'RTDB RESULT: {checks} passed, 0 failed, 0 skipped; deny-all RTDB only, Cloudflare live transport is separate')
 if __name__=='__main__':run()

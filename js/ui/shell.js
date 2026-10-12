@@ -1,5 +1,5 @@
 import { getAccount, getDisplayIdentity, onAccountChange, onDisplayIdentity } from '../auth-state.js';
-import { selectedVehicle, onVehicleChange } from '../garage-ui.js';
+import { onVehicleChange } from '../garage-ui.js';
 import { listMyGroups } from '../firebase/groupRepository.js';
 import { listMyClubs } from '../firebase/clubRepository.js';
 import { dataErrorKey } from '../firebase/access.js';
