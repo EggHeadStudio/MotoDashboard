@@ -92,6 +92,13 @@ these foundations and retain their original requirements.
 
 ## Historical evidence
 
+Post-audit mobile browser color fix: index.html declares dark color-scheme and
+#101214 theme color; design-system.css gives html/body the same opaque background
+as the app; manifest install colors match. Mobile Chromium light/dark appearance
+checks and both Pages regression groups passed. Native iPhone Safari toolbar
+appearance still requires manual verification after publication. No push/deploy.
+Safari color sampling reference: [WebKit](https://bugs.webkit.org/show_bug.cgi?id=301756).
+
 Original implementations, failed/repaired security assertions, migration rationale,
 older test counts and old authorization boundaries are preserved in the
 [pre-Batch 6 status archive](docs/history/pre-batch6/IMPLEMENTATION_STATUS.md),

@@ -8,6 +8,8 @@
   --md-title:clamp(1.9rem,7vw,3rem); --md-body:1rem; --md-small:.875rem;
   --md-motion:160ms; --md-nav-height:76px;
 }
+/* Safari toolbar/overscroll tint follows the page canvas; keep it opaque and dark. */
+html, body {background-color:var(--md-bg);color-scheme:dark;}
 .app-shell, .feature-dialog, #account-dialog {font-family:var(--md-font);font-size:var(--md-body);line-height:1.5;color:var(--md-text);}
 .app-shell [hidden], .feature-dialog [hidden] {display:none!important;}
 #start-overlay.app-shell {background:var(--md-bg);text-align:left;justify-content:flex-start;align-items:stretch;gap:0;padding:0;padding-bottom:calc(var(--md-nav-height) + env(safe-area-inset-bottom));}
