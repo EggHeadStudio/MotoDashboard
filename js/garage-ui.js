@@ -3,7 +3,8 @@ import { t, onLanguageChange } from './i18n/i18n.js';
 import { CATEGORIES } from './data/schema.js';
 import { loadGarage, saveVehicle, deleteVehicle, defaultVehicle } from './firebase/garageRepository.js';
 import { dataErrorKey } from './firebase/access.js';
-import { dialog, element, button, field, labelText, runAction } from './ui/forms.js';
+import { openView, dialog, element, button, field, labelText, runAction } from './ui/forms.js';
+import { vehicleIcon } from './ui/icons.js';
 
 const listeners = new Set();
 let state = { uid: null, vehicles: [], defaultVehicleId: null, selectedId: null, ready: false };
@@ -52,26 +53,27 @@ export function initGarageUI() {
     editing = false; view.body.replaceChildren();
     if (!getAccount()) { view.body.append(labelText(element('p'), 'data.signIn')); return; }
     view.body.append(button('garage.add', () => edit(null), 'garage-add'), button('common.refresh', () => action(() => Promise.resolve())));
+    view.body.prepend(labelText(element('p','muted'),'garage.showcase'));
     if (!state.vehicles.length) view.body.append(labelText(element('p'), 'garage.empty'));
     for (const vehicle of state.vehicles) {
-      const card = element('article', 'feature-card');
-      const icon = element('span', 'category-icon', CATEGORIES.indexOf(vehicle.category)+1);
-      icon.setAttribute('aria-hidden','true');
-      card.append(icon, element('h3', '', vehicle.nickname), labelText(element('p','muted'), `category.${vehicle.category}`),
+      const card = element('article', 'feature-card vehicle-card' + (state.selectedId===vehicle.id?' is-selected':''));
+      const art = element('div','vehicle-art');art.append(vehicleIcon(vehicle.category));
+      const info = element('div','vehicle-info');
+      info.append(element('h3', '', vehicle.nickname), labelText(element('p','muted'), `category.${vehicle.category}`),
         element('p','', [vehicle.manufacturer,vehicle.model,vehicle.modelYear].filter(Boolean).join(' ')), element('p','',vehicle.description));
-      if (vehicle.id === state.defaultVehicleId) card.append(labelText(element('p'), 'garage.default'));
-      if (vehicle.id === state.selectedId) card.append(labelText(element('p'), 'garage.selected'));
+      if (vehicle.id === state.defaultVehicleId) info.append(labelText(element('p','badge'), 'garage.default'));
+      if (vehicle.id === state.selectedId) info.append(labelText(element('p','badge'), 'garage.selected'));
       const controls = element('div','feature-actions');
       controls.append(button('garage.choose', () => { state.selectedId = vehicle.id; publish(); render(); view.node.close(); }),
         button('garage.makeDefault', () => action(uid => defaultVehicle(uid,vehicle.id))),
         button('common.edit', () => edit(vehicle)),
         button('common.delete', () => { if (confirm(t('garage.deleteConfirm'))) action(uid => deleteVehicle(uid,vehicle.id)); }));
-      card.append(controls); view.body.append(card);
+      info.append(controls);card.append(art,info); view.body.append(card);
     }
     view.body.append(button('garage.noVehicle', () => { state.selectedId = null; publish(); render(); view.node.close(); }));
   }
   choose.addEventListener('click', () => {
-    render(); view.node.showModal();
+    render(); openView(view.node);
     if (getAccount()) action(() => Promise.resolve());
   });
   onAccountChange(({user}) => {

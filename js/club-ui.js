@@ -4,7 +4,11 @@ import { CATEGORIES } from './data/schema.js';
 import { isManager } from './data/permissions.js';
 import * as repository from './firebase/clubRepository.js';
 import { dataErrorKey } from './firebase/access.js';
-import { dialog, element, field, button, labelText, runAction } from './ui/forms.js';
+import { openView, dialog, element, field, button, labelText, runAction, disclosure } from './ui/forms.js';
+import { clubCard } from './ui/cards.js';
+import { listLobby } from './firebase/lobbyRepository.js';
+import { groupCard } from './ui/cards.js';
+import { sessionURL, followSessionURL } from './data/group-session.js';
 import { loadDisplayProfiles, searchDisplayProfiles } from './firebase/displayProfiles.js';
 
 const sections = new Set();
@@ -49,13 +53,11 @@ export function initClubUI() {
         selectedId=url.hash.split('/')[2];
       },()=>openClub(selectedId));
     });
-    view.body.append(lookup,labelText(element('h3'),'clubs.mine'));
+    view.body.prepend(labelText(element('p','muted'),'clubs.intro'));
+    view.body.append(disclosure('identity.clubLink',lookup),labelText(element('h3'),'clubs.mine'));
     if(!own.size) view.body.append(labelText(element('p'),'clubs.noMemberships'));
     const card=(club)=>{
-      const node=element('article','feature-card');node.dataset.clubId=club.id;
-      node.append(element('h3','',club.name),labelText(element('p','muted'),'category.'+club.category),
-        labelText(element('p'),'policy.'+club.membershipPolicy),
-        button('ui.open',()=>action(()=>Promise.resolve(),()=>openClub(club.id))));return node;
+      const node=clubCard(club,()=>action(()=>Promise.resolve(),()=>openClub(club.id)),{member:own.has(club.id)});node.dataset.clubId=club.id;return node;
     };
     own.forEach(club=>view.body.append(card(club)));
     view.body.append(labelText(element('h3'),'clubs.discover'));
@@ -149,14 +151,16 @@ export function initClubUI() {
           for(const person of people.filter(person=>person.uid!==owner)) {
             const option=element('option','',person.displayName);option.value=person.uid;recipient.append(option);
           }
-        },()=>labelText(view.status,recipient.children.length?'common.loaded':'identity.notFound'));
+        },()=>labelText(view.status,recipient.children.length?'common.loaded':'identity.notFound')).then(()=>{
+          if(current(owner,token)) inviteButton.disabled=!recipient.children.length;
+        });
       });
-      const inviteButton=button('identity.invite');inviteButton.type='submit';inviteForm.append(inviteButton);
+      const inviteButton=button('identity.invite');inviteButton.type='submit';inviteButton.disabled=true;inviteForm.append(inviteButton);
       inviteForm.addEventListener('submit',event=>{
         event.preventDefault();const target=new FormData(inviteForm).get('recipient');
         action(owner=>repository.inviteMember(owner,club.id,target));
       });
-      admin.append(search,inviteForm,labelText(element('p','muted'),'identity.inviteHint'));view.body.append(admin);
+      admin.append(disclosure('identity.invite',labelText(element('p','muted'),'discover.searchHint'),search,inviteForm,labelText(element('p','muted'),'identity.inviteHint')));view.body.append(admin);
       let cursor=null;
       async function requests() {
         const page=await repository.listClubRecords(owner,club.id,'joinRequests',cursor);
@@ -172,6 +176,14 @@ export function initClubUI() {
       }
       await requests();
     }
+    const activities=element('section','home-section');activities.id='club-upcoming';
+    activities.append(labelText(element('h3'),'clubs.upcoming'));
+    view.body.append(activities);
+    try {
+      const upcoming=await listLobby(owner,{clubId:club.id});if(!current(owner,token))return;
+      for(const event of upcoming.events.slice(0,3)) activities.append(groupCard(event,()=>followSessionURL(sessionURL(event.id))));
+      if(!upcoming.events.length) activities.append(labelText(element('p','muted'),'lobby.empty'));
+    } catch(error) {if(current(owner,token)) activities.append(labelText(element('p','feature-status'),dataErrorKey(error)));}
     for(const render of sections) {
       if(!current(owner,token)) return;
       await render({uid:owner,model,body:view.body,status:view.status,action,stillCurrent:()=>current(owner,token)});
@@ -179,7 +191,7 @@ export function initClubUI() {
     if(current(owner,token)) labelText(view.status,'common.loaded');
   }
   document.getElementById('clubs-btn').addEventListener('click',()=>{
-    view.node.showModal();if(uid) action(()=>Promise.resolve(),()=>browse());else signedOut();
+    openView(view.node);if(uid) action(()=>Promise.resolve(),()=>browse());else signedOut();
   });
   onAccountChange(({user})=>{
     if((user?.uid || null)===uid) return;
@@ -191,7 +203,7 @@ export function initClubUI() {
   async function openLinkedClub() {
     const match=/^#\/club\/([A-Za-z0-9_-]{1,100})$/.exec(location.hash);
     if(!match) return;
-    if(!view.node.open) view.node.showModal();
+    openView(view.node);
     if(uid) await action(()=>Promise.resolve(),()=>openClub(match[1]));
     else signedOut();
   }

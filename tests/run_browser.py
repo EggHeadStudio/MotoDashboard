@@ -1,3 +1,4 @@
+from navigation_helpers import click_action, expand_controls, fill_control, select_control, click_control
 """Development-only tests: Python + Playwright; no application build/runtime dependency.
 
 Run: python tests/run_browser.py
@@ -49,6 +50,10 @@ def run():
             from clubs_browser import run_club_tests
             run_club_tests(browser,base,route_map)
             browser.close();server.shutdown();return
+        if '--batch5-only' in sys.argv:
+            from batch5_browser import run_batch5_tests
+            run_batch5_tests(browser,base,route_map)
+            browser.close();server.shutdown();return
         if '--groups-only' in sys.argv:
             from groups_browser import run_group_tests
             run_group_tests(browser,base,route_map)
@@ -82,11 +87,11 @@ def run():
           window.addEventListener('unhandledrejection', e => window.__unhandled.push(String(e.reason)));
         """)
         page.goto(base, wait_until='networkidle')
-        page.wait_for_function("document.querySelector('#start-btn').textContent === 'New session'")
+        page.wait_for_function("document.querySelector('#start-btn').textContent === 'Start Ride'")
         assert page.locator('html').get_attribute('lang') == 'en'
         assert page.locator('#network-row').inner_text() == 'Online'
         page.select_option('#language-select', 'fi')
-        assert page.locator('#start-btn').inner_text() == 'Uusi sessio'
+        assert page.locator('#start-btn').inner_text() == 'Aloita ajo'
         assert page.locator('#network-row').inner_text() == 'Verkko k\u00e4yt\u00f6ss\u00e4'
         page.reload(wait_until='networkidle')
         assert page.locator('html').get_attribute('lang') == 'fi'
@@ -126,7 +131,7 @@ def run():
         modules = ['js/' + str(p.relative_to(ROOT / 'js')).replace('\\', '/') for p in (ROOT / 'js').rglob('*.js')]
         page.evaluate('(paths) => Promise.all(paths.map(path => import("./" + path)))', modules)
         print('PASS: browser ES module syntax/linking; no page errors or unhandled rejections')
-        page.click('#start-btn')
+        click_action(page, '#start-btn')
         page.evaluate('window.__geo.error({code:1})')
         permission_en = page.locator('#gps-error-msg').inner_text()
         page.select_option('#language-select', 'fi')
@@ -146,7 +151,7 @@ def run():
         page.select_option('#language-select', 'en')
         page.on('dialog', lambda dialog: dialog.accept('My original ride' if dialog.type == 'prompt' else None))
         page.click('#finish-session-btn')
-        page.click('#history-btn')
+        click_action(page, '#history-btn')
         assert 'My original ride' in page.locator('#history-list').inner_text()
         page.select_option('#language-select', 'fi')
         assert 'My original ride' in page.locator('#history-list').inner_text()
@@ -163,7 +168,7 @@ def run():
             assert page.locator('#session-stats-panel').is_visible()
             assert not page.locator('#finish-session-btn').is_visible()
             page.click('#back-to-start-btn')
-            page.click('#start-btn')
+            click_action(page, '#start-btn')
             page.click('#heading-btn')
             for n in range(4):
                 page.evaluate('(v) => window.__position(...v)', [60 + n * 0.00009, 25, 36, start_time + 20000 + n * 1000])
@@ -210,6 +215,8 @@ def run():
         run_group_tests(browser,base,route_map)
         from live_browser import run_live_tests
         run_live_tests(browser,base,route_map)
+        from batch5_browser import run_batch5_tests
+        run_batch5_tests(browser,base,route_map)
         output=page.evaluate('async()=> (await import("./tests/live-client-tests.js")).runLiveClientTests()')
         print('PASS:',output)
         run_real_sdk_imports(browser, base, route_map)

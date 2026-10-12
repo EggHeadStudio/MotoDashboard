@@ -4,9 +4,10 @@ import { CATEGORIES } from './data/schema.js';
 import { ACTIVITIES, GROUP_VISIBILITIES, JOIN_POLICIES, setRouteInvite } from './data/group-session.js';
 import * as repository from './firebase/groupRepository.js';
 import { dataErrorKey } from './firebase/access.js';
-import { dialog, element, field, button, labelText, runAction } from './ui/forms.js';
+import { openView, dialog, element, field, button, labelText, runAction } from './ui/forms.js';
 // UI mutation hint accelerates server revalidation; it never supplies permissions.
 import {liveClient} from './live/live-client.js';
+import { groupCard, emptyState } from './ui/cards.js';
 
 const sections = new Set();
 export const registerGroupSection = render => sections.add(render);
@@ -29,7 +30,7 @@ export function initGroupUI() {
   }
   function signedOut() {
     view.body.replaceChildren(labelText(element('p'), 'data.signIn'),button('groups.signIn',()=>{
-      view.node.close();document.getElementById('account-btn').click();
+      document.getElementById('account-btn').click();
     }));
   }
   async function browse(cursor = null) {
@@ -37,12 +38,10 @@ export function initGroupUI() {
     if (!uid) {signedOut();return;}
     const page = await repository.listMyGroups(owner, cursor); if (!current(owner, token)) return;
     if (!cursor) view.body.replaceChildren(button('groups.create', () => action(() => edit(null), () => {}), 'group-create'),
-      button('common.refresh', () => action(() => Promise.resolve(), () => browse())), labelText(element('p', 'muted'), 'groups.prototype'));
-    if (!page.groups.length && !cursor) view.body.append(labelText(element('p'), 'groups.empty'));
+      button('common.refresh', () => action(() => Promise.resolve(), () => browse())));
+    if (!page.groups.length && !cursor) view.body.append(emptyState('groups.empty','discover.emptyHint'));
     for (const group of page.groups) {
-      const card = element('article', 'feature-card'); card.dataset.groupId = group.id;
-      card.append(element('h3', '', group.title), labelText(element('p'), 'groupState.'+group.state),
-        element('p', '', formatGroupTime(group.startsAt)), button('ui.open', () => action(() => Promise.resolve(), () => open(group.id))));
+      const card = groupCard(group,()=>action(()=>Promise.resolve(),()=>open(group.id)));card.dataset.groupId=group.id;
       view.body.append(card);
     }
     if (page.more) {const more=button('clubs.more',()=>action(()=>Promise.resolve(),()=>{more.remove();return browse(page.cursor);}));view.body.append(more);}
@@ -98,12 +97,7 @@ export function initGroupUI() {
     const loaded=await repository.loadGroup(owner,id);if(!current(owner,token)) return;
     model=loaded;const {group,manager,participant}=model;
     view.body.replaceChildren(button('groups.back',()=>action(()=>Promise.resolve(),()=>browse())),
-      button('common.refresh',()=>action(()=>Promise.resolve())),element('h3','',group.title),
-      labelText(element('p'),'activity.'+group.activityType),labelText(element('p'),'category.'+group.category),
-      element('p','',group.description),element('p','',formatGroupTime(group.startsAt)),
-      element('p','',group.meetingArea),labelText(element('p'),'groupState.'+group.state),
-      labelText(element('p'),'groups.count',{count:group.participantCount}),
-      labelText(element('p'),'policy.'+group.joiningPolicy),element('p','',group.clubName || group.hostName));
+      button('common.refresh',()=>action(()=>Promise.resolve())),groupCard(group,null,{featured:true,detail:true}));
     if(group.endsAt) view.body.append(element('p','',formatGroupTime(group.endsAt)));
     if((participant || manager) && group.meetingLocation) view.body.append(element('p','group-meeting',group.meetingLocation));
     if(manager && ['scheduled','active'].includes(group.state)) {
@@ -116,7 +110,7 @@ export function initGroupUI() {
     if(current(owner,token)) labelText(view.status,'common.loaded');
   }
   document.getElementById('groups-btn').addEventListener('click',()=>{
-    view.node.showModal();action(()=>Promise.resolve(),()=>browse());
+    openView(view.node);action(()=>Promise.resolve(),()=>browse());
   });
   onAccountChange(({user})=>{
     if((user?.uid || null)===uid) return;
@@ -128,11 +122,11 @@ export function initGroupUI() {
     const match=/^#\/session\/([A-Za-z0-9_-]{1,100})(?:\/invite\/([A-Za-z0-9_-]{1,100}))?$/.exec(location.hash);
     if(!match) {
       setRouteInvite(null);
-      if(location.hash.startsWith('#/session/')) {if(!view.node.open)view.node.showModal();view.body.replaceChildren();labelText(view.status,'groups.inviteInvalid');}
+      if(location.hash.startsWith('#/session/')) {if(!view.node.open)openView(view.node);view.body.replaceChildren();labelText(view.status,'groups.inviteInvalid');}
       return;
     }
     if(uid && document.getElementById('account-dialog').open) {waitingForAuth=true;return;}
-    if(!view.node.open) view.node.showModal();
+    openView(view.node);
     if(busy) {pendingLink=true;return;}
     view.body.replaceChildren();model=null;selectedId=null;
     setRouteInvite(match[2]?{id:match[1],token:match[2]}:null);

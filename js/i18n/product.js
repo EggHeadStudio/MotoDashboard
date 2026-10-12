@@ -1,6 +1,7 @@
 // Product navigation and release diagnostics. No user content is translated here.
 export const product = {
   en: {
+    'clubs.joined': 'Joined',
     'ui.saved': 'Saved.',
     'nav.label': 'Main navigation', 'nav.home': 'Home', 'nav.discover': 'Discover', 'nav.rides': 'Rides', 'nav.clubs': 'Clubs', 'nav.profile': 'Profile',
     'home.eyebrow': 'YOUR NEXT CHAPTER', 'home.greeting': 'Ready for the road, {name}?', 'home.guest': 'Make the journey yours.',
@@ -35,6 +36,7 @@ export const product = {
     'ui.loadingCards': 'Loading…', 'ui.skip': 'Skip to content'
   },
   fi: {
+    'clubs.joined': 'Jäsen',
     'ui.saved': 'Tallennettu.',
     'nav.label': 'Päänavigointi', 'nav.home': 'Koti', 'nav.discover': 'Löydä', 'nav.rides': 'Ajot', 'nav.clubs': 'Klubit', 'nav.profile': 'Profiili',
     'home.eyebrow': 'SEURAAVA LUKUSI', 'home.greeting': 'Valmiina tielle, {name}?', 'home.guest': 'Tee matkasta omasi.',

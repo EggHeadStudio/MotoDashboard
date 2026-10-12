@@ -1,3 +1,4 @@
+from navigation_helpers import click_action, expand_controls, fill_control, select_control, click_control
 """Static /MotoDashboard/ path and unavailable-Firebase regression checks.
 Run after tests/run_browser.py (uses its cached Leaflet fixtures).
 All cloud API requests are blocked; no Firebase account/data operations.
@@ -27,7 +28,8 @@ for path in (ROOT/'js').rglob('*.js'):
         ref=next(x for x in ref if x)
         assert ref.startswith(('.', 'https://')), (path,ref)
         refs.append((path,ref))
-for ref in re.findall(r"url\(['\"]?([^)'\"]+)", (ROOT/'css/dashboard.css').read_text(encoding='utf-8')):refs.append((ROOT/'css/dashboard.css',ref))
+for path in (ROOT/'css').glob('*.css'):
+    for ref in re.findall(r"url\(['\"]?([^)'\"]+)",path.read_text(encoding='utf-8')):refs.append((path,ref))
 manifest=json.loads((ROOT/'manifest.webmanifest').read_text(encoding='utf-8'))
 for ref in [manifest['start_url'],manifest['scope']]+[icon['src'] for icon in manifest['icons']]:refs.append((ROOT/'manifest.webmanifest',ref))
 local=set()
@@ -59,15 +61,15 @@ with sync_playwright() as pw:
         Object.defineProperty(navigator,'geolocation',{value:{watchPosition(ok){window.__position=ok;return 1},clearWatch(){},getCurrentPosition(){}}});
     ''')
     page.goto(base,wait_until='networkidle')
-    page.wait_for_function("document.querySelector('#start-btn').textContent==='New session'")
+    page.wait_for_function("document.querySelector('#start-btn').textContent==='Start Ride'")
     assert page.evaluate('window.__cleaned')==['this-app']
-    page.click('#account-btn');assert page.locator('#auth-retry').is_visible();page.click('#account-close')
-    page.click('#start-btn')
+    click_action(page, '#account-btn');assert page.locator('#auth-retry').is_visible();page.click('#account-close')
+    click_action(page, '#start-btn')
     page.evaluate('''()=>{const start=Date.now();for(let n=0;n<9;n++){const time=start+n*1000;const old=Date.now;Date.now=()=>time;try{window.__position({timestamp:time,coords:{latitude:60+n*.00009,longitude:25,speed:10,accuracy:5,heading:90}})}finally{Date.now=old}}}''')
     page.wait_for_timeout(800)
     assert page.locator('#stat-distance').inner_text()!='0.0 km'
     page.on('dialog',lambda d:d.accept('Firebase unavailable ride' if d.type=='prompt' else None))
-    page.click('#finish-session-btn');page.click('#history-btn')
+    page.click('#finish-session-btn');click_action(page, '#history-btn')
     assert 'Firebase unavailable ride' in page.locator('#history-list').inner_text()
     assert not errors,errors
     print('PASS: scoped legacy service-worker cleanup preserves sibling scope; Firebase unavailable still permits guest GPS recording, finish and history with visible account retry')

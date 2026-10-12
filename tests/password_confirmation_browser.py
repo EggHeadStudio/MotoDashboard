@@ -1,3 +1,4 @@
+from navigation_helpers import click_action, expand_controls, fill_control, select_control, click_control
 """Registration regressions using intercepted SDK fixtures, never live Firebase."""
 from pathlib import Path
 import tempfile
@@ -25,7 +26,7 @@ def run_confirmation_tests(browser, base, route_map):
     page.on('console', lambda message: console_errors.append(message.text) if message.type == 'error' else None)
     page.add_init_script("window.__unhandled=[]; addEventListener('unhandledrejection',e=>window.__unhandled.push(String(e.reason)))")
     page.goto(base, wait_until='networkidle')
-    page.click('#account-btn')
+    click_action(page, '#account-btn')
     page.wait_for_function("!document.querySelector('#auth-submit').disabled")
     passed = []
 

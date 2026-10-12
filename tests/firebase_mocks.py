@@ -1,3 +1,4 @@
+from navigation_helpers import click_action, expand_controls, fill_control, select_control, click_control
 """Browser SDK fixtures only: these do not test deployed Firebase or its rules."""
 MOCK_APP = r"""
 const apps = [];
@@ -68,6 +69,7 @@ export const startAfter=value=>({kind:'after',value});
 export const query=(path,...filters)=>({path,filters});
 export async function getDocs(input) {
   const {path,filters=[]}=typeof input==='string'?{path:input}:input;
+  if(window.__mock.queryFailure?.path===path) throw Object.assign(new Error('Injected query failure'),{code:window.__mock.queryFailure.code});
   (window.__mock.queries ||= []).push({path,filters});
   let docs=Object.entries(read()).filter(([key])=>key.startsWith(path+'/') && key.slice(path.length+1).split('/').length===1).map(([key,data])=>snap(key,data));
   const stages={where:0,order:1,after:2,limit:3};
@@ -108,7 +110,7 @@ def run_account_tests(browser, base, route_map):
     page.on('pageerror', lambda e: errors.append(str(e)))
     page.add_init_script("window.__unhandled=[]; addEventListener('unhandledrejection',e=>window.__unhandled.push(String(e.reason)))")
     page.goto(base, wait_until='networkidle')
-    page.click('#account-btn')
+    click_action(page, '#account-btn')
     page.wait_for_function("!document.querySelector('#auth-submit').disabled")
     assert page.locator('#auth-identity').inner_text() == 'Not signed in'
     page.select_option('#auth-mode', 'register')
@@ -134,7 +136,7 @@ def run_account_tests(browser, base, route_map):
     page.wait_for_function("JSON.parse(localStorage.getItem('__mockProfiles'))['users/fixture-0'].language === 'fi'")
     assert page.locator('#auth-logout').inner_text() == 'Kirjaudu ulos'
     page.reload(wait_until='networkidle')
-    page.click('#account-btn')
+    click_action(page, '#account-btn')
     page.wait_for_function("document.querySelector('#auth-status').textContent.includes('Profiili on valmis')")
     assert page.locator('#auth-identity').inner_text() == 'Kirjautunut: Test Rider'
     assert page.evaluate('window.__mock.initialize') == 1
@@ -192,7 +194,7 @@ def run_account_tests(browser, base, route_map):
     page = offline.new_page()
     page.goto(base, wait_until='networkidle')
     page.wait_for_function('document.body.dataset.ready === "true"')
-    page.click('#account-btn')
+    click_action(page, '#account-btn')
     page.wait_for_function("document.querySelector('#auth-status').textContent.includes('Account services are unavailable')")
     page.click('#account-close')
     assert page.locator('#start-btn').is_enabled()

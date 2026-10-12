@@ -14,6 +14,7 @@
   <link rel="apple-touch-icon" href="./icon.svg">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
   <link rel="stylesheet" href="./css/dashboard.css">
+  <link rel="stylesheet" href="./css/design-system.css">
 </head>
 <body>
   <div id="language-control"><label for="language-select" data-i18n="ui.language">Language</label><select id="language-select"><option value="en">English</option><option value="fi">Suomi</option></select></div>
@@ -107,38 +108,47 @@
   </div>
 
   <!-- Start overlay -->
-  <div id="start-overlay" role="dialog" aria-modal="true" aria-label="Start screen" data-i18n-aria-label="ui.startScreen">
-    <img id="start-logo" src="./EggHeadStudio_logo.png" alt="EggHeadStudio logo">
-    <div id="start-title-wrap">
-      <h1>EggHeadStudio</h1>
-      <div id="start-title-sub">Moto Dashboard</div>
-    </div>
-    <div class="start-actions">
-      <button id="start-btn" aria-label="Start the application" data-i18n-aria-label="ui.startApp" data-i18n="ui.newSession">New session</button>
+  <div id="start-overlay" class="app-shell" data-screen="home" aria-label="MotoDash">
+    <a class="skip-link" href="#screen-host" data-i18n="ui.skip">Skip to content</a>
+    <header class="shell-header"><a class="wordmark" href="#/home" aria-label="MotoDash Home">MOTO<span>DASH</span><i></i></a><button id="home-profile" class="avatar-button" type="button" data-i18n-aria-label="nav.profile" aria-label="Profile"></button></header>
+    <main id="screen-host" tabindex="-1">
+    <section id="screen-home" class="app-screen" aria-labelledby="home-title">
+      <div class="home-heading"><p class="eyebrow" data-i18n="home.eyebrow">YOUR NEXT CHAPTER</p><h1 id="home-title" data-i18n="home.guest">Make the journey yours.</h1><p class="muted" data-i18n="home.intro">Your rides. Your people. One place.</p></div>
+      <div class="ride-launch"><div class="road-art" aria-hidden="true"></div><button id="start-btn" class="primary" data-i18n="home.start">Start Ride</button>
       <button id="resume-session-btn" class="start-option-btn secondary" aria-label="Resume the previous session" data-i18n-aria-label="ui.resumeLabel" data-i18n="ui.resume">Resume previous</button>
-      <button id="history-btn" class="start-option-btn secondary" aria-label="Show saved rides" data-i18n-aria-label="ui.historyLabel" data-i18n="ui.history">Saved rides</button>
-      <button id="account-btn" class="start-option-btn secondary" data-i18n="auth.open">Sign in / Register</button>
-      <button id="garage-btn" class="start-option-btn secondary" data-i18n="garage.title">Garage</button>
-      <button id="clubs-btn" class="start-option-btn secondary" data-i18n="clubs.title">Clubs</button>
-      <button id="groups-btn" class="start-option-btn secondary" data-i18n="groups.title">Group Sessions</button>
-      <button id="lobby-btn" class="start-option-btn secondary" data-i18n="lobby.title">Lobby</button>
-    </div>
-    <div id="session-summary" aria-live="polite" data-i18n="ui.noRides">No saved rides yet.</div>
-    <div id="selected-vehicle" aria-live="polite"></div>
+      </div>
+      <button id="home-join" class="wide action-row" type="button" data-i18n="home.join">Join a group ride</button>
+      <section class="home-section"><div class="section-heading"><h2 data-i18n="home.upcoming">Up next</h2><button id="home-refresh" class="icon-button" type="button" data-i18n="common.refresh">Refresh</button></div><div id="home-upcoming" class="card-grid"></div><p id="home-data-status" role="status"></p></section>
+      <section class="home-section"><h2 data-i18n="home.vehicle">Ready to roll</h2><div class="vehicle-preview"><div id="home-vehicle-icon" aria-hidden="true"></div><div id="selected-vehicle" aria-live="polite"></div></div></section>
+      <section class="home-section"><h2 data-i18n="home.clubs">Your riding community</h2><div id="home-clubs" class="card-grid"></div></section>
+      <section class="home-section"><h2 data-i18n="home.recent">Last ride</h2><div id="session-summary" class="surface" aria-live="polite" data-i18n="ui.noRides">No saved rides yet.</div><button id="history-btn" class="text-button" data-i18n="ui.history">Saved rides</button></section>
+      <div id="start-status" aria-live="assertive" aria-atomic="true" data-i18n="ui.ready">Ready</div>
+      <div id="start-debug" hidden></div><div id="map-fallback-msg" aria-live="polite"></div><div id="start-gps-hint" aria-live="polite"></div><div id="start-version" hidden></div>
+    </section>
+    <section id="screen-rides" class="app-screen" hidden aria-labelledby="rides-title"><p class="eyebrow">MotoDash</p><h1 id="rides-title" data-i18n="nav.rides">Rides</h1><p class="muted" data-i18n="rides.intro">Keep the memories. Find your next group.</p>
+      <button id="groups-btn" class="wide action-row" data-i18n="groups.title">Group Sessions</button><h2 data-i18n="rides.saved">Ride history</h2>
+      <div id="history-list" aria-live="polite"></div>
+      <details class="disclosure"><summary data-i18n="rides.sync">Cloud sync &amp; storage</summary>
     <div id="cloud-status" role="status"></div>
     <button id="cloud-retry" class="start-option-btn secondary" data-i18n="rides.retry">Retry ride sync</button>
     <div id="history-status" role="status"></div>
     <button id="history-refresh" class="start-option-btn secondary" data-i18n="rides.refresh">Refresh cloud history</button>
     <button id="history-more" class="start-option-btn secondary" hidden data-i18n="rides.more">Load more rides</button>
-    <div id="history-list" aria-live="polite"></div>
     <div id="history-actions">
       <button id="clear-history-btn" class="start-option-btn secondary" aria-label="Delete all saved rides" data-i18n-aria-label="ui.clearLabel" data-i18n="ui.clear">Delete all rides</button>
     </div>
-    <div id="start-status" aria-live="assertive" aria-atomic="true" data-i18n="ui.ready">Ready</div>
-    <div id="start-debug" hidden></div>
-    <div id="map-fallback-msg" aria-live="polite"></div>
-    <div id="start-gps-hint" aria-live="polite"></div>
-    <div id="start-version" hidden></div>
+      </details>
+    </section>
+    <section id="screen-profile" class="app-screen" hidden aria-labelledby="profile-title"><p class="eyebrow">MotoDash</p><h1 id="profile-title" data-i18n="nav.profile">Profile</h1><p class="muted" data-i18n="profile.title">Your corner of the road</p>
+      <div class="profile-hero"><div id="profile-avatar" class="large-avatar" aria-hidden="true"></div><h2 id="profile-display-name"></h2><button id="account-btn" class="text-button" data-i18n="profile.settings">Account settings</button></div>
+      <div class="profile-actions"><button id="garage-btn" class="action-row" data-i18n="garage.title">Garage</button><button id="profile-clubs" class="action-row" data-i18n="profile.memberships">Club memberships</button></div>
+      <section class="surface"><h2 data-i18n="profile.stats">Your saved rides</h2><div id="profile-stats" class="stats-row"></div><p class="muted" data-i18n="profile.statsHint">Completed rides currently saved or loaded in this browser, for this account.</p></section>
+      <label class="field"><span data-i18n="profile.language">App language</span><select id="profile-language"><option value="en">English</option><option value="fi">Suomi</option></select></label>
+      <button id="profile-logout" type="button" hidden data-i18n="auth.logout">Sign out</button><p id="profile-status" role="status"></p>
+    </section>
+    <button id="clubs-btn" hidden data-i18n="clubs.title">Clubs</button><button id="lobby-btn" hidden data-i18n="lobby.title">Lobby</button>
+    </main>
+    <nav id="bottom-nav" data-i18n-aria-label="nav.label" aria-label="Main navigation"></nav>
   </div>
 
   <!-- GPS error overlay -->
@@ -155,6 +165,7 @@
     <label for="account-language" data-i18n="ui.language">Language</label>
     <select id="account-language"><option value="en">English</option><option value="fi">Suomi</option></select>
     <p id="auth-identity"></p>
+    <p id="account-private-email"></p>
     <form id="profile-name-form" hidden>
       <p id="profile-name-prompt" data-i18n="auth.chooseName">Choose a display name for your account.</p>
       <label for="profile-name" data-i18n="auth.displayName">Display name</label>

@@ -2,7 +2,7 @@ import { registerClubSection } from './club-ui.js';
 import { listClubRecords, setMember, saveRank, deleteRank, removeMember, getRank } from './firebase/clubRepository.js';
 import { isManager, canManageMember, canAssignRank } from './data/permissions.js';
 import { t } from './i18n/i18n.js';
-import { element, button, field, labelText } from './ui/forms.js';
+import { element, button, field, labelText, disclosure } from './ui/forms.js';
 import { dataErrorKey } from './firebase/access.js';
 import { loadDisplayProfiles } from './firebase/displayProfiles.js';
 
@@ -10,7 +10,7 @@ export function initClubMembersUI() {
   registerClubSection(async ({uid,model,body,status,action,stillCurrent})=>{
     const {club,role}=model;if(!role) return;
     const section=element('section','feature-card');section.id='club-members';
-    section.append(labelText(element('h3'),'members.title'),labelText(element('p','muted'),'members.rankHint'));
+    section.append(labelText(element('h3'),'members.title'),disclosure('ui.details',labelText(element('p','muted'),'members.rankHint')));
     body.append(section);
     let ranks=[],rankCursor=null,memberCursor=null;
     const rankList=element('div'),memberList=element('div');
@@ -73,7 +73,7 @@ export function initClubMembersUI() {
           form.addEventListener('submit',event=>{
             event.preventDefault();const nextRole=roleInput?.value || member.technicalRole,nextRank=rankInput.value || null;
             action(owner=>setMember(owner,club.id,member.uid,nextRole,nextRank));
-          });card.append(form);
+          });card.append(disclosure('ui.manage',form));
         }
         if(member.uid!==uid && canManageMember(role,uid,member)) card.append(button('members.remove',()=>{
           if(confirm(t('members.removeConfirm'))) action(owner=>removeMember(owner,club.id,member.uid));

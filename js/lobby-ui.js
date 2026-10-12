@@ -1,65 +1,88 @@
 import { getAccount, onAccountChange } from './auth-state.js';
 import { CATEGORIES } from './data/schema.js';
 import { ACTIVITIES, sessionURL, followSessionURL } from './data/group-session.js';
-import { formatGroupTime } from './group-ui.js';
-import { listLobby, findLobbyClubs } from './firebase/lobbyRepository.js';
+import { listLobby, findLobbyClubs, listPublicClubs } from './firebase/lobbyRepository.js';
 import { dataErrorKey } from './firebase/access.js';
-import { dialog, element, field, labelText, button, runAction } from './ui/forms.js';
+import { openView, dialog, element, field, labelText, button, runAction, disclosure } from './ui/forms.js';
+import { groupCard, clubCard, skeletons, emptyState } from './ui/cards.js';
+import { vehicleIcon } from './ui/icons.js';
 
+const chips=['motorcycle','car','off-road','bicycle','snowmobile','caravan','other'];
 export function initLobbyUI() {
-  const view=dialog('lobby-dialog','lobby.title');let uid=null,version=0,busy=false,input={},cursor=null;
+  const view=dialog('lobby-dialog','nav.discover');let uid=null,version=0,busy=false,pending=false,input={},cursor=null,tab='featured';
   const current=(owner,token)=>uid===owner && getAccount()?.uid===owner && token===version;
   function action(fn) {
-    if(busy) return;busy=true;
-    return runAction(view.body,view.status,fn,dataErrorKey).finally(()=>{busy=false;});
+    if(busy) {pending=true;return;}busy=true;
+    return runAction(view.body,view.status,fn,dataErrorKey).finally(()=>{
+      busy=false;if(pending){pending=false;render();if(uid) action(()=>load());}
+    });
   }
   function render() {
-    view.body.replaceChildren();if(!uid) {view.body.append(labelText(element('p'),'data.signIn'));return;}
+    view.body.replaceChildren(labelText(element('h2'),'discover.title'),labelText(element('p','muted'),'discover.intro'));
+    if(!uid) {view.body.append(emptyState('home.signIn','discover.intro'),button('auth.open',()=>document.getElementById('account-btn').click()));return;}
+    const categories=element('div','chip-row');
+    const all=button('lobby.all',()=>chooseCategory(''));all.setAttribute('aria-pressed',String(!input.category));categories.append(all);
+    for(const category of chips) {
+      const node=element('button');node.type='button';node.append(vehicleIcon(category),labelText(element('span'),'discover.'+category));node.classList.add('category-chip');
+      node.setAttribute('aria-pressed',String(input.category===category));node.addEventListener('click',()=>chooseCategory(category));categories.append(node);
+    }
+    const tabs=element('div','discovery-tabs');
+    for(const name of ['rides','meets','events','clubs']) {
+      const node=button('discover.'+name,()=>{tab=name;input.activityType=name==='meets'?'meet':name==='events'?'event':'';cursor=null;render();action(()=>load());});
+      node.setAttribute('aria-pressed',String(tab===name));tabs.append(node);
+    }
+    view.body.append(categories,tabs);if(tab!=='clubs') renderFilters();
+    const results=element('section','card-grid');results.id='lobby-results';view.body.append(results);
+  }
+  function chooseCategory(category) {input.category=category;cursor=null;render();action(()=>load());}
+  function renderFilters() {
     const form=element('form');form.id='lobby-filter';
     for(const [name,key,choices,prefix] of [['activityType','groups.activity',ACTIVITIES,'activity'],['category','garage.category',CATEGORIES,'category']]) {
-      const select=field(form,name,key,{choices:[],value:input[name]});
+      const select=field(form,name,key,{choices:[]});
       const all=labelText(element('option'),'lobby.all');all.value='';select.append(all);
       for(const choice of choices) {const option=labelText(element('option'),prefix+'.'+choice);option.value=choice;select.append(option);}
       select.value=input[name] || '';
     }
     field(form,'date','lobby.date',{type:'date',value:input.date});field(form,'meetingArea','groups.area',{max:80,value:input.meetingArea});
     const club=field(form,'clubId','clubs.title',{choices:[]});const all=labelText(element('option'),'lobby.all');all.value='';club.append(all);
+    if(input.clubId) {const selected=element('option','',input.clubName || '');selected.value=input.clubId;club.append(selected);club.value=input.clubId;}
     const search=element('form');search.id='lobby-club-search';field(search,'name','clubs.name',{max:80,required:true});
     const find=button('lobby.findClub');find.type='submit';search.append(find);
     search.addEventListener('submit',event=>{
       event.preventDefault();const name=new FormData(search).get('name'),owner=uid,token=version;
       action(async()=>{
-        const matches=await findLobbyClubs(owner,name);if(!current(owner,token)) return;
-        club.replaceChildren(all);
+        const matches=await findLobbyClubs(owner,name);if(!current(owner,token)) return;club.replaceChildren(all);
         for(const match of matches) {const option=element('option','',match.name);option.value=match.id;club.append(option);}
         labelText(view.status,matches.length?'common.loaded':'identity.notFound');
       });
     });
     const filter=button('lobby.filter');filter.type='submit';form.append(filter);
-    const results=element('section');results.id='lobby-results';
-    view.body.append(form,search,labelText(element('p','muted'),'lobby.areaHint'),results);
-    form.addEventListener('submit',event=>{event.preventDefault();input=Object.fromEntries(new FormData(form));cursor=null;action(()=>load(false));});
+    view.body.append(disclosure('discover.filters',form,search,labelText(element('p','muted'),'lobby.areaHint')));
+    form.addEventListener('submit',event=>{
+      event.preventDefault();input=Object.fromEntries(new FormData(form));input.clubName=club.selectedOptions[0]?.textContent || '';cursor=null;
+      action(()=>load(false));
+    });
   }
   async function load(more=false) {
     const owner=uid,token=++version;if(!owner) return;
-    const page=await listLobby(owner,input,more?cursor:null);if(!current(owner,token)) return;
-    const results=document.getElementById('lobby-results');if(!results) return;
-    if(!more) results.replaceChildren();cursor=page.cursor;
-    if(!page.events.length && !more) results.append(labelText(element('p'),'lobby.empty'));
-    for(const event of page.events) {
-      const card=element('article','feature-card');card.dataset.lobbyId=event.id;
-      card.append(element('h3','',event.title),labelText(element('p'),'activity.'+event.activityType),
-        labelText(element('p'),'category.'+event.category),element('p','',event.meetingArea),
-        element('p','',formatGroupTime(event.startsAt)),element('p','',event.clubName || event.hostName),
-        labelText(element('p'),'groups.count',{count:event.participantCount}),labelText(element('p'),'policy.'+event.joiningPolicy),
-        labelText(element('p'),event.maxParticipants && event.participantCount>=event.maxParticipants?'lobby.full':'lobby.available'),
-        button('ui.open',()=>{view.node.close();followSessionURL(sessionURL(event.id));}));results.append(card);
-    }
-    if(page.more) {const next=button('clubs.more',()=>action(()=>{next.remove();return load(true);}));results.append(next);}
-    labelText(view.status,'common.loaded');
+    const results=document.getElementById('lobby-results');if(!results)return;if(!more) skeletons(results);
+    try {
+      const queryInput={...input};if(tab==='rides'&&!queryInput.activityType) queryInput.activityTypes=['ride','drive'];
+      const page=tab==='clubs'?await listPublicClubs(owner,queryInput,more?cursor:null):await listLobby(owner,queryInput,more?cursor:null);
+      if(!current(owner,token)) return;if(!more) results.replaceChildren();cursor=page.cursor;
+      const rows=page.clubs || page.events;
+      if(!rows.length&&!more) results.append(emptyState(tab==='clubs'?'discover.clubEmpty':'discover.emptyTitle'));
+      rows.forEach((row,index)=>{
+        const open=()=>tab==='clubs' ? (location.hash='/club/'+row.id) : followSessionURL(sessionURL(row.id));
+        const card=tab==='clubs'?clubCard(row,open):groupCard(row,open,{featured:!more&&index===0});
+        card.dataset[tab==='clubs'?'clubId':'lobbyId']=row.id;results.append(card);
+      });
+      if(page.more) {const next=button('clubs.more',()=>action(()=>{next.remove();return load(true);}));results.append(next);}
+      labelText(view.status,page.partial?'home.partial':'common.loaded');
+    } catch(error) {if(current(owner,token)&&!more) results.replaceChildren();throw error;}
   }
   document.getElementById('lobby-btn').addEventListener('click',()=>{
-    view.node.showModal();input={};cursor=null;version++;render();if(uid) action(()=>load());
+    openView(view.node);input={};cursor=null;tab='featured';version++;render();if(uid) action(()=>load());
   });
   onAccountChange(({user})=>{
     if((user?.uid || null)===uid) return;uid=user?.uid || null;version++;input={};cursor=null;view.status.textContent='';render();

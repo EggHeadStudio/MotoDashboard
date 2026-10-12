@@ -46,6 +46,10 @@ def run():
         record=g.group(owner)
         record.update(hostName='Batch Five Owner',title='Batch5 '+visibility,meetingArea='Batch5Area',startsAt=now+3600000,visibility=visibility,joiningPolicy=policy,clubId=club,clubName='Club '+club)
         r.commit(owner,g.bootstrap(record));(expected if visibility in ['public','approval'] else private).add(record['id'])
+    outside=g.group(owner);outside.update(hostName='Batch Five Owner',startsAt=now+2*86400000,meetingArea='Batch5Area',clubId=club,clubName='Club '+club)
+    r.commit(owner,g.bootstrap(outside));private.add(outside['id'])  # Excluded by the date bound, not by visibility.
+    other=g.group(owner);other.update(hostName='Batch Five Owner',startsAt=now+3600000,meetingArea='Batch5Area')
+    r.commit(owner,g.bootstrap(other))
     base=[field('visibility','IN',['public','approval']),field('state','IN',['scheduled','active']),
           field('startsAt','GREATER_THAN_OR_EQUAL',now),field('startsAt','LESS_THAN',now+86400000)]
     optional={'activityType':'ride','category':'motorcycle','meetingArea':'Batch5Area','clubId':club}
@@ -54,6 +58,7 @@ def run():
         rows=query('lobbyEvents',filters,['startsAt'])
         ids={row['fields']['id']['stringValue'] for row in rows}
         assert expected<=ids and not private&ids;r.checks+=1
+        if bits[3]:assert other['id'] not in ids  # The optional Club filter also excludes unbound sessions.
     rows=query('lobbyEvents',base+[field('meetingArea','EQUAL','Batch5Area')],['startsAt','__name__'],limit=1)
     first=rows[0];cursor={'values':[first['fields']['startsAt'],{'referenceValue':first['name']}],'before':False}
     next_rows=query('lobbyEvents',base+[field('meetingArea','EQUAL','Batch5Area')],['startsAt','__name__'],limit=1,cursor=cursor)
@@ -72,6 +77,10 @@ def run():
     # Category discovery queries the safe projection, then hydrates safe pages only.
     query('clubDirectory',[field('category','EQUAL','motorcycle')],['name'])
     query('clubDirectory',[field('category','EQUAL','motorcycle')],['name'],actor=None,allowed=False)
+    r.read(outsider,'clubPages/'+club)
+    r.read(outsider,f'clubs/{club}/members/{owner}',False)
+    code,_=r.request('GET',f'/clubs/{club}/members/{outsider}',outsider)
+    assert code==404; r.checks+=1  # Own absent membership is allowed for discovery hydration.
     indexes=json.loads(source.joinpath('firestore.indexes.json').read_text())['indexes']
     lobby={tuple(f['fieldPath'] for f in index['fields']) for index in indexes if index['collectionGroup']=='lobbyEvents'}
     for bits in itertools.product([False,True],repeat=4):

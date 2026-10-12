@@ -81,6 +81,12 @@ export async function listClubs(uid,ownCursor=null,directoryCursor=null) {
     partial:resolved.some(r=>r.status==='rejected'),directory:directory.docs.map(doc=>doc.data()),
     ownCursor:own.docs.at(-1) || ownCursor,directoryCursor:directory.docs.at(-1) || directoryCursor,more:own.size===20 || directory.size===20};
 }
+export async function listMyClubs(uid) {
+  const s=await ownDatabase(uid);
+  const page=await boundedRequest(s.sdk.getDocs(s.sdk.query(s.sdk.collection(s.db,'users',uid,'clubRefs'),s.sdk.orderBy('joinedAt','desc'),s.sdk.limit(20))));
+  const results=await Promise.allSettled(page.docs.map(row=>loadClub(uid,row.id)));s.assertCurrent();
+  return {clubs:results.filter(row=>row.status==='fulfilled').map(row=>row.value.club),partial:results.some(row=>row.status==='rejected')};
+}
 export async function joinClub(uid,id) {
   await clubTransaction(uid,id,async(tx,s,club,role)=>{
     if(role) return;

@@ -1,4 +1,6 @@
 import { createPositionPipeline } from './position-pipeline.js';
+import { initNavigation } from './ui/navigation.js';
+import { initShell, publishRideSummary } from './ui/shell.js';
 import { initAuthUI } from './auth-ui.js';
 import { initClubUI } from './club-ui.js';
 import { initGroupUI } from './group-ui.js';
@@ -81,6 +83,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
 
     document.addEventListener('DOMContentLoaded', async function () {
       initI18n();
+      initNavigation();
       initAuthUI();
       initGarageUI();
       initClubUI();
@@ -91,6 +94,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       initGroupInvitesUI();
       initClubMembersUI();
       initClubBrandingUI();
+      initShell();
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(registrations => Promise.all(
           registrations.filter(registration => registration.scope === new URL('./', document.baseURI).href)
@@ -134,7 +138,6 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       var elStartOverlay = dom.elStartOverlay;
       var elStartBtn = dom.elStartBtn;
       var elResumeSessionBtn = dom.elResumeSessionBtn;
-      var elHistoryBtn = dom.elHistoryBtn;
       var elSessionSummary = dom.elSessionSummary;
       var elHistoryList = dom.elHistoryList;
       var elHistoryActions = dom.elHistoryActions;
@@ -1038,6 +1041,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       }
 
       function renderHistory() {
+        publishRideSummary(accountUid, sessionHistory);
         if (!sessionHistory.length) {
           elHistoryList.innerHTML = '<div>' + t('ui.noRides') + '</div>';
           updateHistoryActionsVisibility();
@@ -1307,14 +1311,6 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         setStartStatus(() => t("ui.completed"));
         setSessionSummary(() => t(saved ? "ui.savedLocal" : "ui.storageFailure") + (finished.name ? ': ' + finished.name : '.') );
         updateStartSummary();
-      }
-
-      function toggleHistoryList() {
-        var visible = elHistoryList.style.display === 'block';
-        elHistoryList.style.display = visible ? 'none' : 'block';
-        if (!visible) {
-          renderHistory();
-        }
       }
 
       function initMap() {
@@ -1875,7 +1871,6 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       elSessionStatsToggleBtn.addEventListener('click', toggleSessionStatsCollapsed);
       elStartBtn.addEventListener('click', startButtonHandler);
       elResumeSessionBtn.addEventListener('click', resumePreviousSession);
-      elHistoryBtn.addEventListener('click', toggleHistoryList);
       elClearHistoryBtn.addEventListener('click', async function () {
         if (sessionActive) { setSessionSummary(() => t('ui.finishBeforeDelete')); return; }
         if (!sessionHistory.length) {

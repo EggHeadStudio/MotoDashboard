@@ -1,8 +1,9 @@
+from navigation_helpers import click_action, expand_controls, fill_control, select_control, click_control
 """Batch 2 UI tests with SDK fixtures. Permissions are tested separately in the real emulator."""
 from firebase_mocks import install
 
 def register(page,email='garage@example.test'):
-    page.click('#account-btn')
+    click_action(page, '#account-btn')
     page.wait_for_function('!document.querySelector("#auth-submit").disabled')
     page.select_option('#auth-mode','register')
     page.fill('#auth-name','Garage Rider')
@@ -14,7 +15,7 @@ def register(page,email='garage@example.test'):
     page.click('#account-close')
 
 def open_garage(page):
-    page.click('#garage-btn')
+    click_action(page, '#garage-btn')
     page.wait_for_function('!document.querySelector("#garage-add").disabled')
 
 def add_vehicle(page,name,category):
@@ -37,7 +38,7 @@ def run_batch2_tests(browser,base,route_map):
     page.add_init_script("window.__unhandled=[];addEventListener('unhandledrejection',e=>window.__unhandled.push(String(e.reason)))")
     page.on('pageerror',lambda e:errors.append(str(e)))
     page.goto(base,wait_until='networkidle')
-    page.click('#garage-btn')
+    click_action(page, '#garage-btn')
     assert 'Sign in' in page.locator('#garage-dialog').inner_text()
     page.locator('#garage-dialog .feature-header button').click()
     register(page)
@@ -65,7 +66,7 @@ def run_batch2_tests(browser,base,route_map):
     for name,category in [('Touring Bike','motorcycle'),('Family Car','car')]:
         page.locator('#garage-dialog article').filter(has_text=name).get_by_role('button',name='Choose for ride',exact=True).click()
         assert name in page.locator('#selected-vehicle').inner_text()
-        page.click('#start-btn')
+        click_action(page, '#start-btn')
         assert page.locator('#dashboard-vehicle').inner_text()==name
         page.click('#finish-session-btn')
         page.wait_for_selector('#start-overlay',state='visible')
@@ -132,7 +133,7 @@ def run_batch2_tests(browser,base,route_map):
     remote.evaluate('(data)=>{for(const [k,v] of Object.entries(data)) localStorage.setItem(k,v)}',data)
     remote.reload(wait_until='networkidle')
     remote.wait_for_function('document.querySelector("#history-status").textContent==="Account history loaded."')
-    remote.click('#history-btn')
+    click_action(remote, '#history-btn')
     chunk=remote.locator('.session-item').filter(has_text='Chunk Test')
     chunk.get_by_role('button',name='Open',exact=True).click()
     remote.wait_for_selector('#history-detail',state='visible')
@@ -146,7 +147,7 @@ def run_batch2_tests(browser,base,route_map):
     with remote.expect_download() as download:
         remote.locator('#history-detail-actions').get_by_role('button',name='Share GPX',exact=True).click()
     assert download.value.suggested_filename.endswith('.gpx')
-    remote.click('#back-to-start-btn');remote.click('#history-btn')
+    remote.click('#back-to-start-btn');click_action(remote, '#history-btn')
     remote.on('dialog',lambda d:d.accept('Renamed Cloud Ride' if d.type=='prompt' else None))
     remote.evaluate("""()=>{
       const records=JSON.parse(localStorage.getItem('__mockProfiles'));
@@ -165,7 +166,7 @@ def run_batch2_tests(browser,base,route_map):
     assert remote.evaluate("Object.keys(JSON.parse(localStorage.getItem('__mockProfiles'))).some(k=>k.includes('/sessionTombstones/'))")
     remote.reload(wait_until='networkidle')
     remote.wait_for_function('document.querySelector("#history-status").textContent==="Account history loaded."')
-    remote.click('#history-btn')
+    click_action(remote, '#history-btn')
     assert 'Renamed Cloud Ride' not in remote.locator('#history-list').inner_text()
     replica.close()
     page.locator('#garage-dialog article').filter(has_text='Family Car').get_by_role('button',name='Delete',exact=True).click()
@@ -178,7 +179,7 @@ def run_batch2_tests(browser,base,route_map):
     assert rect['x']>=0 and rect['x']+rect['width']<=321
     page.locator('#garage-dialog .feature-header button').click()
     page.select_option('#language-select','en')
-    page.click('#start-btn')
+    click_action(page, '#start-btn')
     assert page.evaluate('window.__geo.active')==1
     page.reload(wait_until='networkidle')
     page.wait_for_function('window.__geo.active===1')
@@ -187,18 +188,18 @@ def run_batch2_tests(browser,base,route_map):
     page.evaluate("async()=>{const {logout}=await import('./js/firebase/auth.js');await logout();}")
     page.wait_for_selector('#start-overlay',state='visible')
     assert page.evaluate('window.__geo.active')==0
-    page.click('#history-btn')
+    click_action(page, '#history-btn')
     assert 'Vehicle Ride' not in page.locator('#history-list').inner_text()
-    page.click('#account-btn')
+    click_action(page, '#account-btn')
     page.wait_for_function('document.querySelector("#auth-identity").textContent==="Not signed in"')
-    page.click('#account-close'); page.click('#garage-btn')
+    page.click('#account-close'); click_action(page, '#garage-btn')
     assert page.locator('#garage-dialog article').count()==0
     page.locator('#garage-dialog .feature-header button').click()
     register(page,'second@example.test');open_garage(page)
     assert page.locator('#garage-dialog article').count()==0
     assert 'Vehicle Ride' not in page.locator('#history-list').inner_text()
     page.locator('#garage-dialog .feature-header button').click()
-    page.click('#account-btn');page.click('#auth-logout')
+    click_action(page, '#account-btn');page.click('#auth-logout')
     page.wait_for_function('document.querySelector("#auth-identity").textContent==="Not signed in"')
     page.select_option('#auth-mode','login');page.fill('#auth-email','garage@example.test');page.fill('#auth-password','fixture-password')
     page.click('#auth-submit');page.wait_for_function('document.querySelector("#auth-status").textContent.includes("profile is ready")')

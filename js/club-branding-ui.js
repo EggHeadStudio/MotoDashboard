@@ -1,9 +1,10 @@
 import { registerClubSection } from './club-ui.js';
 import { updateBranding, loadWall, saveWall } from './firebase/clubRepository.js';
 import { canBrand } from './data/permissions.js';
-import { CATEGORIES, LINK_KEYS, THEMES, safeURL } from './data/schema.js';
+import { LINK_KEYS, THEMES, safeURL } from './data/schema.js';
 import { readableText, clubSessionTheme } from './data/branding.js';
-import { element, field, button, labelText } from './ui/forms.js';
+import { element, field, button, labelText, disclosure } from './ui/forms.js';
+import { vehicleIcon } from './ui/icons.js';
 
 export function initClubBrandingUI() {
   registerClubSection(async ({model,uid,body,action,stillCurrent})=>{
@@ -11,7 +12,7 @@ export function initClubBrandingUI() {
     const banner=element('section','club-banner');banner.id='club-branding';
     const prepared=clubSessionTheme(club);
     banner.style.backgroundColor=prepared.primaryColor;banner.style.color=readableText(prepared.primaryColor);
-    const badge=element('span','category-icon',CATEGORIES.indexOf(club.category)+1);badge.setAttribute('aria-hidden','true');
+    const badge=element('span','category-icon');badge.append(vehicleIcon(club.category));badge.setAttribute('aria-hidden','true');
     badge.style.backgroundColor=prepared.accentColor;badge.style.color=readableText(prepared.accentColor);
     banner.append(badge,element('h3','',club.name),labelText(element('p'),'category.'+club.category),element('p','club-description',club.description));
     body.querySelector('#club-identity')?.replaceWith(banner);
@@ -43,7 +44,7 @@ export function initClubBrandingUI() {
         action(owner=>updateBranding(owner,club.id,input));
       });branding.append(form);
     }
-    body.append(branding);
+    body.append(disclosure('branding.title',branding));
     if(!role) return;
     const wall=await loadWall(uid,club.id);if(!stillCurrent()) return;
     const section=element('section','feature-card');section.id='club-wall';
@@ -53,7 +54,7 @@ export function initClubBrandingUI() {
       field(form,'text','branding.announcement',{multiline:true,max:4000,value:wall?.text || ''});
       const save=button('common.save');save.type='submit';form.append(save);
       form.addEventListener('submit',event=>{event.preventDefault();const content=new FormData(form).get('text');action(owner=>saveWall(owner,club.id,content));});
-      section.append(form);
+      section.append(disclosure('common.edit',form));
     }links.after(section);
   });
 }

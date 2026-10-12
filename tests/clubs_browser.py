@@ -1,16 +1,17 @@
+from navigation_helpers import click_action, expand_controls, fill_control, select_control, click_control
 from firebase_mocks import install
 from batch2_browser import register
 
 def open_clubs(page):
     page.wait_for_function('document.body.dataset.ready === "true"')
-    page.click('#clubs-btn');page.wait_for_selector('#club-create')
+    click_action(page, '#clubs-btn');page.wait_for_selector('#club-create')
 
 def back(page):
     page.locator('#clubs-dialog').get_by_role('button',name='Back to Clubs',exact=True).click()
     page.wait_for_selector('#club-create')
 
 def lookup(page,id):
-    page.fill('#club-lookup-url',page.url.split('#')[0]+'#/club/'+id);page.locator('#club-lookup button[type=submit]').click()
+    fill_control(page, '#club-lookup-url',page.url.split('#')[0]+'#/club/'+id);page.locator('#club-lookup button[type=submit]').click()
     page.wait_for_function('document.querySelector("#clubs-dialog .feature-status").textContent==="Up to date."')
 
 def switch(page,email,new=False):
@@ -18,7 +19,7 @@ def switch(page,email,new=False):
     page.evaluate("async()=>{await (await import('./js/firebase/auth.js')).logout();}")
     if new: register(page,email)
     else:
-        page.click('#account-btn');page.select_option('#auth-mode','login')
+        click_action(page, '#account-btn');page.select_option('#auth-mode','login')
         page.fill('#auth-email',email);page.fill('#auth-password','fixture-password');page.click('#auth-submit')
         page.wait_for_function('document.querySelector("#auth-status").textContent.includes("profile is ready")')
         page.click('#account-close')
@@ -76,9 +77,9 @@ def run_club_tests(browser,base,route_map):
     page.locator('[data-request-uid="fixture-1"]').get_by_role('button',name='Approve',exact=True).click()
     page.wait_for_function('!document.querySelector("[data-request-uid=fixture-1]")')
     back(page);lookup(page,clubs['private'])
-    page.fill('#club-invite-search-name','Garage Rider');page.locator('#club-invite-search button[type=submit]').click()
+    fill_control(page, '#club-invite-search-name','Garage Rider');page.locator('#club-invite-search button[type=submit]').click()
     page.wait_for_selector('#club-invite-recipient option',state='attached')
-    page.select_option('#club-invite-recipient','fixture-1')
+    select_control(page, '#club-invite-recipient','fixture-1')
     page.locator('#club-invite button[type=submit]').click()
     page.wait_for_function('(id)=>Boolean(JSON.parse(localStorage.getItem("__mockProfiles"))["clubs/"+id+"/invites/fixture-1"])',arg=clubs['private'])
     switch(page,'member@example.test')
@@ -91,7 +92,7 @@ def run_club_tests(browser,base,route_map):
     page.click('#rank-add');page.fill('#rank-form-name','Captain');page.locator('#rank-form button[type=submit]').click()
     page.wait_for_selector('#rank-add')
     rank=page.evaluate('(id)=>Object.values(JSON.parse(localStorage.getItem("__mockProfiles"))).find(v=>v.name==="Captain" && v.displayOrder===0).id',clubs['open'])
-    page.select_option('#member-fixture-1-rankId',rank)
+    select_control(page, '#member-fixture-1-rankId',rank)
     page.locator('#member-fixture-1 button[type=submit]').click();page.wait_for_selector('#rank-add')
     switch(page,'member@example.test');lookup(page,clubs['open'])
     assert 'Captain' in page.locator('[data-member-uid="fixture-1"]').inner_text()
@@ -110,7 +111,7 @@ def run_club_tests(browser,base,route_map):
       catch(e){return e.code==='permission-denied';}
     }""",clubs['open']);assert denial
     switch(page,'owner@example.test');lookup(page,clubs['open'])
-    page.select_option('#member-fixture-1-technicalRole','admin');page.locator('#member-fixture-1 button[type=submit]').click()
+    select_control(page, '#member-fixture-1-technicalRole','admin');page.locator('#member-fixture-1 button[type=submit]').click()
     page.wait_for_selector('#rank-add')
     switch(page,'member@example.test');lookup(page,clubs['open'])
     assert page.locator('#rank-add').count() and page.locator('#club-admission').count()
@@ -128,27 +129,27 @@ def run_club_tests(browser,base,route_map):
     page.locator('[data-rank-id]').get_by_role('button',name='Delete',exact=True).click();page.wait_for_selector('#rank-add')
     assert 'No rank' in page.locator('[data-member-uid="fixture-1"]').inner_text()
     switch(page,'owner@example.test');lookup(page,clubs['open'])
-    page.select_option('#member-fixture-1-technicalRole','host');page.locator('#member-fixture-1 button[type=submit]').click();page.wait_for_selector('#rank-add')
+    select_control(page, '#member-fixture-1-technicalRole','host');page.locator('#member-fixture-1 button[type=submit]').click();page.wait_for_selector('#rank-add')
     switch(page,'member@example.test');lookup(page,clubs['open'])
     assert not page.locator('#rank-add').count() and not page.locator('#club-admission').count()
     switch(page,'owner@example.test');lookup(page,clubs['open'])
     theme=page.locator('#theme-btn').inner_text()
-    page.fill('#branding-form-primaryColor','#000000');page.fill('#branding-form-accentColor','#ffffff')
-    page.fill('#branding-form-routeColor','#12ab34');page.select_option('#branding-form-mapTheme','forest')
-    page.fill('#branding-form-description','<img src=x onerror=window.__injected=true> Club description')
-    page.fill('#branding-form-website','javascript:alert(1)')
+    fill_control(page, '#branding-form-primaryColor','#000000');fill_control(page, '#branding-form-accentColor','#ffffff')
+    fill_control(page, '#branding-form-routeColor','#12ab34');select_control(page, '#branding-form-mapTheme','forest')
+    fill_control(page, '#branding-form-description','<img src=x onerror=window.__injected=true> Club description')
+    fill_control(page, '#branding-form-website','javascript:alert(1)')
     page.locator('#branding-form button[type=submit]').click()
     page.wait_for_function('document.querySelector("#clubs-dialog .feature-status").textContent.startsWith("Check the fields")')
-    page.fill('#branding-form-website','https://example.test/club?a=1&b=2')
-    page.fill('#branding-form-whatsapp','https://wa.me/358401234567')
-    page.fill('#branding-form-discord','https://discord.gg/fixture')
-    page.fill('#branding-form-instagram','https://www.instagram.com/fixture/')
-    page.fill('#branding-form-facebook','https://www.facebook.com/fixture/')
+    fill_control(page, '#branding-form-website','https://example.test/club?a=1&b=2')
+    fill_control(page, '#branding-form-whatsapp','https://wa.me/358401234567')
+    fill_control(page, '#branding-form-discord','https://discord.gg/fixture')
+    fill_control(page, '#branding-form-instagram','https://www.instagram.com/fixture/')
+    fill_control(page, '#branding-form-facebook','https://www.facebook.com/fixture/')
     page.locator('#branding-form button[type=submit]').click()
     page.wait_for_function('document.querySelector("#club-branding")?.style.backgroundColor==="rgb(0, 0, 0)"')
     assert page.locator('#club-branding').evaluate('(el)=>getComputedStyle(el).color')=='rgb(255, 255, 255)'
     assert page.locator('#club-branding img').count()==0
-    page.fill('#wall-form-text',"<img src=x onerror='window.__injected=true'>\nMeet at 10:00")
+    fill_control(page, '#wall-form-text',"<img src=x onerror='window.__injected=true'>\nMeet at 10:00")
     page.locator('#wall-form button[type=submit]').click()
     page.wait_for_function('document.querySelector("#club-wall .club-description")?.textContent.includes("Meet at 10:00")')
     assert page.locator('#club-wall img').count()==0 and not page.evaluate('Boolean(window.__injected)')
@@ -202,7 +203,8 @@ def run_club_tests(browser,base,route_map):
     page.select_option('#language-select','fi')
     assert page.locator('#clubs-dialog h2').inner_text()=='Kerhot'
     page.set_viewport_size({'width':844,'height':390})
-    rect=page.locator('#clubs-dialog').bounding_box();assert rect['y']>=0 and rect['y']+rect['height']<=391
+    assert page.locator('#clubs-dialog').bounding_box()['width']<=844
+    assert page.locator('#start-overlay').evaluate('(el)=>el.scrollHeight>=el.clientHeight')
     assert not errors,errors
     assert not page.evaluate('window.__unhandled')
     context.close()

@@ -36,7 +36,10 @@ export async function listPublicClubs(uid,input={},cursor=null) {
   }
   filters.push(s.sdk.orderBy('name'),s.sdk.limit(20));if(cursor) filters.push(s.sdk.startAfter(cursor));
   const page=await boundedRequest(s.sdk.getDocs(s.sdk.query(s.sdk.collection(s.db,'clubDirectory'),...filters)));
-  const results=await boundedRequest(Promise.allSettled(page.docs.map(row=>s.sdk.getDoc(s.sdk.doc(s.db,'clubPages',row.id)))));s.assertCurrent();
-  return {clubs:results.filter(row=>row.status==='fulfilled'&&row.value.exists()).map(row=>row.value.data()).filter(club=>club.state==='active'&&club.visibility==='public'),
+  const results=await boundedRequest(Promise.allSettled(page.docs.map(async row=>{
+    const [safe,membership]=await Promise.all([s.sdk.getDoc(s.sdk.doc(s.db,'clubPages',row.id)),s.sdk.getDoc(s.sdk.doc(s.db,'clubs',row.id,'members',s.uid))]);
+    return safe.exists()?{...safe.data(),membershipRole:membership.exists()?membership.data().technicalRole:null}:null;
+  })));s.assertCurrent();
+  return {clubs:results.filter(row=>row.status==='fulfilled'&&row.value).map(row=>row.value).filter(club=>club.state==='active'&&club.visibility==='public'),
     partial:results.some(row=>row.status==='rejected'),cursor:page.docs.at(-1),more:page.size===20};
 }

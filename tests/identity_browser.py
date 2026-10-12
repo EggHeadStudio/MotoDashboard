@@ -1,3 +1,4 @@
+from navigation_helpers import click_action, expand_controls, fill_control, select_control, click_control
 """Name validation and owner profile editing; SDK fixtures, not live Firebase."""
 from firebase_mocks import install
 
@@ -5,7 +6,7 @@ def run_identity_tests(browser, base, route_map):
     context = browser.new_context(viewport={'width':320,'height':568})
     route_map(context); install(context)
     page = context.new_page(); page.goto(base, wait_until='networkidle')
-    page.click('#account-btn');page.wait_for_function('!document.querySelector("#auth-submit").disabled')
+    click_action(page, '#account-btn');page.wait_for_function('!document.querySelector("#auth-submit").disabled')
     page.select_option('#auth-mode','register')
     page.fill('#auth-email','identity4@example.test');page.fill('#auth-password','fixture-password')
     page.fill('#auth-confirm-password','fixture-password')
@@ -27,7 +28,7 @@ def run_identity_tests(browser, base, route_map):
     page.wait_for_function('document.querySelector("#auth-identity").textContent.includes("\\u{1f3cd}".repeat(30))')
     page.fill('#profile-name','Updated Rider');page.click('#profile-name-form button')
     page.wait_for_function('document.querySelector("#auth-identity").textContent.includes("Updated Rider")')
-    page.reload(wait_until='networkidle');page.click('#account-btn')
+    page.reload(wait_until='networkidle');click_action(page, '#account-btn')
     page.wait_for_function('document.querySelector("#profile-name").value === "Updated Rider"')
     page.fill('#profile-name','ab');page.click('#profile-name-form button')
     assert 'Updated Rider' in page.locator('#auth-identity').inner_text()
@@ -37,7 +38,7 @@ def run_identity_tests(browser, base, route_map):
     page.evaluate('''()=>{const docs=JSON.parse(localStorage.getItem('__mockProfiles'));
       for(const [path,data] of Object.entries(docs))if(data.uid){data.displayName='';delete docs['displayProfiles/'+data.uid];}
       localStorage.setItem('__mockProfiles',JSON.stringify(docs));}''')
-    page.reload(wait_until='networkidle');page.click('#account-btn')
+    page.reload(wait_until='networkidle');click_action(page, '#account-btn')
     page.wait_for_function('!document.querySelector("#profile-name-prompt").hidden && document.querySelector("#profile-name").value === ""')
     assert 'identity4@example.test' not in page.locator('#auth-identity').inner_text()
     page.fill('#profile-name','Chosen Rider');page.click('#profile-name-form button')

@@ -3,7 +3,7 @@ import * as repository from './firebase/groupRepository.js';
 import { loadGarage } from './firebase/garageRepository.js';
 import { loadDisplayProfiles, searchDisplayProfiles } from './firebase/displayProfiles.js';
 import { selectedVehicle } from './garage-ui.js';
-import { element, labelText, field, button } from './ui/forms.js';
+import { element, labelText, field, button, disclosure } from './ui/forms.js';
 import { t } from './i18n/i18n.js';
 import { dataErrorKey } from './firebase/access.js';
 import { riderMoving, onRiderMotion } from './rider-motion.js';
@@ -101,16 +101,18 @@ export function initGroupParticipantsUI() {
       const search=element('form');search.id='group-invite-search';field(search,'name','identity.searchName',{required:true,max:64});
       const find=button('identity.search');find.type='submit';search.append(find);
       const form=element('form');form.id='group-invite';const recipient=field(form,'recipient','identity.recipient',{required:true,choices:[]});
-      const send=button('identity.invite');send.type='submit';form.append(send);
+      const send=button('identity.invite');send.type='submit';send.disabled=true;form.append(send);
       search.addEventListener('submit',event=>{
         event.preventDefault();const value=new FormData(search).get('name');
         action(async owner=>{
           const people=await searchDisplayProfiles(owner,value);if(!stillCurrent()) return;recipient.replaceChildren();
           for(const person of people.filter(person=>person.uid!==owner)) {const option=element('option','',person.displayName);option.value=person.uid;recipient.append(option);}
-        },()=>labelText(status,recipient.children.length?'common.loaded':'identity.notFound'));
+        },()=>labelText(status,recipient.children.length?'common.loaded':'identity.notFound')).then(()=>{
+          if(stillCurrent()) send.disabled=!recipient.children.length;
+        });
       });
       form.addEventListener('submit',event=>{event.preventDefault();const target=recipient.value;action(owner=>repository.inviteGroup(owner,id,target));});
-      admission.append(search,form);
+      admission.append(disclosure('identity.invite',labelText(element('p','muted'),'discover.searchHint'),search,form));
       async function requests(cursor=null) {
         const page=await repository.listGroupRecords(uid,id,'joinRequests',cursor);
         const names=await loadDisplayProfiles(uid,page.records.map(row=>row.uid));if(!stillCurrent()) return;

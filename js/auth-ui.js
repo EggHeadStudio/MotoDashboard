@@ -1,8 +1,10 @@
 import { observeAuth, register, login, logout, authErrorKey } from './firebase/auth.js';
 import { ensureProfile, saveProfileLanguage } from './firebase/profileRepository.js';
 import { getLanguage, setLanguage, t, setLocalizedText, onLanguageChange } from './i18n/i18n.js';
-import { publishAuthState } from './auth-state.js';
+import { publishAuthState, publishDisplayIdentity } from './auth-state.js';
 import { validDisplayName } from './data/identity.js';
+import { openView } from './ui/navigation.js';
+import { toast } from './ui/toast.js';
 
 export function initAuthUI() {
   const dialog = document.getElementById('account-dialog');
@@ -51,6 +53,7 @@ export function initAuthUI() {
     setLocalizedText(status, () => t(message));
     setLocalizedText(identity, () => user ? t('auth.signedInAs', { name: profile?.displayName?.trim() || t('identity.member') }) : t('auth.signedOut'));
     setLocalizedText(open, () => t(user ? 'auth.account' : 'auth.open'));
+    document.getElementById('account-private-email').textContent = user?.email || '';
   }
 
   async function synchronize(next, displayName) {
@@ -63,6 +66,7 @@ export function initAuthUI() {
       const result = await deadline(ensureProfile(next, getLanguage(), displayName));
       if (current !== version || user?.uid !== next.uid) return;
       profile = result; profileName.value = result.displayName || ''; message = 'auth.profileReady';
+      publishDisplayIdentity(next.uid, result.displayName);
       if (pendingLanguage?.uid === next.uid) {
         try { await queueLanguage(next, pendingLanguage.language); }
         catch { if (current === version) message = 'auth.languageError'; }
@@ -92,7 +96,7 @@ export function initAuthUI() {
   }
 
   open.addEventListener('click', () => {
-    dialog.showModal();
+    openView(dialog);
     if (!connected) void connect();
   });
   close.addEventListener('click', () => dialog.close());
@@ -110,7 +114,7 @@ export function initAuthUI() {
     });
   }
   dialog.addEventListener('close', () => {
-    clearPasswords(); render(); open.focus();
+    clearPasswords(); render();
   });
   mode.addEventListener('change', () => { clearPasswords(); message = 'auth.ready'; render(); });
   languageSelector.addEventListener('change', () => setLanguage(languageSelector.value));
@@ -157,6 +161,7 @@ export function initAuthUI() {
     if (!validDisplayName(profileName.value)) {message='auth.nameLength';render();profileName.focus();return;}
     const owner=user, value=profileName.value.trim(); busy=true;render();
     await synchronize(owner,value); busy=false;render();
+    if(profile?.displayName===value && user?.uid===owner.uid) toast('ui.saved');
   });
   onLanguageChange(language => {
     render();

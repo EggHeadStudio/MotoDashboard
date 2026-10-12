@@ -1,3 +1,4 @@
+from navigation_helpers import click_action, expand_controls, fill_control, select_control, click_control
 """Static frontend integration using explicit mock live transport; no cloud calls."""
 import json,time
 from firebase_mocks import install,MOCK_AUTH
@@ -41,7 +42,7 @@ def run_live_tests(browser,base,route_map):
       window.__position=(lat,at)=>{const prior=Date.now;Date.now=()=>at;
         try{window.__geo.callback?.({timestamp:at,coords:{latitude:lat,longitude:25,accuracy:5,heading:90,speed:10}});}finally{Date.now=prior;}};''')
     page.goto(base,wait_until='networkidle');page.wait_for_function('document.body.dataset.ready === "true"')
-    page.click('#account-btn');page.wait_for_function('!document.querySelector("#auth-submit").disabled')
+    click_action(page, '#account-btn');page.wait_for_function('!document.querySelector("#auth-submit").disabled')
     page.select_option('#auth-mode','register');page.fill('#auth-name','Live Rider');page.fill('#auth-email','live4@example.test')
     page.fill('#auth-password','fixture-password');page.fill('#auth-confirm-password','fixture-password');page.click('#auth-submit')
     page.wait_for_function('document.querySelector("#auth-form").hidden');page.click('#account-close')
@@ -73,7 +74,7 @@ def run_live_tests(browser,base,route_map):
     # Existing recording shares the same watch (soft restart clears the old watch).
     page.click('#back-to-start-btn');page.wait_for_function('window.__geo.active === 0')
     page.wait_for_function('document.querySelectorAll(".live-rider-label").length===0')
-    page.click('#start-btn');page.wait_for_function('window.__geo.active === 1')
+    click_action(page, '#start-btn');page.wait_for_function('window.__geo.active === 1')
     page.evaluate('(id)=>{location.hash="/session/"+id;dispatchEvent(new Event("motodash-group-link"));}',group)
     page.wait_for_selector('#live-consent input[name=consent]');page.check('#live-consent input[name=consent]');page.click('#live-consent button')
     page.wait_for_selector('.live-rider-label');assert page.evaluate('window.__geo.maximum')==1
@@ -120,7 +121,7 @@ def run_live_tests(browser,base,route_map):
       await r.setGroupState(a.getAccount().uid,id,'active');return id;}''')
     start_sharing(next_group);peers[-1].send(json.dumps({'v':1,'type':'session_ended'}));stopped()
     # Use a second real fixture account and normal joining for the leave control.
-    page.click('#back-to-start-btn');page.click('#account-btn');page.click('#auth-logout');page.wait_for_function('!document.querySelector("#auth-form").hidden')
+    page.click('#back-to-start-btn');click_action(page, '#account-btn');page.click('#auth-logout');page.wait_for_function('!document.querySelector("#auth-form").hidden')
     page.select_option('#auth-mode','register');page.fill('#auth-name','Second Rider');page.fill('#auth-email','live-member@example.test')
     page.fill('#auth-password','fixture-password');page.fill('#auth-confirm-password','fixture-password');page.click('#auth-submit')
     page.wait_for_function('document.querySelector("#auth-identity").textContent.includes("Second Rider")');page.click('#account-close')

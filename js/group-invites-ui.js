@@ -5,7 +5,7 @@ import { sessionURL, followSessionURL } from './data/group-session.js';
 import { dataErrorKey } from './firebase/access.js';
 import { getAccount, onAccountChange } from './auth-state.js';
 import { invitationQR } from './ui/qr.js';
-import { dialog, element, labelText, button } from './ui/forms.js';
+import { openView, dialog, element, labelText, button } from './ui/forms.js';
 
 export function initGroupInvitesUI() {
   const share=dialog('group-share-dialog','groups.invitation');
@@ -22,7 +22,7 @@ export function initGroupInvitesUI() {
       catch(error) {if(error.name!=='AbortError' && getAccount()?.uid===owner) labelText(share.status,'identity.copyFailed');}
     }));
     if(expires) labelText(share.body.appendChild(element('p')),'groups.expires',{time:new Date(expires).toLocaleString()});
-    share.node.showModal();
+    openView(share.node);
   }
   registerGroupSection(async({uid,model,body,status,action,stillCurrent})=>{
     const {group,manager}=model,id=group.id;

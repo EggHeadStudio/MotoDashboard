@@ -1,4 +1,5 @@
 import { t, setLocalizedText } from '../i18n/i18n.js';
+import { openView, mountPanel } from './navigation.js';
 
 export function element(tag, className, content) {
   const node = document.createElement(tag);
@@ -42,6 +43,7 @@ export function dialog(id, titleKey) {
   const body = element('div', 'feature-body');
   const status = element('p', 'feature-status'); status.setAttribute('role', 'status');
   node.append(header, status, body); document.body.append(node);
+  mountPanel(node);
   return { node, body, status };
 }
 export async function runAction(root, status, action, errorKey) {
@@ -49,6 +51,11 @@ export async function runAction(root, status, action, errorKey) {
   const disabled = controls.map(node => node.disabled);
   controls.forEach(node => { node.disabled = true; });
   labelText(status, 'common.loading');
+  root.setAttribute('aria-busy', 'true');
   try { await action(); } catch (error) { labelText(status, errorKey(error)); }
-  finally { controls.forEach((node, i) => { node.disabled = disabled[i]; }); }
+  finally { root.setAttribute('aria-busy', 'false'); controls.forEach((node, i) => { node.disabled = disabled[i]; }); }
+}
+export { openView };
+export function disclosure(key, ...children) {
+  const node = element('details', 'disclosure'); node.append(labelText(element('summary'),key), ...children); return node;
 }

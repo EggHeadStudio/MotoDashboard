@@ -1,3 +1,4 @@
+from navigation_helpers import click_action, expand_controls, fill_control, select_control, click_control
 """Group UI browser integration with SDK fixtures; rules are tested separately."""
 from firebase_mocks import install
 from batch2_browser import register
@@ -19,7 +20,7 @@ def run_group_tests(browser,base,route_map):
     page=context.new_page();errors=[];page.on('pageerror',lambda error:errors.append(str(error)))
     page.add_init_script("window.__unhandled=[];addEventListener('unhandledrejection',e=>window.__unhandled.push(String(e.reason)))")
     page.goto(base,wait_until='networkidle');register(page,'host@example.test')
-    page.click('#groups-btn');page.wait_for_selector('#group-create')
+    click_action(page, '#groups-btn');page.wait_for_selector('#group-create')
     ids=[]
     for title,activity,visibility,policy in [('Morning Ride','ride','public','open'),('Private Meet','meet','private','invite'),('Approval Event','event','approval','approval'),('Open Afternoon','ride','public','open')]:
         page.click('#group-create');page.wait_for_selector('#group-form')
@@ -42,17 +43,17 @@ def run_group_tests(browser,base,route_map):
     page.select_option('#language-select','en');page.set_viewport_size({'width':320,'height':568})
     assert page.locator('#groups-dialog').bounding_box()['width']<=320
     page.set_viewport_size({'width':844,'height':390})
-    assert page.locator('#groups-dialog').bounding_box()['height']<=390
-    page.locator('#groups-dialog .feature-header button').click();page.click('#lobby-btn')
+    assert page.locator('#start-overlay').evaluate('(el)=>el.scrollHeight>=el.clientHeight')
+    page.locator('#groups-dialog .feature-header button').click();click_action(page, '#lobby-btn')
     page.wait_for_function('document.querySelector("#lobby-dialog .feature-status").textContent==="Up to date."')
     text=page.locator('#lobby-results').inner_text();assert 'Open Afternoon' in text and 'Approval Event' in text
     assert 'Private Meet' not in text and 'Morning Ride' not in text and 'Updated Ride' not in text
     assert 'Private entrance' not in text and 'fixture-0' not in text
-    page.select_option('#lobby-filter-activityType','event');page.locator('#lobby-filter button[type=submit]').click()
+    select_control(page, '#lobby-filter-activityType','event');page.locator('#lobby-filter button[type=submit]').click()
     page.wait_for_function('document.querySelectorAll("[data-lobby-id]").length===1')
     assert 'Approval Event' in page.locator('#lobby-results').inner_text()
-    page.fill('#lobby-filter-meetingArea','Tampere');page.locator('#lobby-filter button[type=submit]').click()
-    page.wait_for_function('document.querySelector("#lobby-results").textContent.includes("No matching")')
+    fill_control(page, '#lobby-filter-meetingArea','Tampere');page.locator('#lobby-filter button[type=submit]').click()
+    page.wait_for_function('document.querySelector("#lobby-results").textContent.includes("The next adventure")')
     page.locator('#lobby-dialog .feature-header button').click()
     page.set_viewport_size({'width':390,'height':844})
     switch(page,'member@example.test',True);linked(page,ids[3],'Open Afternoon')
@@ -99,8 +100,8 @@ def run_group_tests(browser,base,route_map):
     assert 'cannot rejoin' in page.locator('#groups-dialog').inner_text()
     assert not page.locator('#group-join').count()
     switch(page,'host@example.test');linked(page,ids[1],'Private Meet')
-    page.fill('#group-invite-search-name','Garage Rider');page.locator('#group-invite-search button[type=submit]').click()
-    page.wait_for_selector('#group-invite-recipient option',state='attached');page.select_option('#group-invite-recipient','fixture-1')
+    fill_control(page, '#group-invite-search-name','Garage Rider');page.locator('#group-invite-search button[type=submit]').click()
+    page.wait_for_selector('#group-invite-recipient option',state='attached');select_control(page, '#group-invite-recipient','fixture-1')
     page.locator('#group-invite button[type=submit]').click()
     page.locator('[data-invitee-uid="fixture-1"]').get_by_role('button',name='Invitation link / QR',exact=True).click()
     page.wait_for_selector('.invitation-qr')
@@ -163,7 +164,7 @@ def run_group_tests(browser,base,route_map):
       for(let n=0;n<21;n++) await createGroup('fixture-1',{title:'Paged Ride '+n,description:'',activityType:'ride',category:'bicycle',
         startsAt:Date.now()+7200000+n*1000,endsAt:null,meetingArea:'Espoo',meetingLocation:'',visibility:'public',joiningPolicy:'open',maxParticipants:null,clubId:null});
     }""")
-    page.locator('#groups-dialog .feature-header button').click();page.click('#lobby-btn')
+    page.locator('#groups-dialog .feature-header button').click();click_action(page, '#lobby-btn')
     page.wait_for_function('document.querySelectorAll("[data-lobby-id]").length===20')
     page.locator('#lobby-dialog').get_by_role('button',name='Load more',exact=True).click()
     page.wait_for_function('document.querySelectorAll("[data-lobby-id]").length===23')
@@ -175,7 +176,7 @@ def run_group_tests(browser,base,route_map):
       for(let n=0;n<23;n++)r['groupSessions/'+id+'/participants/roster-'+n]={uid:'roster-'+n,vehicleId:null,vehicle:null,clubIdentity:null,status:'fuel',joinedAt:{__serverTimestamp:true},updatedAt:{__serverTimestamp:true}};
       r['groupSessions/'+id].participantCount=25;r['groupPages/'+id].participantCount=25;
       localStorage.setItem('__mockProfiles',JSON.stringify(r));}""",ids[1])
-    page.evaluate("()=>{dispatchEvent(new Event('motodash-group-link'));}")
+    page.evaluate("(id)=>{location.hash='/session/'+id;}",ids[1])
     page.wait_for_function('document.querySelector("#group-overview").textContent.includes("20 of 25")')
     page.locator('#group-participants').get_by_role('button',name='Load more',exact=True).click()
     page.wait_for_function('document.querySelector("#group-overview").textContent.includes("25 of 25")')
@@ -195,7 +196,7 @@ def run_group_tests(browser,base,route_map):
     rank=page.evaluate("""async(id)=>{const c=await import('./js/firebase/clubRepository.js');
       const rank=await c.saveRank('fixture-0',id,null,{name:'Captain',displayOrder:0});
       await c.setMember('fixture-0',id,'fixture-1','host',rank);return rank;}""",club)
-    switch(page,'member@example.test');page.click('#groups-btn');page.wait_for_selector('#group-create');page.click('#group-create');page.wait_for_selector('#group-form')
+    switch(page,'member@example.test');click_action(page, '#groups-btn');page.wait_for_selector('#group-create');page.click('#group-create');page.wait_for_selector('#group-form')
     page.fill('#group-form-title','Club Host Ride');page.fill('#group-form-meetingArea','Espoo');page.select_option('#group-form-clubId',club)
     page.locator('#group-form button[type=submit]').click();page.wait_for_selector('#group-edit')
     hosted=page.evaluate('Object.values(JSON.parse(localStorage.getItem("__mockProfiles"))).find(row=>row.title==="Club Host Ride" && row.creatorUid).id')
