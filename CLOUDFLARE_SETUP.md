@@ -1,20 +1,24 @@
-# Cloudflare setup for MotoDashboard Batch 4
+> **Current operator report, 2026-10-12:** motodash-live and LIVE_ROOMS Durable Objects are deployed, the production frontend endpoint is configured, Batch 5 is published, Firestore Rules deployed and all 18 composites Enabled. Real two-account/two-phone acceptance remains pending. This guide now covers maintenance/redeployment and acceptance; no setup/deployment action was performed by this audit. Firebase deployment identity and the Cloudflare read-only Firestore credential are separate.
 
-Updated 2026-10-11: **browser-only deployment through GitHub Actions**. You do not
+# Cloudflare maintenance and acceptance for MotoDashboard
+
+Updated 2026-10-12: **browser-only deployment through GitHub Actions**. You do not
 need to install Node.js, npm, Wrangler, Git or other software on this computer.
-The user reports that **motodash-live already exists** in Cloudflare; the agent
-has not inspected or changed its deployed configuration. Local Batch 4 evidence
-does not certify that existing Worker's deployed code or production readiness.
+The operator reports **motodash-live and Durable Objects deployed**. This audit
+did not inspect private consoles or change the deployed configuration. Local tests
+and deployment success do not certify authenticated live/mobile readiness.
 Every account, billing, IAM, key, deployment, frontend publication and live-test
-step below requires the **user/operator**. No account ID, deployment ID or Worker
-URL has been supplied. `live-config.js` deliberately has an empty endpoint.
+step below is for the **user/operator** when maintaining the service or testing it.
+The configured Worker URL is **https://motodash-live.old-sound-55f2.workers.dev**;
+account/deployment IDs remain operator records, and live-config.js already contains
+the public endpoint.
 
 The frontend remains static GitHub Pages native ESM. Only `cloudflare/` uses npm
 and a server bundle, installed on GitHub-hosted runners. Firebase
 **motodash-87bf8** Auth/Firestore remains permanent
 identity/data/authorization; RTDB remains locked. Read DEPLOYMENT_CHECKLIST.md
-before any publication. These instructions describe future actions, not actions
-performed in Batch 4 or during workflow preparation. The new workflow is
+before any publication. Initial setup is reported complete. The instructions below apply only to future
+operator-approved maintenance; historical preparation evidence is preserved. The new workflow is
 [.github/workflows/deploy-cloudflare.yml](.github/workflows/deploy-cloudflare.yml).
 It has **workflow_dispatch only**: publishing repository changes does not start
 Worker deployment. The existing GitHub Pages workflow is independent and unchanged.
@@ -107,12 +111,12 @@ domains **eggheadstudio.github.io** and **localhost** (domain only, no path).
 Verify all public web config fields against Console. `databaseURL` is historical
 and optional to Auth/Firestore; it is never used by the frontend.
 
-Follow the existing read-only production inventory gate B6. If verified free of
+Follow the current checklist's read-only legacy inventory guidance; the historical B6 rationale is archived. If verified free of
 legacy Club records/orphans, record migration N/A; do not infer emptiness from the
 user report. Record/export the current deployed rules before future approved
 publication. Exact sources: root **firestore.rules**, **database.rules.json**,
-**firestore.indexes.json**. Keep database.rules.json deny-all. Verify all **17**
-composite indexes (one private-history, sixteen Lobby combinations) and the route
+**firestore.indexes.json**. Keep database.rules.json deny-all. Verify all **18**
+composite indexes (one private-history, sixteen Lobby combinations and Club category/name) and the route
 chunk single-field exemption. No Cloudflare live index or Firestore GPS collection
 is needed. These rules include Batch 4's normalized name checks. Publishing is
 an operator action, not part of this batch.
@@ -171,16 +175,13 @@ Dashboard secret controls:
 Current observability and Wrangler metrics are off. Hashes of one-use tickets
 are stored temporarily; raw Firebase tokens are not stored/logged by code.
 
-## 8. Add the prepared files to GitHub using the browser
+## 8. Maintain the existing workflow on main
 
-The agent prepared the workflow and this document locally but did not push them.
-When you approve publishing these files, open the repository in GitHub. Use
-Add file → Upload files/Create new file (or GitHub's browser editor) to commit the
-prepared **.github/workflows/deploy-cloudflare.yml** and **CLOUDFLARE_SETUP.md**
-onto the default branch. Keep the workflow path exact. Ensure the already reviewed
-cloudflare/ source and package-lock.json also exist in that revision. Review
-changes and use the repository's normal PR/merge process if branch protection
-requires it. No local Git, terminal, Node or Wrangler is needed.
+.github/workflows/deploy-cloudflare.yml, cloudflare/ source and package-lock.json
+already exist on main. No upload/registration branch is needed. For a future reviewed
+change, update the intended source/config on main through the normal GitHub browser
+or local commit process. An approved main push starts Pages; it never dispatches
+this separate Worker workflow. The operator needs no local Node/npm/Wrangler.
 
 GitHub must allow Actions for this repository and these official actions:
 actions/checkout@v6, actions/setup-node@v6, cloudflare/wrangler-action@v4. The job
@@ -214,8 +215,8 @@ existing config sets workers_dev to true. No custom domain is required.
 Record the actual workers.dev URL from the Dashboard and open its `/health` path.
 Health proves routing only, not Firebase access. With the reader secret absent,
 live ticket requests fail closed; do not weaken checks to fix this. Complete the
-admitted-account test before enabling the frontend. No GitHub run or Cloudflare
-deployment was performed while preparing these files.
+admitted-account acceptance test before wider use. The operator reports successful deployment; this audit performed no GitHub run or
+Cloudflare deployment and does not mark admitted-account acceptance completed.
 
 ## 10. Configure exact allowed origins
 
@@ -238,17 +239,16 @@ CORS and Origin checks protect browser connections; they do not replace
 identity/Firestore authorization and are not
 protection against a nonbrowser client forging an Origin.
 
-## 11. Set the frontend endpoint and publish the static artifact
+## 11. Preserve the configured frontend endpoint and Pages artifact
 
-In root `live-config.js`, replace the empty `endpoint` string with the **actual
-HTTPS origin** from step 9, without path/query/fragment/credentials. The client
-derives the WSS `/v1/sessions/{id}/connect` URL. Never paste a token. Until this
-setting is supplied, live sharing shows a localized setup message and makes no
-live requests; guest and personal GPS/recording still work.
+Root live-config.js already points to
+**https://motodash-live.old-sound-55f2.workers.dev**. Keep the HTTPS origin without
+path/query/fragment/credentials; the client derives the WSS connection route.
+Do not replace it with an empty string during routine cleanup. An intentional
+incident rollback may disable live by clearing it, with the consequences in step 14.
+Batch 5 is already published, per operator. Frontend changes and Worker deployment
+remain independent; no private value belongs in the endpoint configuration.
 
-When separately approved, edit this public file through GitHub's browser editor
-and commit the reviewed endpoint change. No terminal command or private value
-is needed. This frontend change is independent of running the Worker workflow.
 GitHub repository Settings → Pages → Source: **GitHub Actions**. The existing
 `.github/workflows/deploy.yml` copies an explicit frontend allowlist to `_site`;
 do not publish repository root or add cloudflare/, node_modules, tests or secrets.
@@ -426,3 +426,12 @@ Node/npm/Wrangler installation in this workflow is confined to GitHub runners.
 This is configuration validation, not a GitHub-hosted run or a production test.
 No push, workflow dispatch, Cloudflare change or Firebase operation is performed.
 The frontend workflow and cloudflare/wrangler.jsonc are unchanged.
+
+
+## Post-Batch 5 audit
+
+The existing Worker/DO binding, v1 SQLite migration, exact origin, protocol and
+credential configuration are preserved. Local Worker checks are in REPOSITORY_AUDIT.md;
+operator-reported deployment is separate from mock-backed workerd testing and the
+pending section 12 phone checklist. Read quotas, lease/token revocation and erasure
+remain future reliability/privacy work; no RTDB transport should be enabled.

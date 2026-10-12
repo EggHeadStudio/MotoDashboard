@@ -10,7 +10,7 @@ cannot inspect Firestore admission. Batch 4 approves Cloudflare to verify curren
 Firestore authority directly, without ACL mirroring or Cloud Functions. Historical
 evidence remains below; the old design is not an implementation instruction.
 
-Implemented locally: M0 audit; M1 mandatory Unicode 3–30 names/profile editing;
+Implemented and deployed, per operator (2026-10-12): M0 audit; M1 mandatory Unicode 3–30 names/profile editing;
 M2 separate Worker tooling; M3 verified Firebase token + one-use 30-second ticket;
 M4 trusted read-only Firestore authorization/revocation tests; M5 isolated bounded
 rooms; M6 compact protocol/throttling; M7 existing GPS/Leaflet integration/consent;
@@ -24,7 +24,10 @@ coordinates in DO storage. Admission requires actual participant plus active par
 and live Club, never rank or creator alone. Check at connection and periodically;
 polling revocation is bounded, not instantaneous. Outages fail closed.
 
-No deployment/live acceptance is completed. Browser suspension can stop GPS.
+Worker/Durable Objects and the configured Batch 5 frontend are deployed, per operator.
+Authenticated two-phone/live acceptance is still pending; this audit did not access
+private consoles or run production traffic. Endpoint:
+**https://motodash-live.old-sound-55f2.workers.dev** (HTTPS ticket / WSS room). Browser suspension can stop GPS.
 No background guarantee, navigation, speed rankings or emergency promise.
 Current evidence, milestones and files: [BATCH_4_RESULT.md](BATCH_4_RESULT.md).
 Operator setup, two-phone tests, budgets and rollback:
@@ -75,8 +78,9 @@ No road-distance, route-order, speed rankings, navigation or emergency promise.
 Realtime Database stays locked and has no production initializer/import.
 
 Local tests cover transport, periodic silent revocation and ticket expiry, but
-real hibernation eviction, IAM propagation, mobile lock screen and deployment have
-not been tested. Spark read quota is a scaling blocker at the documented 1,000+
+real hibernation eviction, IAM read scope/revocation, mobile lock screen and
+authenticated production behavior have not been accepted. A successful operator
+deployment is recorded separately from these tests. Spark read quota is a scaling blocker at the documented 1,000+
 user workload. Global HTTP abuse prevention, complete account erasure and stronger
 Auth revocation remain operational/future work; none is silently claimed complete.
 Official references: [hibernation](https://developers.cloudflare.com/durable-objects/examples/websocket-hibernation-server/),
@@ -93,3 +97,19 @@ product owner replaced the proposed transport in Batch 4; RTDB remains deny-all.
 No RTDB database or production data was deleted. The unused frontend RTDB adapter
 and its initializer-only browser assertion are replaced by a no-RTDB import guard.
 The locked emulator security coverage remains.
+
+
+## Post-Batch 5 maintenance and next dependencies
+
+The live reader key in Cloudflare is distinct from the Firestore configuration
+account used by the GitHub Firebase workflow. The reader uses datastore.entities.get;
+the deployer manages Rules/indexes and has no document permissions. Neither belongs
+in the frontend. Origins, protocol, authorization and GPS lifecycle are unchanged by
+this audit. Private routes stay in owner-only Firestore chunks; the live room stores
+latest attachment state and short-lived hashed tickets, never route history.
+
+Before wider beta, record two-account/two-phone acceptance, effective revocation,
+read quotas and background limitations. Future complete account deletion must close
+live access/tickets before permanent cleanup, preserve nonpersonal ID reservations
+and handle hibernatable state. See [Batch 6 priorities](IDEA.md) and
+[repository audit](REPOSITORY_AUDIT.md). No Batch 6 work is implemented here.

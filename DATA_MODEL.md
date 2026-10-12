@@ -1,4 +1,4 @@
-> **Batch 4 current architecture:** GitHub Pages frontend, Firebase Auth identity, Firestore persistent authorization/data, Cloudflare Worker + one Durable Object per Group Session + WebSockets for live locations. RTDB stays locked. See LIVE_TRACKING.md; older Batch 3 results below are historical. Cloudflare setup and live acceptance are not completed.
+> **Current post-Batch 5 architecture (2026-10-12):** GitHub Pages frontend, Firebase Auth identity, Firestore persistent authorization/data, Cloudflare Worker + one Durable Object per Group Session + WebSockets for live locations. RTDB stays locked. See LIVE_TRACKING.md; older Batch 3 results below are historical. The operator reports deployed Auth/Firestore/Rules/all 18 Enabled indexes and Cloudflare Worker/DOs. Real-account/phone acceptance remains pending.
 
 # MotoDashboard data and authorization contract
 
@@ -84,15 +84,17 @@ reservation is sufficient); deleting that reservation would defeat ID protection
 Firebase administrators/IAM can bypass rules and must follow the same invariant.
 Rules cannot retract documents that clients already received before this fix.
 
-Before approved rollout, inventory live Clubs and every orphaned Club subtree left
+For legacy verification and future trusted erasure planning, inventory live Clubs and every orphaned Club subtree left
 by older deletion, plus known deleted IDs from operator records. Retire/reserve all
 old deleted/orphan IDs rather than attach them to a new Club. Backfill safe pages
 for active/archived Clubs using only the exact field list; validate directory
-privacy and membership counts. Use trusted operator access during a maintenance
-window that denies Club client access, then publish the revised rules and compatible
-frontend together. No client migration/purge is authorized or implemented.
+privacy and membership counts. If repair is actually needed, use a separately approved trusted operator workflow
+with deliberate maintenance/access controls; preserve the currently deployed secure
+Rules and compatible frontend. Deployment success alone does not establish inventory completeness. No client migration/purge is authorized or implemented.
 If production inventory is empty, record that verification instead of inventing data.
-See [deployment gate B6](DEPLOYMENT_CHECKLIST.md) for the ordered procedure.
+See [current inventory guidance](DEPLOYMENT_CHECKLIST.md) and the preserved
+[historical B6 record](docs/history/pre-batch6/DEPLOYMENT_CHECKLIST.md) for the complete
+orphan/retired-ID rationale. No migration was performed by this audit.
 
 ## Private ride lifecycle
 
@@ -116,11 +118,11 @@ Sources: [atomic rules](https://firebase.google.com/docs/firestore/security/rule
 [field allowlists](https://firebase.google.com/docs/firestore/security/rules-fields),
 [query authorization](https://firebase.google.com/docs/firestore/security/rules-query).
 
-No rules or indexes have been deployed. Rules-engine, live-project and physical
-device verification are distinct from browser SDK fixtures.
+The operator reports Rules deployed and all 18 indexes Enabled. Local rules-engine
+tests, publication and real-account/physical-device acceptance remain distinct evidence.
 
 
-## Batch 3 current additions
+## Group Session and display-identity contract
 
 `displayProfiles/{uid}`: exactly displayName and updatedAt, signed-in get and
 bounded list (up to 30); repository prefix search uses 10. Owner writes only, name
@@ -178,13 +180,13 @@ Sharing route: #/session/{uuid}; addressed invitation route:
 #/session/{uuid}/invite/{token}. Auth return keeps the fragment; invitation resolution
 checks account, token, expiry and usable parent. Acceptance cleans the fragment.
 QR is generated locally by the MIT vendored Nayuki module; no QR service sees URLs.
-No NFC writing, subscription entitlement or Cloud Function exists. Batch 4 adds
-the isolated Worker described below.
+No NFC writing, subscription entitlement or Cloud Function exists. The deployed
+Cloudflare Worker provides the isolated live service described below.
 
 Historical Batch 3 RTDB proposals are superseded by the following Batch 4 contract.
 RTDB database.rules.json remains exactly deny-all; no client copies Firestore ACLs.
 
-## Batch 4 identity and ephemeral live data
+## Identity and ephemeral live data
 
 New/changed `users/{uid}.displayName` is trimmed and 3–30 Unicode code points.
 Rules enforce normalized text and RE2 character bounds (string size in the
@@ -220,3 +222,23 @@ historical transmission is created. Future trusted account deletion must revoke
 membership, invalidate live access/tickets, handle active attachments/retained
 room metadata and normal permanent records. No deletion/production migration is
 performed here. See LIVE_TRACKING.md, cloudflare/PROTOCOL.md and CLOUDFLARE_SETUP.md.
+
+
+## Batch 5 discovery/invitation and deployment status
+
+`clubDirectory(category ASC, name ASC)` is the 18th composite index, in addition
+to the owner-history definition and 16 Lobby combinations. All 18 are operator-
+reported Enabled. `routeChunks.pointsJson` remains exempt from single-field indexing;
+minimal display-name/name search and private reference ordering retain automatic indexes.
+Group invite create/update requires the recipient's `displayProfiles/{uid}` document.
+Repository validation rejects unknown targets and preserves an existing valid token
+on duplicate send. Account-addressed authorization, expiration and parent lifecycle
+remain the security boundary; QR/link possession does not authorize another account.
+
+Batch 5 changes presentation and query/invitation validation; it adds no media,
+Official activity/badge collections, payment entitlements or permanent live coordinates.
+Unknown collections/default client operations remain denied. Future complete deletion
+must inventory all private/public projections, navigation refs, route chunks/fences,
+owned Club/Group lifecycle, invitations/Wall content, live tickets/attachments and later
+media/rewards. It must retain minimal nonpersonal ID reservations and prevent stale
+local jobs from recreating erased data. See the authoritative roadmap in IDEA.md.

@@ -1,4 +1,6 @@
-# Prototype Firebase deployment from main
+# Firebase deployment and maintenance from main
+
+**Current state, 2026-10-12:** the operator reports successful Firestore Rules deployment and all **18 composite indexes Enabled**. No deployment was performed by this repository audit; real-account/phone acceptance remains pending. This guide is for future reviewed deployment or credential maintenance, not a request to redeploy.
 
 The application and deployment workflow use **main**. The frontend uses the existing
 GitHub Pages workflow; Firebase uses a separate **manual** workflow. All Node.js,
@@ -15,8 +17,8 @@ Open [Google Cloud Console](https://console.cloud.google.com/?project=motodash-8
 with the Google account managing **motodash-87bf8**, then:
 
 1. Select project **motodash-87bf8**. Verify the Firestore **(default)** database
-   already exists. Firebase Console -> Firestore currently has only the sessions
-   composite index; the repository contains all **18** required definitions.
+   already exists. All **18** source composite definitions are reported Enabled.
+   Verify the existing inventory when changing deployment configuration; do not recreate it.
 2. APIs & Services -> Enabled APIs & services: verify these APIs are enabled. Enable
    a missing one through Library using your project administrator account:
    Cloud Firestore (`firestore.googleapis.com`), Firebase Rules
@@ -71,14 +73,14 @@ secret if further deployment is not needed.
 
 ## 3. Publish main when you choose to
 
-The prepared changes are committed locally. From the repository terminal:
+For a future reviewed release, commit the intended changes locally. From the repository terminal:
 
 ```powershell
 git switch main
 git push origin main
 ```
 
-This publishes Batch 5 and the Firebase setup together. The existing **Deploy to
+This publishes the selected main revision. Batch 5 and Firebase setup are already deployed, per operator. The existing **Deploy to
 GitHub Pages** workflow runs on this main push and publishes the frontend. Keep that
 workflow enabled; Settings -> Pages -> Source should be **GitHub Actions**.
 The Firebase workflow is **workflow_dispatch only** and does not run on the push.
@@ -143,8 +145,9 @@ Rules publication: inspect both Rules and Indexes before retrying.
   Keep existing indexes and all private-data protections.
 
 IAM or API errors must be resolved using the specific missing permission/API rather
-than broadening the account to Owner/Editor or weakening Rules. The first actual
-GitHub runner authentication/deployment is still unverified.
+than broadening the account to Owner/Editor or weakening Rules. The operator reports
+successful GitHub runner deployment; effective application authorization and phone
+acceptance still require the tests in DEPLOYMENT_CHECKLIST.md.
 
 Implementation references: [official Google authentication action](https://github.com/google-github-actions/auth),
 [Firebase selective deployment](https://firebase.google.com/docs/cli#deploy_specific_firebase_services).
@@ -155,5 +158,6 @@ all 6 action uses are SHA-pinned; 7 confirmation/scope and 8 credential-identity
 checks passed. The Pages test checked 218 references and 69 local URLs under
 /MotoDashboard/, including guest recording/history when Firebase is unavailable.
 The Rules/indexes and frontend/Pages/Cloudflare files are unchanged from Batch 5.
-No private-key/service-account JSON material was found in repository files. Hosted
-runner authentication, deployment and real Firebase/phone acceptance remain unperformed.
+No private-key/service-account JSON material was found in repository files. The operator now reports a successful hosted-runner deployment. This audit did not
+repeat it; real Firebase/phone acceptance remains pending. Current audit results are
+in [REPOSITORY_AUDIT.md](REPOSITORY_AUDIT.md).

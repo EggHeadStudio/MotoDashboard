@@ -1,4 +1,5 @@
-> **Current Batch 5 authorization (2026-10-12):** implement the premium mobile UI and invitation/Lobby corrections locally, with logical commits and regression checks. No push, Firebase/Worker deployment or production-data writes. Stop after Batch 5. This moves the UI redesign ahead of future paid/Official/hardware work; all previously agreed requirements remain in the roadmap. See BATCH_5_RESULT.md and the latest DEPLOYMENT_CHECKLIST.md section.
+> **Current post-Batch 5 audit, 2026-10-12:** the operator reports Batch 5 published on Pages, Auth/Firestore configured, current Rules deployed, all **18 composites Enabled**, and Cloudflare Worker/Durable Objects deployed. This task authorizes repository cleanup/documentation and local tests/commits only. No Batch 6 implementation, push/deployment, production-data operation or branch deletion. Actual user/two-account/phone acceptance remains pending. This file is the authoritative product roadmap; dated audit/batch records below are historical evidence, not current deployment instructions.
+
 
 # MotoDash Platform --- IDEA.md
 
@@ -16,7 +17,7 @@
 > already implemented, and adapt this plan to the actual repository
 > before beginning implementation.
 
-> **Current update, 2026-10-10:** The user reports that the existing application
+> **Historical registration authorization, 2026-10-10 (superseded scope):** The user reports that the existing application
 > is deployed on GitHub Pages, connected to MotoDash Firebase and working locally
 > and publicly. This session authorizes only registration password confirmation
 > plus the roadmap additions below. Other account features, uploads and the redesign
@@ -1078,77 +1079,49 @@ Expected high-level stack:
 -   existing map provider during prototype
 -   existing weather provider during prototype
 
-A likely architecture is:
+The implemented structure after Batch 5 is:
 
-``` text
-index.html
-
-css/
-  base.css
-  components.css
-  dashboard.css
-  garage.css
-  clubs.css
-  sessions.css
-  lobby.css
-
-js/
-  app.js
-  config.js
-
-  i18n/
-    i18n.js
-    dictionary.js
-
-  firebase/
-    firebase.js
-    auth.js
-    firestore.js
-    realtime.js
-
-  modules/
-    profile.js
-    garage.js
-    dashboard.js
-    gps.js
-    map.js
-    weather.js
-    recording.js
-    history.js
-    sharing.js
-    clubs.js
-    permissions.js
-    ranks.js
-    groupSessions.js
-    liveGroup.js
-    lobby.js
-    qr.js
-
-  ui/
-    navigation.js
-    dialogs.js
-    notifications.js
+```text
+index.html; firebase-config.js; live-config.js
+css/dashboard.css; css/design-system.css
+js/app.js; config.js; dom.js; ui.js; utils.js
+js/gps.js; speed.js; position-pipeline.js; rider-motion.js
+js/map.js; map-rotation.js; weather.js; route-recorder.js
+js/session-manager.js; session-store.js; session-sync.js; session-export.js
+js/auth-state.js; auth-ui.js; garage-ui.js
+js/club-ui.js; club-members-ui.js; club-branding-ui.js
+js/group-ui.js; group-participants-ui.js; group-invites-ui.js; lobby-ui.js
+js/firebase/firebase.js; auth.js; firestore.js; access.js
+js/firebase/*Repository.js; displayProfiles.js
+js/data/                         validation, privacy/projections and domain helpers
+js/ui/                           navigation/shell/forms/cards/icons/QR/overview
+js/i18n/                         dictionary, product translations and locale bindings
+js/live/                         client, UI, map and informational summary
+js/vendor/qrcodegen.js            local licensed QR implementation
+cloudflare/src/                  Worker, authority, ticket, room and protocol
+cloudflare/wrangler.jsonc         existing SQLite DO binding/migration
+firestore.rules; firestore.indexes.json; database.rules.json (deny-all)
+firebase.deploy.json; firebase-deployer-role.json
+.github/workflows/                Pages + separate manual Firebase/Worker workflows
+tests/; tools/                   fixtures/emulator/deployment validation, not frontend runtime
 ```
 
-This is a conceptual target, not a mandatory exact file structure. The
-completed Section 0 audit recommends retaining current module paths and
-adding the incremental structure in Section 15.8 rather than moving working
-modules solely to match this example.
+Retain these working paths; no move or framework/build is required to match an
+older conceptual tree. Historical proposals in Section 15.8 are not current file
+creation instructions. RTDB has no runtime adapter and must remain locked.
 
 ------------------------------------------------------------------------
 
 # 8. Firebase planning principles
 
-The Firebase project setup will be verified with the user before implementation
-begins. Section 0 found an unused configuration for `motodash-87bf8`;
-first reconcile that existing registration and its enabled services rather
-than assume a new project must be created. No Firebase setup was performed
-during the audit.
+The dedicated **motodash-87bf8** project is already configured, per operator.
+One named lazy Auth initializer and one lazy Firestore service use public web config;
+no second project or Firebase app is required. Rules and all 18 indexes are deployed,
+per operator. Actual live acceptance and IAM/domain/version evidence remain separate.
+The current schema is documented in DATA_MODEL.md and enforced by firestore.rules.
 
-Do not hard-code a final database schema before the repository audit and
-Firebase setup.
+Current responsibilities:
 
-Likely responsibilities:
 
 ## Firebase Authentication
 
@@ -1158,7 +1131,7 @@ Likely responsibilities:
 
 ## Cloud Firestore
 
-Likely persistent data:
+Implemented persistent data:
 
 -   user profiles;
 -   vehicles;
@@ -1518,7 +1491,7 @@ Implement the personal identity and vehicle system.
 
 ## Tasks
 
--   [ ] Profile screen. (Account dialog exists; full profile editing/public portfolio remains future work.)
+-   [x] Profile screen. (Batch 5 private profile/settings/loaded statistics; a public portfolio and additional profile fields remain future work.)
 -   [x] Display name.
 -   [x] Language preference integration.
 -   [x] Garage screen.
@@ -1871,38 +1844,40 @@ STOP after this section.
 
 > **Section 0 audit adaptation (planning only):** Keep Group Sessions distinct from users recorded sessions. Retain Drive/Convoy alongside Ride/Meet/Event and all four visibility modes. Implement authorization, admission/approval, explicit sharing consent and a Pages-safe invite resolver/auth-return flow before live publishing. Private meeting details and public Lobby summaries must be separate.
 
+> **Post-Batch 5 status:** implemented and locally tested; frontend/Rules/index deployment reported. Checks below refer to local coverage. Real production/two-phone acceptance remains pending.
+
 ## Goal
 
 Allow users with Host permissions to organize shared sessions.
 
 ## Tasks
 
--   [ ] Create Group Session.
--   [ ] Type: Ride / Meet / Event.
--   [ ] Category.
--   [ ] Title.
--   [ ] Description.
--   [ ] Date/time.
--   [ ] Meeting location.
--   [ ] Optional Club association.
--   [ ] Visibility.
--   [ ] Host.
--   [ ] Join.
--   [ ] Leave.
--   [ ] Participant list.
--   [ ] Approval workflow where needed.
--   [ ] Selected Garage vehicle.
--   [ ] Start/end session.
--   [ ] Invite URL.
+-   [x] Create Group Session.
+-   [x] Type: Ride / Drive/Convoy / Meet / Event.
+-   [x] Category.
+-   [x] Title.
+-   [x] Description.
+-   [x] Date/time.
+-   [x] Meeting location.
+-   [x] Optional Club association.
+-   [x] Visibility.
+-   [x] Host.
+-   [x] Join.
+-   [x] Leave.
+-   [x] Participant list.
+-   [x] Approval workflow where needed.
+-   [x] Selected Garage vehicle.
+-   [x] Start/end session.
+-   [x] Invite URL.
 
 ## Checks
 
--   [ ] Public join.
--   [ ] Approval join.
--   [ ] Unlisted URL access.
--   [ ] Private access enforcement.
--   [ ] Correct vehicle attached.
--   [ ] Only permitted users manage session.
+-   [x] Public join.
+-   [x] Approval join.
+-   [x] Unlisted URL access.
+-   [x] Private access enforcement.
+-   [x] Correct vehicle attached.
+-   [x] Only permitted users manage session.
 
 ### HUMAN CHECKPOINT
 
@@ -1998,22 +1973,24 @@ STOP after this section.
 
 > **Section 0 audit adaptation (planning only):** Pull forward a separately approved Section 13A public/approval-required projection and basic joining checkpoint after Section 10, before Section 11. Preserve remaining filters and completion checks. Use lobbyEvents sanitized summaries, omit Unlisted/Private, paginate queries and use approximate region initially; Official content is added in Section 17.
 
+> **Post-Batch 5 status:** implemented and locally tested; frontend/Rules/index deployment reported. Checks below refer to local coverage. Real production/two-phone acceptance remains pending.
+
 ## Goal
 
 Allow discovery of public upcoming activity.
 
 ## First prototype scope
 
--   [ ] Public upcoming Group Sessions.
--   [ ] Ride / Meet / Event.
--   [ ] Category.
--   [ ] Date.
--   [ ] Approximate location/region.
--   [ ] Club.
--   [ ] Participant count.
--   [ ] Simple filters.
--   [ ] Open session details.
--   [ ] Join flow.
+-   [x] Public upcoming Group Sessions.
+-   [x] Ride / Meet / Event.
+-   [x] Category.
+-   [x] Date.
+-   [x] Approximate location/region.
+-   [x] Club.
+-   [x] Participant count.
+-   [x] Simple filters.
+-   [x] Open session details.
+-   [x] Join flow.
 
 ## Privacy
 
@@ -2025,10 +2002,10 @@ Lobby must never expose:
 
 ## Checks
 
--   [ ] Public event visible.
--   [ ] Private event absent.
--   [ ] Filters work.
--   [ ] Mobile UI usable.
+-   [x] Public event visible.
+-   [x] Private event absent.
+-   [x] Filters work.
+-   [x] Mobile UI usable.
 
 ### HUMAN CHECKPOINT
 
@@ -2040,25 +2017,28 @@ STOP after this section.
 
 > **Section 0 audit adaptation (planning only):** Reuse stable Pages hash-based invite URLs and authenticated resolver already designed for Clubs/groups. This phase adds QR generation, expiry/error UI and cross-phone verification, not a separate authorization flow. NFC hardware stays deferred.
 
+> **Post-Batch 5 status:** stable Club/Group links, Group QR generation/decoding and Auth return/error flows implemented. Club QR generation/share UI is still missing; physical camera acceptance remains pending.
+
 ## Goal
 
 Make joining fast and prepare for future NFC.
 
 ## Tasks
 
--   [ ] Stable Club invite URL.
--   [ ] Stable Session invite URL.
--   [ ] QR generation.
--   [ ] QR opens correct destination.
--   [ ] Authentication return flow where login is required.
--   [ ] Invalid/expired invite handling.
+-   [x] Stable Club invite URL.
+-   [x] Stable Session invite URL.
+-   [x] Group Session QR generation.
+-   [ ] Club QR generation/share UI. (Existing Club link sharing is implemented; the current QR helper accepts session URLs only.)
+-   [x] QR opens correct destination.
+-   [x] Authentication return flow where login is required.
+-   [x] Invalid/expired invite handling.
 
 ## Checks
 
 -   [ ] Scan Club QR on another phone.
 -   [ ] Scan Session QR.
--   [ ] Logged-out flow.
--   [ ] Invalid invite.
+-   [x] Logged-out flow. (SDK fixture/browser.)
+-   [x] Invalid invite. (SDK fixture/browser.)
 
 ### HUMAN CHECKPOINT
 
@@ -2068,7 +2048,7 @@ STOP after this section.
 
 # SECTION 15 --- PRIVACY + VISIBILITY REVIEW
 
-> **Section 0 audit adaptation (planning only):** This is a whole-product review; enforce visibility, deletion and rules in each feature phase already. Include UID-scoped local/cloud caches, route-chunk deletion, public projection removal, invitation revocation and RTDB ACL lifecycle. Do not rely on hidden UI or client cleanup for privacy.
+> **Section 0 audit adaptation (planning only):** This is a whole-product review; enforce visibility, deletion and rules in each feature phase already. Include UID-scoped local/cloud caches, route-chunk deletion, public projection removal, invitation revocation and Cloudflare live-access lifecycle; RTDB remains deny-all. Do not rely on hidden UI or client cleanup for privacy.
 
 ## Goal
 
@@ -2126,23 +2106,25 @@ Make the prototype pleasant and credible on phones.
 -   [ ] Optional APIs feature-detected.
 -   [ ] Core app works without Wake Lock/fullscreen/device orientation.
 
-## Complete mobile UI/UX redesign (planned, after core functionality)
+## Complete mobile UI/UX redesign ? Batch 5 foundation published; acceptance/remaining requirements pending
 
-This expands the existing polish phase into a major coherent redesign. Schedule
-it after core Group Sessions, Live Group Map, Lobby and Official Activities are
-functional and before public launch; account deletion must already pass the
-wider-public-beta gate. Preserve every working feature and existing safety controls.
+The user moved the shared premium design/navigation work forward into Batch 5.
+The dark/gold system and five-destination shell are implemented and reported published.
+Official Activities and complete account deletion remain separate requirements;
+complete deletion still gates wider public beta. Remaining light/dark theme completeness,
+accessibility/performance and physical-device acceptance are not claimed implemented
+merely because the redesign shipped. Preserve every working feature and safety control.
 
-- [ ] Modern, premium, minimalist and intuitive design with Apple-inspired quality,
+- [x] Modern, premium, minimalist and intuitive design with Apple-inspired quality,
   without copying Apple proprietary UI assets.
-- [ ] Reusable design system: shared spacing, typography, colors, elevations, icons,
+- [x] Reusable design system: shared spacing, typography, colors, elevations, icons,
   controls, cards, navigation, dialogs, feedback and component states. Avoid separate
   styling conventions for each feature; extract shared CSS/components incrementally.
-- [ ] Consistent spacing, refined typography and clear visual hierarchy.
+- [x] Consistent spacing, refined typography and clear visual hierarchy.
 - [ ] Polished cards/navigation, elegant icons, subtle animations and smooth mobile
   transitions; honor reduced motion and avoid animation that distracts while riding.
 - [ ] Coherent light/dark themes, high contrast during riding and large touch targets.
-- [ ] Keep live riding screens especially simple and distraction-free; richer account,
+- [x] Keep live riding screens especially simple and distraction-free; richer account,
   Garage, Club and Lobby interactions belong outside the active ride dashboard.
 - [ ] Accessible focus/keyboard/screen-reader flow, text scaling, safe areas,
   responsive portrait/landscape and support for different phone sizes.
@@ -2370,7 +2352,7 @@ Richer vehicle statistics and identity.
 
 ## Expanded Achievements
 
-The prototype includes a minimal MotoDash Official badge/reward system. Richer achievement progression, collections, advanced badge families and long-term gamification remain future features. All progression must remain non-speed-based.
+The agreed prototype roadmap requires a minimal MotoDash Official badge/reward system; it is not implemented yet. Richer achievement progression, collections, advanced badge families and long-term gamification remain future features. All progression must remain non-speed-based.
 
 ## Club Challenges
 
@@ -2378,7 +2360,7 @@ Safe engagement mechanics.
 
 ## Automated Official Campaigns
 
-Scheduled generation, geo-segmented campaigns, push-triggered official events, sponsor rewards and advanced campaign automation. The prototype uses administrator-configured activities without scheduled server automation.
+Scheduled generation, geo-segmented campaigns, push-triggered official events, sponsor rewards and advanced campaign automation. The planned prototype uses administrator-configured activities without scheduled server automation; that feature is not implemented yet.
 
 ## Safe Zone
 
@@ -2491,7 +2473,9 @@ When an AI coding agent receives this file:
 
 ------------------------------------------------------------------------
 
-# 15. Audit Result
+# 15. Historical Section 0 Audit Result (2026-10-08)
+
+> Preserve this baseline evidence and architectural reasoning. It does not describe today's implementation or instruct new RTDB work. Current architecture is Section 7/DATA_MODEL.md; current next milestones are Section 19. The never-integrated gestures module was removed during the post-Batch 5 audit after reference checks.
 
 ## 15.1 Scope, evidence and checkpoint
 
@@ -2769,8 +2753,9 @@ free API to non-commercial use. No paid migration is proposed here.
 This is a **recommended design for approval**, not a committed schema or
 an implementation. Preserve local recording without network/account
 dependency. Firebase Authentication supplies stable UIDs; Firestore
-stores durable domain records and queryable discovery summaries; RTDB
-stores latest live positions/presence/status. Storage is optional for
+stores durable domain records and queryable discovery summaries. The historical
+RTDB recommendation below was superseded by Cloudflare latest-position transport;
+RTDB remains locked and unused. Storage is optional for
 vehicle/Club images once configured; store references, not image blobs
 or base64 data in Firestore.
 
@@ -2888,10 +2873,10 @@ js/config.js, dom.js, ui.js, utils.js                retained
 js/gps.js, speed.js, map.js, map-rotation.js         retained
 js/weather.js, route-recorder.js                    retained/adapted
 js/session-manager.js, session-store.js             retained/adapted
-js/gestures.js                     reuse only after interaction review
+js/gestures.js                     historical unused proposal; removed in 2026-10-12 cleanup
 js/i18n/i18n.js, dictionary.js      new bilingual service/dictionary
 js/firebase/firebase.js            pinned ESM imports, single app/services
-js/firebase/auth.js, firestore.js, realtime.js      service adapters
+js/firebase/auth.js, firestore.js                  retained service adapters; RTDB adapter removed
 js/data/session-repository.js      local-first sessions + cloud adapter
 js/data/sync-queue.js               UID-scoped durable idempotent outbox
 js/data/migrations.js              versioned legacy conversion
@@ -2968,7 +2953,7 @@ not evidence of corrupt source content.
 
 ## 15.10 Revised order, section dependencies and validation plan
 
-### Current delivery priorities (2026-10-10; subsequent work requires approval)
+### Historical delivery priorities (2026-10-10; superseded by Section 19)
 
 The original audit sequence below is retained as historical rationale. Current
 delivery priorities incorporate completed Batch 1/2/security work and the user's
@@ -3074,7 +3059,7 @@ Specification clarifications preserved for human review:
   theme coupling; separate preset and branding behavior deliberately.
 - No-build/static frontend does not prevent a separately deployed trusted
   backend. If backend setup is not approved, choose the documented
-  Firestore-only live fallback rather than weakening security.
+  fail-closed unavailable-live behavior rather than weakening security or reviving RTDB.
 
 Manual audit review / later regression checklist:
 
@@ -3438,7 +3423,7 @@ may weaken revocation. Auth revocation beyond token expiry, global abuse control
 complete erasure and production hibernation/mobile behavior remain explicit work.
 
 
-## Batch 5 product implementation and sequencing - 2026-10-12
+## Historical Batch 5 implementation and sequencing - 2026-10-12
 
 This user-authorized batch moves the premium UI/navigation redesign and invitation/Lobby
 corrections before paid subscriptions, Official Sessions, uploads, NFC and merchandise.
@@ -3465,6 +3450,84 @@ remain planned and still require their trusted security architecture.
    and stop. No deployment, production writes or next batch are authorized.
 
 Implementation: BATCH_5_RESULT.md. Current source is firestore.rules and 18 composite
-indexes in firestore.indexes.json. Production error/deployed versions are unverified;
-DEPLOYMENT_CHECKLIST.md lists the release gates. Existing Cloudflare live architecture,
+indexes in firestore.indexes.json. The later operator report confirms deployed Rules and all 18 Enabled indexes;
+reported invitation/Lobby behavior still needs real-account acceptance. Current
+DEPLOYMENT_CHECKLIST.md supersedes the old rollout gates. Existing Cloudflare live architecture,
 consent, role authorization, GPS watcher and origin controls remain authoritative.
+
+
+# 19. Post-Batch 5 status and proposed Batch 6 roadmap
+
+## Completed implementation, deployment and acceptance boundaries
+
+The operator reports Pages/Batch 5, Firebase Authentication/Firestore, current
+Firestore Rules/all 18 Enabled composite indexes, and Cloudflare Worker/DO deployed.
+This repository audit did not change production or independently inspect private
+consoles. Real user, two-account, two-phone and effective-policy acceptance is pending.
+Missing production indexes are no longer a reported blocker; the original generic
+invitation/Lobby error is not claimed resolved without actual user acceptance.
+
+| Milestone | Current scope |
+| --- | --- |
+| Sections 1-2 foundation | EN/FI, email/password registration/confirmation, login/logout/name editing, lazy single Firebase app; advanced account features remain planned |
+| Sections 3-6 | Private Profile/Garage, existing dashboard/recording, completed private cloud rides/history/exports; guest/local recording retained |
+| Sections 7-9 | Clubs/membership/roles/custom ranks/colors/links/Info Wall, safe projections and irreversible retirement; media uploads/transfer/physical erasure remain planned |
+| Sections 10-14 | Groups/admission/status, Cloudflare consent/live map/reconnect, bounded Lobby and addressed URL/Group QR; Club QR UI and physical acceptance remain pending |
+| Section 16 / Batch 5 | Shared dark/gold design and Home/Discover/Rides/Clubs/Profile shipped; full theme completeness and real accessibility/device acceptance remain |
+| Sections 15/17/18 | Whole-product privacy/complete deletion, Official activities/trusted rewards and final user validation are not complete |
+
+Current audit evidence, file removals and tests: REPOSITORY_AUDIT.md. Current
+operator procedures: DEPLOYMENT_CHECKLIST.md, FIREBASE_DEPLOYMENT.md and
+CLOUDFLARE_SETUP.md. Earlier implementation stops/results are dated history.
+
+## Recommended Batch 6: account management and reliable onboarding
+
+This is a proposal only. Obtain explicit approval of bounded implementation and
+production settings/data operations before beginning. Reuse existing Auth/profile,
+UI/i18n, Firestore repositories and Cloudflare/GPS boundaries; no frontend framework.
+
+| Order | Recommended milestone | Dependencies and acceptance |
+| --- | --- | --- |
+| 6A ? acceptance baseline | Execute the current two-account/two-phone checklist, reproduce invitation/Lobby issues, prioritize verified defects and measure read/network behavior | Operator-run production tests, distinct accounts, record effective deployed versions; no invented test credentials, no weakening Rules |
+| 6B ? recovery/settings | Forgot-password email and change-password with recent reauthentication; accessible Account settings and EN/FI feedback | Auth email/action templates, password/enumeration policy, authorized Pages/localhost return URLs, rate/network failure tests, no password logging/storage |
+| 6C ? Google identity | Google sign-in and secure linking to existing email/password accounts; preserve owned data and invitation return destination | Approved provider setup; validate browser/Pages auth-domain and popup/redirect restrictions before implementation. Handle collisions/cancel/block/refresh without email-only automatic merge or duplicate profiles |
+| 6D ? privacy/deletion checkpoint | Complete deletion design and, only after backend/ownership/cost approval, a trusted resumable complete deletion implementation | Recent reauthentication, own-UID authorization, write/outbox fence, live ticket/socket revocation, private/public data inventory, owned Club/Group policy, preserved nonpersonal retired IDs and idempotent retry. Auth-only deletion is not completion |
+| 6E ? reliability/UX follow-up | Fix only reproduced acceptance issues; improve recovery/onboarding/empty states/invite feedback; constrain repeated-mount lifecycle and measured read hotspots where justified | 6A evidence, existing dashboard/GPS/local-ride regressions, accessible EN/FI/mobile checks; no schema/protocol/rules rewrites just to simplify code |
+
+Prefer a small first delivery of **6A + 6B**, followed by independently reviewable 6C
+and 6D. If trusted deletion infrastructure/cost or ownership policy is not approved,
+stop at its reviewable design; keep wider public beta blocked rather than presenting
+partial erasure. Do not bundle all media, Official rewards and payments into this batch.
+
+Google redirect storage behavior on non-Firebase hosting needs a supported plan;
+see [Firebase redirect guidance](https://firebase.google.com/docs/auth/web/redirect-best-practices).
+Complete deletion must remove/anonymize nested data explicitly;
+[Firestore parent deletion does not erase subcollections](https://firebase.google.com/docs/firestore/manage-data/delete-data).
+The current Worker reader is read-only; deletion requires a separately designed
+least-privilege trusted identity/workflow, not a write grant to the live reader or
+a private credential in Pages. No such backend is implemented by this audit.
+
+## Subsequent milestones and all retained future requirements
+
+1. **Media & Branding (Sections 3/9):** vehicle photos for all categories, Club logos/
+   banners and rank graphics/hierarchy, after storage/billing/rules/IAM/EXIF/retention/
+   complete-deletion boundaries are approved. Preserve private originals/public projections.
+2. **Official MotoDash activities + minimal safe rewards (Section 17):** protected
+   system-admin concept, complete global/country/region/radius/category/date/publish
+   controls and all originally agreed safe completion rules; trusted idempotent badge
+   grants and EN/FI. No client self-awards, rank-derived admin or speed competition.
+3. **Community retention/UX:** complete the agreed Club QR sharing flow using stable
+   authorized Club links; validate recurring participation, invite/discovery clarity
+   and real empty-state onboarding; extend moderation/privacy where evidence
+   justifies it, without introducing a chat/feed or fake seed activities.
+4. **Commercial readiness:** validate Free/Rider/Host/Club demand, then subscriptions,
+   Stripe and trusted entitlements, provider commercial licensing, privacy/terms,
+   monitoring, backups, retention and budgets. No billing implementation in Batch 6.
+5. **Later ecosystem:** expanded achievements/rewards, Vehicle Passport, Club
+   Challenges, Ride Memories/Replay, Safe Zone, public share pages, sponsored/featured
+   activities, NFC invitations/hardware, merchandise and Club Pro. Every earlier
+   agreed requirement remains; priority is sequencing, not removal.
+
+The original product guardrails, full future account/media/Official checklists and
+non-speed completion rules remain authoritative. Batch 6 is not implemented and
+this audit stops for approval after local cleanup/documentation commits.
