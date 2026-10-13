@@ -1,4 +1,5 @@
-import { ownDatabase, boundedRequest, dataError } from './access.js';
+import { ownDatabase, boundedRequest, dataError, settleReads } from './access.js';
+import {notificationWrite} from './notificationRepository.js';
 import { clubInput, validId, text, ROLES } from '../data/schema.js';
 import { roleFor, isManager, canManageMember, canAssignRank } from '../data/permissions.js';
 import { clubPage } from '../data/club-page.js';
@@ -22,7 +23,7 @@ function changeMembership(tx,s,club,targetUid,delta) {
   tx.set(pageRef(s,club.id),clubPage({...club,...fields}));
 }
 async function clubTransaction(uid,id,action) {
-  idCheck(id);const s=await ownDatabase(uid);
+  idCheck(id);const s=await ownDatabase(uid, 'club-management');
   const result=await boundedRequest(s.sdk.runTransaction(s.db,async tx=>{
     const [page,actor]=await Promise.all([tx.get(pageRef(s,id)),tx.get(clubRef(s,id,'members',s.uid))]);
     s.assertCurrent();if(!page.exists()) throw dataError('deleted');
@@ -36,7 +37,7 @@ async function clubTransaction(uid,id,action) {
   }));s.assertCurrent();return result;
 }
 export async function createClub(uid,input) {
-  const fields=clubInput(input),s=await ownDatabase(uid),id=crypto.randomUUID();
+  const fields=clubInput(input),s=await ownDatabase(uid, 'club-create'),id=crypto.randomUUID();
   const club={schemaVersion:1,id,ownerUid:s.uid,...fields,state:'active',memberCount:1,lastMembershipUid:s.uid,
     createdAt:stamp(s.sdk),updatedAt:stamp(s.sdk)};
   const batch=s.sdk.writeBatch(s.db);
@@ -56,7 +57,7 @@ export async function editClub(uid,id,input) {
   });
 }
 export async function loadClub(uid,id) {
-  idCheck(id);const s=await ownDatabase(uid);
+  idCheck(id);const s=await ownDatabase(uid, 'club-load');
   const page=await boundedRequest(s.sdk.getDoc(pageRef(s,id)));s.assertCurrent();
   if(!page.exists() || !['active','archived'].includes(page.data().state)) throw dataError('deleted');
   const [membership,invite,request]=await boundedRequest(Promise.all([
@@ -69,22 +70,22 @@ export async function loadClub(uid,id) {
     request:request.exists()?request.data():null};
 }
 export async function listClubs(uid,ownCursor=null,directoryCursor=null) {
-  const s=await ownDatabase(uid);
+  const s=await ownDatabase(uid, 'club-list');
   const ownFilters=[s.sdk.orderBy('joinedAt','desc')];if(ownCursor) ownFilters.push(s.sdk.startAfter(ownCursor));ownFilters.push(s.sdk.limit(20));
   const dirFilters=[s.sdk.orderBy('name')];if(directoryCursor) dirFilters.push(s.sdk.startAfter(directoryCursor));dirFilters.push(s.sdk.limit(20));
   const [own,directory]=await boundedRequest(Promise.all([
     s.sdk.getDocs(s.sdk.query(s.sdk.collection(s.db,'users',uid,'clubRefs'),...ownFilters)),
     s.sdk.getDocs(s.sdk.query(s.sdk.collection(s.db,'clubDirectory'),...dirFilters))]));
   s.assertCurrent();
-  const resolved=await Promise.allSettled(own.docs.map(doc=>loadClub(uid,doc.id)));
+  const resolved=await settleReads(own.docs,doc=>loadClub(uid,doc.id));
   s.assertCurrent();return {own:resolved.filter(r=>r.status==='fulfilled').map(r=>r.value.club),
     partial:resolved.some(r=>r.status==='rejected'),directory:directory.docs.map(doc=>doc.data()),
     ownCursor:own.docs.at(-1) || ownCursor,directoryCursor:directory.docs.at(-1) || directoryCursor,more:own.size===20 || directory.size===20};
 }
 export async function listMyClubs(uid) {
-  const s=await ownDatabase(uid);
+  const s=await ownDatabase(uid, 'club-list');
   const page=await boundedRequest(s.sdk.getDocs(s.sdk.query(s.sdk.collection(s.db,'users',uid,'clubRefs'),s.sdk.orderBy('joinedAt','desc'),s.sdk.limit(20))));
-  const results=await Promise.allSettled(page.docs.map(row=>loadClub(uid,row.id)));s.assertCurrent();
+  const results=await settleReads(page.docs,row=>loadClub(uid,row.id));s.assertCurrent();
   return {clubs:results.filter(row=>row.status==='fulfilled').map(row=>row.value.club),partial:results.some(row=>row.status==='rejected')};
 }
 export async function joinClub(uid,id) {
@@ -128,6 +129,7 @@ export async function decideRequest(uid,id,targetUid,approve) {
       changeMembership(tx,s,club,targetUid,1);
     }
     tx.update(requestRef,{state:approve?'approved':'rejected',decidedAt:stamp(s.sdk),decidedBy:uid});
+    if(approve)notificationWrite(tx,s,targetUid,'club-approved',id,'ca-'+id);
   });
 }
 export async function inviteMember(uid,id,targetUid) {
@@ -150,7 +152,7 @@ export async function removeMember(uid,id,targetUid=uid) {
 export async function listClubRecords(uid,id,collectionName,cursor=null) {
   idCheck(id);
   if(!['members','joinRequests','invites','ranks'].includes(collectionName)) throw dataError('invalid-input');
-  const s=await ownDatabase(uid),filters=[];
+  const s=await ownDatabase(uid, 'club-management'),filters=[];
   if(collectionName==='joinRequests') filters.push(s.sdk.where('state','==','pending'));
   // Default document-ID order works without composite indexes; cursor is a document snapshot.
   if(cursor) filters.push(s.sdk.startAfter(cursor));filters.push(s.sdk.limit(50));
@@ -187,7 +189,7 @@ export async function saveRank(uid,id,rankId,input) {
   });return target;
 }
 export async function getRank(uid,id,rankId) {
-  idCheck(id);idCheck(rankId);const s=await ownDatabase(uid);
+  idCheck(id);idCheck(rankId);const s=await ownDatabase(uid, 'club-management');
   const rank=await boundedRequest(s.sdk.getDoc(clubRef(s,id,'ranks',rankId)));s.assertCurrent();
   return rank.exists()?rank.data():null;
 }
@@ -201,7 +203,7 @@ export async function updateBranding(uid,id,input) {
   });
 }
 export async function loadWall(uid,id) {
-  idCheck(id);const s=await ownDatabase(uid);
+  idCheck(id);const s=await ownDatabase(uid, 'club-management');
   const wall=await boundedRequest(s.sdk.getDoc(clubRef(s,id,'wall','info')));s.assertCurrent();
   return wall.exists()?wall.data():null;
 }

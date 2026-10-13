@@ -1,4 +1,4 @@
-import { CATEGORIES, enumValue, text, validId } from './schema.js';
+import { ACTIVITY_CATEGORIES, enumValue, text, validId } from './schema.js';
 import { dataError } from '../firebase/access.js';
 
 export const ACTIVITIES = ['ride', 'drive', 'meet', 'event'];
@@ -24,7 +24,7 @@ export function groupInput(input) {
   if ((visibility === 'approval' && joiningPolicy !== 'approval')
     || (visibility === 'private' && joiningPolicy !== 'invite')) throw dataError('invalid-input');
   return {title: text(input.title, 80, true), description: text(input.description || '', 2000),
-    activityType: enumValue(input.activityType, ACTIVITIES), category: enumValue(input.category, CATEGORIES),
+    activityType: enumValue(input.activityType, ACTIVITIES), category: enumValue(input.category, ACTIVITY_CATEGORIES),
     clubId: input.clubId || null, startsAt, endsAt, meetingArea: text(input.meetingArea, 80, true),
     meetingLocation: text(input.meetingLocation || '', 500), visibility, joiningPolicy, maxParticipants};
 }

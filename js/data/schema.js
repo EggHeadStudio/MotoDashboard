@@ -1,6 +1,7 @@
 import { dataError } from '../firebase/access.js';
 
 export const CATEGORIES = ['motorcycle', 'car', 'moped', 'scooter', 'atv-utv', 'off-road', 'snowmobile', 'caravan', 'bicycle', 'e-bike', 'e-scooter', 'other'];
+export const ACTIVITY_CATEGORIES = [...CATEGORIES, 'open'];
 export const THEMES = ['normal', 'monochrome', 'forest', 'urban', 'night'];
 export const ROLES = ['owner', 'admin', 'host', 'member'];
 export const MEMBERSHIP_POLICIES = ['open', 'approval', 'invite', 'private'];
@@ -48,7 +49,7 @@ export function clubInput(value) {
     || (visibility === 'private' && ['open', 'approval'].includes(membershipPolicy))) throw dataError('invalid-input');
   const links = Object.fromEntries(LINK_KEYS.map(key => [key, safeURL(value.links?.[key])]));
   return { name: text(value.name, 80, true), description: text(value.description || '', 2000),
-    category: enumValue(value.category, CATEGORIES), visibility, membershipPolicy,
+    category: enumValue(value.category, ACTIVITY_CATEGORIES), visibility, membershipPolicy,
     primaryColor: color(value.primaryColor), accentColor: color(value.accentColor),
     routeColor: color(value.routeColor, true), mapTheme: enumValue(value.mapTheme || 'normal', THEMES), links };
 }

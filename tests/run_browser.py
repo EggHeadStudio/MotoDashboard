@@ -54,6 +54,10 @@ def run():
             from batch5_browser import run_batch5_tests
             run_batch5_tests(browser,base,route_map)
             browser.close();server.shutdown();return
+        if '--batch6a-only' in sys.argv:
+            from batch6a_browser import run_batch6a_tests
+            run_batch6a_tests(browser,base,route_map)
+            browser.close();server.shutdown();return
         if '--groups-only' in sys.argv:
             from groups_browser import run_group_tests
             run_group_tests(browser,base,route_map)
@@ -217,6 +221,8 @@ def run():
         run_live_tests(browser,base,route_map)
         from batch5_browser import run_batch5_tests
         run_batch5_tests(browser,base,route_map)
+        from batch6a_browser import run_batch6a_tests
+        run_batch6a_tests(browser,base,route_map)
         output=page.evaluate('async()=> (await import("./tests/live-client-tests.js")).runLiveClientTests()')
         print('PASS:',output)
         run_real_sdk_imports(browser, base, route_map)

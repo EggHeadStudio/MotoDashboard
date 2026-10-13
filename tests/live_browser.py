@@ -62,6 +62,13 @@ def run_live_tests(browser,base,route_map):
         assert rect['width'] >= 150 and rect['height'] < 250, rect
         controls=page.locator('#controls-row').bounding_box()
         assert controls['y']+controls['height'] <= height+1, controls
+        assert page.locator('#language-control').evaluate('(e)=>e.parentElement.id==="controls-row"')
+        assert page.evaluate('''()=>{
+          const a=document.querySelector('#language-control').getBoundingClientRect();
+          return [...document.querySelectorAll('#controls-row button')].filter(e=>e.getClientRects().length).every(e=>{
+            const b=e.getBoundingClientRect();return a.right<=b.left||a.left>=b.right||a.bottom<=b.top||a.top>=b.bottom;
+          });
+        }'''), 'Language selector must not overlap dashboard action buttons'
         assert page.locator('#live-dashboard').evaluate('(e)=>e.closest("#status-stack") !== null')
     page.set_viewport_size({'width':320,'height':568})
     assert page.locator('.live-rider-label script').count()==0
@@ -80,8 +87,15 @@ def run_live_tests(browser,base,route_map):
     page.evaluate('(at)=>window.__position(60.0005,at)',at+5000)
     page.wait_for_timeout(50);assert sum(m['type']=='position' for m in sent)==2
     assert all('uid' not in m and 'routePoints' not in m for m in sent)
+    # Preserve a visual fixture of the peer label and compact dashboard overlays.
+    from pathlib import Path
+    import tempfile
+    page.screenshot(path=str(Path(tempfile.gettempdir())/'motodash-batch6a-live-portrait.png'))
+    page.set_viewport_size({'width':844,'height':390})
+    page.screenshot(path=str(Path(tempfile.gettempdir())/'motodash-batch6a-live-landscape.png'))
+    page.set_viewport_size({'width':320,'height':568})
     # Existing recording shares the same watch (soft restart clears the old watch).
-    page.click('#back-to-start-btn');page.wait_for_function('window.__geo.active === 0')
+    page.click('#back-to-start-btn');page.wait_for_selector('#host-return-home');page.click('#host-return-home');page.wait_for_function('window.__geo.active === 0')
     page.wait_for_function('document.querySelectorAll(".live-rider-label").length===0')
     click_action(page, '#start-btn');page.wait_for_function('window.__geo.active === 1')
     page.evaluate('(id)=>{location.hash="/session/"+id;dispatchEvent(new Event("motodash-group-link"));}',group)
@@ -129,8 +143,14 @@ def run_live_tests(browser,base,route_map):
       const id=await r.createGroup(a.getAccount().uid,{title:'Stop lifecycle',description:'',activityType:'ride',category:'motorcycle',startsAt:Date.now()+60000,endsAt:null,meetingArea:'Helsinki',meetingLocation:'',visibility:'public',joiningPolicy:'open',maxParticipants:10,clubId:null});
       await r.setGroupState(a.getAccount().uid,id,'active');return id;}''')
     start_sharing(next_group);peers[-1].send(json.dumps({'v':1,'type':'session_ended'}));stopped()
+    # Host's explicit global-end choice uses the secured repository and closes sharing.
+    host_end=page.evaluate('''async()=>{const r=await import('./js/firebase/groupRepository.js');const a=await import('./js/auth-state.js');
+      const id=await r.createGroup(a.getAccount().uid,{title:'Host end confirmation',description:'',activityType:'ride',category:'open',startsAt:Date.now()+60000,endsAt:null,meetingArea:'Helsinki',visibility:'public',joiningPolicy:'open'});
+      await r.setGroupState(a.getAccount().uid,id,'active');return id;}''')
+    start_sharing(host_end);page.click('#back-to-start-btn');page.wait_for_selector('#host-return-end');page.click('#host-return-end');stopped()
+    assert page.evaluate('(id)=>JSON.parse(localStorage.getItem("__mockProfiles"))["groupSessions/"+id].state',host_end)=='completed'
     # Use a second real fixture account and normal joining for the leave control.
-    page.click('#back-to-start-btn');click_action(page, '#account-btn');page.click('#auth-logout');page.wait_for_function('!document.querySelector("#auth-form").hidden')
+    click_action(page, '#account-btn');page.click('#auth-logout');page.wait_for_function('!document.querySelector("#auth-form").hidden')
     page.select_option('#auth-mode','register');page.fill('#auth-name','Second Rider');page.fill('#auth-email','live-member@example.test')
     page.fill('#auth-password','fixture-password');page.fill('#auth-confirm-password','fixture-password');page.click('#auth-submit')
     page.wait_for_function('document.querySelector("#auth-identity").textContent.includes("Second Rider")');page.click('#account-close')

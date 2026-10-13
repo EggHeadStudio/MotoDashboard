@@ -4,7 +4,7 @@ import { listMyGroups } from '../firebase/groupRepository.js';
 import { listMyClubs } from '../firebase/clubRepository.js';
 import { dataErrorKey, dataErrorMessage } from '../firebase/access.js';
 import { logout } from '../firebase/auth.js';
-import { t, getLanguage, setLanguage, onLanguageChange, formatNumber } from '../i18n/i18n.js';
+import { t, getLanguage, setLanguage, onLanguageChange, formatNumber, setLocalizedText } from '../i18n/i18n.js';
 import { element, labelText } from './forms.js';
 import { groupCard, clubCard, skeletons, emptyState } from './cards.js';
 import { vehicleIcon, icon } from './icons.js';
@@ -54,7 +54,7 @@ export function initShell() {
     groups=ridePage.status==='fulfilled'?ridePage.value.groups:[];clubs=clubPage.status==='fulfilled'?clubPage.value.clubs:[];
     loaded=results.every(result=>result.status==='fulfilled');render();
     const failure=results.find(result=>result.status==='rejected');
-    if(failure) status.textContent=dataErrorMessage(failure.reason);
+    if(failure) setLocalizedText(status,()=>dataErrorMessage(failure.reason));
     else if(results.some(result=>result.value.partial)) labelText(status,'home.partial');
     else status.textContent='';
   }

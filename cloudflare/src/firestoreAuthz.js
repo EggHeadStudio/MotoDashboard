@@ -48,10 +48,17 @@ export async function readDocuments(env,paths,signal,readTime=null) {
 }
 export function evaluateAuthority(session,participant,ban,club,uid,id) {
   if(!session || session.id!==id || session.state!=='active' || session.schemaVersion!==1
+    || sessionDeadline(session)<=Date.now()
+    || session.startsAt>Date.now()+7200000
     || !Number.isInteger(session.participantCount) || session.participantCount<1 || session.participantCount>50
     || !participant || participant.uid!==uid || ban
     || (session.clubId && (!club || club.id!==session.clubId || !['active','archived'].includes(club.state)))) return null;
   return participant;
+}
+export function sessionDeadline(session) {
+  if(!Number.isSafeInteger(session?.startsAt) || session.startsAt<=0) return 0;
+  if(session.endsAt!==null && session.endsAt!==undefined && (!Number.isSafeInteger(session.endsAt)||session.endsAt<session.startsAt))return 0;
+  return Math.min(session.startsAt+86400000,session.endsAt??Infinity);
 }
 export async function authorizeMany(env,id,uids,reader=readDocuments) {
   if(!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(id)
@@ -75,5 +82,5 @@ export async function authorizeMany(env,id,uids,reader=readDocuments) {
     }
   }
   if(signal.aborted) throw Error('authority_unavailable');
-  return {authorized,participantCount:session?.participantCount || 0,ended:!session || session.state!=='active' || Boolean(session.clubId && (!club || club.state==='deleted')),checkedAt:started};
+  return {authorized,participantCount:session?.participantCount || 0,expiresAt:sessionDeadline(session),ended:!session || session.state!=='active' || sessionDeadline(session)<=Date.now() || session.startsAt>Date.now()+7200000 || Boolean(session.clubId && (!club || club.state==='deleted')),checkedAt:started};
 }

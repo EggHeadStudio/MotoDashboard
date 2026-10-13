@@ -86,3 +86,13 @@ body:not(.dashboard-active) #language-control {position:static;inset:auto;paddin
 @media(max-width:350px) {#screen-host {padding-left:16px;padding-right:16px;}.shell-header {padding-left:16px;padding-right:16px;}.discovery-tabs button {font-size:.72rem;}.feature-dialog:not(.page-panel),#account-dialog {padding-left:16px;padding-right:16px;}}
 @media(max-width:350px) {.wordmark {font-size:.85rem;}.shell-header {gap:8px;}#language-select {max-width:80px;}}
 @media(prefers-reduced-motion:reduce) {*,*::before,*::after {animation:none!important;transition:none!important;scroll-behavior:auto!important;}}
+.notification-bell {position:relative;display:grid;place-items:center;padding:10px!important;}
+.notification-count {position:absolute;top:-4px;right:-4px;min-width:18px;padding:1px 4px;border-radius:20px;background:var(--md-gold);color:var(--md-gold-ink);font-size:10px;line-height:16px;}
+.notification-item {display:grid;gap:8px;padding:16px 0;border-bottom:1px solid var(--md-line);}
+.notification-item>button {text-align:left;}
+.notification-item.is-unread>button:first-child {border-color:var(--md-gold);}
+.notification-item time {font-size:12px;color:var(--md-muted);}
+.notification-empty {padding:30px 20px;text-align:center;border:1px dashed #424950;border-radius:var(--md-radius);background:var(--md-surface);}
+.shell-header {flex-wrap:wrap;row-gap:8px;}
+.header-actions {margin-left:auto;}
+@media(max-width:350px) {.header-actions {gap:4px;}#language-select {width:64px;padding:6px;} .wordmark {letter-spacing:.06em;}}

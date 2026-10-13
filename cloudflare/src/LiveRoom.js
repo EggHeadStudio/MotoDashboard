@@ -45,7 +45,7 @@ export class LiveRoom extends DurableObject {
         departed.push(s.riderId);continue;
       }
       const changed=JSON.stringify(identity)!==JSON.stringify(s.identity);
-      this.save(ws,{...s,identity,leaseUntil:result.checkedAt+LEASE_MS});
+      this.save(ws,{...s,identity,leaseUntil:Math.min(result.checkedAt+LEASE_MS,result.expiresAt)});
       if(changed)changedStates.push(this.publicState(this.state(ws)));
     }
     // Prune every revoked receiver before any private broadcast from this check.
@@ -92,7 +92,7 @@ export class LiveRoom extends DurableObject {
           }
           if(this.sockets().filter(other=>this.eligible(other)).length>=MAX_RIDERS)throw Error('room_full');
           s={uid:ticket.uid,riderId:crypto.randomUUID(),origin:s.origin,identity,expiresAt:ticket.expiresAt,
-            leaseUntil:result.checkedAt+LEASE_MS,lastSeen:now,lastPositionAt:0,lastHeartbeatAt:0,seq:0,position:null,bucket:now,messages:0,lastControl:0,closed:false};
+            leaseUntil:Math.min(result.checkedAt+LEASE_MS,result.expiresAt),lastSeen:now,lastPositionAt:0,lastHeartbeatAt:0,seq:0,position:null,bucket:now,messages:0,lastControl:0,closed:false};
           this.save(ws,s);await this.refresh();
           if(!this.eligible(ws))return;
           this.send(ws,{type:'hello',riderId:s.riderId});

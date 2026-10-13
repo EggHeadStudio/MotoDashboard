@@ -92,7 +92,7 @@ export function initNavigation() {
   new MutationObserver(() => {
     const driving = document.getElementById('start-overlay').style.display === 'none';
     document.body.classList.toggle('dashboard-active', driving);
-    if(driving) document.body.append(language);else actions.prepend(language);
+    if(driving) document.getElementById('controls-row').append(language);else actions.prepend(language);
     document.getElementById('hud').inert = !driving;
   }).observe(document.getElementById('start-overlay'), {attributes:true, attributeFilter:['style']});
   document.getElementById('hud').inert = true;

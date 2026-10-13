@@ -1,6 +1,6 @@
 import { getAccount, onAccountChange } from './auth-state.js';
 import { t, getLanguage } from './i18n/i18n.js';
-import { CATEGORIES } from './data/schema.js';
+import { ACTIVITY_CATEGORIES } from './data/schema.js';
 import { ACTIVITIES, GROUP_VISIBILITIES, JOIN_POLICIES, setRouteInvite } from './data/group-session.js';
 import * as repository from './firebase/groupRepository.js';
 import { dataErrorKey } from './firebase/access.js';
@@ -8,6 +8,7 @@ import { openView, dialog, element, field, button, labelText, runAction } from '
 // UI mutation hint accelerates server revalidation; it never supplies permissions.
 import {liveClient} from './live/live-client.js';
 import { groupCard, emptyState } from './ui/cards.js';
+import {watchGroup} from './firebase/groupWatch.js';
 
 const sections = new Set();
 export const registerGroupSection = render => sections.add(render);
@@ -18,6 +19,8 @@ const localTime = value => {
 export function initGroupUI() {
   const view = dialog('groups-dialog', 'groups.title');
   let uid = null, version = 0, selectedId = null, model = null, busy = false, pendingLink=false, waitingForAuth=false;
+  let release=null;
+  const unwatch=()=>{release?.();release=null;};
   const current = (owner, token) => uid === owner && getAccount()?.uid === owner && version === token;
   function action(fn, next = () => selectedId ? open(selectedId) : browse()) {
     if (busy) return Promise.resolve(); busy = true;
@@ -34,6 +37,7 @@ export function initGroupUI() {
     }));
   }
   async function browse(cursor = null) {
+    unwatch();
     selectedId = null; model = null; const owner = uid, token = ++version;
     if (!uid) {signedOut();return;}
     const page = await repository.listMyGroups(owner, cursor); if (!current(owner, token)) return;
@@ -48,6 +52,7 @@ export function initGroupUI() {
     labelText(view.status, page.partial ? 'data.unavailable' : 'common.loaded');
   }
   async function edit(group) {
+    unwatch();
     const owner=uid, token=++version;let clubPage=null;
     if (!group) {
       clubPage=await repository.listHostingClubs(owner);
@@ -58,9 +63,11 @@ export function initGroupUI() {
     field(form,'description','garage.description',{multiline:true,max:2000,value:group?.description});
     form.append(labelText(element('p','muted'),'groups.publicHint'));
     field(form,'activityType','groups.activity',{choices:ACTIVITIES,prefix:'activity',value:group?.activityType || 'ride'});
-    field(form,'category','garage.category',{choices:CATEGORIES,prefix:'category',value:group?.category || 'motorcycle'});
+    field(form,'category','garage.category',{choices:ACTIVITY_CATEGORIES,prefix:'category',value:group?.category || 'motorcycle'});
     field(form,'startsAt','groups.startTime',{type:'datetime-local',required:true,value:localTime(group?.startsAt || Date.now()+3600000)});
     field(form,'endsAt','groups.endTime',{type:'datetime-local',value:group?.endsAt ? localTime(group.endsAt) : ''});
+    form.append(labelText(element('p','muted'),'groups.expirationPolicy'));
+    if(group?.state==='active') {form.elements.startsAt.readOnly=true;form.elements.endsAt.readOnly=true;}
     field(form,'meetingArea','groups.area',{required:true,max:80,value:group?.meetingArea});
     field(form,'meetingLocation','groups.meeting',{max:500,value:group?.meetingLocation});
     field(form,'visibility','groups.visibility',{choices:GROUP_VISIBILITIES,prefix:'visibility',value:group?.visibility || 'public'});
@@ -92,6 +99,7 @@ export function initGroupUI() {
     labelText(view.status,'common.loaded');
   }
   async function open(id) {
+    unwatch();
     selectedId=id;const owner=uid,token=++version;
     model=null;view.body.replaceChildren();
     const loaded=await repository.loadGroup(owner,id);if(!current(owner,token)) return;
@@ -108,16 +116,25 @@ export function initGroupUI() {
     }
     for(const render of sections) {if(!current(owner,token)) return;await render({uid:owner,model,body:view.body,status:view.status,action,stillCurrent:()=>current(owner,token)});}
     if(current(owner,token)) labelText(view.status,'common.loaded');
+    if(current(owner,token)) release=watchGroup(owner,id,latest=>{
+      if(!current(owner,token))return;
+      if(!latest || latest.state!==model.group.state) {
+        liveClient.revalidate();
+        if(!latest){view.body.replaceChildren();labelText(view.status,'data.denied');unwatch();}
+        else void action(()=>Promise.resolve(),()=>open(id));
+      }
+    });
   }
   document.getElementById('groups-btn').addEventListener('click',()=>{
     openView(view.node);action(()=>Promise.resolve(),()=>browse());
   });
   onAccountChange(({user})=>{
     if((user?.uid || null)===uid) return;
-    uid=user?.uid || null;version++;selectedId=null;model=null;setRouteInvite(null);view.body.replaceChildren();view.status.textContent='';
+    unwatch();uid=user?.uid || null;version++;selectedId=null;model=null;setRouteInvite(null);view.body.replaceChildren();view.status.textContent='';
     if(!uid) signedOut(); else if(location.hash.startsWith('#/session/')) void linked();
     else if(view.node.open) action(()=>Promise.resolve(),()=>browse());
   });
+  view.node.addEventListener('close',unwatch);
   async function linked() {
     const match=/^#\/session\/([A-Za-z0-9_-]{1,100})(?:\/invite\/([A-Za-z0-9_-]{1,100}))?$/.exec(location.hash);
     if(!match) {

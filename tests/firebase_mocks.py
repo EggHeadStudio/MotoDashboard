@@ -46,7 +46,7 @@ export const serverTimestamp = () => ({__serverTimestamp:true});
 function read() { return JSON.parse(localStorage.getItem('__mockProfiles') || '{}'); }
 function write(ref,data) {
   if(window.__mock.denyProfile) throw Object.assign(new Error('Denied'),{code:'permission-denied'});
-  const records=read(); records[ref]=data; localStorage.setItem('__mockProfiles',JSON.stringify(records)); window.__mock.writes++;
+  const records=read(); records[ref]=data; localStorage.setItem('__mockProfiles',JSON.stringify(records)); window.__mock.writes++;window.dispatchEvent(new Event('__mockFirestoreChanged'));
 }
 export async function runTransaction(_,fn) {
   if(window.__mock.denyData) throw Object.assign(new Error('Offline fixture'),{code:'unavailable'});
@@ -56,12 +56,12 @@ export async function runTransaction(_,fn) {
     update:(ref,changes)=>staged.push(['set',ref,{...read()[ref],...changes}]),delete:ref=>staged.push(['delete',ref])});
   const records=read();
   for(const [operation,ref,data] of staged) { if(operation==='delete') delete records[ref]; else records[ref]=data; }
-  localStorage.setItem('__mockProfiles',JSON.stringify(records)); window.__mock.writes+=staged.length;
+  localStorage.setItem('__mockProfiles',JSON.stringify(records)); window.__mock.writes+=staged.length;window.dispatchEvent(new Event('__mockFirestoreChanged'));
   return result;
 }
 export async function updateDoc(ref,changes) { write(ref,{...read()[ref],...changes}); }
 function snap(ref,data) { return {id:ref.split('/').at(-1),ref,exists:()=>!!data,data:()=>structuredClone(data)}; }
-export async function getDoc(ref) { return snap(ref,read()[ref]); }
+export async function getDoc(ref) { if(window.__mock.docFailure?.ref===ref)throw Object.assign(new Error('Injected doc failure'),{code:window.__mock.docFailure.code}); return snap(ref,read()[ref]); }
 export const where=(field,op,value)=>({kind:'where',field,op,value});
 export const orderBy=(field,direction='asc')=>({kind:'order',field,direction});
 export const limit=value=>({kind:'limit',value});
@@ -88,6 +88,14 @@ export async function setDoc(ref,data) { write(ref,data); }
 export async function deleteDoc(ref) { const records=read(); delete records[ref]; localStorage.setItem('__mockProfiles',JSON.stringify(records)); }
 export function writeBatch(db) { const ops=[]; return {set:(ref,data)=>ops.push(['set',ref,data]),delete:ref=>ops.push(['delete',ref]),
   commit:()=>runTransaction(db,async tx=>{for(const [op,ref,data] of ops) tx[op](ref,data);})}; }
+export function onSnapshot(input,next,error) {
+  let stopped=false;
+  window.__mock.snapshotListeners=(window.__mock.snapshotListeners||0)+1;
+  function stop(){if(stopped)return;stopped=true;window.removeEventListener('__mockFirestoreChanged',emit);window.__mock.snapshotListeners--;}
+  async function emit(){try{const result=typeof input==='string'?await getDoc(input):await getDocs(input);if(!stopped)next(result);}catch(e){if(!stopped){stop();error?.(e);}}}
+  window.addEventListener('__mockFirestoreChanged',emit);queueMicrotask(emit);
+  return stop;
+}
 export const Timestamp={fromMillis:ms=>({seconds:Math.floor(ms/1000),nanoseconds:0})};
 """
 

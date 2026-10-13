@@ -32,7 +32,7 @@ test('authorization uses the parent snapshot time for all child/Club reads',asyn
   const calls=[];
   const reader=async(env,paths,signal,readTime)=>{
     calls.push({paths,readTime});return {readTime:'2026-10-10T00:00:00Z',docs:new Map(paths.map(p=>[p,
-      p===`groupSessions/${id}`?{id,schemaVersion:1,state:'active',participantCount:1,clubId:'club'}:
+      p===`groupSessions/${id}`?{id,schemaVersion:1,state:'active',startsAt:Date.now(),endsAt:null,participantCount:1,clubId:'club'}:
       p===`groupSessions/${id}/participants/alice`?{uid:'alice',status:'fuel'}:
       p==='clubs/club'?{id:'club',state:'active'}:null]))};
   };

@@ -1,5 +1,5 @@
 import { getAccount, onAccountChange } from './auth-state.js';
-import { CATEGORIES } from './data/schema.js';
+import { ACTIVITY_CATEGORIES } from './data/schema.js';
 import { ACTIVITIES, sessionURL, followSessionURL } from './data/group-session.js';
 import { listLobby, findLobbyClubs, listPublicClubs } from './firebase/lobbyRepository.js';
 import { dataErrorKey } from './firebase/access.js';
@@ -7,7 +7,7 @@ import { openView, dialog, element, field, labelText, button, runAction, disclos
 import { groupCard, clubCard, skeletons, emptyState } from './ui/cards.js';
 import { vehicleIcon } from './ui/icons.js';
 
-const chips=['motorcycle','car','off-road','bicycle','snowmobile','caravan','other'];
+const chips=['open','motorcycle','car','off-road','bicycle','snowmobile','caravan','other'];
 export function initLobbyUI() {
   const view=dialog('lobby-dialog','nav.discover');let uid=null,version=0,busy=false,pending=false,input={},cursor=null,tab='featured';
   const current=(owner,token)=>uid===owner && getAccount()?.uid===owner && token===version;
@@ -37,7 +37,7 @@ export function initLobbyUI() {
   function chooseCategory(category) {input.category=category;cursor=null;render();action(()=>load());}
   function renderFilters() {
     const form=element('form');form.id='lobby-filter';
-    for(const [name,key,choices,prefix] of [['activityType','groups.activity',ACTIVITIES,'activity'],['category','garage.category',CATEGORIES,'category']]) {
+    for(const [name,key,choices,prefix] of [['activityType','groups.activity',ACTIVITIES,'activity'],['category','garage.category',ACTIVITY_CATEGORIES,'category']]) {
       const select=field(form,name,key,{choices:[]});
       const all=labelText(element('option'),'lobby.all');all.value='';select.append(all);
       for(const choice of choices) {const option=labelText(element('option'),prefix+'.'+choice);option.value=choice;select.append(option);}

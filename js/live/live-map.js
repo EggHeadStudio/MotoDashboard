@@ -13,6 +13,7 @@ export function attachLiveMap(map,L) {
       const name=document.createElement('strong');name.textContent=p.displayName?.trim() || t('identity.member');label.append(name);
       for(const value of [p.vehicle?.nickname,p.vehicle? t('category.'+p.vehicle.category):null,p.clubIdentity?.name,p.clubIdentity?.rank,t('riderStatus.'+p.status),t('live.updated',{time:new Date(pos.at).toLocaleTimeString(getLocale()),seconds:Math.max(0,Math.floor((now-pos.at)/1000))}),now-pos.at>STALE?t('live.stale'):null])
         if(value){const text=document.createElement('span');text.textContent=value;label.append(text);}
+      label.title=[...label.children].map(row=>row.textContent).join('\n');
       marker.unbindTooltip();marker.bindTooltip(label,{permanent:true,direction:'top',className:'live-rider-tooltip'});
       marker.setOpacity(now-pos.at>STALE?.45:1);
     }

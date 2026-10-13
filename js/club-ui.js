@@ -1,6 +1,6 @@
 import { getAccount, onAccountChange } from './auth-state.js';
 import { t, onLanguageChange } from './i18n/i18n.js';
-import { CATEGORIES } from './data/schema.js';
+import { ACTIVITY_CATEGORIES } from './data/schema.js';
 import { isManager } from './data/permissions.js';
 import * as repository from './firebase/clubRepository.js';
 import { dataErrorKey } from './firebase/access.js';
@@ -70,7 +70,7 @@ export function initClubUI() {
     const form=element('form');form.id='club-form';
     field(form,'name','clubs.name',{max:80,required:true,value:club?.name});
     field(form,'description','garage.description',{multiline:true,max:2000,value:club?.description});
-    field(form,'category','garage.category',{choices:CATEGORIES,prefix:'category',value:club?.category || 'motorcycle'});
+    field(form,'category','garage.category',{choices:ACTIVITY_CATEGORIES,prefix:'category',value:club?.category || 'motorcycle'});
     field(form,'visibility','clubs.visibility',{choices:['public','unlisted','private'],prefix:'visibility',value:club?.visibility || 'public'});
     field(form,'membershipPolicy','clubs.policy',{choices:['open','approval','invite','private'],prefix:'policy',value:club?.membershipPolicy || 'open'});
     form.append(labelText(element('p','muted'),'clubs.policyHint'));

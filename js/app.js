@@ -1,6 +1,8 @@
 import { createPositionPipeline } from './position-pipeline.js';
 import { initNavigation } from './ui/navigation.js';
 import { initShell, publishRideSummary } from './ui/shell.js';
+import {confirmDashboardReturn} from './ui/host-return.js';
+import {initNotifications} from './ui/notifications.js';
 import { initAuthUI } from './auth-ui.js';
 import { initClubUI } from './club-ui.js';
 import { initGroupUI } from './group-ui.js';
@@ -18,7 +20,7 @@ import { vehicleSnapshot } from './data/schema.js';
 import { getAccount, getAuthState, onAccountChange } from './auth-state.js';
 import { createSessionSync, queueRide } from './session-sync.js';
 import { listCloudSessions, loadCloudRoute, localFromCloud, cloudDeletionIds, getCloudSession } from './firebase/sessionRepository.js';
-import { dataErrorKey } from './firebase/access.js';
+import { dataErrorKey, dataErrorMessage } from './firebase/access.js';
 import { sessionFile, shareOrDownload } from './session-export.js';
 import { button } from './ui/forms.js';
 import { initI18n, t, resolveText, setLocalizedText, onLanguageChange, formatNumber, getLocale } from './i18n/i18n.js';
@@ -95,6 +97,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       initClubMembersUI();
       initClubBrandingUI();
       initShell();
+      initNotifications();
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(registrations => Promise.all(
           registrations.filter(registration => registration.scope === new URL('./', document.baseURI).href)
@@ -1775,7 +1778,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           renderHistory(); updateStartSummary();
           setLocalizedText(document.getElementById('history-status'),()=>t('rides.historyLoaded'));
           return true;
-        } catch(error) {if(epoch===accountEpoch) setLocalizedText(document.getElementById('history-status'),()=>t(dataErrorKey(error)));return false;}
+        } catch(error) {if(epoch===accountEpoch) setLocalizedText(document.getElementById('history-status'),()=>dataErrorMessage(error));return false;}
         finally {if(epoch===accountEpoch) historyLoading=false;}
       }
       async function ensureRideRoute(ride) {
@@ -1798,7 +1801,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           if(!ride || epoch!==accountEpoch) return;
           const key=await shareOrDownload(sessionFile(ride,format),share);
           if(epoch===accountEpoch) setLocalizedText(document.getElementById('history-status'),()=>t(key));
-        } catch(error) {if(epoch===accountEpoch) setLocalizedText(document.getElementById('history-status'),()=>t(dataErrorKey(error)));}
+        } catch(error) {if(epoch===accountEpoch) setLocalizedText(document.getElementById('history-status'),()=>dataErrorMessage(error));}
       }
       onAccountChange(async ({user,ready}) => {
         const uid = user?.uid || null;
@@ -1912,7 +1915,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         updateStartSummary();
         setSessionSummary(() => t('ui.cleared'));
       });
-      elBackToStartBtn.addEventListener('click', returnToStartView);
+      elBackToStartBtn.addEventListener('click', async()=>{if(await confirmDashboardReturn())returnToStartView();});
       elFinishSessionBtn.addEventListener('click', finishSession);
       elStatusTab.addEventListener('click', expandStatusDock);
       elTopTab.addEventListener('click', expandTopDock);
@@ -1973,7 +1976,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
             await store.updateSession(id,latest=>latest.localRevision===prior.localRevision ? full : null);
             if(epoch!==accountEpoch) return;
             await loadSessionHistory();renderHistory();updateStartSummary();cloudSync?.retry();
-          } catch(error) {if(epoch===accountEpoch) setLocalizedText(document.getElementById('history-status'),()=>t(dataErrorKey(error)));}
+          } catch(error) {if(epoch===accountEpoch) setLocalizedText(document.getElementById('history-status'),()=>dataErrorMessage(error));}
           return;
         }
         if (['json','gpx','share'].includes(action)) {await exportRide(id,action==='json'?'json':'gpx',action==='share');return;}
@@ -2013,7 +2016,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           try {
             completed=await ensureRideRoute(completed);
             if(completed && epoch===accountEpoch) openCompletedSessionView(completed);
-          } catch(error) {if(epoch===accountEpoch) setLocalizedText(document.getElementById('history-status'),()=>t(dataErrorKey(error)));}
+          } catch(error) {if(epoch===accountEpoch) setLocalizedText(document.getElementById('history-status'),()=>dataErrorMessage(error));}
           return;
         }
 
@@ -2026,7 +2029,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
 
           const epoch=accountEpoch;
           try {renameTarget=await ensureRideRoute(renameTarget);}
-          catch(error) {setLocalizedText(document.getElementById('history-status'),()=>t(dataErrorKey(error)));return;}
+          catch(error) {setLocalizedText(document.getElementById('history-status'),()=>dataErrorMessage(error));return;}
           if(!renameTarget || epoch!==accountEpoch) return;
 
           var renamed = window.prompt(t("ui.renamePrompt"), renameTarget.name || '');

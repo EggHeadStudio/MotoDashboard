@@ -10,7 +10,7 @@ let mf,key,cert,fixtureDir;const docs=new Map(),sockets=[];
 const origin='https://example.test',project='motodash-87bf8';
 const roomA='12345678-1234-4123-8123-123456789012',roomB='87654321-1234-4123-8123-123456789012';
 function seed(id=roomA) {
-  docs.set('groupSessions/'+id,{id,schemaVersion:1,state:'active',participantCount:2,clubId:null});
+  docs.set('groupSessions/'+id,{id,schemaVersion:1,state:'active',startsAt:Date.now(),endsAt:null,participantCount:2,clubId:null});
   for(const uid of ['alice','bob']) {docs.set(`groupSessions/${id}/participants/${uid}`,{uid,status:'ok',vehicle:null,clubIdentity:null});docs.set('displayProfiles/'+uid,{displayName:uid==='alice'?'Alice Rider':'Bob Rider'});}
 }
 function encode(value) {
@@ -113,6 +113,14 @@ test('oversized WebSocket data rejected without publication',async()=>{
 test('completed sessions deny new tickets',async()=>{
   docs.set('groupSessions/'+roomB,{...docs.get('groupSessions/'+roomB),state:'completed'});
   assert.equal((await ticket('outsider',roomB)).status,403);
+});
+test('expired retained active sessions deny tickets and alarms end existing sockets',async()=>{
+  const id=crypto.randomUUID();seed(id);
+  docs.set('groupSessions/'+id,{...docs.get('groupSessions/'+id),startsAt:Date.now()-3600000,endsAt:Date.now()+2500});
+  const a=await enter('alice',id),b=await enter('bob',id);
+  await wait(a,'session_ended',()=>true,15000);await wait(b,'session_ended',()=>true,15000);
+  assert.equal(docs.get('groupSessions/'+id).state,'active');
+  assert.equal((await ticket('outsider',id)).status,403);a.ws.close();b.ws.close();
 });
 test('duplicate connection replaces the previous publisher and reconnect gets snapshot',async()=>{
   const id=crypto.randomUUID();seed(id);const first=await enter('alice',id),bob=await enter('bob',id);

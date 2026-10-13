@@ -5,8 +5,23 @@ import {element,labelText,field,button} from '../ui/forms.js';
 import {t,setLocalizedText,onLanguageChange,getLocale} from '../i18n/i18n.js';
 import {sessionURL,followSessionURL} from '../data/group-session.js';
 import {summarizeLive} from './live-summary.js';
+import {watchGroup} from '../firebase/groupWatch.js';
 
 export function initLiveUI() {
+  let watched=null,release=null;
+  let diagnostic=null,diagnosticTimer=null;
+  const dataStatus=document.getElementById('firestore-diagnostic');
+  function renderDiagnostic() {
+    dataStatus.hidden=!diagnostic;
+    dataStatus.textContent=diagnostic?t('data.statusDiagnostic',{code:diagnostic}):'';
+    dataStatus.title=dataStatus.textContent;
+  }
+  addEventListener('motodash-data-diagnostic',event=>{
+    // Accept only a fixed safe code, never a raw provider error or document path.
+    if(typeof event.detail!=='string'||!/^MD-[A-Z]+\/[A-Z-]+$/.test(event.detail))return;
+    diagnostic=event.detail;renderDiagnostic();clearTimeout(diagnosticTimer);
+    diagnosticTimer=setTimeout(()=>{diagnostic=null;renderDiagnostic();},20000);
+  });
   const dashboard=document.getElementById('live-dashboard');
   dashboard.addEventListener('click',()=>{const id=liveClient.getState().sessionId;if(id)followSessionURL(sessionURL(id));});
   function renderDashboard() {
@@ -14,6 +29,8 @@ export function initLiveUI() {
     setLocalizedText(dashboard,()=>t(s.connection==='connected'?'live.compact':'live.'+s.connection));
     dashboard.title=t('live.'+s.connection);dashboard.setAttribute('aria-label',dashboard.title);
     document.getElementById('status-tab').title=s.consent?dashboard.title:'';
+    const tab=document.getElementById('status-tab');
+    if(s.consent)tab.dataset.live=s.connection;else delete tab.dataset.live;
   }
   registerGroupSection(async({uid,model,body})=>{
     const {group,participant}=model,s=liveClient.getState();
@@ -30,15 +47,25 @@ export function initLiveUI() {
         event.preventDefault();if(!form.reportValidity())return;
         document.getElementById('groups-dialog').close();
         document.getElementById('start-overlay').style.display='none';
-        document.getElementById('back-to-start-btn').style.display='inline-flex';
+        if(getComputedStyle(document.getElementById('finish-session-btn')).display==='none')
+          document.getElementById('back-to-start-btn').style.display='inline-flex';
         liveClient.start(uid,group.id);
       });panel.append(form);
     }else if(!participant || group.state!=='active')panel.append(labelText(element('p'),'live.activeOnly'));
     const stop=button('live.stop',()=>liveClient.stop());stop.id='live-stop';panel.append(stop,element('div','live-summary'));body.append(panel);
     renderPanel(panel);
   });
-  liveClient.onChange(()=>{renderDashboard();const panel=document.getElementById('group-live');if(panel)renderPanel(panel);});
-  onLanguageChange(()=>{renderDashboard();const panel=document.getElementById('group-live');if(panel)renderPanel(panel);});
+  liveClient.onChange(state=>{
+    const key=state.consent?state.uid+'/'+state.sessionId:null;
+    if(key!==watched) {
+      release?.();release=null;watched=key;
+      if(key)release=watchGroup(state.uid,state.sessionId,group=>{
+        if(!group||group.state!=='active')liveClient.stop('ended');
+      });
+    }
+    renderDashboard();const panel=document.getElementById('group-live');if(panel)renderPanel(panel);
+  });
+  onLanguageChange(()=>{renderDashboard();renderDiagnostic();const panel=document.getElementById('group-live');if(panel)renderPanel(panel);});
   setInterval(()=>{const panel=document.getElementById('group-live');if(panel)renderPanel(panel);},5000);
 }
 function renderPanel(panel) {

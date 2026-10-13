@@ -1,4 +1,4 @@
-export const APP_VERSION = '1.2';
+export const APP_VERSION = '1.3.0-batch6a';
 
 export const THEME_NAMES = ['themes.normal', 'themes.monochrome', 'themes.forest', 'themes.urban', 'themes.night'];
 export const THEME_CLASSES = ['theme-normal', 'theme-monochrome', 'theme-forest', 'theme-urban', 'theme-night'];
