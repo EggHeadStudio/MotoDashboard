@@ -1,8 +1,10 @@
 # MotoDashboard implementation status
 
-Updated **2026-10-13**, after local Batch 6A implementation. The operator reports
-Batch 5/Firebase/Worker deployed and Batch 5 manually tested. Batch 6A is not deployed.
-No production data, authentication settings, Rules, Worker or deployment was changed.
+Updated **2026-10-13**. The operator now reports Batch 6A deployed and working.
+Batch 6B milestone 0 audit/design is complete; implementation and tests follow the
+sequential plan in [BATCH_6B_RESULT.md](BATCH_6B_RESULT.md). New scope replaces the
+earlier account-recovery proposal without removing future account requirements.
+No production data, settings or deployments are changed by this local batch.
 
 ## Batch 6A local status
 
