@@ -25,6 +25,12 @@ Milestone 6 exclusivity is implemented locally: Web Locks/atomic IndexedDB perso
 ownership and server UID-keyed live coordinator. 64 Worker tests and 18 Batch 6B
 browser cases pass. New LIVE_IDENTITIES binding/v2 migration must be published;
 global live enforcement is not claimed deployed. No new secret/IAM write grant.
+Milestone 7 final checks pass: **840 Firestore**, **66 Worker (17 workerd)**,
+**68 locked RTDB**, **77 browser groups/named cases**, **10 deployment contracts**,
+**3 YAML / 15 Bash blocks**, and **2 Pages groups (294 references / 83 URLs)**.
+Final completed runs: **0 failed, 0 skipped**. Native Safari/phones and real
+production Firebase remain NOT RUN. See BATCH_6B_RESULT.md for nested-count rules
+and intermediate test failures/refinements; publication is not acceptance.
 
 ## Batch 6A local status
 

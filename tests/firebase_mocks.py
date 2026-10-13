@@ -62,6 +62,7 @@ export async function runTransaction(_,fn) {
 export async function updateDoc(ref,changes) { write(ref,{...read()[ref],...changes}); }
 function snap(ref,data) { return {id:ref.split('/').at(-1),ref,exists:()=>!!data,data:()=>structuredClone(data)}; }
 export async function getDoc(ref) { if(window.__mock.docFailure?.ref===ref)throw Object.assign(new Error('Injected doc failure'),{code:window.__mock.docFailure.code}); return snap(ref,read()[ref]); }
+export async function getDocFromServer(ref) {window.__mock.serverReads=(window.__mock.serverReads || 0)+1;return getDoc(ref);}
 export const where=(field,op,value)=>({kind:'where',field,op,value});
 export const orderBy=(field,direction='asc')=>({kind:'order',field,direction});
 export const limit=value=>({kind:'limit',value});
@@ -78,7 +79,13 @@ export async function getDocs(input) {
       const v=doc.data()[filter.field];
       return filter.op==='=='?v===filter.value:filter.op==='>='?v>=filter.value:filter.op==='<='?v<=filter.value:filter.op==='>'?v>filter.value:filter.op==='<'?v<filter.value:filter.op==='in'?filter.value.includes(v):true;
     });
-    if(filter.kind==='order') docs.sort((a,b)=>(a.data()[filter.field]<b.data()[filter.field]?-1:1)*(filter.direction==='desc'?-1:1));
+    if(filter.kind==='order') docs.sort((a,b)=>{
+      const comparable=v=>v?.seconds!==undefined?v.seconds*1000+(v.nanoseconds || 0)/1e6:v?.__serverTimestamp?0:v;
+      const av=comparable(a.data()[filter.field]),bv=comparable(b.data()[filter.field]);
+      // Firestore orders equal field values by document name; the fixture must too.
+      const order=av<bv?-1:av>bv?1:a.id<b.id?-1:a.id>b.id?1:0;
+      return order*(filter.direction==='desc'?-1:1);
+    });
     if(filter.kind==='after') { const i=docs.findIndex(doc=>doc.id===filter.value.id); if(i>=0) docs=docs.slice(i+1); }
     if(filter.kind==='limit') docs=docs.slice(0,filter.value);
   }

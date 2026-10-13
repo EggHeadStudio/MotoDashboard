@@ -116,8 +116,11 @@ export function initNavigation() {
     setDashboardVisible(driving);
     if(driving) document.getElementById('controls-row').append(language);else actions.prepend(language);
     document.getElementById('hud').inert = !driving;
+    document.getElementById('map').inert=!driving;
+    document.getElementById('map').setAttribute('aria-hidden',String(!driving));
   }).observe(document.getElementById('start-overlay'), {attributes:true, attributeFilter:['style']});
   document.getElementById('hud').inert = true;
+  document.getElementById('map').inert=true;document.getElementById('map').setAttribute('aria-hidden','true');
   new ResizeObserver(()=>{
     const height=nav.getBoundingClientRect().height;
     if(height>0) document.documentElement.style.setProperty('--md-nav-height',height+'px');

@@ -1,5 +1,6 @@
 export const batch6b={
   en:{
+    'garage.visibilityHint':'Private and Club vehicles are not public. Public is eligible for a separate Showcase opt-in; your profile must also be Public. Original Garage records always remain owner-only.',
     'rideContext.return':'Return to Ride','rideContext.already':'You already have an active ride.',
     'rideContext.sharingOff':'Group ride · sharing off',
     'rideContext.lockLost':'Recording stopped in this tab because its ownership expired. Return to the tab holding the ride or resume when it closes.',
@@ -43,6 +44,7 @@ export const batch6b={
     'landing.back':'Back to MotoDash','landing.local':'Local ride history','landing.guestHome':'Guest dashboard',
   },
   fi:{
+    'garage.visibilityHint':'Yksityisiä ja Kerho-ajoneuvoja ei julkaista. Julkinen sallii erillisen esittelyvalinnan; myös profiilin on oltava julkinen. Alkuperäiset autotallitiedot näkyvät aina vain omistajalle.',
     'rideContext.return':'Palaa ajoon','rideContext.already':'Sinulla on jo aktiivinen ajo.',
     'rideContext.sharingOff':'Ryhmäajo · jako pois',
     'rideContext.lockLost':'Tallennus pysähtyi tässä välilehdessä, koska sen omistus vanheni. Palaa ajoa hallitsevaan välilehteen tai jatka sen sulkeuduttua.',

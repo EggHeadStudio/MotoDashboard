@@ -28,7 +28,7 @@ def run_live_tests(browser,base,route_map):
                 assert m['ticket']=='a'*64
                 ws.send(json.dumps({'v':1,'type':'hello','riderId':'self'}))
                 ws.send(json.dumps({'v':1,'type':'snapshot','participants':[
-                  {'riderId':'self','displayName':'Live Rider','status':'ok','position':None},
+                  {'riderId':'self','displayName':'Live Rider','status':'ok','vehicle':{'nickname':'Group-selected car','category':'car'},'position':None},
                   {'riderId':'other','displayName':'Other <Rider>','status':'fuel','vehicle':{'nickname':'Bike','category':'motorcycle'},'clubIdentity':{'name':'Crew','rank':'Captain'},
                    'position':{'latitude':60.001,'longitude':25,'accuracy':5,'speedKmh':0,'heading':None,'sampledAt':int(time.time()*1000),'at':int(time.time()*1000)}}]}))
         ws.on_message(message)
@@ -53,6 +53,7 @@ def run_live_tests(browser,base,route_map):
     page.click('#live-consent button');assert not requests
     page.check('#live-consent input[name=consent]');page.click('#live-consent button')
     page.wait_for_function('window.__geo.active === 1');assert len(requests)==1
+    page.wait_for_function('document.querySelector("#dashboard-vehicle").textContent==="Group-selected car"')
     page.wait_for_selector('.live-rider-label');label=page.locator('.live-rider-label').inner_text()
     assert 'Other <Rider>' in label and 'Bike' in label and 'Captain' in label and 'Last location:' in label
     # Regression: the former shrink-to-fit label was 26px x 984px, wrapping each character.

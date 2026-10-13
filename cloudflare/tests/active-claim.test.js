@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {claimDecision} from '../src/activeClaim.js';
+import {claimDecision,liveLeaseUntil} from '../src/activeClaim.js';
 const a='12345678-1234-4123-8123-123456789012',b='87654321-1234-4123-8123-123456789012',n='11111111-1111-4111-8111-111111111111',n2='22222222-2222-4222-8222-222222222222';
 const claim={roomId:a,nonce:n,until:31000},input={roomId:a,nonce:n,until:50000};
 test('new live reservation is bounded by the server lease',()=>{assert.deepEqual(claimDecision(null,'reserve',input,1000).claim,claim);});
@@ -14,3 +14,8 @@ test('abandoned expiry permits another room without the previous owner renewing'
 test('stale renewal cannot regain a newer same-room nonce',()=>{assert.equal(claimDecision({...claim,nonce:n2},'renew',input,2000).status,403);});
 test('renewal clamps token or Group deadline as well as lease length',()=>{assert.equal(claimDecision(claim,'renew',{...input,until:2500},2000).claim.until,2500);});
 test('no UID assertion, malformed room, indefinite or expired time accepted',()=>{for(const value of [{...input,uid:'victim'},{...input,roomId:'name'},{...input,nonce:'name'},{...input,until:Infinity},{...input,until:0}])assert.notEqual(claimDecision(claim,'activate',value,2000).status,200);});
+test('authority alarms cannot indefinitely renew a publisher with no inbound activity',()=>{
+  assert.equal(liveLeaseUntil({checkedAt:40000,expiresAt:90000},80000,0),45000);
+  assert.equal(liveLeaseUntil({checkedAt:40000,expiresAt:42000},80000,40000),42000);
+  assert.equal(liveLeaseUntil({checkedAt:40000,expiresAt:90000},41000,40000),41000);
+});

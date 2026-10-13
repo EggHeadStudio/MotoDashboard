@@ -79,8 +79,20 @@ def run_batch6b_tests(browser,base,route_map):
     from navigation_helpers import click_action
     click_action(page,'#account-btn');page.wait_for_function('document.querySelector("#profile-name").value==="Public Explorer"');page.click('#account-close')
     print('PASS: Batch 6B: profile name update synchronizes private Account settings and signed-in display projection')
+    open_garage(page);add_vehicle(page,'Showcase Bicycle','bicycle')
+    for nickname in ['Private Car','Showcase Bicycle']:
+        card=page.locator('#garage-dialog .vehicle-card').filter(has=page.get_by_role('heading',name=nickname,exact=True))
+        card.get_by_role('button',name='Showcase options',exact=True).click();page.wait_for_selector('#showcase-form')
+        page.check('#showcase-form-consent');page.locator('#showcase-form button[type=submit]').click();page.wait_for_function('!document.getElementById("showcase-editor")')
+    page.keyboard.press('Escape');page.click('#public-profile-edit');page.wait_for_selector('#public-profile-form-featuredVehicle option',state='attached')
+    page.select_option('#public-profile-form-featuredVehicle',label='Showcase Bicycle');page.locator('#public-profile-form button[type=submit]').click();page.wait_for_function('!document.getElementById("public-profile-editor")')
+    page.goto(base+'#/rider/'+alias,wait_until='networkidle');page.wait_for_selector('#screen-rider .vehicle-card')
+    assert page.locator('#screen-rider .vehicle-card').count()==2 and page.locator('#screen-rider .vehicle-card h3').first.inner_text()=='Showcase Bicycle'
+    assert page.evaluate('async()=>(await import("./js/data/public-profile.js")).plannedProfileCapabilities.enforced') is False
+    assert page.evaluate('window.__mock.serverReads')>=3
+    print('PASS: Batch 6B: multiple public cards, explicit featured selection, server-only openings and unenforced future tier concepts')
     club=page.evaluate('''async()=>{return (await import('./js/firebase/clubRepository.js')).createClub('fixture-0',{name:'Public Road Crew',description:'Public Club',category:'motorcycle',visibility:'public',membershipPolicy:'open',primaryColor:'#123456',accentColor:'#abcdef',routeColor:null,mapTheme:'normal',links:{}});}''')
-    page.click('#public-profile-edit');page.wait_for_selector('#profile-affiliation-form-club option',state='attached')
+    page.locator('#bottom-nav [data-destination=profile]').click();page.click('#public-profile-edit');page.wait_for_selector('#profile-affiliation-form-club option',state='attached')
     page.select_option('#profile-affiliation-form-club',club);page.locator('#profile-affiliation-form button[type=submit]').click()
     page.wait_for_function('document.getElementById("public-profile-editor")?.textContent.includes("Public Road Crew") && !document.getElementById("public-profile-editor")?.getAttribute("aria-busy")')
     page.keyboard.press('Escape');page.goto(base+'#/rider/'+alias,wait_until='networkidle');page.wait_for_selector('#screen-rider .public-affiliations')
@@ -123,6 +135,11 @@ def run_ride_continuity_tests(browser,base,route_map):
     page.locator('#active-ride-conflict').get_by_role('button',name='Cancel',exact=True).click()
     assert page.evaluate('async()=>(await import("./js/ride-context.js")).getRideContext().recordingId')==original
     print('PASS: Batch 6B: second personal Start is denied with Return/Cancel and preserves the existing recorder')
+    other=context.new_page();other.add_init_script("window.__activeGPS=0;Object.defineProperty(navigator,'geolocation',{value:{watchPosition(){window.__activeGPS++;return 1},clearWatch(){window.__activeGPS=0}}})")
+    other.goto(base,wait_until='networkidle');other.wait_for_selector('#active-ride-conflict')
+    assert other.evaluate('window.__activeGPS')==0 and page.evaluate('window.__geo.active')==1
+    assert other.evaluate('async()=>(await import("./js/ride-context.js")).getRideContext().recoverableId')==original
+    other.close();print('PASS: Batch 6B: actual competing application tab cannot auto-resume or start a second GPS recorder')
     for destination in ['home','discover','rides','clubs','profile']:
         page.locator(f'#bottom-nav [data-destination="{destination}"]').click();page.wait_for_selector('#return-to-ride')
         assert page.locator('#notifications-bell').is_visible()

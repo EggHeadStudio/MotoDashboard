@@ -33,21 +33,23 @@ export async function loadPublicProfile(id) {
   if(!publicId(id))return null;
   const {sdk,db}=await getFirestoreService();
   try {
-    const record=await boundedRequest(sdk.getDoc(sdk.doc(db,'publicProfiles',id)));
+    // Visibility is checked on the server on every public opening, never inferred from a cached copy.
+    const record=await boundedRequest(sdk.getDocFromServer(sdk.doc(db,'publicProfiles',id)));
     if(!record.exists())return null;
     const data=record.data();
     const children=await settleReads((data.vehicleIds || []).slice(0,MAX_SHOWCASE),async child=>{
-      try {const doc=await boundedRequest(sdk.getDoc(sdk.doc(db,'publicProfiles',id,'vehicles',child)));return doc.exists()?doc.data():null;}
+      try {const doc=await boundedRequest(sdk.getDocFromServer(sdk.doc(db,'publicProfiles',id,'vehicles',child)));return doc.exists()?doc.data():null;}
       catch(error){if(error?.code==='permission-denied')return null;throw error;}
     },2);
     const affiliations=await settleReads((data.affiliationIds || []).slice(0,2),async child=>{
-      try {const doc=await boundedRequest(sdk.getDoc(sdk.doc(db,'publicProfiles',id,'affiliations',child)));return doc.exists()?doc.data():null;}
+      try {const doc=await boundedRequest(sdk.getDocFromServer(sdk.doc(db,'publicProfiles',id,'affiliations',child)));return doc.exists()?doc.data():null;}
       catch(error){if(error?.code==='permission-denied')return null;throw error;}
     },2);
     return {profile:data,vehicles:children.filter(row=>row.status==='fulfilled' && row.value).map(row=>row.value),
       affiliations:affiliations.filter(row=>row.status==='fulfilled' && row.value).map(row=>row.value),partial:[...children,...affiliations].some(row=>row.status==='rejected')};
   }catch(error) {
     if(error?.code==='permission-denied')return null;
+    if(error && typeof error==='object')error.operation='profile';
     throw error;
   }
 }

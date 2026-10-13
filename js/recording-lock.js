@@ -3,12 +3,19 @@ export function createRecordingLock({locks=globalThis.navigator?.locks,indexedDB
   let claim=null,releaseHold=null,timer=null,generation=0,dbPromise=null;
   const nonce=()=>globalThis.crypto?.randomUUID?.() || [Date.now(),Math.random(),Math.random()].join('-');
   const tab=nonce(),TTL=30000;
-  const open=()=>dbPromise ||= new Promise((resolve,reject)=>{
-    if(!indexedDB){reject(Error('recording-storage-unavailable'));return;}
-    const request=indexedDB.open('motodash-recording-ownership',1);
-    request.onupgradeneeded=()=>request.result.createObjectStore('leases',{keyPath:'scope'});
-    request.onsuccess=()=>resolve(request.result);request.onerror=request.onblocked=()=>reject(Error('recording-storage-unavailable'));
-  });
+  const open=()=>{
+    if(dbPromise)return dbPromise;
+    dbPromise=new Promise((resolve,reject)=>{
+      let settled=false;
+      const done=(db,error)=>{if(settled){db?.close();return;}settled=true;clearTimeout(timeout);if(error)reject(error);else resolve(db);};
+      const failure=()=>done(null,Error('recording-storage-unavailable'));
+      const timeout=setTimeout(failure,4000);if(!indexedDB){failure();return;}
+      let request;try{request=indexedDB.open('motodash-recording-ownership',1);}catch{failure();return;}
+      request.onupgradeneeded=()=>request.result.createObjectStore('leases',{keyPath:'scope'});
+      request.onsuccess=()=>{const db=request.result;db.onversionchange=()=>{db.close();dbPromise=null;lose();};done(db);};
+      request.onerror=request.onblocked=failure;
+    }).catch(error=>{dbPromise=null;throw error;});return dbPromise;
+  };
   async function lease(scope,action,nonce) {
     const db=await open();return new Promise((resolve,reject)=>{
       const tx=db.transaction('leases','readwrite'),store=tx.objectStore('leases'),read=store.get(scope);let result=false;

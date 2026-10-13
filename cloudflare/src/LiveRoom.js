@@ -2,6 +2,7 @@ import {DurableObject} from 'cloudflare:workers';
 import {authorizeMany} from './firestoreAuthz.js';
 import {randomTicket,ticketHash,consumeTicket,TICKET_TTL} from './tickets.js';
 import {parseMessage,positionDecision,publicParticipant,MAX_RIDERS,LEASE_MS,EXPIRE_MS} from './protocol.js';
+import {LIVE_IDLE_MS,liveLeaseUntil} from './activeClaim.js';
 
 export class LiveRoom extends DurableObject {
   constructor(ctx,env) {
@@ -54,10 +55,10 @@ export class LiveRoom extends DurableObject {
         departed.push(s.riderId);continue;
       }
       const changed=JSON.stringify(identity)!==JSON.stringify(s.identity);
-      let claim;try {claim=await this.claim(s.uid,'renew',s.claimNonce,Math.min(result.checkedAt+LEASE_MS,result.expiresAt,s.expiresAt));}
+      let claim;try {claim=await this.claim(s.uid,'renew',s.claimNonce,liveLeaseUntil(result,s.expiresAt,s.lastSeen));}
       catch {this.close(ws,'unavailable');departed.push(s.riderId);continue;}
       if(claim.status!==200 || claim.until<=Date.now()){this.close(ws,'access_denied');departed.push(s.riderId);continue;}
-      this.save(ws,{...s,identity,leaseUntil:Math.min(result.checkedAt+LEASE_MS,result.expiresAt,s.expiresAt,claim.until)});
+      this.save(ws,{...s,identity,leaseUntil:Math.min(liveLeaseUntil(result,s.expiresAt,s.lastSeen),claim.until)});
       if(changed)changedStates.push(this.publicState(this.state(ws)));
     }
     // Prune every revoked receiver before any private broadcast from this check.
@@ -107,10 +108,10 @@ export class LiveRoom extends DurableObject {
           for(const other of this.sockets())if(other!==ws && this.state(other)?.uid===ticket.uid) {
             const previous=this.state(other);this.close(other,'replaced');this.broadcast({type:'participant_left',riderId:previous.riderId});
           }
-          const claim=await this.claim(ticket.uid,'activate',ticket.claimNonce,Math.min(result.checkedAt+LEASE_MS,result.expiresAt,ticket.expiresAt));
+          const claim=await this.claim(ticket.uid,'activate',ticket.claimNonce,liveLeaseUntil(result,ticket.expiresAt,now));
           if(claim.status!==200 || claim.until<=Date.now())throw Object.assign(Error(claim.status===409?'active_ride':'access_denied'),{activeSessionId:claim.activeSessionId});
           s={uid:ticket.uid,riderId:crypto.randomUUID(),origin:s.origin,identity,expiresAt:ticket.expiresAt,
-            claimNonce:ticket.claimNonce,leaseUntil:Math.min(result.checkedAt+LEASE_MS,result.expiresAt,ticket.expiresAt,claim.until),lastSeen:now,lastPositionAt:0,lastHeartbeatAt:0,seq:0,position:null,bucket:now,messages:0,lastControl:0,closed:false};
+            claimNonce:ticket.claimNonce,leaseUntil:Math.min(liveLeaseUntil(result,ticket.expiresAt,now),claim.until),lastSeen:now,lastPositionAt:0,lastHeartbeatAt:0,seq:0,position:null,bucket:now,messages:0,lastControl:0,closed:false};
           this.save(ws,s);await this.refresh();
           if(!this.eligible(ws))return;
           this.send(ws,{type:'hello',riderId:s.riderId});
@@ -118,7 +119,7 @@ export class LiveRoom extends DurableObject {
           this.broadcast({type:'participant_update',participant:this.publicState(s)});return;
         }
         if(now-s.bucket>=10000){s.bucket=now;s.messages=0;}
-        s.messages++;if(s.messages>8)throw Error('rate_limited');this.save(ws,s);
+        s.messages++;if(s.messages>8)throw Error('rate_limited');s.lastSeen=now;this.save(ws,s);
         if((m.type==='status' || m.type==='revalidate') && now-s.lastControl<10000)throw Error('rate_limited');
         await this.refresh(m.type==='status' || m.type==='revalidate');if(!this.eligible(ws))return;
         s=this.state(ws);s.lastSeen=now;
@@ -149,7 +150,7 @@ export class LiveRoom extends DurableObject {
       const now=Date.now();
       for(const ws of this.sockets()) {
         const s=this.state(ws);if(s.closed)continue;
-        if(!s.uid && s.pendingUntil<=now || s.uid && (now-s.lastSeen>70000 || s.expiresAt<=now)) {
+        if(!s.uid && s.pendingUntil<=now || s.uid && (now-s.lastSeen>=LIVE_IDLE_MS || s.expiresAt<=now)) {
           this.close(ws,s.expiresAt<=now?'token_expired':'disconnected');if(s.uid)this.broadcast({type:'participant_left',riderId:s.riderId});
         } else if(s.position && now-s.position.at>=EXPIRE_MS) {
           this.save(ws,{...s,position:null});this.broadcast({type:'position',riderId:s.riderId,position:null});

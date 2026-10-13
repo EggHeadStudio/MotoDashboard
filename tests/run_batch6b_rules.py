@@ -103,6 +103,23 @@ def run():
     r.commit('ADMIN',[r.update(f'clubs/{cid}/members/alice',r.membership('alice','owner'))]);r.read(None,apath,False) # rejoining does not resurrect prior opt-in
     p['affiliationIds']=[];r.commit('alice',[r.delete(apath),r.delete(f'profileOwners/{id}/affiliations/{aid}'),*save('alice',p)])
     r.read(None,apath,False)
+    # Maximum slot payloads still compile/authorize within Rules expression/access budgets.
+    p.update(vehicleIds=[str(uuid.uuid4()) for _ in range(4)],affiliationIds=[str(uuid.uuid4()) for _ in range(2)],featuredVehicle=None)
+    r.commit('alice',save('alice',p));r.read(None,'publicProfiles/'+id)
+    r.commit('alice',save('alice',{**p,'affiliationIds':[str(uuid.uuid4()) for _ in range(3)]}),False)
+    r.commit('alice',save('alice',{**p,'vehicleIds':['private-vehicle-id']}),False)
+    r.commit('ADMIN',[r.update('publicProfiles/'+id,{**projection(p),'email':'private@example.test'})]);r.read(None,'publicProfiles/'+id,False)
+    r.commit('alice',save('alice',p));r.read(None,'publicProfiles/'+id)
+    # Establish an independently readable fresh child before corrupting only its fields.
+    fresh=str(uuid.uuid4());fresh_path=f'publicProfiles/{id}/vehicles/{fresh}';p.update(vehicleIds=[fresh],affiliationIds=[],featuredVehicle=fresh)
+    incarnation=r.read('alice','users/alice/vehicles/bike')['createdAt']['timestampValue'];fresh_card={**card,'id':fresh}
+    r.commit('alice',[r.delete('users/alice/showcaseRefs/bike'),r.delete(f'profileOwners/{id}/vehicles/{vid}'),r.delete(child),*save('alice',{**p,'vehicleIds':[],'featuredVehicle':None})])
+    r.commit('alice',[
+        r.update('users/alice/showcaseRefs/bike',dict(profileId=id,publicId=fresh,createdAt=r.SERVER)),
+        r.update(f'profileOwners/{id}/vehicles/{fresh}',dict(sourceVehicleId='bike',sourceCreatedAt=(incarnation,),createdAt=r.SERVER)),r.update(fresh_path,fresh_card),*save('alice',p)])
+    r.read(None,fresh_path)
+    r.commit('ADMIN',[r.update(fresh_path,{**fresh_card,'ownerUid':'alice'})]);r.read(None,fresh_path,False)
+    r.commit('ADMIN',[r.update(fresh_path,fresh_card)]);r.read(None,fresh_path)
     # Alias cannot be replaced, reused by another user or reactivated after retirement.
     other=settings(str(uuid.uuid4()));r.commit('alice',[r.update('profileOwners/'+other['publicId'],dict(ownerUid='alice',createdAt=r.SERVER)),*save('alice',other)],False)
     p.update(state='retired',visibility='private');r.commit('alice',[r.update('users/alice/preferences/publicProfile',p)])

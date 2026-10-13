@@ -215,3 +215,19 @@ test('the public gateway never exposes coordinator mutation routes or asserted U
   const r=await mf.dispatchFetch('https://worker.test/v1/sessions/'+roomA+'/ticket',{method:'POST',headers:{Origin:origin,Authorization:'Bearer '+await token('outsider')},body:JSON.stringify({uid:'alice'})});
   assert.equal(r.status,400);
 });
+
+test('abandoned open socket loses its global claim and cannot receive after another Group wins',async()=>{
+  const uid='idle-'+crypto.randomUUID(),peer='peer-'+crypto.randomUUID(),a=crypto.randomUUID(),b=crypto.randomUUID();seed(a);seed(b);
+  for(const id of [a,b])docs.set(`groupSessions/${id}/participants/${uid}`,{uid,status:'ok',vehicle:null,clubIdentity:null});
+  docs.set(`groupSessions/${a}/participants/${peer}`,{uid:peer,status:'ok',vehicle:null,clubIdentity:null});
+  const old=await enter(uid,a),started=Date.now();
+  // The test socket remains open but never sends activity. Authority alarms still run.
+  while(Date.now()-started<46000)await new Promise(resolve=>setTimeout(resolve,500));
+  const replacement=await enter(uid,b);assert.equal((await ticket(uid,a)).status,409);
+  const count=old.messages.filter(m=>m.type==='position').length,observer=await enter(peer,a);
+  observer.ws.send(JSON.stringify({v:1,type:'position',latitude:60,longitude:25,accuracy:5,heading:null,speedKmh:0,sampledAt:Date.now(),seq:1}));
+  await wait(observer,'position');await new Promise(resolve=>setTimeout(resolve,50));
+  assert.equal(old.messages.filter(m=>m.type==='position').length,count);
+  assert.equal((await ticket(uid,a)).status,409,'late old-room release cannot free the replacement Group');
+  old.ws.close();replacement.ws.close();observer.ws.close();
+});

@@ -1,4 +1,6 @@
 import {LEASE_MS} from './protocol.js';
+export const LIVE_IDLE_MS=45000;
+export const liveLeaseUntil=(authority,tokenExpiry,lastSeen)=>Math.min(authority.checkedAt+LEASE_MS,authority.expiresAt,tokenExpiry,lastSeen+LIVE_IDLE_MS);
 const uuid=value=>typeof value==='string' && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(value);
 // Called only by trusted rooms. No caller UID or authorization claim is accepted.
 export function claimDecision(current,action,input,now=Date.now()) {

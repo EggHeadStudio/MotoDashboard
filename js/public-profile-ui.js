@@ -3,6 +3,7 @@ import {loadPublicProfile,loadOwnPublicProfile,savePublicProfile,loadOwnProfileC
 import {profileURL,publicId,ACCENTS,BANNERS} from './data/public-profile.js';
 import {CATEGORIES} from './data/schema.js';
 import {listMyClubs} from './firebase/clubRepository.js';
+import {validDisplayName} from './data/identity.js';
 import {element,labelText,button,dialog,openView,runAction,field} from './ui/forms.js';
 import {navigate} from './ui/navigation.js';
 import {dataErrorMessage} from './firebase/access.js';
@@ -76,7 +77,7 @@ export function initPublicProfiles() {
       form.append(labelText(element('p','muted'),'publicProfile.privacy'));
       const save=button('common.save');save.type='submit';form.append(save);
       if(settings.publicId && settings.visibility==='public'){const link=labelText(element('a'),'publicProfile.view');link.href=profileURL(settings.publicId);link.addEventListener('click',()=>view.node.close());form.append(link);}
-      form.addEventListener('submit',event=>{event.preventDefault();void runAction(form,view.status,async()=>{
+      form.addEventListener('submit',event=>{event.preventDefault();if(!validDisplayName(name.value)){labelText(view.status,'auth.nameLength');name.focus();return;}void runAction(form,view.status,async()=>{
         await savePublicProfile(uid,{...settings,displayName:name.value,bio:bio.value,category:category.value,accent:accent.value,banner:banner.value,featuredVehicle:featured.value,visibility:visibility.value});
         if(getAccount()?.uid===uid){publishDisplayIdentity(uid,name.value.trim());dispatchEvent(new Event('motodash-profile-updated'));labelText(view.status,'ui.saved');view.node.close();}
       });});view.body.append(form);

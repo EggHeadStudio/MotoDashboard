@@ -230,6 +230,8 @@ def run():
         run_batch5_tests(browser,base,route_map)
         from batch6a_browser import run_batch6a_tests
         run_batch6a_tests(browser,base,route_map)
+        from batch6b_browser import run_batch6b_tests
+        run_batch6b_tests(browser,base,route_map)
         output=page.evaluate('async()=> (await import("./tests/live-client-tests.js")).runLiveClientTests()')
         print('PASS:',output)
         run_real_sdk_imports(browser, base, route_map)
@@ -262,6 +264,7 @@ def run_real_sdk_imports(browser, base, route_map):
       if(db.app !== a.app) throw Error('Firebase project/app mismatch');
       const {validFirebaseConfig}=await import('./js/firebase/firebase.js');
       if(validFirebaseConfig({}) || validFirebaseConfig({...a.app.options,projectId:'other'})) throw Error('Invalid config accepted');
+      if(typeof sdk.getDocFromServer!=='function')throw Error('Pinned SDK lacks server-only public reads');
       return {same:a===b,project:a.app.options.projectId,name:a.app.name,
         auth:typeof a.sdk.createUserWithEmailAndPassword, firestore:typeof sdk.runTransaction, user:a.auth.currentUser};
     }""")

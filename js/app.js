@@ -2,7 +2,7 @@ import { createPositionPipeline } from './position-pipeline.js';
 import { initNavigation } from './ui/navigation.js';
 import {initLanding} from './ui/landing.js';
 import {initPublicProfiles} from './public-profile-ui.js';
-import {getRideContext,setRecordingContext,verifyRememberedGroup} from './ride-context.js';
+import {getRideContext,onRideContext,setRecordingContext,verifyRememberedGroup} from './ride-context.js';
 import {initRideReturn,showActiveRideConflict} from './ui/ride-return.js';
 import {createRecordingLock} from './recording-lock.js';
 import { initShell, publishRideSummary } from './ui/shell.js';
@@ -1168,7 +1168,8 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       }
 
       function renderVehicle() {
-        const snapshot = (sessionActive || sessionHistoryViewActive) ? activeSession?.vehicleSnapshot : selectedVehicle();
+        const context=getRideContext(),owned=(activeSession?.ownerUid || null)===(getAccount()?.uid || null);
+        const snapshot = (sessionActive || sessionHistoryViewActive) && owned ? activeSession?.vehicleSnapshot : context.groupId?context.groupVehicle:selectedVehicle();
         setLocalizedText(document.getElementById('dashboard-vehicle'), () => snapshot ? snapshot.nickname : t('garage.noVehicleShort'));
         setLocalizedText(document.getElementById('selected-vehicle'), () => t('garage.nextVehicle', { name: selectedVehicle()?.nickname || t('garage.noVehicleShort') }));
       }
@@ -1766,6 +1767,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         renderVehicle();
       });
       onVehicleChange(renderVehicle);
+      onRideContext(renderVehicle);
 
       function prepareCloudSync() {
         const epoch = accountEpoch;

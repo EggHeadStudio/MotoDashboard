@@ -81,7 +81,7 @@ cannot retract content already downloaded. No claim of production testing is mad
 
 ## Progress
 
-Milestones 0–6 complete locally. Milestones 7–8 pending final integration/documentation.
+Milestones 0–7 complete locally. Milestone 8 documentation/cleanup is being finalized.
 
 ### Milestone 1 — landing
 
@@ -189,3 +189,36 @@ expiry, stale release and inaccessible coordinator routes), **18 Batch 6B browse
 cases** (including real cross-tab locks/fallback), plus live-client regressions pass.
 An empty POST stream compatibility issue found by workerd was corrected without
 accepting body-supplied identities. Full integration is the next milestone.
+
+### Milestone 7 — final integration and security verification
+
+Final source version **1.4.0-batch6b**. Public openings require server reads; cached
+private previews never establish current public visibility. The pinned real SDK
+export is verified. Map content is inert/hidden from assistive navigation behind
+the landing/shell. Source vehicle identity is retained correctly for Group-only
+dashboards; original personal snapshots remain their recorded selection.
+
+Review tightened abandoned-socket ownership: no claim/room lease can outlive 45
+seconds without inbound activity, even while authority alarms keep running. Actual
+workerd proves another Group can win after abandonment and the old receiver gets
+no later coordinates; its late release cannot free the new Group.
+
+| Final check | Result / limits |
+| --- | --- |
+| Firestore actual demo emulator | **840 distinct passed**, 0 failed/skipped: 102 baseline + 137 security + 273 Groups + 32 identity + 82 Batch 5 + 79 Batch 6A + 135 Batch 6B; repeated baselines counted once |
+| Cloudflare | Dry-run build + **66 passed**, 0 failed/skipped, including **17 actual local workerd/SQLite** tests; mocked Google/Firestore, no production identity |
+| Full browser | **24 legacy groups + 20 Batch 5 + 13 Batch 6A + 20 Batch 6B** passed, 0 failed/skipped; 36 domain/17 confirmation assertions are nested, not extra suites |
+| RTDB | **68 passed**, 0 failed/skipped; deny-all demo, no live RTDB |
+| Pages | **2 groups**, **294 references / 83 URLs HTTP 200** under `/MotoDashboard/`; degraded Firebase preserves guest recording/history |
+| Deployment | **10 contracts**, exact unchanged 18 composites/exemption, **3 workflow YAMLs / 15 Bash blocks** and v1/v2 binding alignment; no workflow dispatched |
+| Not run | Production Firebase/Cloudflare account tests, physical phones/native Safari/WebKit, real GPS and operational quotas |
+
+Early development runs exposed outdated anonymous-navigation/focus assumptions and
+synchronous Start assumptions; tests now use visible entry points and wait for
+ownership admission while retaining their authorization checks. Workerd caught the
+empty-stream POST issue. Browser fixtures now use deterministic document-name
+tiebreaks for equal query values. Some intermediate Group-pagination/full-browser
+attempts timed out; diagnostic coverage is retained and the final complete run
+passed. Their production relevance is unconfirmed; MD-NETWORK is not claimed fixed.
+All previous security/QR/GPS/export coverage is retained. No test expectation was
+relaxed to authorize private reads or competing live Groups.

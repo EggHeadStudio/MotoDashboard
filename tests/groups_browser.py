@@ -176,9 +176,14 @@ def run_group_tests(browser,base,route_map):
       for(let n=0;n<23;n++)r['groupSessions/'+id+'/participants/roster-'+n]={uid:'roster-'+n,vehicleId:null,vehicle:null,clubIdentity:null,status:'fuel',joinedAt:{__serverTimestamp:true},updatedAt:{__serverTimestamp:true}};
       r['groupSessions/'+id].participantCount=25;r['groupPages/'+id].participantCount=25;
       localStorage.setItem('__mockProfiles',JSON.stringify(r));}""",ids[1])
+    assert page.evaluate('(id)=>JSON.parse(localStorage.getItem("__mockProfiles"))["groupSessions/"+id].participantCount',ids[1])==25
     page.evaluate("(id)=>{location.hash='/session/'+id;}",ids[1])
-    page.wait_for_function('document.querySelector("#group-overview").textContent.includes("20 of 25")')
-    page.locator('#group-participants').get_by_role('button',name='Load more',exact=True).click()
+    try:
+        page.wait_for_function('document.querySelector("#group-overview").textContent.includes("20 of 25")')
+        page.locator('#group-participants').get_by_role('button',name='Load more',exact=True).click()
+    except Exception:
+        print('Group fixture pagination diagnostic:',page.evaluate('''id=>({hash:location.hash,target:id,stored:JSON.parse(localStorage.getItem('__mockProfiles'))['groupSessions/'+id]?.participantCount,overview:document.querySelector('#group-overview')?.textContent,loaded:document.querySelectorAll('[data-participant-uid]').length,status:document.querySelector('#groups-dialog .feature-status')?.textContent,buttons:[...document.querySelectorAll('#group-participants button')].map(n=>n.textContent),language:document.documentElement.lang})''',ids[1]))
+        raise
     page.wait_for_function('document.querySelector("#group-overview").textContent.includes("25 of 25")')
     assert 'Fuel: 23' in page.locator('[data-status-count="fuel"]').inner_text()
     assert page.locator('[data-participant-uid]').count()==25
