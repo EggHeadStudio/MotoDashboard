@@ -1,5 +1,6 @@
 import { t, setLocalizedText } from '../i18n/i18n.js';
 import { openView, mountPanel } from './navigation.js';
+import { dataErrorMessage } from '../firebase/access.js';
 
 export function element(tag, className, content) {
   const node = document.createElement(tag);
@@ -52,7 +53,7 @@ export async function runAction(root, status, action, errorKey) {
   controls.forEach(node => { node.disabled = true; });
   labelText(status, 'common.loading');
   root.setAttribute('aria-busy', 'true');
-  try { await action(); } catch (error) { labelText(status, errorKey(error)); }
+  try { await action(); } catch (error) { setLocalizedText(status,()=>dataErrorMessage(error)); }
   finally { root.setAttribute('aria-busy', 'false'); controls.forEach((node, i) => { node.disabled = disabled[i]; }); }
 }
 export { openView };

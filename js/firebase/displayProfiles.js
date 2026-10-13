@@ -7,7 +7,7 @@ const cache = new Map();
 let owner = null;
 onAccountChange(({user}) => { owner = user?.uid || null; cache.clear(); });
 export async function loadDisplayProfiles(uid, targets) {
-  const s = await ownDatabase(uid), expectedOwner = owner;
+  const s = await ownDatabase(uid,'identity-load'), expectedOwner = owner;
   const ids = [...new Set(targets)].filter(validId).slice(0, 50);
   const result = new Map();
   await boundedRequest(Promise.all(ids.map(async target => {
@@ -26,7 +26,7 @@ export async function loadDisplayProfiles(uid, targets) {
   return result;
 }
 export async function searchDisplayProfiles(uid, prefix) {
-  const name = text(prefix, 64, true), s = await ownDatabase(uid);
+  const name = text(prefix, 64, true), s = await ownDatabase(uid,'identity-search');
   const page = await boundedRequest(s.sdk.getDocs(s.sdk.query(
     s.sdk.collection(s.db, 'displayProfiles'), s.sdk.where('displayName', '>=', name),
     s.sdk.where('displayName', '<=', name + '\uf8ff'), s.sdk.orderBy('displayName'), s.sdk.limit(10))));

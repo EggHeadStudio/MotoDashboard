@@ -6,7 +6,7 @@ const path = (sdk,db,uid,id,...rest) => sdk.doc(db,'users',uid,'sessions',id,...
 export async function uploadSession(uid, session) {
   if (session.ownerUid!==uid || session.status!=='completed' || !validId(session.id)
     || !session.localRevision || !THEMES.includes(session.mapTheme)) throw dataError('invalid-input');
-  const service = await ownDatabase(uid); const {db,sdk}=service;
+  const service = await ownDatabase(uid, 'ride-sync'); const {db,sdk}=service;
   const encoded = await encodeRoute(session.routePoints);
   const revisionId = await sha256(JSON.stringify([session.localRevision,encoded.routeHash,session.name]));
   const ref = path(sdk,db,uid,session.id);
@@ -58,7 +58,7 @@ export async function uploadSession(uid, session) {
 }
 export async function deleteCloudSession(uid,id) {
   if(!validId(id)) throw dataError('invalid-input');
-  const service=await ownDatabase(uid); const {db,sdk}=service;
+  const service=await ownDatabase(uid, 'ride-history'); const {db,sdk}=service;
   const tomb=sdk.doc(db,'users',uid,'sessionTombstones',id);
   await boundedRequest(sdk.runTransaction(db,async tx=>{
     const old=await tx.get(tomb);service.assertCurrent();
@@ -74,7 +74,7 @@ export async function deleteCloudSession(uid,id) {
   service.assertCurrent(); await boundedRequest(sdk.deleteDoc(path(sdk,db,uid,id))); service.assertCurrent();
 }
 export async function listCloudSessions(uid,cursor=null) {
-  const service=await ownDatabase(uid);const {db,sdk}=service;
+  const service=await ownDatabase(uid, 'ride-history');const {db,sdk}=service;
   const clauses=[sdk.where('uploadState','==','ready'),sdk.orderBy('startedAt','desc')];
   if(cursor) clauses.push(sdk.startAfter(cursor)); clauses.push(sdk.limit(20));
   const result=await boundedRequest(sdk.getDocs(sdk.query(sdk.collection(db,'users',uid,'sessions'),...clauses)));
@@ -82,7 +82,7 @@ export async function listCloudSessions(uid,cursor=null) {
 }
 export async function getCloudSession(uid,id) {
   if(!validId(id)) throw dataError('invalid-input');
-  const s=await ownDatabase(uid),result=await boundedRequest(s.sdk.getDoc(path(s.sdk,s.db,uid,id)));
+  const s=await ownDatabase(uid, 'ride-history'),result=await boundedRequest(s.sdk.getDoc(path(s.sdk,s.db,uid,id)));
   s.assertCurrent();if(!result.exists()) throw dataError('deleted');
   if(result.data().uploadState!=='ready') throw dataError('conflict');return result.data();
 }
@@ -98,7 +98,7 @@ export function localFromCloud(record) {
     routePoints:[],lastAcceptedPoint:null,routeLoaded:false,syncAction:null};
 }
 export async function cloudDeletionIds(uid) {
-  const service=await ownDatabase(uid);const {db,sdk}=service;
+  const service=await ownDatabase(uid, 'ride-sync');const {db,sdk}=service;
   const ids=new Set();let cursor=null;
   do {
     const filters=[sdk.orderBy('deletedAt')];if(cursor) filters.push(sdk.startAfter(cursor));filters.push(sdk.limit(100));
@@ -109,7 +109,7 @@ export async function cloudDeletionIds(uid) {
 }
 export async function loadCloudRoute(uid,session) {
   if(session.ownerUid!==uid || !validId(session.id)) throw dataError('auth-required');
-  const service=await ownDatabase(uid);const {db,sdk}=service;
+  const service=await ownDatabase(uid, 'ride-sync');const {db,sdk}=service;
   const chunks=[];let cursor=null;
   do {
     const filters=[sdk.orderBy('sequence')];if(cursor) filters.push(sdk.startAfter(cursor));filters.push(sdk.limit(32));

@@ -2,7 +2,7 @@ import { ownDatabase, boundedRequest, dataError } from './access.js';
 import { vehicleInput, validId } from '../data/schema.js';
 
 export async function loadGarage(uid) {
-  const service = await ownDatabase(uid);
+  const service = await ownDatabase(uid, 'garage-load');
   const { db, sdk } = service;
   const [vehicles, preference] = await boundedRequest(Promise.all([
     sdk.getDocs(sdk.collection(db, 'users', uid, 'vehicles')),
@@ -14,7 +14,7 @@ export async function loadGarage(uid) {
 }
 export async function saveVehicle(uid, id, input) {
   const data = vehicleInput(input);
-  const service = await ownDatabase(uid); const { db, sdk } = service;
+  const service = await ownDatabase(uid, 'garage-change'); const { db, sdk } = service;
   const vehicleId = id || crypto.randomUUID();
   if (!validId(vehicleId)) throw dataError('invalid-input');
   await boundedRequest(sdk.runTransaction(db, async transaction => {
@@ -29,7 +29,7 @@ export async function saveVehicle(uid, id, input) {
 }
 export async function defaultVehicle(uid, id) {
   if (id !== null && !validId(id)) throw dataError('invalid-input');
-  const service = await ownDatabase(uid); const { db, sdk } = service;
+  const service = await ownDatabase(uid, 'garage-change'); const { db, sdk } = service;
   await boundedRequest(sdk.runTransaction(db, async transaction => {
     service.assertCurrent();
     if (id) {
@@ -42,7 +42,7 @@ export async function defaultVehicle(uid, id) {
 }
 export async function deleteVehicle(uid, id) {
   if (!validId(id)) throw dataError('invalid-input');
-  const service = await ownDatabase(uid); const { db, sdk } = service;
+  const service = await ownDatabase(uid, 'garage-change'); const { db, sdk } = service;
   await boundedRequest(sdk.runTransaction(db, async transaction => {
     service.assertCurrent();
     const ref = sdk.doc(db, 'users', uid, 'vehicles', id);

@@ -2,7 +2,7 @@ import { getAccount, getDisplayIdentity, onAccountChange, onDisplayIdentity } fr
 import { onVehicleChange } from '../garage-ui.js';
 import { listMyGroups } from '../firebase/groupRepository.js';
 import { listMyClubs } from '../firebase/clubRepository.js';
-import { dataErrorKey } from '../firebase/access.js';
+import { dataErrorKey, dataErrorMessage } from '../firebase/access.js';
 import { logout } from '../firebase/auth.js';
 import { t, getLanguage, setLanguage, onLanguageChange, formatNumber } from '../i18n/i18n.js';
 import { element, labelText } from './forms.js';
@@ -52,9 +52,9 @@ export function initShell() {
     loading=false;first.remove();second.remove();
     const [ridePage,clubPage]=results;
     groups=ridePage.status==='fulfilled'?ridePage.value.groups:[];clubs=clubPage.status==='fulfilled'?clubPage.value.clubs:[];
-    loaded=true;render();
+    loaded=results.every(result=>result.status==='fulfilled');render();
     const failure=results.find(result=>result.status==='rejected');
-    if(failure) labelText(status,dataErrorKey(failure.reason));
+    if(failure) status.textContent=dataErrorMessage(failure.reason);
     else if(results.some(result=>result.value.partial)) labelText(status,'home.partial');
     else status.textContent='';
   }
@@ -66,6 +66,7 @@ export function initShell() {
   onDisplayIdentity(identity);listeners.add(stats);
   onVehicleChange(vehicle=>document.getElementById('home-vehicle-icon').replaceChildren(vehicleIcon(vehicle?.category || 'motorcycle')));
   document.getElementById('home-refresh').addEventListener('click',()=>void refresh());
+  addEventListener('online',()=>{if(!loaded && uid) void refresh();});
   addEventListener('motodash-navigate',event=>{if(event.detail.screen==='home'&&!loaded) void refresh();});
   document.getElementById('profile-language').addEventListener('change',event=>setLanguage(event.target.value));
   document.getElementById('profile-logout').addEventListener('click',async()=>{
