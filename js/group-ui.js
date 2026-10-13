@@ -9,6 +9,8 @@ import { openView, dialog, element, field, button, labelText, runAction } from '
 import {liveClient} from './live/live-client.js';
 import { groupCard, emptyState } from './ui/cards.js';
 import {watchGroup} from './firebase/groupWatch.js';
+import {getRideContext} from './ride-context.js';
+import {showActiveRideConflict} from './ui/ride-return.js';
 
 const sections = new Set();
 export const registerGroupSection = render => sections.add(render);
@@ -111,7 +113,10 @@ export function initGroupUI() {
     if(manager && ['scheduled','active'].includes(group.state)) {
       view.body.append(button('common.edit',()=>action(()=>edit(group),()=>{}),'group-edit'));
       const state=group.state==='scheduled'?'active':'completed';
-      view.body.append(button('groups.'+state,()=>action(owner=>repository.setGroupState(owner,id,state)),'group-'+state),
+      view.body.append(button('groups.'+state,()=>{
+        const active=getRideContext().groupId;if(state==='active' && active && active!==id){showActiveRideConflict();return;}
+        action(owner=>repository.setGroupState(owner,id,state));
+      },'group-'+state),
         button('groups.cancelSession',()=>{if(confirm(t('groups.cancelConfirm'))) action(owner=>repository.setGroupState(owner,id,'cancelled'));},'group-cancel'));
     }
     for(const render of sections) {if(!current(owner,token)) return;await render({uid:owner,model,body:view.body,status:view.status,action,stillCurrent:()=>current(owner,token)});}

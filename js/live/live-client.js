@@ -10,11 +10,15 @@ export function liveEndpoint(value) {
 }
 export function createLiveClient({endpoint=liveConfig.endpoint,fetchImpl=fetch,makeSocket=url=>new WebSocket(url),
   identity=async()=>{const {auth}=await getFirebase();const user=auth.currentUser;if(!user || user.uid!==getAccount()?.uid)throw Error('account_changed');return {uid:user.uid,token:await user.getIdToken(true)};},
-  account=()=>getAccount()?.uid,now=()=>Date.now()}={}) {
+  account=()=>getAccount()?.uid,now=()=>Date.now(),onConflict=id=>dispatchEvent(new CustomEvent('motodash-live-conflict',{detail:{activeSessionId:id}}))}={}) {
   let state={consent:false,sessionId:null,uid:null,connection:'off',selfId:null,participants:new Map()},
     ws=null,epoch=0,retryTimer=null,heartbeatTimer=null,handshakeTimer=null,attempt=0,lastSample=null,lastSent=null,seq=0,lastControl=0,lastServerAt=0;
   const listeners=new Set();
   const emit=()=>{for(const listener of listeners)listener(state);};
+  function conflict(id) {
+    if(typeof id!=='string'||!(/^[0-9a-f-]{36}$/).test(id)){stop('unavailable');return;}
+    onConflict(id);
+  }
   function cleanup() {clearTimeout(retryTimer);clearInterval(heartbeatTimer);clearTimeout(handshakeTimer);retryTimer=null;heartbeatTimer=null;handshakeTimer=null;lastSample=null;lastSent=null;}
   function stop(reason='off') {epoch++;cleanup();const socket=ws;ws=null;try {socket?.close();}catch{} state={...state,consent:false,sessionId:null,uid:null,selfId:null,connection:reason,participants:new Map()};emit();}
   function same(token) {return token===epoch && state.consent && account()===state.uid;}
@@ -36,6 +40,7 @@ export function createLiveClient({endpoint=liveConfig.endpoint,fetchImpl=fetch,m
         credentials:'omit',cache:'no-store',referrerPolicy:'no-referrer',signal:AbortSignal.timeout(12000)});
       if(!same(token))return;
       if(response.status===403){stop('accessDenied');return;}
+      if(response.status===409){const result=await response.json();if(!same(token))return;stop('conflict');conflict(result.activeSessionId);return;}
       if(!response.ok)throw Error('unavailable');
       const result=await response.json();if(!/^[0-9a-f]{64}$/.test(result.ticket || '') || result.protocol!==1)throw Error('bad_ticket');
       if(!same(token))return;
@@ -64,6 +69,7 @@ export function createLiveClient({endpoint=liveConfig.endpoint,fetchImpl=fetch,m
           else if(m.type==='participant_left')state.participants.delete(m.riderId);
           else if(m.type==='heartbeat' && m.riderId) {const p=state.participants.get(m.riderId);if(p?.position)p.position.at=localTime(m.at);}
           else if(m.type==='session_ended'){stop('ended');return;}
+          else if(m.type==='error' && m.code==='active_ride'){stop('conflict');conflict(m.activeSessionId);return;}
           else if(m.type==='error' && m.code!=='unavailable'){stop('accessDenied');return;}
           emit();
         } catch {stop('unavailable');}
@@ -89,8 +95,10 @@ export function createLiveClient({endpoint=liveConfig.endpoint,fetchImpl=fetch,m
     lastSent={latitude:c.latitude,longitude:c.longitude,at:now()};
   }
   return {getState:()=>state,onChange(fn){listeners.add(fn);return ()=>listeners.delete(fn);},stop,sample,
-    start(uid,id){stop();if(account()!==uid || !/^[0-9a-f-]{36}$/.test(id)){stop('accessDenied');return;}
-      state={...state,consent:true,uid,sessionId:id,connection:'connecting'};emit();void connect(epoch);},
+    start(uid,id){
+      if(account()!==uid || !/^[0-9a-f-]{36}$/.test(id)){stop('accessDenied');return false;}
+      if(state.consent && state.uid===uid){if(state.sessionId===id)return true;conflict(state.sessionId);return false;}
+      stop();state={...state,consent:true,uid,sessionId:id,connection:'connecting'};emit();void connect(epoch);return true;},
     revalidate(){if(now()-lastControl>=10000){lastControl=now();send({type:'revalidate'});}}};
 }
 export const liveClient=createLiveClient();

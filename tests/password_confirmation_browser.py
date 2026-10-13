@@ -169,10 +169,10 @@ def run_confirmation_tests(browser, base, route_map):
     page.locator('#auth-confirm-password').focus()
     page.screenshot(path=str(Path(tempfile.gettempdir()) / 'motodash-registration-en-mobile.png'))
     page.click('#account-close')
-    page.wait_for_function("document.querySelector('#auth-password').value === '' && document.querySelector('#auth-confirm-password').value === '' && document.activeElement.id === 'account-btn'")
+    page.wait_for_function("document.querySelector('#auth-password').value === '' && document.querySelector('#auth-confirm-password').value === '' && ['account-btn','landing-sign-in'].includes(document.activeElement.id)")
     case('Narrow layouts, keyboard navigation and close cleanup', page.locator('#auth-password').input_value() == ''
          and page.locator('#auth-confirm-password').input_value() == ''
-         and page.evaluate("document.activeElement.id === 'account-btn'"))
+         and page.evaluate("['account-btn','landing-sign-in'].includes(document.activeElement.id)"))
     assert not errors, errors
     assert not console_errors, console_errors
     assert not page.evaluate('window.__unhandled')

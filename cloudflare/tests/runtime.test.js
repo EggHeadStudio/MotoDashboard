@@ -11,7 +11,7 @@ const origin='https://example.test',project='motodash-87bf8';
 const roomA='12345678-1234-4123-8123-123456789012',roomB='87654321-1234-4123-8123-123456789012';
 function seed(id=roomA) {
   docs.set('groupSessions/'+id,{id,schemaVersion:1,state:'active',startsAt:Date.now(),endsAt:null,participantCount:2,clubId:null});
-  for(const uid of ['alice','bob']) {docs.set(`groupSessions/${id}/participants/${uid}`,{uid,status:'ok',vehicle:null,clubIdentity:null});docs.set('displayProfiles/'+uid,{displayName:uid==='alice'?'Alice Rider':'Bob Rider'});}
+  for(const uid of ['alice','bob','carol']) {docs.set(`groupSessions/${id}/participants/${uid}`,{uid,status:'ok',vehicle:null,clubIdentity:null});docs.set('displayProfiles/'+uid,{displayName:uid==='alice'?'Alice Rider':uid==='bob'?'Bob Rider':'Carol Rider'});}
 }
 function encode(value) {
   if(value===null)return {nullValue:null};if(typeof value==='string')return {stringValue:value};
@@ -24,7 +24,7 @@ before(async()=>{
   execFileSync(openssl,['req','-x509','-newkey','rsa:2048','-keyout',join(fixtureDir,'key.pem'),'-out',join(fixtureDir,'cert.pem'),'-days','1','-nodes','-subj','/CN=local-test'],{stdio:'ignore'});
   const pem=await readFile(join(fixtureDir,'key.pem'),'utf8');cert=await readFile(join(fixtureDir,'cert.pem'),'utf8');key=await importPKCS8(pem,'RS256');seed();seed(roomB);
   mf=new Miniflare({modules:true,scriptPath:new URL('../dist/index.js',import.meta.url).pathname.replace(/^\/([A-Z]:)/,'$1'),
-    compatibilityDate:'2026-08-06',durableObjects:{LIVE_ROOMS:{className:'LiveRoom',useSQLite:true}},
+    compatibilityDate:'2026-08-06',durableObjects:{LIVE_ROOMS:{className:'LiveRoom',useSQLite:true},LIVE_IDENTITIES:{className:'LiveIdentity',useSQLite:true}},
     bindings:{FIREBASE_PROJECT_ID:project,ALLOWED_ORIGINS:origin,FIRESTORE_SERVICE_ACCOUNT:JSON.stringify({project_id:project,
       client_email:'test-reader@'+project+'.iam.gserviceaccount.com',private_key:pem})},
     outboundService:async request=>{
@@ -88,13 +88,14 @@ test('pending socket gets no private messages; two verified riders receive snaps
   assert(snapshot.participants.every(p=>!('uid' in p) && p.position===null));
 });
 test('room isolation and latest position distribution',async()=>{
-  const other=await enter('alice',roomB);
+  const conflict=await ticket('alice',roomB);assert.equal(conflict.status,409);assert.equal(conflict.body.activeSessionId,roomA);
+  const other=await enter('carol',roomB);
   alice.ws.send(JSON.stringify({v:1,type:'position',latitude:60,longitude:25,accuracy:10,heading:90,speedKmh:36,sampledAt:Date.now(),seq:1}));
   assert.equal((await wait(bob,'position')).position.latitude,60);
   await new Promise(resolve=>setTimeout(resolve,30));assert(!other.messages.some(m=>m.type==='position'));other.ws.close();
 });
 test('single-use replay fails and query tokens are rejected',async()=>{
-  const t=await ticket('bob',roomB);assert.equal(t.status,200);
+  const t=await ticket('carol',roomB);assert.equal(t.status,200);
   const first=await connect(roomB);first.ws.send(JSON.stringify({v:1,type:'hello',ticket:t.body.ticket}));await wait(first,'hello');
   const replay=await connect(roomB);replay.ws.send(JSON.stringify({v:1,type:'hello',ticket:t.body.ticket}));assert.equal((await wait(replay,'error')).code,'invalid_ticket');
   const query=await mf.dispatchFetch(`https://worker.test/v1/sessions/${roomB}/connect?token=forbidden`,{headers:{Origin:origin,Upgrade:'websocket'}});assert.equal(query.status,400);first.ws.close();
@@ -157,7 +158,7 @@ test('ticket is bound to origin/session and removed participants cannot reconnec
 
 test('periodic alarm revokes silent receivers and expires unredeemed tickets',async()=>{
   const id=crypto.randomUUID();seed(id);const a=await enter('alice',id),b=await enter('bob',id);
-  const unusedId=crypto.randomUUID();seed(unusedId);const unused=await ticket('alice',unusedId);
+  const unusedId=crypto.randomUUID();seed(unusedId);const unused=await ticket('carol',unusedId);
   assert.equal(unused.status,200);
   const removedAt=Date.now();docs.delete(`groupSessions/${id}/participants/bob`);
   // No revalidate/status/position from either rider: only the real DO alarm can detect this.
@@ -171,4 +172,46 @@ test('periodic alarm revokes silent receivers and expires unredeemed tickets',as
   const expired=await connect(unusedId);expired.ws.send(JSON.stringify({v:1,type:'hello',ticket:unused.body.ticket}));
   assert.equal((await wait(expired,'error')).code,'invalid_ticket');
   a.ws.close();b.ws.close();expired.ws.close();
+});
+
+test('simultaneous devices cannot acquire different live rooms for one verified UID',async()=>{
+  const uid='race-'+crypto.randomUUID(),a=crypto.randomUUID(),b=crypto.randomUUID();seed(a);seed(b);
+  for(const id of [a,b])docs.set(`groupSessions/${id}/participants/${uid}`,{uid,status:'ok',vehicle:null,clubIdentity:null});
+  docs.set('displayProfiles/'+uid,{displayName:'Race Rider'});
+  const attempts=await Promise.all([ticket(uid,a),ticket(uid,b)]);
+  assert.deepEqual(attempts.map(r=>r.status).sort(),[200,409]);
+  const winner=attempts[0].status===200?a:b,loser=winner===a?b:a,granted=attempts.find(r=>r.status===200);
+  assert.equal(attempts.find(r=>r.status===409).body.activeSessionId,winner);
+  const connection=await connect(winner);connection.ws.send(JSON.stringify({v:1,type:'hello',ticket:granted.body.ticket}));await wait(connection,'hello');
+  assert.equal((await ticket(uid,loser)).status,409);connection.ws.close();
+  let next;const end=Date.now()+2000;
+  do {await new Promise(resolve=>setTimeout(resolve,20));next=await ticket(uid,loser);}while(next.status===409 && Date.now()<end);
+  assert.equal(next.status,200,'closed publisher releases before another Group admission');
+  const second=await connect(loser);second.ws.send(JSON.stringify({v:1,type:'hello',ticket:next.body.ticket}));await wait(second,'hello');second.ws.close();
+});
+
+test('actual SQLite coordinator expires abandoned reservations and preserves newer nonces',async()=>{
+  const ns=await mf.getDurableObjectNamespace('LIVE_IDENTITIES'),stub=ns.get(ns.idFromName('fixture-lease-'+crypto.randomUUID()));
+  const a=crypto.randomUUID(),b=crypto.randomUUID(),old=crypto.randomUUID(),fresh=crypto.randomUUID();
+  const call=async(action,roomId,nonce,until=Date.now()+2000)=>{
+    const r=await stub.fetch('https://identity.internal/'+action,{method:'POST',body:JSON.stringify({roomId,nonce,until})});return {status:r.status,body:await r.json()};
+  };
+  assert.equal((await call('reserve',a,old,Date.now()+100)).status,200);
+  assert.equal((await call('reserve',b,fresh)).status,409);
+  await new Promise(resolve=>setTimeout(resolve,150));assert.equal((await call('reserve',b,fresh)).status,200);
+  assert.equal((await call('renew',a,old)).status,409);
+  assert.equal((await call('activate',b,old)).status,200);
+  assert.equal((await call('activate',b,fresh)).status,200);
+  assert.equal((await call('release',b,old)).status,200);
+  assert.equal((await call('reserve',a,old)).status,409,'stale release cannot delete fresh incarnation');
+  assert.equal((await call('release',b,fresh)).status,200);
+  assert.equal((await call('reserve',a,old)).status,200);
+});
+
+test('the public gateway never exposes coordinator mutation routes or asserted UIDs',async()=>{
+  for(const action of ['reserve','activate','renew','release']){
+    const r=await mf.dispatchFetch('https://worker.test/'+action,{method:'POST',headers:{Origin:origin},body:JSON.stringify({uid:'alice',roomId:roomA})});assert.equal(r.status,404);
+  }
+  const r=await mf.dispatchFetch('https://worker.test/v1/sessions/'+roomA+'/ticket',{method:'POST',headers:{Origin:origin,Authorization:'Bearer '+await token('outsider')},body:JSON.stringify({uid:'alice'})});
+  assert.equal(r.status,400);
 });

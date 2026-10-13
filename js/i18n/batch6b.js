@@ -2,6 +2,9 @@ export const batch6b={
   en:{
     'rideContext.return':'Return to Ride','rideContext.already':'You already have an active ride.',
     'rideContext.sharingOff':'Group ride · sharing off',
+    'rideContext.lockLost':'Recording stopped in this tab because its ownership expired. Return to the tab holding the ride or resume when it closes.',
+    'rideContext.storageUnavailable':'Recording ownership could not be secured. Enable browser storage and try again; the dashboard remains available.',
+    'live.conflict':'You already have an active ride.',
     'rideContext.conflictHint':'Return to your existing ride or cancel. Your current recording and sharing will stay unchanged.',
     'publicProfile.bio':'Short bio','publicProfile.category':'Primary vehicle category','publicProfile.unspecified':'Not specified',
     'publicProfile.accent':'Accent preset','publicProfile.banner':'Banner preset','publicProfile.none':'None',
@@ -42,6 +45,9 @@ export const batch6b={
   fi:{
     'rideContext.return':'Palaa ajoon','rideContext.already':'Sinulla on jo aktiivinen ajo.',
     'rideContext.sharingOff':'Ryhmäajo · jako pois',
+    'rideContext.lockLost':'Tallennus pysähtyi tässä välilehdessä, koska sen omistus vanheni. Palaa ajoa hallitsevaan välilehteen tai jatka sen sulkeuduttua.',
+    'rideContext.storageUnavailable':'Tallennuksen omistusta ei voitu varmistaa. Salli selaimen tallennustila ja yritä uudelleen; mittaristo on edelleen käytettävissä.',
+    'live.conflict':'Sinulla on jo aktiivinen ajo.',
     'rideContext.conflictHint':'Palaa nykyiseen ajoon tai peruuta. Nykyinen tallennus ja sijainnin jako säilyvät.',
     'publicProfile.bio':'Lyhyt esittely','publicProfile.category':'Ensisijainen ajoneuvoluokka','publicProfile.unspecified':'Ei määritetty',
     'publicProfile.accent':'Korostusväri','publicProfile.banner':'Banneripohja','publicProfile.none':'Ei valintaa',

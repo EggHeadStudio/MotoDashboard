@@ -11,14 +11,23 @@ export class LiveRoom extends DurableObject {
   sockets() {return this.ctx.getWebSockets();}
   state(ws) {return ws.deserializeAttachment();}
   save(ws,state) {ws.serializeAttachment(state);}
+  async claim(uid,action,nonce,until) {
+    if(!this.env.LIVE_IDENTITIES)throw Error('unavailable');
+    const stub=this.env.LIVE_IDENTITIES.get(this.env.LIVE_IDENTITIES.idFromName(uid));
+    const response=await stub.fetch(new Request('https://identity.internal/'+action,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({roomId:this.sessionId,nonce,...(until!==undefined?{until}:{})})}));
+    return {status:response.status,...await response.json()};
+  }
   send(ws,message) {try {ws.send(JSON.stringify({v:1,serverTime:Date.now(),...message}));}catch {this.close(ws,'disconnected');}}
   close(ws,reason) {
     const s=this.state(ws);if(!s || s.closed) return;
     this.save(ws,{...s,closed:true,position:null,uid:null});
     try {ws.close(reason==='replaced'?4002:4003,reason);}catch {}
+    // Mark the socket closed BEFORE releasing. Delayed old releases cannot clear a new nonce.
+    if(s.uid && s.claimNonce)this.ctx.waitUntil(this.claim(s.uid,'release',s.claimNonce).catch(()=>{}));
   }
   eligible(ws,now=Date.now()) {
-    const s=this.state(ws);return s && !s.closed && s.uid && s.leaseUntil>now && s.expiresAt>now;
+    const s=this.state(ws);return s && !s.closed && s.uid && s.claimNonce && s.leaseUntil>now && s.expiresAt>now;
   }
   broadcast(message) {for(const ws of this.sockets())if(this.eligible(ws))this.send(ws,message);}
   publicState(s,now=Date.now()) {
@@ -45,7 +54,10 @@ export class LiveRoom extends DurableObject {
         departed.push(s.riderId);continue;
       }
       const changed=JSON.stringify(identity)!==JSON.stringify(s.identity);
-      this.save(ws,{...s,identity,leaseUntil:Math.min(result.checkedAt+LEASE_MS,result.expiresAt)});
+      let claim;try {claim=await this.claim(s.uid,'renew',s.claimNonce,Math.min(result.checkedAt+LEASE_MS,result.expiresAt,s.expiresAt));}
+      catch {this.close(ws,'unavailable');departed.push(s.riderId);continue;}
+      if(claim.status!==200 || claim.until<=Date.now()){this.close(ws,'access_denied');departed.push(s.riderId);continue;}
+      this.save(ws,{...s,identity,leaseUntil:Math.min(result.checkedAt+LEASE_MS,result.expiresAt,s.expiresAt,claim.until)});
       if(changed)changedStates.push(this.publicState(this.state(ws)));
     }
     // Prune every revoked receiver before any private broadcast from this check.
@@ -65,8 +77,10 @@ export class LiveRoom extends DurableObject {
         if(tickets.size>=100 || [...tickets.values()].some(t=>t.uid===uid && t.until>now+20000)) return Response.json({error:'rate_limited'},{status:429});
         let result;try {result=await authorizeMany(this.env,sessionId,[uid]);}catch {return Response.json({error:'unavailable'},{status:503});}
         if(!result.authorized.has(uid) || expiresAt<=Date.now()) return Response.json({error:'access_denied'},{status:403});
-        const ticket=randomTicket(),until=Date.now()+TICKET_TTL;
-        await this.ctx.storage.put('ticket:'+await ticketHash(ticket),{uid,origin,sessionId,until,expiresAt});await this.schedule();
+        const ticket=randomTicket(),until=Math.min(Date.now()+TICKET_TTL,expiresAt,result.expiresAt),claimNonce=crypto.randomUUID();
+        let claim;try{claim=await this.claim(uid,'reserve',claimNonce,until);}catch{return Response.json({error:'unavailable'},{status:503});}
+        if(claim.status!==200)return Response.json({error:claim.error,...(claim.activeSessionId?{activeSessionId:claim.activeSessionId}:{})},{status:claim.status});
+        await this.ctx.storage.put('ticket:'+await ticketHash(ticket),{uid,origin,sessionId,until,expiresAt,claimNonce});await this.schedule();
         return Response.json({ticket,expiresAt:until,protocol:1});
       }
       if(path!=='/connect' || request.headers.get('X-Session-Id')!==this.sessionId || this.sockets().filter(ws=>!this.state(ws)?.closed).length>=70)
@@ -79,20 +93,24 @@ export class LiveRoom extends DurableObject {
   }
   async webSocketMessage(ws,raw) {
     return this.ctx.blockConcurrencyWhile(async()=>{
-      const now=Date.now();let s=this.state(ws);if(!s || s.closed)return;
+      const now=Date.now();let s=this.state(ws),redeemed=null;if(!s || s.closed)return;
       try {
         const m=parseMessage(raw);
         if(!s.uid) {
           if(m.type!=='hello' || now>=s.pendingUntil) throw Error('invalid_ticket');
           const ticket=await consumeTicket(this.ctx.storage,m.ticket,s.origin,this.sessionId,now);
+          redeemed=ticket;
+          if(!ticket.claimNonce)throw Error('invalid_ticket'); // old uncoordinated tickets never activate
           const result=await authorizeMany(this.env,this.sessionId,[ticket.uid]);
           const identity=result.authorized.get(ticket.uid);if(!identity || ticket.expiresAt<=Date.now())throw Error('access_denied');
+          if(this.sockets().filter(other=>this.eligible(other) && this.state(other).uid!==ticket.uid).length>=MAX_RIDERS)throw Error('room_full');
           for(const other of this.sockets())if(other!==ws && this.state(other)?.uid===ticket.uid) {
             const previous=this.state(other);this.close(other,'replaced');this.broadcast({type:'participant_left',riderId:previous.riderId});
           }
-          if(this.sockets().filter(other=>this.eligible(other)).length>=MAX_RIDERS)throw Error('room_full');
+          const claim=await this.claim(ticket.uid,'activate',ticket.claimNonce,Math.min(result.checkedAt+LEASE_MS,result.expiresAt,ticket.expiresAt));
+          if(claim.status!==200 || claim.until<=Date.now())throw Object.assign(Error(claim.status===409?'active_ride':'access_denied'),{activeSessionId:claim.activeSessionId});
           s={uid:ticket.uid,riderId:crypto.randomUUID(),origin:s.origin,identity,expiresAt:ticket.expiresAt,
-            leaseUntil:Math.min(result.checkedAt+LEASE_MS,result.expiresAt),lastSeen:now,lastPositionAt:0,lastHeartbeatAt:0,seq:0,position:null,bucket:now,messages:0,lastControl:0,closed:false};
+            claimNonce:ticket.claimNonce,leaseUntil:Math.min(result.checkedAt+LEASE_MS,result.expiresAt,ticket.expiresAt,claim.until),lastSeen:now,lastPositionAt:0,lastHeartbeatAt:0,seq:0,position:null,bucket:now,messages:0,lastControl:0,closed:false};
           this.save(ws,s);await this.refresh();
           if(!this.eligible(ws))return;
           this.send(ws,{type:'hello',riderId:s.riderId});
@@ -120,8 +138,9 @@ export class LiveRoom extends DurableObject {
           s.lastControl=now;this.save(ws,s);
         } else throw Error('bad_message');
       } catch(error) {
-        const code=['bad_message','invalid_ticket','access_denied','room_full','rate_limited','bad_position'].includes(error.message)?error.message:'unavailable';
-        this.send(ws,{type:'error',code});this.close(ws,code);
+        if(redeemed && !this.state(ws)?.uid)this.ctx.waitUntil(this.claim(redeemed.uid,'release',redeemed.claimNonce).catch(()=>{}));
+        const code=['bad_message','invalid_ticket','access_denied','active_ride','room_full','rate_limited','bad_position'].includes(error.message)?error.message:'unavailable';
+        this.send(ws,{type:'error',code,...(code==='active_ride' && error.activeSessionId?{activeSessionId:error.activeSessionId}:{})});this.close(ws,code);
       }
     });
   }

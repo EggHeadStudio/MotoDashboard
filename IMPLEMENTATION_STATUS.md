@@ -21,6 +21,10 @@ Milestone 5 ride continuity is implemented locally: Return to Ride on every
 destination, owned personal restore, explicit guest recovery and revalidated Group
 return without automatic live consent. Home now preserves enabled sharing. 15 Batch
 6B cases, existing live/notification and Pages regressions pass.
+Milestone 6 exclusivity is implemented locally: Web Locks/atomic IndexedDB personal
+ownership and server UID-keyed live coordinator. 64 Worker tests and 18 Batch 6B
+browser cases pass. New LIVE_IDENTITIES binding/v2 migration must be published;
+global live enforcement is not claimed deployed. No new secret/IAM write grant.
 
 ## Batch 6A local status
 

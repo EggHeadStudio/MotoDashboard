@@ -1,4 +1,4 @@
-import {getRideContext,onRideContext} from '../ride-context.js';
+import {getRideContext,onRideContext,restoreConflictGroup} from '../ride-context.js';
 import {element,labelText,button,dialog,openView} from './forms.js';
 import {icon} from './icons.js';
 import {t,onLanguageChange} from '../i18n/i18n.js';
@@ -25,4 +25,8 @@ export function initRideReturn() {
   }
   new MutationObserver(()=>{render();}).observe(shell,{attributes:true,attributeFilter:['data-screen','style']});
   onRideContext(render);onLanguageChange(render);render();
+  addEventListener('motodash-live-conflict',async event=>{
+    const id=event.detail?.activeSessionId;if(typeof id!=='string')return;
+    await restoreConflictGroup(id);showActiveRideConflict();
+  });
 }

@@ -6,6 +6,8 @@ import {t,setLocalizedText,onLanguageChange,getLocale} from '../i18n/i18n.js';
 import {sessionURL,followSessionURL} from '../data/group-session.js';
 import {summarizeLive} from './live-summary.js';
 import {watchGroup} from '../firebase/groupWatch.js';
+import {getRideContext} from '../ride-context.js';
+import {showActiveRideConflict} from '../ui/ride-return.js';
 
 export function initLiveUI() {
   let watched=null,release=null;
@@ -45,6 +47,8 @@ export function initLiveUI() {
       const start=button('live.start');start.type='submit';form.append(start);
       form.addEventListener('submit',event=>{
         event.preventDefault();if(!form.reportValidity())return;
+        const current=getRideContext().groupId;
+        if(current && current!==group.id){showActiveRideConflict();return;}
         document.getElementById('groups-dialog').close();
         document.getElementById('start-overlay').style.display='none';
         if(getComputedStyle(document.getElementById('finish-session-btn')).display==='none')

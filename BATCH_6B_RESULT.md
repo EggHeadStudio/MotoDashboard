@@ -81,7 +81,7 @@ cannot retract content already downloaded. No claim of production testing is mad
 
 ## Progress
 
-Milestones 0–5 complete locally. Milestones 6–8 pending.
+Milestones 0–6 complete locally. Milestones 7–8 pending final integration/documentation.
 
 ### Milestone 1 — landing
 
@@ -159,3 +159,33 @@ rides. Unavailable/offline unverified Group hints fail closed rather than granti
 
 Checks: 15 Batch 6B browser cases, live transport/client regressions, 13 Batch 6A
 cases and Pages compatibility pass. Native phone/Safari/background behavior pending.
+
+### Milestone 6 — exclusive operational ride
+
+Second personal Start/competing Resume cannot replace the recorder. Web Locks
+exclude other tabs; an atomic IndexedDB fallback has 30-second expiring ownership
+and nonce-protected release. No safe storage means a visible recording failure,
+not an unprotected duplicate recorder. Page exit flushes/stops local ownership;
+account changes stop the watcher. Local personal locks are not a cross-device
+private-recording service. The server-authoritative cross-device invariant applies
+to live Group sharing as requested; personal recording can coexist with that Group.
+
+The existing Worker gains `LIVE_IDENTITIES -> LiveIdentity`, one SQLite coordinator
+per verified UID, with append-only **v2** migration. Existing LIVE_ROOMS/v1 remain.
+Atomic reservation/activation, connection nonce, bounded renewal/release and alarm
+expiry ensure one live Group. Room leases are clamped to coordinator, token and
+Group deadlines; expired/stale claims cannot renew. Closed sockets are marked
+closed before release, and delayed old releases cannot clear replacement claims.
+Old uncoordinated tickets/attachments fail closed in the new code.
+
+UI blocks conflicting activation/sharing and offers localized Return/Cancel.
+HTTP/WS conflicts do not silently end or replace the established ride. Scheduling,
+Club memberships and organizer lifecycle documents remain independent; the global
+server invariant protects the actual live publisher, not every scheduled membership.
+No Firestore writer, new secret, paid service or client UID authority is introduced.
+
+Checks: **64 Worker tests** (including actual SQLite/workerd acquisition races,
+expiry, stale release and inaccessible coordinator routes), **18 Batch 6B browser
+cases** (including real cross-tab locks/fallback), plus live-client regressions pass.
+An empty POST stream compatibility issue found by workerd was corrected without
+accepting body-supplied identities. Full integration is the next milestone.

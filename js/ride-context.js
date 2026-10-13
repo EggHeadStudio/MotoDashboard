@@ -34,6 +34,7 @@ export async function verifyRememberedGroup() {
   try{return await task;}finally{if(pending===task)pending=null;}
 }
 function observeRemembered() {
+  // Live sharing has its existing shared watcher; only inactive remembered context needs this consumer.
   release?.();release=null;
   if(!owner || !group || liveClient.getState().consent)return;
   const id=group,uid=owner;
@@ -42,6 +43,10 @@ function observeRemembered() {
     if(!value || value.state!=='active')forgetActiveGroup(id);
     else void verifyRememberedGroup();
   });
+}
+export async function restoreConflictGroup(id) {
+  if(!owner || !/^[0-9a-f-]{36}$/.test(id))return false;
+  remember(id);const ok=await verifyRememberedGroup();if(ok)observeRemembered();return ok;
 }
 onAccountChange(({user})=>{
   const next=user?.uid || null;if(next===owner)return;

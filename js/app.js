@@ -4,6 +4,7 @@ import {initLanding} from './ui/landing.js';
 import {initPublicProfiles} from './public-profile-ui.js';
 import {getRideContext,setRecordingContext,verifyRememberedGroup} from './ride-context.js';
 import {initRideReturn,showActiveRideConflict} from './ui/ride-return.js';
+import {createRecordingLock} from './recording-lock.js';
 import { initShell, publishRideSummary } from './ui/shell.js';
 import {confirmDashboardReturn} from './ui/host-return.js';
 import {initNotifications} from './ui/notifications.js';
@@ -203,6 +204,13 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       var sessionHistory = [];
       var activeSession = null;
       var sessionActive = false;
+      const recordingLock=createRecordingLock({onLost:()=>{
+        cancelSessionSave();sessionActive=false;
+        setRecordingContext(accountUid,null,activeSession?.id || null);
+        if(!liveGpsRequested){clearExistingWatch();releaseWakeLockSafely();}
+        elStartOverlay.style.display='flex';setStartStatus(()=>t('rideContext.lockLost'));
+      }});
+      let acquiringRecording=false;
       var sessionHistoryViewActive = false;
       var sessionStatsCollapsed = false;
       var sessionSaveTimer = null;
@@ -1259,6 +1267,18 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       function resumeSession(session,{showDashboard=true}={}) {
         if (!recordingReady || !session || session.status !== 'active') return;
         if((session.ownerUid || null)!==accountUid || accountUid!==(getAccount()?.uid || null))return;
+        if(sessionActive && activeSession?.id!==session.id){showActiveRideConflict();return;}
+        if(!recordingLock.held()) {
+          if(acquiringRecording)return;acquiringRecording=true;
+          const epoch=accountEpoch;
+          void recordingLock.acquire(accountUid).then(async ok=>{
+            if(epoch!==accountEpoch)return;
+            await loadSessionHistory();if(epoch!==accountEpoch)return;
+            const latest=sessionHistory.find(record=>record.id===session.id && record.status==='active');
+            if(!latest){void recordingLock.release();return;}
+            if(ok)resumeSession(latest,{showDashboard});else showActiveRideConflict();
+          }).catch(()=>setStartStatus(()=>t('rideContext.storageUnavailable'))).finally(()=>{acquiringRecording=false;});return;
+        }
         if (sessionActive) persistActiveSession(true);
         clearExistingWatch();
         activeSession = structuredClone(session);
@@ -1312,6 +1332,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         activeSession.updatedAt = Date.now();
         sessionActive = false;
         setRecordingContext(accountUid,null,null);
+        void recordingLock.release();
         if (accountUid) activeSession = queueRide(activeSession);
         const finished = activeSession, epoch = accountEpoch;
         const saved = await persistActiveSession(true);
@@ -1562,6 +1583,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         const heading = getReliableHeading(coords, lat, lon, sample.validatedSpeedKmh, sample.segmentBreak);
         updateMapRotation(heading, sample.moving && sample.validatedSpeedKmh >= HEADING_MIN_SPEED_KMH, now);
         if (sessionActive && activeSession?.status === 'active') {
+          if(!recordingLock.held())return;
           activeSession.movingDurationMs += sample.movingDeltaMs;
           if (sample.moving && sample.validatedSpeedKmh >= MOVING_SPEED_THRESHOLD_KMH) {
             addAcceptedPoint(lat, lon, accuracy, sample.validatedSpeedKmh, coords.heading, now, sample.segmentBreak);
@@ -1628,22 +1650,19 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
 
       }
 
-      function startButtonHandler() {
-        if (!recordingReady) return;
+      async function startButtonHandler() {
+        if (!recordingReady || acquiringRecording) return;
         // Guard: if an active session already exists, ask user to choose first
-        if (sessionActive && activeSession) {
-          if (!window.confirm(t("ui.newWhileActive"))) {
-            resetStartButton(() => t("ui.newSession"));
-            return;
-          }
-          // Save current session as paused/active so it can be resumed later
-          persistActiveSession(true);
-          sessionActive = false;
-          activeSession = null;
-          clearExistingWatch();
-          setSessionStatsVisible(false);
-          elFinishSessionBtn.style.display = 'none';
-        }
+        if (sessionActive || sessionHistory.some(record=>record.status==='active')){showActiveRideConflict();return;}
+        acquiringRecording=true;const epoch=accountEpoch;elStartBtn.disabled=true;
+        try {
+          const owned=await recordingLock.acquire(accountUid);
+          if(epoch!==accountEpoch || accountUid!==(getAccount()?.uid || null))return;
+          await loadSessionHistory();
+          if(epoch!==accountEpoch)return;
+          if(!owned || sessionHistory.some(record=>record.status==='active')){if(owned)await recordingLock.release();showActiveRideConflict();return;}
+        } catch{setStartStatus(()=>t('rideContext.storageUnavailable'));return;}
+        finally{acquiringRecording=false;elStartBtn.disabled=!recordingReady;}
 
         elStartBtn.disabled = true;
         setLocalizedText(elStartBtn, () => t("ui.starting"));
@@ -1825,6 +1844,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         if (uid === accountUid) return;
         // Capture/flush to the previous store before changing identity; no reassignment.
         if (sessionActive) persistActiveSession(true);
+        void recordingLock.release();
         clearExistingWatch(); releaseWakeLockSafely(); resetMovementState(); cancelSessionSave();
         ++accountEpoch; accountUid = uid; recordingReady = false;
         historyCursor=null;cloudHistoryMore=false;historyLoading=false;
@@ -2128,7 +2148,12 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           }
         }
       });
-      window.addEventListener('pagehide', () => persistActiveSession(true));
+      window.addEventListener('pagehide', () => {
+        const epoch=accountEpoch;
+        persistActiveSession(true);sessionActive=false;
+        setRecordingContext(accountUid,null,activeSession?.status==='active'?activeSession.id:null);
+        liveClient.stop();clearExistingWatch();releaseWakeLockSafely();void sessionStore.flush().finally(()=>{if(epoch===accountEpoch && !sessionActive)return recordingLock.release();});
+      });
       liveClient.onChange(state=>{
         const wanted=state.consent && state.connection==='connected';
         if(wanted===liveGpsRequested)return;liveGpsRequested=wanted;

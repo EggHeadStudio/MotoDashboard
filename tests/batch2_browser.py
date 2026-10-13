@@ -38,9 +38,8 @@ def run_batch2_tests(browser,base,route_map):
     page.add_init_script("window.__unhandled=[];addEventListener('unhandledrejection',e=>window.__unhandled.push(String(e.reason)))")
     page.on('pageerror',lambda e:errors.append(str(e)))
     page.goto(base,wait_until='networkidle')
-    click_action(page, '#garage-btn')
-    assert 'Sign in' in page.locator('#garage-dialog').inner_text()
-    page.locator('#garage-dialog .feature-header button').click()
+    assert page.locator('#garage-btn').is_hidden() and page.locator('#screen-landing').is_visible()
+    assert page.evaluate('''async()=>{try{await (await import('./js/firebase/garageRepository.js')).loadGarage('another-account');return false;}catch(e){return e.code==='auth-required';}}''')
     register(page)
     open_garage(page)
     add_vehicle(page,'Road Bike','motorcycle'); add_vehicle(page,'Family Car','car')
@@ -192,9 +191,8 @@ def run_batch2_tests(browser,base,route_map):
     assert 'Vehicle Ride' not in page.locator('#history-list').inner_text()
     click_action(page, '#account-btn')
     page.wait_for_function('document.querySelector("#auth-identity").textContent==="Not signed in"')
-    page.click('#account-close'); click_action(page, '#garage-btn')
+    page.click('#account-close');assert page.locator('#garage-btn').is_hidden()
     assert page.locator('#garage-dialog article').count()==0
-    page.locator('#garage-dialog .feature-header button').click()
     register(page,'second@example.test');open_garage(page)
     assert page.locator('#garage-dialog article').count()==0
     assert 'Vehicle Ride' not in page.locator('#history-list').inner_text()

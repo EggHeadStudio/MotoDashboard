@@ -1,4 +1,5 @@
 export {LiveRoom} from './LiveRoom.js';
+export {LiveIdentity} from './LiveIdentity.js';
 import {verifyFirebaseToken,PROJECT} from './auth.js';
 export function allowedOrigin(request, env) {
   const origin=request.headers.get('Origin');
@@ -15,7 +16,7 @@ export default {
       'Access-Control-Allow-Methods':'POST, GET, OPTIONS','Access-Control-Allow-Headers':'Authorization, Content-Type'};
     const reply=(error,status)=>Response.json({error},{status,headers});
     if(request.method==='OPTIONS') return new Response(null,{status:204,headers});
-    if(env.FIREBASE_PROJECT_ID!==PROJECT || !env.FIRESTORE_SERVICE_ACCOUNT || !env.LIVE_ROOMS) return reply('not_configured',503);
+    if(env.FIREBASE_PROJECT_ID!==PROJECT || !env.FIRESTORE_SERVICE_ACCOUNT || !env.LIVE_ROOMS || !env.LIVE_IDENTITIES) return reply('not_configured',503);
     if(url.search || url.hash || (url.protocol!=='https:' && !['localhost','127.0.0.1'].includes(url.hostname))) return reply('bad_request',400);
     const match=/^\/v1\/sessions\/([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/(ticket|connect)$/.exec(url.pathname);
     if(!match) return reply('not_found',404);
@@ -24,6 +25,9 @@ export default {
       if(action==='ticket' && request.method==='POST') {
         // No request body: all identity derives from this verified Firebase token.
         if(Number(request.headers.get('Content-Length') || 0)>0) return reply('bad_request',400);
+        // Workers can represent an empty POST as an empty stream. Inspect one bounded
+        // chunk rather than treating every stream as a payload or allocating its whole body.
+        if(request.body){const reader=request.body.getReader(),chunk=await reader.read();await reader.cancel();if(!chunk.done)return reply('bad_request',400);}
         const authorization=request.headers.get('Authorization') || '';
         if(!authorization.startsWith('Bearer ')) return reply('invalid_token',401);
         let identity;try {identity=await verifyFirebaseToken(authorization.slice(7),env.FIREBASE_PROJECT_ID);}

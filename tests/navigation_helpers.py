@@ -1,5 +1,7 @@
 """Use the redesigned visible navigation before exercising existing feature controls."""
 def click_action(page, selector):
+    if selector=='#account-btn':
+        page.wait_for_function('document.querySelector("#auth-form").getAttribute("aria-busy")==="false"')
     if page.locator('#bottom-nav').is_hidden():
         if selector=='#account-btn':
             if page.locator('#landing-sign-in').is_visible():page.click('#landing-sign-in')
@@ -17,6 +19,11 @@ def click_action(page, selector):
     if not page.locator(selector).is_visible():
         page.locator(f'#bottom-nav button[data-destination="{destination}"]').click()
     page.click(selector)
+    if selector in ['#start-btn','#resume-session-btn']:
+        # Recorder ownership is asynchronous; wait for admission or a visible denial.
+        page.wait_for_function('''()=>document.querySelector('#start-overlay').style.display==='none'
+          || document.getElementById('active-ride-conflict')?.open
+          || document.querySelector('#start-status').textContent.includes('ownership')''')
 
 def expand_controls(page, selector):
     """Open enclosing disclosures using their visible summary, never force a hidden click."""

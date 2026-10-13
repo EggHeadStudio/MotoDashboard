@@ -118,6 +118,11 @@ def run_ride_continuity_tests(browser,base,route_map):
     page.click('#start-btn');page.wait_for_function('window.__geo.active===1')
     original=page.evaluate('async()=>(await import("./js/ride-context.js")).getRideContext().recordingId');assert original
     page.click('#back-to-start-btn');page.wait_for_selector('#return-to-ride')
+    page.click('#start-btn');page.wait_for_selector('#active-ride-conflict')
+    assert 'You already have an active ride.' in page.locator('#active-ride-conflict').inner_text()
+    page.locator('#active-ride-conflict').get_by_role('button',name='Cancel',exact=True).click()
+    assert page.evaluate('async()=>(await import("./js/ride-context.js")).getRideContext().recordingId')==original
+    print('PASS: Batch 6B: second personal Start is denied with Return/Cancel and preserves the existing recorder')
     for destination in ['home','discover','rides','clubs','profile']:
         page.locator(f'#bottom-nav [data-destination="{destination}"]').click();page.wait_for_selector('#return-to-ride')
         assert page.locator('#notifications-bell').is_visible()
@@ -137,4 +142,27 @@ def run_ride_continuity_tests(browser,base,route_map):
     assert not page.evaluate('async()=>(await import("./js/ride-context.js")).getRideContext().recordingId')
     assert not errors,errors
     print('PASS: Batch 6B: owned recording survives Profile refresh; logout stops GPS and clears the active return context')
+    context.close()
+    run_recording_lock_tests(browser,base,route_map)
+
+def run_recording_lock_tests(browser,base,route_map):
+    context=browser.new_context();route_map(context);install(context)
+    first=context.new_page();second=context.new_page();first.goto(base,wait_until='networkidle');second.goto(base,wait_until='networkidle')
+    init='async()=>{window.__lock=(await import("./js/recording-lock.js")).createRecordingLock();return window.__lock.acquire("fixture-lock-user")} '
+    assert first.evaluate(init) is True and second.evaluate(init) is False
+    first.evaluate('()=>window.__lock.release()');assert second.evaluate('()=>window.__lock.acquire("fixture-lock-user")') is True
+    second.evaluate('()=>window.__lock.release()')
+    print('PASS: Batch 6B: real browser Web Lock excludes a competing tab and allows safe transfer after release')
+    result=first.evaluate('''async()=>{
+      const {createRecordingLock}=await import('./js/recording-lock.js');let time=Date.now(),lost=0;
+      const a=createRecordingLock({locks:null,now:()=>time,onLost:()=>lost++}),b=createRecordingLock({locks:null,now:()=>time});
+      const race=await Promise.all([a.acquire('idb-race'),b.acquire('idb-race')]);
+      const old=race[0]?a:b,next=race[0]?b:a;time+=31000;
+      const expired=old.held(),acquired=await next.acquire('idb-race');await old.release();
+      const stable=next.held();await next.release();
+      let denied=false;try{await createRecordingLock({locks:null,indexedDB:null}).acquire('unavailable');}catch{denied=true;}
+      return {race,expired,acquired,stable,denied};
+    }''')
+    assert sorted(result['race'])==[False,True] and result['expired'] is False and all(result[key] for key in ['acquired','stable','denied']),result
+    print('PASS: Batch 6B: atomic IndexedDB fallback race, abandoned expiry, stale release and unavailable-storage fail-closed behavior')
     context.close()

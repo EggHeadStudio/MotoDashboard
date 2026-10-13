@@ -7,5 +7,7 @@ test('Worker configuration reserves one SQLite room binding without secrets',asy
   assert.equal(cfg.vars.FIREBASE_PROJECT_ID,'motodash-87bf8');
   assert.equal(cfg.durable_objects.bindings[0].class_name,'LiveRoom');
   assert.deepEqual(cfg.migrations[0].new_sqlite_classes,['LiveRoom']);
+  assert.deepEqual(cfg.durable_objects.bindings[1],{name:'LIVE_IDENTITIES',class_name:'LiveIdentity'});
+  assert.deepEqual(cfg.migrations[1],{tag:'v2',new_sqlite_classes:['LiveIdentity']});
   assert(!JSON.stringify(cfg).includes('private_key'));
 });
