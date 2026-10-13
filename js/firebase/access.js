@@ -76,6 +76,7 @@ export function dataErrorKey(error) {
   if (code === 'permission-denied') return 'data.denied';
   if (code === 'invalid-input') return 'data.invalid';
   if(code==='showcase-limit')return 'showcase.limit';
+  if(code==='affiliation-limit')return 'publicProfile.affiliationLimit';
   if (code === 'conflict') return 'data.conflict';
   if (code === 'deleted') return 'data.deleted';
   return 'data.unexpected';

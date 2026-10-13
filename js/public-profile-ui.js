@@ -1,6 +1,8 @@
-import {getAccount,onAccountChange} from './auth-state.js';
-import {loadPublicProfile,loadOwnPublicProfile,savePublicProfile} from './firebase/publicProfileRepository.js';
-import {profileURL,publicId} from './data/public-profile.js';
+import {getAccount,onAccountChange,publishDisplayIdentity} from './auth-state.js';
+import {loadPublicProfile,loadOwnPublicProfile,savePublicProfile,loadOwnProfileCards,publishProfileAffiliation,removeProfileAffiliation} from './firebase/publicProfileRepository.js';
+import {profileURL,publicId,ACCENTS,BANNERS} from './data/public-profile.js';
+import {CATEGORIES} from './data/schema.js';
+import {listMyClubs} from './firebase/clubRepository.js';
 import {element,labelText,button,dialog,openView,runAction,field} from './ui/forms.js';
 import {navigate} from './ui/navigation.js';
 import {dataErrorMessage} from './firebase/access.js';
@@ -42,6 +44,10 @@ export function initPublicProfiles() {
       }
       if(!vehicles.length)grid.append(labelText(element('p','muted'),'showcase.empty'));garage.append(grid);screen.append(garage);
       if(loaded.partial)screen.append(labelText(element('p','muted'),'showcase.partial'));
+      if(loaded.affiliations.length){
+        const clubs=element('section','public-affiliations');clubs.append(labelText(element('h2'),'publicProfile.affiliations'));
+        for(const club of loaded.affiliations){const card=element('article','surface');card.append(element('strong','',club.name));if(club.rank)card.append(element('p','rank-label',club.rank));clubs.append(card);}screen.append(clubs);
+      }
     }
     screen.append(button('publicProfile.back',()=>navigate(getAccount()?'home':'landing')));
   }
@@ -53,15 +59,40 @@ export function initPublicProfiles() {
     view.node.addEventListener('close',()=>view.node.remove(),{once:true});
     try {
       const settings=await loadOwnPublicProfile(uid);if(getAccount()?.uid!==uid||!view.node.open)return;
+      const cards=await loadOwnProfileCards(uid,settings);if(getAccount()?.uid!==uid||!view.node.open)return;
       view.status.textContent='';
       const form=element('form');form.id='public-profile-form';
+      const name=field(form,'displayName','auth.displayName',{value:cards.displayName,required:true,max:60});
+      const bio=field(form,'bio','publicProfile.bio',{value:settings.bio,multiline:true,max:300});
+      const category=field(form,'category','publicProfile.category',{choices:[],value:''});
+      const unspecified=labelText(element('option'),'publicProfile.unspecified');unspecified.value='';category.append(unspecified);
+      for(const id of CATEGORIES){const choice=labelText(element('option'),'category.'+id);choice.value=id;category.append(choice);}category.value=settings.category || '';
+      const accent=field(form,'accent','publicProfile.accent',{choices:ACCENTS,prefix:'accent',value:settings.accent});
+      const banner=field(form,'banner','publicProfile.banner',{choices:BANNERS,prefix:'banner',value:settings.banner});
+      const featured=field(form,'featuredVehicle','showcase.featured',{choices:[]});
+      const none=labelText(element('option'),'publicProfile.none');none.value='';featured.append(none);
+      for(const vehicle of cards.vehicles){const choice=element('option','',vehicle.nickname);choice.value=vehicle.id;featured.append(choice);}featured.value=settings.featuredVehicle || '';
       const visibility=field(form,'visibility','publicProfile.visibility',{choices:['private','public'],prefix:'visibility',value:settings.visibility});
       form.append(labelText(element('p','muted'),'publicProfile.privacy'));
       const save=button('common.save');save.type='submit';form.append(save);
       if(settings.publicId && settings.visibility==='public'){const link=labelText(element('a'),'publicProfile.view');link.href=profileURL(settings.publicId);link.addEventListener('click',()=>view.node.close());form.append(link);}
       form.addEventListener('submit',event=>{event.preventDefault();void runAction(form,view.status,async()=>{
-        await savePublicProfile(uid,{...settings,visibility:visibility.value});if(getAccount()?.uid===uid){labelText(view.status,'ui.saved');view.node.close();}
+        await savePublicProfile(uid,{...settings,displayName:name.value,bio:bio.value,category:category.value,accent:accent.value,banner:banner.value,featuredVehicle:featured.value,visibility:visibility.value});
+        if(getAccount()?.uid===uid){publishDisplayIdentity(uid,name.value.trim());dispatchEvent(new Event('motodash-profile-updated'));labelText(view.status,'ui.saved');view.node.close();}
       });});view.body.append(form);
+      const affiliations=element('section');affiliations.append(labelText(element('h3'),'publicProfile.affiliations'),labelText(element('p','muted'),'publicProfile.affiliationHint'));view.body.append(affiliations);
+      const refreshEditor=()=>{if(getAccount()?.uid===uid){view.node.close();void edit();}};
+      for(const card of cards.affiliations){const row=element('div','surface');row.append(element('p','',card.name+(card.rank?' · '+card.rank:'')),button('common.delete',()=>void runAction(view.body,view.status,async()=>{await removeProfileAffiliation(uid,card.id);refreshEditor();})));affiliations.append(row);}
+      // Revoke unavailable retained cards too; never require a private Club read to remove opt-in.
+      for(const id of settings.affiliationIds.filter(id=>!cards.affiliations.some(card=>card.id===id)))affiliations.append(button('publicProfile.removeUnavailable',()=>void runAction(view.body,view.status,async()=>{await removeProfileAffiliation(uid,id);refreshEditor();})));
+      try {
+        const page=await listMyClubs(uid);if(getAccount()?.uid!==uid||!view.node.open)return;
+        const eligible=page.clubs.filter(club=>club.visibility==='public' && ['active','archived'].includes(club.state));
+        const chooser=element('form');chooser.id='profile-affiliation-form';const select=field(chooser,'club','publicProfile.club',{choices:[]});
+        for(const club of eligible){const option=element('option','',club.name);option.value=club.id;select.append(option);}
+        const publish=button('publicProfile.publishAffiliation');publish.type='submit';publish.disabled=!eligible.length;chooser.append(publish);
+        chooser.addEventListener('submit',event=>{event.preventDefault();void runAction(view.body,view.status,async()=>{await publishProfileAffiliation(uid,select.value);refreshEditor();});});affiliations.append(chooser);
+      }catch(error){if(getAccount()?.uid===uid && view.node.open)setLocalizedText(affiliations.appendChild(element('p','muted')),()=>dataErrorMessage(error));}
     }catch(error){if(getAccount()?.uid===uid)setLocalizedText(view.status,()=>dataErrorMessage(error));}
   }
   addEventListener('hashchange',()=>void resolve());

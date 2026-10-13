@@ -103,6 +103,52 @@ service cloud.firestore {
         && publicProjection(request.resource.data,request.auth.uid,id);
     }
     // Display names are discoverable within the signed-in app; private profiles stay private.
+    function affiliationShape(data,id) {
+      return publicAlias(id) && data.keys().hasAll(['id','clubId','name','rank','updatedAt'])
+        && data.keys().hasOnly(['id','clubId','name','rank','updatedAt']) && data.id == id
+        && identifier(data.clubId) && shortText(data.name,80) && (data.rank == null || shortText(data.rank,64)) && data.updatedAt is timestamp;
+    }
+    function affiliationRank(data,member,clubId) {
+      return member.rankId == null && data.rank == null
+        || member.rankId != null && (!exists(/databases/$(database)/documents/clubs/$(clubId)/ranks/$(member.rankId)) && data.rank == null
+          || get(/databases/$(database)/documents/clubs/$(clubId)/ranks/$(member.rankId)).data.name == data.rank);
+    }
+    function affiliationAvailable(profile,id,data) {
+      let uid = profileOwner(profile);
+      let mapping = get(/databases/$(database)/documents/profileOwners/$(profile)/affiliations/$(id)).data;
+      let club = get(/databases/$(database)/documents/clubs/$(mapping.clubId)).data;
+      let member = get(/databases/$(database)/documents/clubs/$(mapping.clubId)/members/$(uid)).data;
+      return publicProfileAvailable(profile) && id in get(/databases/$(database)/documents/users/$(uid)/preferences/publicProfile).data.affiliationIds
+        && mapping.clubId == data.clubId && club.visibility == 'public' && club.state in ['active','archived']
+        && club.name == data.name && member.joinedAt == mapping.joinedAt && affiliationRank(data,member,data.clubId);
+    }
+    function affiliationWrite(profile,id,data) {
+      let uid = request.auth.uid;
+      let mapping = getAfter(/databases/$(database)/documents/profileOwners/$(profile)/affiliations/$(id)).data;
+      let club = get(/databases/$(database)/documents/clubs/$(mapping.clubId)).data;
+      let member = get(/databases/$(database)/documents/clubs/$(mapping.clubId)/members/$(uid)).data;
+      let prefs = getAfter(/databases/$(database)/documents/users/$(uid)/preferences/publicProfile).data;
+      return owns(profileOwner(profile)) && prefs.publicId == profile && prefs.state == 'active' && id in prefs.affiliationIds
+        && affiliationShape(data,id) && mapping.clubId == data.clubId && club.visibility == 'public' && club.state in ['active','archived']
+        && club.name == data.name && member.joinedAt == mapping.joinedAt && affiliationRank(data,member,data.clubId) && data.updatedAt == request.time;
+    }
+    match /profileOwners/{profile}/affiliations/{id} {
+      allow get: if owns(profileOwner(profile));
+      allow list, update: if false;
+      allow create: if owns(profileOwner(profile)) && publicAlias(id)
+        && request.resource.data.keys().hasAll(['clubId','joinedAt','createdAt']) && request.resource.data.keys().hasOnly(['clubId','joinedAt','createdAt'])
+        && identifier(request.resource.data.clubId) && request.resource.data.createdAt == request.time
+        && get(/databases/$(database)/documents/clubs/$(request.resource.data.clubId)).data.visibility == 'public'
+        && get(/databases/$(database)/documents/clubs/$(request.resource.data.clubId)/members/$(request.auth.uid)).data.joinedAt == request.resource.data.joinedAt;
+      allow delete: if owns(profileOwner(profile));
+    }
+    match /publicProfiles/{profile}/affiliations/{id} {
+      allow get: if owns(profileOwner(profile)) && (!exists(/databases/$(database)/documents/publicProfiles/$(profile)/affiliations/$(id)) || affiliationShape(resource.data,id))
+        || affiliationShape(resource.data,id) && affiliationAvailable(profile,id,resource.data);
+      allow list: if false;
+      allow create, update: if signedIn() && affiliationWrite(profile,id,request.resource.data);
+      allow delete: if owns(profileOwner(profile));
+    }
     function showcaseShape(data, id) {
       return data.keys().hasAll(['id','nickname','manufacturer','model','modelYear','category','publicDescription','createdAt','updatedAt'])
         && data.keys().hasOnly(['id','nickname','manufacturer','model','modelYear','category','publicDescription','createdAt','updatedAt'])

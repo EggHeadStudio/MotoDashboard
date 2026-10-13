@@ -81,7 +81,7 @@ cannot retract content already downloaded. No claim of production testing is mad
 
 ## Progress
 
-Milestones 0–3 complete locally. Milestones 4–8 pending.
+Milestones 0–4 complete locally. Milestones 5–8 pending.
 
 ### Milestone 1 — landing
 
@@ -122,3 +122,21 @@ capability concepts are future design only, not client-issued entitlements.
 Checks: 81 cumulative new emulator assertions, 102 original assertions, nine
 Batch 6B browser cases and 20 Batch 5 regressions pass. Missing-card transaction
 reads are explicitly tested in the actual emulator as well as publication writes.
+
+### Milestone 4 — controlled profile customization
+
+Mobile owner editor for synchronized display name, plain-text bio, real vehicle
+category, featured published card, four accent presets and three built-in banners.
+Initial avatar needs no media service. Public/Private visibility, explicit public
+Club/rank cards and removal controls; Club picker uses latest 20 owned memberships.
+No HTML rendering, arbitrary CSS, uploads, billing, system roles or client entitlement.
+
+Affiliation roots contain opaque card aliases. Child Rules require a currently public
+live Club, current membership incarnation and current visible rank/name. Privacy,
+leave/rejoin or rank changes deny old cards until explicit owner update; root profile
+and unrelated showcase cards remain usable. Members-only visibility is deferred
+until its exact audience is specified. Full account erasure remains future work.
+
+Checks: 119 cumulative actual-emulator assertions and 13 Batch 6B browser cases
+pass, including Club identity, safe literal markup, name synchronization, anonymous
+routes and responsive Finnish presentation. Physical-phone/Safari acceptance pending.

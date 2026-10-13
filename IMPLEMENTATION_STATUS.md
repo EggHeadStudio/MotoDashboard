@@ -13,6 +13,10 @@ Milestone 3 showcase is implemented locally: explicit consent, separate public
 description, bounded cards, Garage synchronization and Rules-enforced privacy/
 deletion/incarnation gates. 81 cumulative new emulator assertions and nine browser
 cases pass, with original Garage/navigation regressions preserved.
+Milestone 4 customization is implemented locally: controlled presets/name/bio/
+featured vehicle and explicitly shared public Club/rank cards. Current-source
+privacy/membership/rank gates pass 119 cumulative emulator assertions; 13 Batch 6B
+browser cases pass. Members-only policy and media remain planned.
 
 ## Batch 6A local status
 

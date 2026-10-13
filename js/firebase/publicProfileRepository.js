@@ -2,6 +2,7 @@ import {ownDatabase,dataError,boundedRequest,settleReads} from './access.js';
 import {getFirestoreService} from './firestore.js';
 import {publicId,profileDefaults,profileInput,profileProjection,MAX_SHOWCASE,showcaseProjection} from '../data/public-profile.js';
 import {validId,text} from '../data/schema.js';
+import {displayNameInput} from '../data/identity.js';
 
 export async function loadOwnPublicProfile(uid) {
   const s=await ownDatabase(uid,'profile'),record=await boundedRequest(s.sdk.getDoc(s.sdk.doc(s.db,'users',uid,'preferences','publicProfile')));
@@ -16,11 +17,15 @@ export async function savePublicProfile(uid,input) {
     const settings=prior.exists()?prior.data():profileDefaults();
     if(settings.state==='retired')throw dataError('deleted');
     const id=settings.publicId || crypto.randomUUID();
-    const next={...settings,...values,publicId:id,updatedAt:sdk.serverTimestamp()};
+    const name=input.displayName===undefined?user.data().displayName:displayNameInput(input.displayName);
+    const featured=input.featuredVehicle===undefined?settings.featuredVehicle:input.featuredVehicle || null;
+    if(featured!==null && !settings.vehicleIds.includes(featured))throw dataError('invalid-input');
+    const next={...settings,...values,publicId:id,featuredVehicle:featured,updatedAt:sdk.serverTimestamp()};
     if(!settings.publicId)tx.set(sdk.doc(db,'profileOwners',id),{ownerUid:uid,createdAt:sdk.serverTimestamp()});
     tx.set(ref,next);
-    tx.set(sdk.doc(db,'publicProfiles',id),profileProjection(id,next,user.data().displayName,sdk.serverTimestamp()));
-    tx.set(sdk.doc(db,'displayProfiles',uid),{displayName:user.data().displayName,publicProfileId:next.visibility==='public'?id:null,updatedAt:sdk.serverTimestamp()});
+    if(name!==user.data().displayName)tx.update(userRef,{displayName:name,updatedAt:sdk.serverTimestamp()});
+    tx.set(sdk.doc(db,'publicProfiles',id),profileProjection(id,next,name,sdk.serverTimestamp()));
+    tx.set(sdk.doc(db,'displayProfiles',uid),{displayName:name,publicProfileId:next.visibility==='public'?id:null,updatedAt:sdk.serverTimestamp()});
     return next;
   }));
 }
@@ -35,7 +40,12 @@ export async function loadPublicProfile(id) {
       try {const doc=await boundedRequest(sdk.getDoc(sdk.doc(db,'publicProfiles',id,'vehicles',child)));return doc.exists()?doc.data():null;}
       catch(error){if(error?.code==='permission-denied')return null;throw error;}
     },2);
-    return {profile:data,vehicles:children.filter(row=>row.status==='fulfilled' && row.value).map(row=>row.value),affiliations:[],partial:children.some(row=>row.status==='rejected')};
+    const affiliations=await settleReads((data.affiliationIds || []).slice(0,2),async child=>{
+      try {const doc=await boundedRequest(sdk.getDoc(sdk.doc(db,'publicProfiles',id,'affiliations',child)));return doc.exists()?doc.data():null;}
+      catch(error){if(error?.code==='permission-denied')return null;throw error;}
+    },2);
+    return {profile:data,vehicles:children.filter(row=>row.status==='fulfilled' && row.value).map(row=>row.value),
+      affiliations:affiliations.filter(row=>row.status==='fulfilled' && row.value).map(row=>row.value),partial:[...children,...affiliations].some(row=>row.status==='rejected')};
   }catch(error) {
     if(error?.code==='permission-denied')return null;
     throw error;
@@ -96,4 +106,43 @@ export async function loadVehicleShowcase(uid,vehicleId) {
   if(!ref.exists())return null;
   const m=ref.data(),card=await boundedRequest(s.sdk.getDoc(s.sdk.doc(s.db,'publicProfiles',m.profileId,'vehicles',m.publicId)));
   return card.exists()?card.data():null;
+}
+export async function loadOwnProfileCards(uid,settings) {
+  const s=await ownDatabase(uid,'profile');
+  const user=await boundedRequest(s.sdk.getDoc(s.sdk.doc(s.db,'users',uid)));const displayName=user.exists()?user.data().displayName:'';
+  const load=async(kind,ids)=>(await settleReads(ids,async id=>{
+    const doc=await boundedRequest(s.sdk.getDoc(s.sdk.doc(s.db,'publicProfiles',settings.publicId,kind,id)));return doc.exists()?doc.data():null;
+  },2)).filter(row=>row.status==='fulfilled' && row.value).map(row=>row.value);
+  if(!settings.publicId)return {vehicles:[],affiliations:[],displayName};
+  const [vehicles,affiliations]=await Promise.all([load('vehicles',settings.vehicleIds),load('affiliations',settings.affiliationIds)]);return {vehicles,affiliations,displayName};
+}
+export async function publishProfileAffiliation(uid,clubId) {
+  if(!validId(clubId))throw dataError('invalid-input');
+  const prefs=await loadOwnPublicProfile(uid);if(!prefs.publicId)await savePublicProfile(uid,prefs);
+  const s=await ownDatabase(uid,'profile'),{sdk,db}=s;
+  return boundedRequest(sdk.runTransaction(db,async tx=>{
+    const prefRef=sdk.doc(db,'users',uid,'preferences','publicProfile');
+    const [pref,club,member,user]=await Promise.all([tx.get(prefRef),tx.get(sdk.doc(db,'clubs',clubId)),tx.get(sdk.doc(db,'clubs',clubId,'members',uid)),tx.get(sdk.doc(db,'users',uid))]);
+    if(!member.exists()||!club.exists()||club.data().visibility!=='public'||!['active','archived'].includes(club.data().state)||pref.data().state!=='active')throw dataError('permission-denied');
+    const settings=pref.data(),profile=settings.publicId;
+    const mappings=await Promise.all(settings.affiliationIds.map(id=>tx.get(sdk.doc(db,'profileOwners',profile,'affiliations',id))));
+    const old=mappings.find(doc=>doc.exists() && doc.data().clubId===clubId);
+    const id=old?settings.affiliationIds[mappings.indexOf(old)]:crypto.randomUUID();
+    if(!old && settings.affiliationIds.length>=2)throw dataError('affiliation-limit');
+    const rank=member.data().rankId?await tx.get(sdk.doc(db,'clubs',clubId,'ranks',member.data().rankId)):null;
+    if(!old)tx.set(sdk.doc(db,'profileOwners',profile,'affiliations',id),{clubId,joinedAt:member.data().joinedAt,createdAt:sdk.serverTimestamp()});
+    tx.set(sdk.doc(db,'publicProfiles',profile,'affiliations',id),{id,clubId,name:club.data().name,rank:rank?.exists()?rank.data().name:null,updatedAt:sdk.serverTimestamp()});
+    const next={...settings,affiliationIds:[...new Set([...settings.affiliationIds,id])],updatedAt:sdk.serverTimestamp()};
+    tx.set(prefRef,next);tx.set(sdk.doc(db,'publicProfiles',profile),profileProjection(profile,next,user.data().displayName,sdk.serverTimestamp()));return id;
+  }));
+}
+export async function removeProfileAffiliation(uid,id) {
+  if(!publicId(id))throw dataError('invalid-input');const s=await ownDatabase(uid,'profile'),{sdk,db}=s;
+  return boundedRequest(sdk.runTransaction(db,async tx=>{
+    const ref=sdk.doc(db,'users',uid,'preferences','publicProfile'),[pref,user]=await Promise.all([tx.get(ref),tx.get(sdk.doc(db,'users',uid))]);
+    if(!pref.exists()||pref.data().state!=='active')throw dataError('invalid-input');
+    const settings=pref.data(),profile=settings.publicId,next={...settings,affiliationIds:settings.affiliationIds.filter(value=>value!==id),updatedAt:sdk.serverTimestamp()};
+    tx.delete(sdk.doc(db,'publicProfiles',profile,'affiliations',id));tx.delete(sdk.doc(db,'profileOwners',profile,'affiliations',id));
+    tx.set(ref,next);tx.set(sdk.doc(db,'publicProfiles',profile),profileProjection(profile,next,user.data().displayName,sdk.serverTimestamp()));
+  }));
 }

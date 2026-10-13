@@ -22,6 +22,12 @@
 .guest-actions {display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px;}
 .public-profile-hero {padding:30px;border:1px solid var(--md-line);border-radius:var(--md-radius);background:linear-gradient(145deg,#252c2e,var(--md-surface));margin-bottom:24px;}
 .public-bio {white-space:pre-wrap;overflow-wrap:anywhere;max-width:680px;}
+.public-profile[data-accent=gold] {--profile-accent:#e9bf73;}.public-profile[data-accent=ocean] {--profile-accent:#9bc7e7;}.public-profile[data-accent=forest] {--profile-accent:#adc9b1;}.public-profile[data-accent=rose] {--profile-accent:#efb3c4;}
+.public-profile-hero {border-top:3px solid var(--profile-accent,var(--md-gold));}
+.public-profile[data-banner=horizon] .public-profile-hero {background:linear-gradient(175deg,#2d3340,#191c20 65%);}
+.public-profile[data-banner=grid] .public-profile-hero {background:linear-gradient(90deg,#ffffff04 1px,transparent 1px),linear-gradient(#ffffff04 1px,transparent 1px),var(--md-surface);background-size:24px 24px;}
+.public-profile .large-avatar {color:var(--profile-accent,var(--md-gold));}
+.public-affiliations {margin:28px 0;}.public-affiliations .surface {margin:12px 0;}
 .member-name[href],.participant-name[href] {color:var(--md-gold);min-height:44px;display:flex;align-items:center;}
 .reveal-ready {transition:opacity 550ms ease,transform 550ms ease;}
 .reveal-ready:not(.revealed) {opacity:.85;transform:translateY(12px);}

@@ -1,5 +1,12 @@
 export const batch6b={
   en:{
+    'publicProfile.bio':'Short bio','publicProfile.category':'Primary vehicle category','publicProfile.unspecified':'Not specified',
+    'publicProfile.accent':'Accent preset','publicProfile.banner':'Banner preset','publicProfile.none':'None',
+    'publicProfile.affiliations':'Public Club identity','publicProfile.affiliationHint':'Explicitly share up to two public Clubs and your current visible rank. Private Clubs and technical permissions are never published. Changing membership, privacy or rank hides stale cards until you update them.',
+    'publicProfile.club':'Your public Club (latest 20 memberships)','publicProfile.publishAffiliation':'Publish / update Club identity',
+    'publicProfile.removeUnavailable':'Remove unavailable Club identity','publicProfile.affiliationLimit':'Remove a Club identity before adding another; at most two cards in this prototype.',
+    'accent.gold':'Gold','accent.ocean':'Ocean','accent.forest':'Forest','accent.rose':'Rose',
+    'banner.road':'Road','banner.horizon':'Horizon','banner.grid':'Grid',
     'showcase.title':'Garage showcase','showcase.featured':'Featured vehicle','showcase.empty':'No vehicles published.',
     'showcase.partial':'Some showcase cards could not be loaded. Refresh to try again.',
     'showcase.options':'Showcase options','showcase.description':'Public description (optional)',
@@ -30,6 +37,13 @@ export const batch6b={
     'landing.back':'Back to MotoDash','landing.local':'Local ride history','landing.guestHome':'Guest dashboard',
   },
   fi:{
+    'publicProfile.bio':'Lyhyt esittely','publicProfile.category':'Ensisijainen ajoneuvoluokka','publicProfile.unspecified':'Ei määritetty',
+    'publicProfile.accent':'Korostusväri','publicProfile.banner':'Banneripohja','publicProfile.none':'Ei valintaa',
+    'publicProfile.affiliations':'Julkinen kerhoidentiteetti','publicProfile.affiliationHint':'Jaa erikseen enintään kaksi julkista kerhoa ja nykyinen näkyvä arvosi. Yksityisiä kerhoja tai teknisiä oikeuksia ei julkaista. Jäsenyyden, näkyvyyden tai arvon muutos piilottaa vanhan kortin päivitykseen asti.',
+    'publicProfile.club':'Oma julkinen kerhosi (20 uusinta jäsenyyttä)','publicProfile.publishAffiliation':'Julkaise / päivitä kerhoidentiteetti',
+    'publicProfile.removeUnavailable':'Poista kerhoidentiteetti, joka ei ole saatavilla','publicProfile.affiliationLimit':'Poista kerhoidentiteetti ennen uuden lisäämistä; prototyypissä enintään kaksi korttia.',
+    'accent.gold':'Kulta','accent.ocean':'Meri','accent.forest':'Metsä','accent.rose':'Ruusu',
+    'banner.road':'Tie','banner.horizon':'Horisontti','banner.grid':'Ruudukko',
     'showcase.title':'Autotallin esittely','showcase.featured':'Esittelyajoneuvo','showcase.empty':'Ei julkaistuja ajoneuvoja.',
     'showcase.partial':'Osa esittelykorteista ei latautunut. Yritä päivittämällä uudelleen.',
     'showcase.options':'Esittelyasetukset','showcase.description':'Julkinen kuvaus (valinnainen)',

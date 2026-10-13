@@ -77,6 +77,32 @@ def run():
     r.commit('alice',save('alice',{**p,'vehicleIds':[vid,vid]}),False)
     r.commit('alice',save('alice',{**p,'vehicleIds':[str(uuid.uuid4()) for _ in range(5)],'featuredVehicle':None}),False)
     p.update(vehicleIds=[],featuredVehicle=None);r.commit('alice',save('alice',p));r.read(None,child,False)
+    # Public Club/rank cards disclose no UID/role, and source changes deny stale reads.
+    cid=str(uuid.uuid4());r.create_club(cid,'alice');aid=str(uuid.uuid4());p['affiliationIds']=[aid]
+    joined=r.read('alice',f'clubs/{cid}/members/alice')['joinedAt']['timestampValue']
+    amap=r.update(f'profileOwners/{id}/affiliations/{aid}',dict(clubId=cid,joinedAt=(joined,),createdAt=r.SERVER))
+    acard=dict(id=aid,clubId=cid,name='Club '+cid,rank=None,updatedAt=r.SERVER);apath=f'publicProfiles/{id}/affiliations/{aid}'
+    r.commit('alice',[amap,r.update(apath,acard),*save('alice',p)])
+    result=r.read(None,apath);r.read('bob',apath);assert set(result)==set(acard) and 'technicalRole' not in result and 'uid' not in result
+    r.read('bob',f'profileOwners/{id}/affiliations/{aid}',False);r.query(None,'publicProfiles/'+id,'affiliations',False)
+    r.commit('bob',[r.update(apath,acard)],False)
+    for extra in [{'uid':'alice'},{'technicalRole':'owner'},{'email':'private@example.test'},{'rank':'Admin'},{'name':'Forged Club'}]:
+        r.commit('alice',[r.update(apath,{**acard,**extra})],False)
+    r.commit('alice',[r.update(f'clubs/{cid}/ranks/captain',dict(id='captain',name='Captain',displayOrder=0,createdAt=r.SERVER,updatedAt=r.SERVER))])
+    member=r.read('alice',f'clubs/{cid}/members/alice');r.commit('ADMIN',[r.raw_update(f'clubs/{cid}/members/alice',member,{'rankId':'captain','updatedAt':r.SERVER})])
+    r.read(None,apath,False);acard['rank']='Captain';r.commit('alice',[r.update(apath,acard)]);r.read(None,apath)
+    rank=r.read('alice',f'clubs/{cid}/ranks/captain');r.commit('alice',[r.raw_update(f'clubs/{cid}/ranks/captain',rank,{'name':'Road Lead','updatedAt':r.SERVER})]);r.read(None,apath,False)
+    acard['rank']='Road Lead';r.commit('alice',[r.update(apath,acard)]);r.read(None,apath)
+    fields=r.read('alice','clubs/'+cid)
+    r.commit('alice',r.club_changes(cid,fields,{'visibility':'private','membershipPolicy':'private','updatedAt':r.SERVER})+[r.delete('clubDirectory/'+cid)])
+    r.read(None,apath,False);r.commit('alice',[r.update(apath,acard)],False)
+    # Only opaque affiliation aliases remain in the independently public profile root.
+    profile_fields=r.read(None,'publicProfiles/'+id);assert cid not in str(profile_fields['affiliationIds'])
+    fields=r.read('alice','clubs/'+cid);r.commit('alice',r.club_changes(cid,fields,{'visibility':'public','membershipPolicy':'open','updatedAt':r.SERVER})+[r.raw_update('clubDirectory/'+cid,r.directory(fields),{'membershipPolicy':'open','updatedAt':r.SERVER})]);r.read(None,apath)
+    r.commit('ADMIN',[r.delete(f'clubs/{cid}/members/alice')]);r.read(None,apath,False)
+    r.commit('ADMIN',[r.update(f'clubs/{cid}/members/alice',r.membership('alice','owner'))]);r.read(None,apath,False) # rejoining does not resurrect prior opt-in
+    p['affiliationIds']=[];r.commit('alice',[r.delete(apath),r.delete(f'profileOwners/{id}/affiliations/{aid}'),*save('alice',p)])
+    r.read(None,apath,False)
     # Alias cannot be replaced, reused by another user or reactivated after retirement.
     other=settings(str(uuid.uuid4()));r.commit('alice',[r.update('profileOwners/'+other['publicId'],dict(ownerUid='alice',createdAt=r.SERVER)),*save('alice',other)],False)
     p.update(state='retired',visibility='private');r.commit('alice',[r.update('users/alice/preferences/publicProfile',p)])

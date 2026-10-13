@@ -36,6 +36,10 @@ def run_batch6b_tests(browser,base,route_map):
     page.wait_for_selector('#public-profile-form');assert page.locator('#public-profile-form-visibility').input_value()=='private'
     page.select_option('#public-profile-form-visibility','public');page.locator('#public-profile-form button[type=submit]').click()
     page.wait_for_function('!document.getElementById("public-profile-editor")')
+    page.click('#public-profile-edit');page.wait_for_selector('#public-profile-form-bio')
+    page.fill('#public-profile-form-bio','<script>literal text</script> · Weekend explorer')
+    page.select_option('#public-profile-form-category','motorcycle');page.select_option('#public-profile-form-accent','ocean');page.select_option('#public-profile-form-banner','grid')
+    page.locator('#public-profile-form button[type=submit]').click();page.wait_for_function('!document.getElementById("public-profile-editor")')
     alias=page.evaluate('JSON.parse(localStorage.getItem("__mockProfiles"))["users/fixture-0/preferences/publicProfile"].publicId')
     public=page.evaluate('(id)=>JSON.parse(localStorage.getItem("__mockProfiles"))["publicProfiles/"+id]',alias)
     assert not any(key in public for key in ['uid','ownerUid','email','location','technicalRole'])
@@ -48,6 +52,9 @@ def run_batch6b_tests(browser,base,route_map):
     print('PASS: Batch 6B: explicit vehicle consent and separately entered public description; other Garage vehicles remain private')
     page.goto(base+'#/rider/'+alias,wait_until='networkidle');page.wait_for_selector('#screen-rider h1')
     assert page.locator('#screen-rider h1').inner_text()=='Garage Rider'
+    assert page.locator('#screen-rider').get_attribute('data-accent')=='ocean' and page.locator('#screen-rider').get_attribute('data-banner')=='grid'
+    assert page.locator('#screen-rider .public-bio').first.inner_text().startswith('<script>literal') and page.locator('#screen-rider script').count()==0
+    print('PASS: Batch 6B: controlled bio/category/accent/banner render as safe text and built-in presets')
     assert page.locator('#screen-rider .vehicle-card').count()==1
     assert 'Showcase Bike' in page.locator('#screen-rider').inner_text() and 'Private Car' not in page.locator('#screen-rider').inner_text()
     assert '@' not in page.locator('#screen-rider').inner_text()
@@ -67,9 +74,32 @@ def run_batch6b_tests(browser,base,route_map):
     page.goto(base+'#/rider/'+alias,wait_until='networkidle');page.wait_for_selector('#screen-rider h1')
     assert page.locator('#screen-rider .vehicle-card').count()==0
     print('PASS: Batch 6B: Garage edit synchronizes the safe card; deletion removes showcase and featured reference')
+    page.locator('#bottom-nav [data-destination=profile]').click();page.click('#public-profile-edit');page.wait_for_selector('#public-profile-form')
+    page.fill('#public-profile-form-displayName','Public Explorer');page.locator('#public-profile-form button[type=submit]').click();page.wait_for_function('!document.getElementById("public-profile-editor")')
+    from navigation_helpers import click_action
+    click_action(page,'#account-btn');page.wait_for_function('document.querySelector("#profile-name").value==="Public Explorer"');page.click('#account-close')
+    print('PASS: Batch 6B: profile name update synchronizes private Account settings and signed-in display projection')
+    club=page.evaluate('''async()=>{return (await import('./js/firebase/clubRepository.js')).createClub('fixture-0',{name:'Public Road Crew',description:'Public Club',category:'motorcycle',visibility:'public',membershipPolicy:'open',primaryColor:'#123456',accentColor:'#abcdef',routeColor:null,mapTheme:'normal',links:{}});}''')
+    page.click('#public-profile-edit');page.wait_for_selector('#profile-affiliation-form-club option',state='attached')
+    page.select_option('#profile-affiliation-form-club',club);page.locator('#profile-affiliation-form button[type=submit]').click()
+    page.wait_for_function('document.getElementById("public-profile-editor")?.textContent.includes("Public Road Crew") && !document.getElementById("public-profile-editor")?.getAttribute("aria-busy")')
+    page.keyboard.press('Escape');page.goto(base+'#/rider/'+alias,wait_until='networkidle');page.wait_for_selector('#screen-rider .public-affiliations')
+    assert 'Public Road Crew' in page.locator('#screen-rider .public-affiliations').inner_text()
+    roots=page.evaluate('(id)=>JSON.parse(localStorage.getItem("__mockProfiles"))["publicProfiles/"+id]',alias)
+    assert club not in roots['affiliationIds']
+    print('PASS: Batch 6B: explicit public Club identity, safe affiliation projection and opaque root aliases')
+    for width,height in [(320,568),(844,390),(1280,800)]:
+        page.set_viewport_size({'width':width,'height':height});page.select_option('#language-select','fi')
+        assert page.locator('#start-overlay').evaluate('(n)=>n.scrollWidth<=n.clientWidth+1')
+    page.select_option('#language-select','en')
     page.locator('#bottom-nav [data-destination=profile]').click();page.click('#profile-logout')
     page.wait_for_selector('#screen-landing');assert page.locator('#bottom-nav').is_hidden()
     print('PASS: Batch 6B: account entry and logout restore the correct shell without recording')
+    page.goto(base+'#/rider/'+alias,wait_until='networkidle');page.wait_for_selector('#screen-rider .public-affiliations')
+    assert page.locator('#screen-rider h1').inner_text()=='Public Explorer' and page.locator('#bottom-nav').is_hidden()
+    page.goto(base+'#/rider/00000000-0000-4000-8000-000000000000',wait_until='networkidle');page.wait_for_selector('#screen-rider h1')
+    assert page.locator('#screen-rider h1').inner_text()=='Profile unavailable'
+    print('PASS: Batch 6B: anonymous public route, missing-profile state and responsive Finnish public profile')
     assert not errors,errors;context.close()
     plain=browser.new_context(java_script_enabled=False,viewport={'width':320,'height':568})
     route_map(plain);p=plain.new_page();p.goto(base,wait_until='networkidle')

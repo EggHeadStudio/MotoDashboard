@@ -100,6 +100,7 @@ export function initAuthUI() {
     if (!connected) void connect();
   });
   close.addEventListener('click', () => dialog.close());
+  addEventListener('motodash-profile-updated',()=>{if(user && !busy)void synchronize(user);});
   function clearConfirmationError() {
     confirmation.removeAttribute('aria-invalid');
     if (message === 'auth.passwordMismatch') message = 'auth.ready';
