@@ -3,7 +3,7 @@ export const product = {
   en: {
     'live.compact': 'Live · sharing',
     'category.open': 'Open / Any vehicle', 'discover.open': 'Open / Any vehicle',
-    'groups.returnTitle': 'Leave the live dashboard?', 'groups.returnHint': 'Your personal ride recording is independent. Returning Home stops your sharing and keeps the Group running.',
+    'groups.returnTitle': 'Leave the live dashboard?', 'groups.returnHint': 'Returning Home keeps your Group, personal recording and enabled live sharing running. Use Stop sharing or leave the Group to stop sharing.',
     'groups.returnHome': 'Home · keep Group running', 'groups.endAll': 'End Group for everyone',
     'groups.expirationPolicy': 'Start at most 2 hours early. Live access ends at the end time or 24 hours after the scheduled start, whichever comes first. Active times are fixed.',
     'notifications.title': 'Notifications', 'notifications.unread': 'Notifications · {count} unread',
@@ -53,7 +53,7 @@ export const product = {
   fi: {
     'live.compact': 'Live · jaetaan',
     'category.open': 'Avoin / Kaikki ajoneuvot', 'discover.open': 'Avoin / Kaikki ajoneuvot',
-    'groups.returnTitle': 'Poistutko live-näkymästä?', 'groups.returnHint': 'Oma ajotallennus on erillinen. Kotiin palaaminen lopettaa oman jaon ja jättää ryhmän käyntiin.',
+    'groups.returnTitle': 'Poistutko live-näkymästä?', 'groups.returnHint': 'Kotiin palaaminen säilyttää ryhmän, oman tallennuksen ja käytössä olevan live-jaon. Lopeta jako erikseen tai poistu ryhmästä lopettaaksesi sen.',
     'groups.returnHome': 'Kotiin · jätä ryhmä käyntiin', 'groups.endAll': 'Päätä ryhmä kaikille',
     'groups.expirationPolicy': 'Aloita enintään 2 tuntia etuajassa. Live-oikeus päättyy lopetusaikaan tai 24 tuntia suunnitellusta alusta, ensin täyttyvän mukaan. Aktiivisen session ajat ovat lukitut.',
     'notifications.title': 'Ilmoitukset', 'notifications.unread': 'Ilmoitukset · {count} lukematta',

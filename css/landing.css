@@ -28,6 +28,10 @@
 .public-profile[data-banner=grid] .public-profile-hero {background:linear-gradient(90deg,#ffffff04 1px,transparent 1px),linear-gradient(#ffffff04 1px,transparent 1px),var(--md-surface);background-size:24px 24px;}
 .public-profile .large-avatar {color:var(--profile-accent,var(--md-gold));}
 .public-affiliations {margin:28px 0;}.public-affiliations .surface {margin:12px 0;}
+.app-shell .ride-return {display:flex;align-items:center;gap:8px;border-color:var(--md-gold);color:var(--md-gold);padding:10px;position:relative;}
+.ride-return::after {content:'';width:6px;height:6px;position:absolute;right:5px;top:5px;border-radius:50%;background:var(--md-success);}
+#ride-context-status {min-height:44px;padding:6px 10px;font:inherit;color:var(--md-gold);background:#191c20;border:1px solid var(--md-line);border-radius:10px;}
+@media(max-width:620px) {.ride-return span {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);}}
 .member-name[href],.participant-name[href] {color:var(--md-gold);min-height:44px;display:flex;align-items:center;}
 .reveal-ready {transition:opacity 550ms ease,transform 550ms ease;}
 .reveal-ready:not(.revealed) {opacity:.85;transform:translateY(12px);}

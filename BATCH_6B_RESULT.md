@@ -81,7 +81,7 @@ cannot retract content already downloaded. No claim of production testing is mad
 
 ## Progress
 
-Milestones 0–4 complete locally. Milestones 5–8 pending.
+Milestones 0–5 complete locally. Milestones 6–8 pending.
 
 ### Milestone 1 — landing
 
@@ -140,3 +140,22 @@ until its exact audience is specified. Full account erasure remains future work.
 Checks: 119 cumulative actual-emulator assertions and 13 Batch 6B browser cases
 pass, including Club identity, safe literal markup, name synchronization, anonymous
 routes and responsive Finnish presentation. Physical-phone/Safari acceptance pending.
+
+### Milestone 5 — ride continuity
+
+Separate owned recording/recovery, selected active Group, sharing/connection and
+dashboard-view state. Compact header Return to Ride sits beside the notification
+bell on all five screens. It preserves the existing record/vehicle/statistics/GPS
+watch; completed-history detail cannot silently replace an active recorder.
+Browsing/Home retains enabled sharing. Explicit Stop/leave/end/logout still stops it.
+This intentionally supersedes Batch 6A's Home-stops-sharing behavior and copy.
+
+Own personal recording can recover after authenticated refresh without stealing a
+Profile/invitation route; guests explicitly Resume. Group return hints contain no
+coordinates and are revalidated against current admission/deadline. Reload never
+restores live consent. Sharing-off Group return shows an explicit Group control
+without starting GPS. Logout clears hints/private live state, retaining owned local
+rides. Unavailable/offline unverified Group hints fail closed rather than granting access.
+
+Checks: 15 Batch 6B browser cases, live transport/client regressions, 13 Batch 6A
+cases and Pages compatibility pass. Native phone/Safari/background behavior pending.

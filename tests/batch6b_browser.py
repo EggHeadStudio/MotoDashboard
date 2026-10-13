@@ -107,3 +107,34 @@ def run_batch6b_tests(browser,base,route_map):
     assert p.locator('.landing-feature').count()==6
     print('PASS: Batch 6B: semantic landing content survives disabled JavaScript')
     plain.close()
+    run_ride_continuity_tests(browser,base,route_map)
+
+def run_ride_continuity_tests(browser,base,route_map):
+    context=browser.new_context(viewport={'width':320,'height':568});route_map(context);install(context)
+    page=context.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
+    page.add_init_script('''window.__geo={active:0,maximum:0};Object.defineProperty(navigator,'geolocation',{value:{
+      watchPosition(fn){window.__geo.fn=fn;window.__geo.active++;window.__geo.maximum=Math.max(window.__geo.maximum,window.__geo.active);return 1;},clearWatch(){window.__geo.active=0;}}});Element.prototype.requestFullscreen=undefined;navigator.wakeLock=undefined;''')
+    page.goto(base,wait_until='networkidle');register(page,'continuity@example.test')
+    page.click('#start-btn');page.wait_for_function('window.__geo.active===1')
+    original=page.evaluate('async()=>(await import("./js/ride-context.js")).getRideContext().recordingId');assert original
+    page.click('#back-to-start-btn');page.wait_for_selector('#return-to-ride')
+    for destination in ['home','discover','rides','clubs','profile']:
+        page.locator(f'#bottom-nav [data-destination="{destination}"]').click();page.wait_for_selector('#return-to-ride')
+        assert page.locator('#notifications-bell').is_visible()
+        assert page.locator('#return-to-ride').bounding_box()['width']>=44
+        assert page.evaluate('window.__geo.active===1 && window.__geo.maximum===1')
+        page.click('#return-to-ride');page.wait_for_function('document.querySelector("#start-overlay").style.display==="none"')
+        assert page.evaluate('async()=>(await import("./js/ride-context.js")).getRideContext().recordingId')==original
+        page.click('#back-to-start-btn');page.wait_for_function('document.querySelector("#start-overlay").style.display==="flex"')
+    print('PASS: Batch 6B: Return to Ride on all five destinations preserves record identity and one GPS watcher beside the bell')
+    page.locator('#bottom-nav [data-destination=profile]').click();page.reload(wait_until='networkidle')
+    page.wait_for_function('window.__geo.active===1 && document.body.dataset.ready==="true"')
+    assert page.locator('#screen-profile').is_visible()
+    assert page.evaluate('async()=>(await import("./js/ride-context.js")).getRideContext().recordingId')==original
+    page.click('#return-to-ride');assert page.evaluate('window.__geo.maximum')==1
+    page.click('#back-to-start-btn');page.locator('#bottom-nav [data-destination=profile]').click();page.click('#profile-logout')
+    page.wait_for_selector('#screen-landing');assert page.evaluate('window.__geo.active')==0
+    assert not page.evaluate('async()=>(await import("./js/ride-context.js")).getRideContext().recordingId')
+    assert not errors,errors
+    print('PASS: Batch 6B: owned recording survives Profile refresh; logout stops GPS and clears the active return context')
+    context.close()

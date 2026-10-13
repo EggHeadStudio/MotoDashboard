@@ -1,5 +1,8 @@
 export const batch6b={
   en:{
+    'rideContext.return':'Return to Ride','rideContext.already':'You already have an active ride.',
+    'rideContext.sharingOff':'Group ride · sharing off',
+    'rideContext.conflictHint':'Return to your existing ride or cancel. Your current recording and sharing will stay unchanged.',
     'publicProfile.bio':'Short bio','publicProfile.category':'Primary vehicle category','publicProfile.unspecified':'Not specified',
     'publicProfile.accent':'Accent preset','publicProfile.banner':'Banner preset','publicProfile.none':'None',
     'publicProfile.affiliations':'Public Club identity','publicProfile.affiliationHint':'Explicitly share up to two public Clubs and your current visible rank. Private Clubs and technical permissions are never published. Changing membership, privacy or rank hides stale cards until you update them.',
@@ -37,6 +40,9 @@ export const batch6b={
     'landing.back':'Back to MotoDash','landing.local':'Local ride history','landing.guestHome':'Guest dashboard',
   },
   fi:{
+    'rideContext.return':'Palaa ajoon','rideContext.already':'Sinulla on jo aktiivinen ajo.',
+    'rideContext.sharingOff':'Ryhmäajo · jako pois',
+    'rideContext.conflictHint':'Palaa nykyiseen ajoon tai peruuta. Nykyinen tallennus ja sijainnin jako säilyvät.',
     'publicProfile.bio':'Lyhyt esittely','publicProfile.category':'Ensisijainen ajoneuvoluokka','publicProfile.unspecified':'Ei määritetty',
     'publicProfile.accent':'Korostusväri','publicProfile.banner':'Banneripohja','publicProfile.none':'Ei valintaa',
     'publicProfile.affiliations':'Julkinen kerhoidentiteetti','publicProfile.affiliationHint':'Jaa erikseen enintään kaksi julkista kerhoa ja nykyinen näkyvä arvosi. Yksityisiä kerhoja tai teknisiä oikeuksia ei julkaista. Jäsenyyden, näkyvyyden tai arvon muutos piilottaa vanhan kortin päivitykseen asti.',

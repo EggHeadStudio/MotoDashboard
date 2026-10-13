@@ -11,7 +11,8 @@ def run_batch6a_tests(browser,base,route_map):
     def done(name):
         nonlocal passed
         passed+=1;print('PASS: Batch 6A:',name)
-    page.click('#notifications-bell');assert page.locator('#notifications-dialog').is_visible()
+    assert page.locator('#notifications-bell').is_hidden()
+    page.goto(base+'#/notifications',wait_until='networkidle');assert page.locator('#notifications-dialog').is_visible()
     assert 'Sign in' in page.locator('#notifications-dialog').inner_text()
     page.locator('#notifications-dialog .feature-header button').click()
     register(page,'batch6a@example.test')
@@ -115,7 +116,7 @@ def run_batch6a_tests(browser,base,route_map):
     click_action(page,'#account-btn');page.click('#auth-logout')
     page.wait_for_function('window.__mock.snapshotListeners===0')
     assert page.locator('.notification-count').is_hidden()
-    page.click('#account-close');page.click('#notifications-bell')
+    page.click('#account-close');page.goto(base+'#/notifications',wait_until='networkidle')
     assert 'Group Session invitation' not in page.locator('#notifications-dialog').inner_text()
     done('logout detaches listeners and clears all notification rows/counts')
     page.locator('#notifications-dialog').get_by_role('button',name='Sign in / register',exact=True).click()

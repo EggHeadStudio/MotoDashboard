@@ -95,7 +95,13 @@ def run_live_tests(browser,base,route_map):
     page.screenshot(path=str(Path(tempfile.gettempdir())/'motodash-batch6a-live-landscape.png'))
     page.set_viewport_size({'width':320,'height':568})
     # Existing recording shares the same watch (soft restart clears the old watch).
-    page.click('#back-to-start-btn');page.wait_for_selector('#host-return-home');page.click('#host-return-home');page.wait_for_function('window.__geo.active === 0')
+    page.click('#back-to-start-btn');page.wait_for_selector('#host-return-home');page.click('#host-return-home');page.wait_for_function('window.__geo.active === 1')
+    page.wait_for_function('!document.querySelector("#return-to-ride").hidden')
+    assert page.locator('#return-to-ride').is_visible() and page.locator('#notifications-bell').is_visible(),page.evaluate('async()=>({context:(await import("./js/ride-context.js")).getRideContext(),shell:document.querySelector("#start-overlay").style.display,screen:document.querySelector("#start-overlay").dataset.screen})')
+    page.click('#return-to-ride');assert not page.locator('#start-overlay').is_visible()
+    # Explicitly stopping sharing still clears the live-only GPS watch.
+    page.evaluate('async()=>{(await import("./js/live/live-client.js")).liveClient.stop()}');page.wait_for_function('window.__geo.active === 0')
+    page.evaluate('async()=>{const n=await import("./js/ui/navigation.js");document.querySelector("#start-overlay").style.display="flex";n.navigate("home")}')
     page.wait_for_function('document.querySelectorAll(".live-rider-label").length===0')
     click_action(page, '#start-btn');page.wait_for_function('window.__geo.active === 1')
     page.evaluate('(id)=>{location.hash="/session/"+id;dispatchEvent(new Event("motodash-group-link"));}',group)

@@ -17,6 +17,10 @@ Milestone 4 customization is implemented locally: controlled presets/name/bio/
 featured vehicle and explicitly shared public Club/rank cards. Current-source
 privacy/membership/rank gates pass 119 cumulative emulator assertions; 13 Batch 6B
 browser cases pass. Members-only policy and media remain planned.
+Milestone 5 ride continuity is implemented locally: Return to Ride on every
+destination, owned personal restore, explicit guest recovery and revalidated Group
+return without automatic live consent. Home now preserves enabled sharing. 15 Batch
+6B cases, existing live/notification and Pages regressions pass.
 
 ## Batch 6A local status
 

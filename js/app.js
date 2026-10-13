@@ -2,6 +2,8 @@ import { createPositionPipeline } from './position-pipeline.js';
 import { initNavigation } from './ui/navigation.js';
 import {initLanding} from './ui/landing.js';
 import {initPublicProfiles} from './public-profile-ui.js';
+import {getRideContext,setRecordingContext,verifyRememberedGroup} from './ride-context.js';
+import {initRideReturn,showActiveRideConflict} from './ui/ride-return.js';
 import { initShell, publishRideSummary } from './ui/shell.js';
 import {confirmDashboardReturn} from './ui/host-return.js';
 import {initNotifications} from './ui/notifications.js';
@@ -102,6 +104,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       initShell();
       initNotifications();
       initPublicProfiles();
+      initRideReturn();
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(registrations => Promise.all(
           registrations.filter(registration => registration.scope === new URL('./', document.baseURI).href)
@@ -1040,6 +1043,8 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         sortSessionHistory();
         recordingReady = true;
         elStartBtn.disabled = false;
+        const recover=sessionHistory.filter(record=>record.status==='active' && (record.ownerUid || null)===accountUid && Date.now()-record.updatedAt<86400000);
+        setRecordingContext(accountUid,sessionActive?activeSession?.id:null,recover.length===1?recover[0].id:null);
       }
 
       function reportStorageError(error) {
@@ -1065,6 +1070,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       }
 
       function openCompletedSessionView(session) {
+        if(sessionActive || liveClient.getState().consent){showActiveRideConflict();return;}
         if (!session || session.status !== 'completed') {
           return;
         }
@@ -1109,7 +1115,6 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       }
 
       function returnToStartView() {
-        liveClient.stop();
         sessionHistoryViewActive = false;
         document.getElementById('history-detail').hidden = true;
         applyStoredHeadingMode();
@@ -1237,6 +1242,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         hasAppliedInitialFollowZoom = false;
         resetMovementState();
         sessionActive = true;
+        setRecordingContext(accountUid,activeSession.id,activeSession.id);
         updateSessionStatsPanel(activeSession);
         renderVehicle();
         if (routeLayer && map && map.hasLayer(routeLayer)) {
@@ -1244,14 +1250,15 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           routeLayer = null;
         }
         elFinishSessionBtn.style.display = 'inline-flex';
-        elBackToStartBtn.style.display = 'none';
+        elBackToStartBtn.style.display = 'inline-flex';
         elHistoryList.style.display = 'none';
         setSessionSummary(() => t("ui.recordingLocal"));
         persistActiveSession(true);
       }
 
-      function resumeSession(session) {
+      function resumeSession(session,{showDashboard=true}={}) {
         if (!recordingReady || !session || session.status !== 'active') return;
+        if((session.ownerUid || null)!==accountUid || accountUid!==(getAccount()?.uid || null))return;
         if (sessionActive) persistActiveSession(true);
         clearExistingWatch();
         activeSession = structuredClone(session);
@@ -1262,12 +1269,13 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         document.getElementById('history-detail').hidden = true;
         setSessionStatsCollapsed(false);
         sessionActive = true;
+        setRecordingContext(accountUid,activeSession.id,activeSession.id);
         updateSessionStatsPanel(activeSession);
         renderVehicle();
         elFinishSessionBtn.style.display = 'inline-flex';
-        elBackToStartBtn.style.display = 'none';
+        elBackToStartBtn.style.display = 'inline-flex';
         elHistoryList.style.display = 'none';
-        elStartOverlay.style.display = 'none';
+        if(showDashboard)elStartOverlay.style.display = 'none';
         updateRouteLayer();
         setStartStatus(() => t('ui.restored'));
         if (!window.isSecureContext || !isGeolocationSupported(navigator)) {
@@ -1303,6 +1311,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         activeSession.endedAt = Date.now();
         activeSession.updatedAt = Date.now();
         sessionActive = false;
+        setRecordingContext(accountUid,null,null);
         if (accountUid) activeSession = queueRide(activeSession);
         const finished = activeSession, epoch = accountEpoch;
         const saved = await persistActiveSession(true);
@@ -1470,7 +1479,6 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         isStartingGps = false;
         elGpsErrOverlay.style.display = 'none';
         elRetryBtn.style.display = 'none';
-        elStartOverlay.style.display = 'none';
         elFinishSessionBtn.style.display = sessionActive ? 'inline-flex' : 'none';
         setDebugStage(() => t("ui.positionReceived"));
         setStartStatus(() => t("ui.positionReceived"));
@@ -1672,6 +1680,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       }
 
       function retryGps() {
+        elStartOverlay.style.display='none';
         elGpsErrOverlay.style.display = 'none';
         elRetryBtn.style.display = 'none';
         if (isGeolocationSupported(navigator)) {
@@ -1715,7 +1724,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       // Auto-resume: if there is exactly one active session, restore it automatically after reload
       function autoRestoreActiveSession() {
         // Guest recovery remains explicit; landing never starts GPS.
-        if(!getAccount())return;
+        if(!accountUid || getAccount()?.uid!==accountUid)return;
         var actives = sessionHistory.filter(function (item) { return item.status === 'active'; });
         if (actives.length !== 1) {
           return;
@@ -1728,7 +1737,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           return;
         }
 
-        resumeSession(session);
+        resumeSession(session,{showDashboard:!/^#\/(?:discover|rides|clubs|profile|club|session|rider|notifications)(?:\/|$)/.test(location.hash)});
       }
       autoRestoreActiveSession();
 
@@ -1842,6 +1851,17 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         } catch (error) { if (epoch === accountEpoch) reportStorageError(error); }
       });
       if (recordingReady) prepareCloudSync();
+      addEventListener('motodash-return-to-ride',async()=>{
+        const context=getRideContext(),epoch=accountEpoch;
+        if(sessionActive && activeSession){
+          elStartOverlay.style.display='none';document.getElementById('history-detail').hidden=true;
+          updateSessionStatsPanel(activeSession);updateRouteLayer();renderVehicle();elBackToStartBtn.style.display='inline-flex';map?.invalidateSize();return;
+        }
+        if(context.recoverableId){const record=sessionHistory.find(item=>item.id===context.recoverableId);if(record){resumeSession(record);return;}}
+        if(context.groupId && await verifyRememberedGroup() && epoch===accountEpoch){
+          elStartOverlay.style.display='none';document.getElementById('history-detail').hidden=true;elBackToStartBtn.style.display='inline-flex';map?.invalidateSize();
+        }
+      });
       if (accountUid) refreshCloudHistory();
       document.getElementById('cloud-retry').addEventListener('click',()=>cloudSync?.retry());
       window.addEventListener('online',()=>cloudSync?.retry());
@@ -2114,7 +2134,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         if(wanted===liveGpsRequested)return;liveGpsRequested=wanted;
         if(wanted) {
           if(!map || !window.isSecureContext || !isGeolocationSupported(navigator)) {liveClient.stop('gpsUnavailable');return;}
-          elStartOverlay.style.display='none';document.getElementById('history-detail').hidden=true;
+          document.getElementById('history-detail').hidden=true;
           if(!sessionActive)elBackToStartBtn.style.display='inline-flex';
           if(watchId===null)startGpsTracking({softRestart:true});requestWakeLockSafely();
         }else if(!sessionActive) {clearExistingWatch();resetMovementState();releaseWakeLockSafely();}

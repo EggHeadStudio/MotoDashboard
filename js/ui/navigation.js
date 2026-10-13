@@ -1,6 +1,7 @@
 import { icon } from './icons.js';
 import { t, setLocalizedText } from '../i18n/i18n.js';
 import { getAccount, onAccountChange } from '../auth-state.js';
+import {setDashboardVisible} from '../ride-context.js';
 
 const destinations = ['home','discover','rides','clubs','profile'];
 const panels = {'lobby-dialog':'discover', 'clubs-dialog':'clubs', 'groups-dialog':'rides'};
@@ -95,20 +96,24 @@ export function initNavigation() {
   }
   addEventListener('popstate', route); addEventListener('hashchange', route);
   let previous;
-  onAccountChange(({user})=>{
+  let authResolved=false;
+  onAccountChange(({user,ready})=>{
+    const restoring=!authResolved && ready;if(ready)authResolved=true;
     const next=user?.uid || null;
     if(next===previous)return;
     guestEntry=false;previous=next;
     const external=/^#\/(?:club|session|rider)\//.test(location.hash) || location.hash==='#/notifications';
     document.getElementById('bottom-nav').hidden=!user;
     document.getElementById('home-profile').hidden=!user;
-    if(!external)navigate(user?'home':'landing',{write:false,focus:false});
+    const saved=/^#\/(home|discover|rides|clubs|profile)$/.exec(location.hash)?.[1];
+    if(!external)navigate(user?(restoring && saved? saved:'home'):'landing',{write:false,focus:false});
   });
   queueMicrotask(() => {if (!/^#\/(?:club|session|rider)\//.test(location.hash)) route();});
   // Primary navigation is unavailable while driving; the existing HUD owns the map.
   new MutationObserver(() => {
     const driving = document.getElementById('start-overlay').style.display === 'none';
     document.body.classList.toggle('dashboard-active', driving);
+    setDashboardVisible(driving);
     if(driving) document.getElementById('controls-row').append(language);else actions.prepend(language);
     document.getElementById('hud').inert = !driving;
   }).observe(document.getElementById('start-overlay'), {attributes:true, attributeFilter:['style']});
