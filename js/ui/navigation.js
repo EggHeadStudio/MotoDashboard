@@ -1,17 +1,24 @@
 import { icon } from './icons.js';
 import { t, setLocalizedText } from '../i18n/i18n.js';
-import { getAccount } from '../auth-state.js';
+import { getAccount, onAccountChange } from '../auth-state.js';
 
 const destinations = ['home','discover','rides','clubs','profile'];
 const panels = {'lobby-dialog':'discover', 'clubs-dialog':'clubs', 'groups-dialog':'rides'};
 let selected = 'home', navigating = false;
+let guestEntry=false;
+export const setGuestEntry=value=>{guestEntry=Boolean(value);};
+export const hasGuestEntry=()=>guestEntry;
 const silentClosures = new WeakSet();
 const dashboardReturns = new WeakMap();
 export const currentScreen = () => selected;
 export function navigate(screen, {write = true, panel = null, focus = true} = {}) {
-  if (!destinations.includes(screen)) screen = 'home';
+  if (!destinations.includes(screen) && !['landing','rider'].includes(screen)) screen = 'home';
+  if(!getAccount() && !panel && screen!=='rider' && !(guestEntry && ['home','rides'].includes(screen))) screen='landing';
   selected = screen; navigating = true;
   const shell = document.getElementById('start-overlay'); shell.dataset.screen = screen;
+  document.getElementById('bottom-nav').hidden=!getAccount();
+  document.getElementById('home-profile').hidden=!getAccount();
+  document.getElementById('guest-actions').hidden=!!getAccount() || !guestEntry || screen==='landing';
   for (const [id] of Object.entries(panels)) {
     const node = document.getElementById(id); if (node?.open && id !== panel) {silentClosures.add(node);node.close();}
   }
@@ -87,6 +94,16 @@ export function initNavigation() {
     if (screen) navigate(screen,{write:false});
   }
   addEventListener('popstate', route); addEventListener('hashchange', route);
+  let previous;
+  onAccountChange(({user})=>{
+    const next=user?.uid || null;
+    if(next===previous)return;
+    guestEntry=false;previous=next;
+    const external=/^#\/(?:club|session|rider)\//.test(location.hash) || location.hash==='#/notifications';
+    document.getElementById('bottom-nav').hidden=!user;
+    document.getElementById('home-profile').hidden=!user;
+    if(!external)navigate(user?'home':'landing',{write:false,focus:false});
+  });
   queueMicrotask(() => {if (!/^#\/(?:club|session)\//.test(location.hash)) route();});
   // Primary navigation is unavailable while driving; the existing HUD owns the map.
   new MutationObserver(() => {

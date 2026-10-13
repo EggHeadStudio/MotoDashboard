@@ -57,6 +57,7 @@ export function initNotifications() {
       code=>{if(token===epoch){failed=true;view.status.textContent=t('notifications.connection')+' ['+code+']';bell.title=view.status.textContent;}});
   }
   onAccountChange(({user})=>{
+    bell.hidden=!user;
     const next=user?.uid||null;if(next===uid)return;
     release?.();release=null;uid=next;epoch++;rows=[];count=0;capped=false;view.status.textContent='';render();
     startListeners();

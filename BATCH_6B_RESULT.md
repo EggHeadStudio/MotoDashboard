@@ -81,4 +81,16 @@ cannot retract content already downloaded. No claim of production testing is mad
 
 ## Progress
 
-Milestone 0 complete. Milestones 1–8 pending implementation and verification.
+Milestones 0–1 complete locally. Milestones 2–8 pending.
+
+### Milestone 1 — landing
+
+Dedicated semantic anonymous landing with original SVG, six real-feature sections,
+proposed Free/Rider/Host/Club prices, accessible scrolling and optional observer
+reveal. EN/FI and reduced motion; content remains visible without JavaScript.
+Explicit guest dashboard/history entry; anonymous refresh never requests GPS.
+Existing private invitation and notification Auth routes are preserved.
+
+Checks: six Batch 6B landing cases, six existing Group/invitation browser groups,
+20 Batch 5 cases and two Pages compatibility groups pass. Pages checks cover
+252 references / 77 URLs under `/MotoDashboard/`. No physical phone test.

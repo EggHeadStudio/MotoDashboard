@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
   <link rel="stylesheet" href="./css/dashboard.css">
   <link rel="stylesheet" href="./css/design-system.css">
+  <link rel="stylesheet" href="./css/landing.css">
 </head>
 <body>
   <div id="language-control"><label for="language-select" data-i18n="ui.language">Language</label><select id="language-select"><option value="en">English</option><option value="fi">Suomi</option></select></div>
@@ -114,7 +115,39 @@
     <a class="skip-link" href="#screen-host" data-i18n="ui.skip">Skip to content</a>
     <header class="shell-header"><a class="wordmark" href="#/home" aria-label="MotoDash Home">MOTO<span>DASH</span><i></i></a><button id="home-profile" class="avatar-button" type="button" data-i18n-aria-label="nav.profile" aria-label="Profile"></button></header>
     <main id="screen-host" tabindex="-1">
-    <section id="screen-home" class="app-screen" aria-labelledby="home-title">
+    <section id="screen-landing" class="app-screen landing" aria-labelledby="landing-title">
+      <div class="landing-hero"><div><p class="eyebrow">MotoDash</p>
+      <h1 id="landing-title" data-i18n="landing.slogan">Your Vehicle. Your Crew. Your Ride.</h1>
+      <p data-i18n="landing.intro">One place for your vehicles, your community and the moments you move together.</p>
+      <div class="landing-actions"><button class="primary" id="landing-register" data-auth-entry="register" data-i18n="landing.register">Create account</button><button id="landing-sign-in" data-auth-entry="login" data-i18n="landing.signIn">Sign in</button></div>
+      <button class="text-button" id="landing-try" data-i18n="landing.try">Try the dashboard</button><p class="landing-note" data-i18n="landing.guest">No account needed for local ride recording. GPS starts only when you choose Start Ride.</p>
+      <a class="landing-explore" href="#landing-features" id="landing-explore" data-i18n="landing.explore">Explore MotoDash</a></div>
+      <div class="landing-art" aria-hidden="true"><svg viewBox="0 0 460 430" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="230" cy="210" r="180" stroke="currentColor" stroke-opacity=".1"/><circle cx="230" cy="210" r="140" stroke="currentColor" stroke-opacity=".15" stroke-dasharray="2 12"/>
+        <path d="M110 410C170 345 305 355 300 282S125 225 178 158 344 131 346 20" stroke="currentColor" stroke-opacity=".15" stroke-width="38" stroke-linecap="round"/>
+        <path d="M110 410C170 345 305 355 300 282S125 225 178 158 344 131 346 20" stroke="currentColor" stroke-width="2" stroke-dasharray="8 12"/>
+        <rect x="134" y="125" width="190" height="176" rx="28" fill="#191c20" stroke="#34393f"/>
+        <path d="M173 231A64 64 0 0 1 285 231" stroke="#34393f" stroke-width="7" stroke-linecap="round"/><path d="M173 231A64 64 0 0 1 255 173" stroke="currentColor" stroke-width="7" stroke-linecap="round"/>
+        <path d="M229 218L260 180" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><circle cx="229" cy="218" r="7" fill="currentColor"/>
+        <path d="M181 259H221M238 259H276M181 273H208M238 273H264" stroke="#b3b7bc" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="347" cy="112" r="15" fill="#e9bf73"/><circle cx="105" cy="324" r="12" fill="#adc9b1"/><circle cx="343" cy="337" r="9" fill="#8fa7cc"/>
+      </svg></div></div>
+      <section id="landing-features" class="landing-features" aria-labelledby="landing-features-title"><h2 id="landing-features-title" class="sr-only" data-i18n="landing.features">Made for the journey</h2>
+        <article class="landing-feature landing-reveal"><span class="landing-number">01</span><h3 data-i18n="landing.dashboard">Your ride, in focus</h3><p data-i18n="landing.dashboardText">GPS speed, a live map, weather and ride statistics. Record locally and revisit your route.</p></article>
+        <article class="landing-feature landing-reveal"><span class="landing-number">02</span><h3 data-i18n="landing.groups">Move together</h3><p data-i18n="landing.groupsText">Organize a Ride, Drive, Meet or Event. Choose when to share live locations with admitted participants.</p></article>
+        <article class="landing-feature landing-reveal"><span class="landing-number">03</span><h3 data-i18n="landing.clubs">Find your crew</h3><p data-i18n="landing.clubsText">Communities with invitations, roles, ranks, colors, links and a private Info Wall.</p></article>
+        <article class="landing-feature landing-reveal"><span class="landing-number">04</span><h3 data-i18n="landing.garage">Every vehicle has a story</h3><p data-i18n="landing.garageText">Keep your personal Garage and choose a vehicle for your next ride.</p></article>
+        <article class="landing-feature landing-reveal"><span class="landing-number">05</span><h3 data-i18n="landing.discover">Discover what’s next</h3><p data-i18n="landing.discoverText">Browse public Group Sessions and Clubs using activity, category, date or approximate area.</p></article>
+        <article class="landing-feature landing-reveal"><span class="landing-number">06</span><h3 data-i18n="landing.privacy">Your choice. Your location.</h3><p data-i18n="landing.privacyText">Private history stays yours. Live sharing is opt-in. Use controls while stopped; MotoDash is not navigation or an emergency service.</p></article>
+      </section><section class="landing-plans" aria-labelledby="landing-plans-title"><h2 id="landing-plans-title" data-i18n="landing.plans">Built to grow with your crew</h2><p data-i18n="landing.plansHint">Proposed future pricing only. No payments or prototype feature restrictions.</p><div class="landing-plan-grid">
+        <article class="landing-plan"><h3>Free</h3><div class="landing-price">€0</div><small data-i18n="landing.month">/ month</small><p data-i18n="landing.free">Dashboard and discovery</p><small data-i18n="landing.proposed">Planned · not available to purchase</small></article>
+        <article class="landing-plan"><h3>Rider</h3><div class="landing-price">€5.99</div><small data-i18n="landing.month">/ month</small><p data-i18n="landing.rider">Garage and memories</p><small data-i18n="landing.proposed">Planned · not available to purchase</small></article>
+        <article class="landing-plan"><h3>Host</h3><div class="landing-price">€11.99</div><small data-i18n="landing.month">/ month</small><p data-i18n="landing.host">Group organization</p><small data-i18n="landing.proposed">Planned · not available to purchase</small></article>
+        <article class="landing-plan"><h3>Club</h3><div class="landing-price">€29.99</div><small data-i18n="landing.month">/ month</small><p data-i18n="landing.club">Community management</p><small data-i18n="landing.proposed">Planned · not available to purchase</small></article>
+      </div></section><footer class="landing-footer"><h2 data-i18n="landing.footer">Start your next chapter</h2><p data-i18n="landing.footerText">There’s room for your journey.</p><button class="primary" data-auth-entry="register" data-i18n="landing.register">Create account</button></footer>
+    </section>
+    <div id="guest-actions" class="guest-actions" hidden><button id="guest-home" data-i18n="landing.guestHome">Guest dashboard</button><button id="guest-history" data-i18n="landing.local">Local ride history</button><button id="guest-landing" data-i18n="landing.back">Back to MotoDash</button><button data-auth-entry="login" data-i18n="landing.signIn">Sign in</button></div>
+    <section id="screen-home" class="app-screen" hidden aria-labelledby="home-title">
       <div class="home-heading"><p class="eyebrow" data-i18n="home.eyebrow">YOUR NEXT CHAPTER</p><h1 id="home-title" data-i18n="home.guest">Make the journey yours.</h1><p class="muted" data-i18n="home.intro">Your rides. Your people. One place.</p></div>
       <div class="ride-launch"><div class="road-art" aria-hidden="true"></div><button id="start-btn" class="primary" data-i18n="home.start">Start Ride</button>
       <button id="resume-session-btn" class="start-option-btn secondary" aria-label="Resume the previous session" data-i18n-aria-label="ui.resumeLabel" data-i18n="ui.resume">Resume previous</button>

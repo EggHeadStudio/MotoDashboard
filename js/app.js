@@ -1,5 +1,6 @@
 import { createPositionPipeline } from './position-pipeline.js';
 import { initNavigation } from './ui/navigation.js';
+import {initLanding} from './ui/landing.js';
 import { initShell, publishRideSummary } from './ui/shell.js';
 import {confirmDashboardReturn} from './ui/host-return.js';
 import {initNotifications} from './ui/notifications.js';
@@ -86,6 +87,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
     document.addEventListener('DOMContentLoaded', async function () {
       initI18n();
       initNavigation();
+      initLanding();
       initAuthUI();
       initGarageUI();
       initClubUI();
@@ -1710,6 +1712,8 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
 
       // Auto-resume: if there is exactly one active session, restore it automatically after reload
       function autoRestoreActiveSession() {
+        // Guest recovery remains explicit; landing never starts GPS.
+        if(!getAccount())return;
         var actives = sessionHistory.filter(function (item) { return item.status === 'active'; });
         if (actives.length !== 1) {
           return;

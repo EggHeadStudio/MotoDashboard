@@ -1,5 +1,13 @@
 """Use the redesigned visible navigation before exercising existing feature controls."""
 def click_action(page, selector):
+    if page.locator('#bottom-nav').is_hidden():
+        if selector=='#account-btn':
+            if page.locator('#landing-sign-in').is_visible():page.click('#landing-sign-in')
+            else:page.locator('#guest-actions [data-auth-entry="login"]').click()
+            return
+        if page.locator('#landing-try').is_visible():page.click('#landing-try')
+        if selector in ['#start-btn','#resume-session-btn']:page.click('#guest-home')
+        if selector=='#history-btn':page.click('#guest-history');return
     destination = {'#account-btn':'profile','#garage-btn':'profile','#groups-btn':'rides',
                    '#clubs-btn':'clubs','#lobby-btn':'discover','#start-btn':'home',
                    '#resume-session-btn':'home','#history-btn':'home'}[selector]

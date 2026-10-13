@@ -22,16 +22,18 @@ def run_batch5_tests(browser,base,route_map):
         page.evaluate('(id)=>{location.hash="/session/"+id;}',id)
         page.wait_for_function("document.querySelector('#groups-dialog .feature-status').textContent==='Up to date.'")
     assert page.locator('#bottom-nav button').count()==5 and page.locator('#start-btn').inner_text()=='Start Ride'
-    assert page.locator('#bottom-nav button[aria-current=page]').inner_text()=='Home'
+    assert page.locator('#bottom-nav').is_hidden()
+    assert page.locator('#screen-landing').is_visible()
+    page.click('#landing-try')
     assert 'Make the journey yours.' in page.locator('#home-title').inner_text()
     assert 'No matching' not in page.locator('#home-upcoming').inner_text()
-    done('guest Home, five named destinations, prominent Start Ride and honest sign-in state')
+    done('anonymous landing, intentional guest Home, prominent Start Ride and honest sign-in state')
+    register(page,'premium-owner@example.test')
     sizes=page.locator('#bottom-nav button').evaluate_all('(nodes)=>nodes.map(n=>({w:n.getBoundingClientRect().width,h:n.getBoundingClientRect().height,label:n.textContent}))')
     assert all(row['w']>=44 and row['h']>=44 and row['label'] for row in sizes)
     nav('profile');nav('home');page.go_back();page.wait_for_function('document.querySelector("#start-overlay").dataset.screen==="profile"')
     page.go_forward();page.wait_for_function('document.querySelector("#start-overlay").dataset.screen==="home"')
     done('44px navigation, active destination and browser Back/Forward')
-    register(page,'premium-owner@example.test')
     click_action(page,'#account-btn');page.fill('#profile-name','Vera West');page.click('#profile-name-form button')
     page.wait_for_function('document.querySelector("#auth-identity").textContent.includes("Vera West")')
     assert page.locator('#account-private-email').inner_text()=='premium-owner@example.test'
@@ -41,7 +43,7 @@ def run_batch5_tests(browser,base,route_map):
     nav('profile');assert '@example.test' not in page.locator('#screen-profile').inner_text()
     done('live display-name propagation; email visible only in Account settings')
     page.click('#profile-logout');register(page,'premium-recipient@example.test')
-    page.click('#profile-logout');click_action(page,'#account-btn')
+    nav('profile');page.click('#profile-logout');click_action(page,'#account-btn')
     page.select_option('#auth-mode','login');page.fill('#auth-email','premium-owner@example.test');page.fill('#auth-password','fixture-password');page.click('#auth-submit')
     page.wait_for_function('document.querySelector("#auth-status").textContent.includes("profile is ready")');page.click('#account-close')
     open_garage(page);add_vehicle(page,'Desert Runner','motorcycle');
@@ -136,7 +138,7 @@ def run_batch5_tests(browser,base,route_map):
     }''')
     done('200% text and reduced-motion layout')
     # Account changes clear owned overview data; no previous-user content is retained.
-    page.click('#profile-logout');page.wait_for_function('document.querySelector("#start-overlay").dataset.screen==="home"')
+    page.click('#profile-logout');page.wait_for_function('document.querySelector("#start-overlay").dataset.screen==="landing"')
     assert 'Vera West' not in page.locator('#home-title').inner_text()
     assert page.locator('#home-upcoming .event-card').count()==0 and page.locator('#home-clubs .community-card').count()==0
     assert not errors,errors

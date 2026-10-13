@@ -5,6 +5,8 @@ Batch 6B milestone 0 audit/design is complete; implementation and tests follow t
 sequential plan in [BATCH_6B_RESULT.md](BATCH_6B_RESULT.md). New scope replaces the
 earlier account-recovery proposal without removing future account requirements.
 No production data, settings or deployments are changed by this local batch.
+Batch 6B milestone 1 landing is implemented and locally verified: six landing
+cases, existing Group/invitation and Batch 5 regressions, and Pages checks pass.
 
 ## Batch 6A local status
 

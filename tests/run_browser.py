@@ -58,6 +58,10 @@ def run():
             from batch6a_browser import run_batch6a_tests
             run_batch6a_tests(browser,base,route_map)
             browser.close();server.shutdown();return
+        if '--batch6b-only' in sys.argv:
+            from batch6b_browser import run_batch6b_tests
+            run_batch6b_tests(browser,base,route_map)
+            browser.close();server.shutdown();return
         if '--groups-only' in sys.argv:
             from groups_browser import run_group_tests
             run_group_tests(browser,base,route_map)
@@ -186,7 +190,10 @@ def run():
             assert page.locator('#theme-btn').inner_text() == 'Theme: Normal'
             page.reload(wait_until='networkidle')
             page.wait_for_function('document.body.dataset.ready === "true"')
-            assert page.evaluate('window.__geo.active') == 1, 'Active recording must restore after authoritative load'
+            assert page.evaluate('window.__geo.active') == 0, 'Anonymous landing never starts GPS on refresh'
+            assert page.locator('#screen-landing').is_visible()
+            click_action(page, '#resume-session-btn')
+            assert page.evaluate('window.__geo.active') == 1, 'Explicit guest Resume restores the owned recording'
             assert not page.locator('#start-overlay').is_visible()
             assert page.locator('#heading-btn').inner_text() == 'Direction: heading-up', 'Heading preference survives refresh'
             page.click('#heading-btn')
