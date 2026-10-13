@@ -9,6 +9,10 @@ Batch 6B milestone 1 landing is implemented and locally verified: six landing
 cases, existing Group/invitation and Batch 5 regressions, and Pages checks pass.
 Milestone 2 public-profile foundation is implemented locally; 44 new emulator
 security assertions, identity/previous security regressions and profile routes pass.
+Milestone 3 showcase is implemented locally: explicit consent, separate public
+description, bounded cards, Garage synchronization and Rules-enforced privacy/
+deletion/incarnation gates. 81 cumulative new emulator assertions and nine browser
+cases pass, with original Garage/navigation regressions preserved.
 
 ## Batch 6A local status
 

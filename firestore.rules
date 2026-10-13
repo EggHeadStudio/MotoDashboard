@@ -103,6 +103,68 @@ service cloud.firestore {
         && publicProjection(request.resource.data,request.auth.uid,id);
     }
     // Display names are discoverable within the signed-in app; private profiles stay private.
+    function showcaseShape(data, id) {
+      return data.keys().hasAll(['id','nickname','manufacturer','model','modelYear','category','publicDescription','createdAt','updatedAt'])
+        && data.keys().hasOnly(['id','nickname','manufacturer','model','modelYear','category','publicDescription','createdAt','updatedAt'])
+        && publicAlias(id) && data.id == id && shortText(data.nickname,64) && data.nickname.size() > 0
+        && shortText(data.manufacturer,64) && shortText(data.model,64) && category(data.category)
+        && (data.modelYear == null || data.modelYear is int && data.modelYear >= 1885 && data.modelYear <= request.time.year() + 1)
+        && shortText(data.publicDescription,500) && data.createdAt is timestamp && data.updatedAt is timestamp;
+    }
+    function showcaseAvailable(profile, id) {
+      let uid = profileOwner(profile);
+      let mapping = get(/databases/$(database)/documents/profileOwners/$(profile)/vehicles/$(id)).data;
+      let source = get(/databases/$(database)/documents/users/$(uid)/vehicles/$(mapping.sourceVehicleId)).data;
+      let explicit = get(/databases/$(database)/documents/users/$(uid)/showcaseRefs/$(mapping.sourceVehicleId)).data;
+      return publicProfileAvailable(profile) && source.visibility == 'public' && source.createdAt == mapping.sourceCreatedAt
+        && explicit.profileId == profile && explicit.publicId == id
+        && id in get(/databases/$(database)/documents/users/$(uid)/preferences/publicProfile).data.vehicleIds;
+    }
+    function showcaseWrite(profile, id, data) {
+      let uid = request.auth.uid;
+      let mapping = getAfter(/databases/$(database)/documents/profileOwners/$(profile)/vehicles/$(id)).data;
+      let source = getAfter(/databases/$(database)/documents/users/$(uid)/vehicles/$(mapping.sourceVehicleId)).data;
+      let explicit = getAfter(/databases/$(database)/documents/users/$(uid)/showcaseRefs/$(mapping.sourceVehicleId)).data;
+      let prefs = getAfter(/databases/$(database)/documents/users/$(uid)/preferences/publicProfile).data;
+      return getAfter(/databases/$(database)/documents/profileOwners/$(profile)).data.ownerUid == uid
+        && prefs.publicId == profile && prefs.state == 'active' && id in prefs.vehicleIds
+        && explicit.profileId == profile && explicit.publicId == id && source.visibility == 'public' && source.createdAt == mapping.sourceCreatedAt
+        && data.nickname == source.nickname && data.manufacturer == source.manufacturer && data.model == source.model
+        && data.modelYear == source.modelYear && data.category == source.category
+        && showcaseShape(data,id) && data.updatedAt == request.time;
+    }
+    match /profileOwners/{profile}/vehicles/{id} {
+      allow get: if owns(profileOwner(profile));
+      allow list: if false;
+      allow create: if owns(profileOwner(profile)) && publicAlias(id)
+        && request.resource.data.keys().hasAll(['sourceVehicleId','sourceCreatedAt','createdAt']) && request.resource.data.keys().hasOnly(['sourceVehicleId','sourceCreatedAt','createdAt'])
+        && identifier(request.resource.data.sourceVehicleId) && request.resource.data.createdAt == request.time
+        && request.resource.data.sourceCreatedAt == getAfter(/databases/$(database)/documents/users/$(request.auth.uid)/vehicles/$(request.resource.data.sourceVehicleId)).data.createdAt
+        && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)/showcaseRefs/$(request.resource.data.sourceVehicleId)).data.publicId == id
+        && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)/showcaseRefs/$(request.resource.data.sourceVehicleId)).data.profileId == profile;
+      allow update: if false;
+      allow delete: if owns(profileOwner(profile));
+    }
+    match /users/{uid}/showcaseRefs/{vehicleId} {
+      allow get: if owns(uid);
+      allow list: if false;
+      allow create: if owns(uid) && identifier(vehicleId)
+        && request.resource.data.keys().hasAll(['profileId','publicId','createdAt']) && request.resource.data.keys().hasOnly(['profileId','publicId','createdAt'])
+        && publicAlias(request.resource.data.profileId) && publicAlias(request.resource.data.publicId) && request.resource.data.createdAt == request.time
+        && getAfter(/databases/$(database)/documents/profileOwners/$(request.resource.data.profileId)).data.ownerUid == uid
+        && getAfter(/databases/$(database)/documents/profileOwners/$(request.resource.data.profileId)/vehicles/$(request.resource.data.publicId)).data.sourceVehicleId == vehicleId
+        && getAfter(/databases/$(database)/documents/users/$(uid)/vehicles/$(vehicleId)).data.visibility == 'public';
+      allow update: if false;
+      allow delete: if owns(uid);
+    }
+    match /publicProfiles/{profile}/vehicles/{id} {
+      allow get: if (owns(profileOwner(profile)) && (!exists(/databases/$(database)/documents/publicProfiles/$(profile)/vehicles/$(id)) || showcaseShape(resource.data,id)))
+        || (showcaseShape(resource.data,id) && showcaseAvailable(profile,id));
+      allow list: if false;
+      allow create: if signedIn() && showcaseWrite(profile,id,request.resource.data) && request.resource.data.createdAt == request.time;
+      allow update: if signedIn() && showcaseWrite(profile,id,request.resource.data) && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if owns(profileOwner(profile));
+    }
     match /displayProfiles/{uid} {
       allow get: if signedIn() && (!exists(/databases/$(database)/documents/displayProfiles/$(uid))
         || resource.data.keys().hasOnly(['displayName', 'updatedAt','publicProfileId']));

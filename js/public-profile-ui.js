@@ -5,6 +5,7 @@ import {element,labelText,button,dialog,openView,runAction,field} from './ui/for
 import {navigate} from './ui/navigation.js';
 import {dataErrorMessage} from './firebase/access.js';
 import {t,onLanguageChange,setLocalizedText} from './i18n/i18n.js';
+import {vehicleIcon} from './ui/icons.js';
 
 let epoch=0,loaded=null;
 export function publicProfileLink(identity,className='text-button') {
@@ -29,6 +30,18 @@ export function initPublicProfiles() {
       const hero=element('div','public-profile-hero'),avatar=element('div','large-avatar',p.displayName.trim().slice(0,2).toLocaleUpperCase());avatar.setAttribute('aria-hidden','true');
       hero.append(avatar,element('h1','',p.displayName));if(p.bio)hero.append(element('p','public-bio',p.bio));
       if(p.category)hero.append(labelText(element('p','category-chip'),'category.'+p.category));screen.append(hero);
+      const garage=element('section');garage.append(labelText(element('h2'),'showcase.title'));
+      const grid=element('div','card-grid');
+      const vehicles=[...loaded.vehicles].sort((a,b)=>(b.id===p.featuredVehicle)-(a.id===p.featuredVehicle));
+      for(const vehicle of vehicles){
+        const card=element('article','feature-card vehicle-card'),art=element('div','vehicle-art');art.append(vehicleIcon(vehicle.category));
+        const info=element('div','vehicle-info');info.append(element('h3','',vehicle.nickname));
+        if(vehicle.id===p.featuredVehicle)info.append(labelText(element('p','badge'),'showcase.featured'));
+        info.append(labelText(element('p','muted'),'category.'+vehicle.category),element('p','',[vehicle.manufacturer,vehicle.model,vehicle.modelYear].filter(Boolean).join(' ')));
+        if(vehicle.publicDescription)info.append(element('p','public-bio',vehicle.publicDescription));card.append(art,info);grid.append(card);
+      }
+      if(!vehicles.length)grid.append(labelText(element('p','muted'),'showcase.empty'));garage.append(grid);screen.append(garage);
+      if(loaded.partial)screen.append(labelText(element('p','muted'),'showcase.partial'));
     }
     screen.append(button('publicProfile.back',()=>navigate(getAccount()?'home':'landing')));
   }
@@ -52,7 +65,7 @@ export function initPublicProfiles() {
     }catch(error){if(getAccount()?.uid===uid)setLocalizedText(view.status,()=>dataErrorMessage(error));}
   }
   addEventListener('hashchange',()=>void resolve());
-  onAccountChange(()=>{epoch++;loaded=null;screen.replaceChildren();document.getElementById('public-profile-editor')?.close();if(location.hash.startsWith('#/rider/'))void resolve();});
+  let owner;
+  onAccountChange(({user})=>{const next=user?.uid || null;if(next===owner)return;owner=next;epoch++;loaded=null;screen.replaceChildren();document.getElementById('public-profile-editor')?.close();if(location.hash.startsWith('#/rider/'))void resolve();});
   onLanguageChange(()=>{if(location.hash.startsWith('#/rider/'))render();});
-  if(location.hash.startsWith('#/rider/'))void resolve();
 }

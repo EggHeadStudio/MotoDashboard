@@ -1,5 +1,6 @@
 import { ownDatabase, boundedRequest, dataError } from './access.js';
 import { vehicleInput, validId } from '../data/schema.js';
+import {prepareShowcaseChange} from './publicProfileRepository.js';
 
 export async function loadGarage(uid) {
   const service = await ownDatabase(uid, 'garage-load');
@@ -21,9 +22,11 @@ export async function saveVehicle(uid, id, input) {
     service.assertCurrent();
     const ref = sdk.doc(db, 'users', uid, 'vehicles', vehicleId);
     const existing = await transaction.get(ref);
+    const showcase=await prepareShowcaseChange(transaction,{...service,uid},vehicleId);
     if (id && (!existing.exists() || existing.data().ownerUid !== uid)) throw dataError('permission-denied');
-    transaction.set(ref, { id: vehicleId, ownerUid: uid, ...data,
-      createdAt: existing.exists() ? existing.data().createdAt : sdk.serverTimestamp(), updatedAt: sdk.serverTimestamp() });
+    const record={ id: vehicleId, ownerUid: uid, ...data,
+      createdAt: existing.exists() ? existing.data().createdAt : sdk.serverTimestamp(), updatedAt: sdk.serverTimestamp() };
+    transaction.set(ref,record);showcase(record);
   }));
   service.assertCurrent(); return vehicleId;
 }
@@ -48,10 +51,12 @@ export async function deleteVehicle(uid, id) {
     const ref = sdk.doc(db, 'users', uid, 'vehicles', id);
     const prefRef = sdk.doc(db, 'users', uid, 'preferences', 'garage');
     const [vehicle, pref] = await Promise.all([transaction.get(ref), transaction.get(prefRef)]);
+    const showcase=await prepareShowcaseChange(transaction,{...service,uid},id);
     if (!vehicle.exists() || vehicle.data().ownerUid !== uid) throw dataError('permission-denied');
     if (pref.exists() && pref.data().defaultVehicleId === id)
       transaction.set(prefRef, { defaultVehicleId: null, updatedAt: sdk.serverTimestamp() });
     transaction.delete(ref);
+    showcase(null);
   }));
   service.assertCurrent();
 }

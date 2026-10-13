@@ -5,6 +5,7 @@ import { loadGarage, saveVehicle, deleteVehicle, defaultVehicle } from './fireba
 import { dataErrorKey } from './firebase/access.js';
 import { openView, dialog, element, button, field, labelText, runAction } from './ui/forms.js';
 import { vehicleIcon } from './ui/icons.js';
+import {loadVehicleShowcase,publishShowcaseVehicle,unpublishShowcaseVehicle} from './firebase/publicProfileRepository.js';
 
 const listeners = new Set();
 let state = { uid: null, vehicles: [], defaultVehicleId: null, selectedId: null, ready: false };
@@ -16,6 +17,24 @@ export function initGarageUI() {
   const view = dialog('garage-dialog', 'garage.title');
   const choose = document.getElementById('garage-btn');
   let editing = false;
+  async function showcase(vehicle) {
+    const uid=getAccount()?.uid;if(!uid)return;
+    const editor=dialog('showcase-editor','showcase.options');openView(editor.node);
+    editor.node.addEventListener('close',()=>{editor.node.remove();if(current(uid)){render();openView(view.node);}},{once:true});
+    labelText(editor.status,'common.loading');
+    try {
+      const card=await loadVehicleShowcase(uid,vehicle.id);if(!current(uid)||!editor.node.open)return;
+      editor.status.textContent='';editor.body.append(element('h3','',vehicle.nickname),labelText(element('p','muted'),'showcase.hint'));
+      const form=element('form');form.id='showcase-form';
+      const description=field(form,'description','showcase.description',{multiline:true,max:500,value:card?.publicDescription || ''});
+      const consent=field(form,'consent','showcase.consent',{type:'checkbox',required:true});
+      const save=button('showcase.publish');save.type='submit';form.append(save);
+      form.addEventListener('submit',event=>{event.preventDefault();if(!form.reportValidity()||!consent.checked)return;
+        void runAction(form,editor.status,async()=>{await publishShowcaseVehicle(uid,vehicle.id,description.value);if(current(uid)){await refresh();editor.node.close();}});
+      });editor.body.append(form);
+      if(card)editor.body.append(button('showcase.remove',()=>void runAction(editor.body,editor.status,async()=>{await unpublishShowcaseVehicle(uid,vehicle.id);if(current(uid))editor.node.close();}),'showcase-remove'));
+    }catch(error){if(current(uid))labelText(editor.status,dataErrorKey(error));}
+  }
   const current = uid => getAccount()?.uid === uid && state.uid === uid;
   async function refresh() {
     const uid = getAccount()?.uid;
@@ -67,6 +86,7 @@ export function initGarageUI() {
       controls.append(button('garage.choose', () => { state.selectedId = vehicle.id; publish(); render(); view.node.close(); }),
         button('garage.makeDefault', () => action(uid => defaultVehicle(uid,vehicle.id))),
         button('common.edit', () => edit(vehicle)),
+        button('showcase.options',()=>void showcase(vehicle)),
         button('common.delete', () => { if (confirm(t('garage.deleteConfirm'))) action(uid => deleteVehicle(uid,vehicle.id)); }));
       info.append(controls);card.append(art,info); view.body.append(card);
     }
@@ -77,6 +97,7 @@ export function initGarageUI() {
     if (getAccount()) action(() => Promise.resolve());
   });
   onAccountChange(({user}) => {
+    if(state.uid && state.uid!==user?.uid)document.getElementById('showcase-editor')?.close();
     if ((user?.uid || null) === state.uid) return;
     ++version; state = {uid:user?.uid || null,vehicles:[],defaultVehicleId:null,selectedId:null,ready:false};
     publish(); labelText(view.status, user ? 'common.loading' : 'data.signIn'); render();

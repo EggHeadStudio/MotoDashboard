@@ -1,5 +1,12 @@
 export const batch6b={
   en:{
+    'showcase.title':'Garage showcase','showcase.featured':'Featured vehicle','showcase.empty':'No vehicles published.',
+    'showcase.partial':'Some showcase cards could not be loaded. Refresh to try again.',
+    'showcase.options':'Showcase options','showcase.description':'Public description (optional)',
+    'showcase.hint':'Private Garage notes are never copied. Choose public text here. Your profile must also be Public for others to see this card.',
+    'showcase.consent':'Publish this vehicle card and set this vehicle’s visibility to Public.',
+    'showcase.publish':'Publish / update card','showcase.remove':'Remove from showcase',
+    'showcase.limit':'This prototype supports up to four showcase cards. Remove one before adding another. This is a read/payload bound, not a subscription restriction.',
     'publicProfile.title':'Rider profile','publicProfile.settings':'Public profile settings','publicProfile.visibility':'Profile visibility',
     'publicProfile.privacy':'Private by default. Publishing shares only your chosen presentation and showcase, never your email, private rides or location.',
     'publicProfile.view':'View public profile','publicProfile.unavailable':'Profile unavailable',
@@ -23,6 +30,13 @@ export const batch6b={
     'landing.back':'Back to MotoDash','landing.local':'Local ride history','landing.guestHome':'Guest dashboard',
   },
   fi:{
+    'showcase.title':'Autotallin esittely','showcase.featured':'Esittelyajoneuvo','showcase.empty':'Ei julkaistuja ajoneuvoja.',
+    'showcase.partial':'Osa esittelykorteista ei latautunut. Yritä päivittämällä uudelleen.',
+    'showcase.options':'Esittelyasetukset','showcase.description':'Julkinen kuvaus (valinnainen)',
+    'showcase.hint':'Yksityisiä autotallimerkintöjä ei kopioida. Kirjoita julkinen teksti tähän. Myös profiilin on oltava julkinen, jotta muut näkevät kortin.',
+    'showcase.consent':'Julkaise tämä ajoneuvokortti ja aseta tämän ajoneuvon näkyvyydeksi Julkinen.',
+    'showcase.publish':'Julkaise / päivitä kortti','showcase.remove':'Poista esittelystä',
+    'showcase.limit':'Prototyyppi tukee enintään neljää esittelykorttia. Poista yksi ennen uuden lisäämistä. Tämä rajaa lukumäärää ja tietojen kokoa, ei tilausta.',
     'publicProfile.title':'Käyttäjäprofiili','publicProfile.settings':'Julkisen profiilin asetukset','publicProfile.visibility':'Profiilin näkyvyys',
     'publicProfile.privacy':'Oletuksena yksityinen. Julkaiseminen jakaa vain valitsemasi esittelyn ja ajoneuvot, ei sähköpostia, yksityisiä ajoja tai sijaintia.',
     'publicProfile.view':'Näytä julkinen profiili','publicProfile.unavailable':'Profiili ei ole saatavilla',

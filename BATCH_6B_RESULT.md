@@ -81,7 +81,7 @@ cannot retract content already downloaded. No claim of production testing is mad
 
 ## Progress
 
-Milestones 0–2 complete locally. Milestones 3–8 pending.
+Milestones 0–3 complete locally. Milestones 4–8 pending.
 
 ### Milestone 1 — landing
 
@@ -107,3 +107,18 @@ Checks: 44 new actual-emulator assertions and 32 identity assertions pass; origi
 private/Club/Group security and six Group browser regression groups pass. Seven
 Batch 6B browser cases pass, including explicit publishing and refreshed profile
 routes. Browser fixtures do not prove permissions; emulator denials do.
+
+### Milestone 3 — explicit Garage showcase
+
+Separate public-description form and required vehicle opt-in; up to four bounded
+cards with silhouettes and one featured selection. Private descriptions, source
+IDs and ownership never enter cards. Existing public preferences do not publish.
+Garage edits synchronize an opted-in safe card; private/Club visibility, deletion
+or unpublishing removes its reference/card. Rules independently deny retained cards
+if the source is private/missing, the profile is private/retired or the original
+vehicle incarnation no longer matches. No paid tier is enforced; Free/Rider
+capability concepts are future design only, not client-issued entitlements.
+
+Checks: 81 cumulative new emulator assertions, 102 original assertions, nine
+Batch 6B browser cases and 20 Batch 5 regressions pass. Missing-card transaction
+reads are explicitly tested in the actual emulator as well as publication writes.

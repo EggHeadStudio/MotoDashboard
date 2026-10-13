@@ -9,7 +9,7 @@ def compile_rules():
     urllib.request.urlopen(urllib.request.Request('http://127.0.0.1:8185/emulator/v1/projects/demo-motodash:securityRules',data=payload,headers={'Content-Type':'application/json'},method='PUT'),timeout=30).read()
 
 def settings(id,**values):
-    return dict(publicId=id,state='active',visibility='private',bio='',category=None,accent='gold',banner='road',featuredVehicle=None,vehicleIds=[],affiliationIds=[],updatedAt=r.SERVER,**values)
+    return {**dict(publicId=id,state='active',visibility='private',bio='',category=None,accent='gold',banner='road',featuredVehicle=None,vehicleIds=[],affiliationIds=[],updatedAt=r.SERVER),**values}
 
 def projection(p,name='Rider alice'):
     return {**{k:p[k] for k in ['bio','category','accent','banner','featuredVehicle','vehicleIds','affiliationIds','updatedAt']},'id':p['publicId'],'displayName':name}
@@ -44,6 +44,39 @@ def run():
     # Private wins without deleting a retained public document.
     p['visibility']='private';r.commit('alice',save('alice',p));r.read(None,'publicProfiles/'+id,False)
     p['visibility']='public';r.commit('alice',save('alice',p));r.read(None,'publicProfiles/'+id)
+    # Explicit publishing uses a safe card, two private mappings and current source proof.
+    source=dict(id='bike',ownerUid='alice',nickname='Desert Runner',manufacturer='Yamaha',model='MT-09',modelYear=2025,category='motorcycle',description='PRIVATE HOME NOTES',visibility='public',createdAt=r.SERVER,updatedAt=r.SERVER)
+    r.commit('alice',[r.update('users/alice/vehicles/bike',source)])
+    source_fields=r.read('alice','users/alice/vehicles/bike');created=source_fields['createdAt']
+    vid=str(uuid.uuid4());p.update(vehicleIds=[vid],featuredVehicle=vid)
+    card=dict(id=vid,nickname=source['nickname'],manufacturer=source['manufacturer'],model=source['model'],modelYear=2025,category='motorcycle',publicDescription='Weekend road companion',createdAt=r.SERVER,updatedAt=r.SERVER)
+    mapping=r.update(f'profileOwners/{id}/vehicles/{vid}',dict(sourceVehicleId='bike',sourceCreatedAt=(created['timestampValue'],),createdAt=r.SERVER))
+    ref=r.update('users/alice/showcaseRefs/bike',dict(profileId=id,publicId=vid,createdAt=r.SERVER))
+    child=f'publicProfiles/{id}/vehicles/{vid}'
+    code,_=r.request('GET','/'+child,'alice');assert code==404,'Owner transaction must be able to read an unpublished card';r.checks+=1
+    r.read(None,child,False)
+    r.commit('alice',[r.update(child,card),*save('alice',p)],False)
+    r.commit('alice',[mapping,ref,r.update(child,card),*save('alice',p)])
+    fields=r.read(None,child);r.read('bob',child);r.read('bob','users/alice/vehicles/bike',False)
+    assert 'description' not in fields and 'ownerUid' not in fields and 'sourceVehicleId' not in fields
+    r.read(None,f'profileOwners/{id}/vehicles/{vid}',False);r.read('bob','users/alice/showcaseRefs/bike',False)
+    r.query(None,'publicProfiles/'+id,'vehicles',False)
+    for field,value in [('ownerUid','alice'),('vehicleId','bike'),('description','PRIVATE'),('photo','https://invalid.test'),('entitlements',{'paid':True})]:
+        r.commit('alice',[r.update(child,{**card,field:value})],False)
+    r.commit('bob',[r.update(child,card)],False)
+    r.commit('alice',[r.update(child,{**card,'nickname':'Forged'})],False)
+    r.commit('alice',[r.update(child,{**card,'category':'car'})],False)
+    p['visibility']='private';r.commit('alice',save('alice',p));r.read(None,child,False)
+    p['visibility']='public';r.commit('alice',save('alice',p));r.read(None,child)
+    # A malicious owner bypassing UI cleanup still cannot keep a private source publicly readable.
+    r.commit('alice',[r.raw_update('users/alice/vehicles/bike',source_fields,{'visibility':'private','updatedAt':r.SERVER})]);r.read(None,child,False)
+    current=r.read('alice','users/alice/vehicles/bike');r.commit('alice',[r.raw_update('users/alice/vehicles/bike',current,{'visibility':'public','updatedAt':r.SERVER})]);r.read(None,child)
+    r.commit('alice',[r.delete('users/alice/vehicles/bike')]);r.read(None,child,False)
+    r.commit('alice',[r.update('users/alice/vehicles/bike',source)]);r.read(None,child,False) # same path, new source incarnation
+    # Unpublishing removes the opaque alias from parent reads; extra/duplicate aliases denied.
+    r.commit('alice',save('alice',{**p,'vehicleIds':[vid,vid]}),False)
+    r.commit('alice',save('alice',{**p,'vehicleIds':[str(uuid.uuid4()) for _ in range(5)],'featuredVehicle':None}),False)
+    p.update(vehicleIds=[],featuredVehicle=None);r.commit('alice',save('alice',p));r.read(None,child,False)
     # Alias cannot be replaced, reused by another user or reactivated after retirement.
     other=settings(str(uuid.uuid4()));r.commit('alice',[r.update('profileOwners/'+other['publicId'],dict(ownerUid='alice',createdAt=r.SERVER)),*save('alice',other)],False)
     p.update(state='retired',visibility='private');r.commit('alice',[r.update('users/alice/preferences/publicProfile',p)])

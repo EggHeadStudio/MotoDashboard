@@ -1,6 +1,6 @@
 """Batch 6B browser fixtures; no live Firebase/Worker or physical-device claim."""
 from firebase_mocks import install
-from batch2_browser import register
+from batch2_browser import register,open_garage,add_vehicle
 
 def run_batch6b_tests(browser,base,route_map):
     context=browser.new_context(viewport={'width':320,'height':568},reduced_motion='reduce')
@@ -39,12 +39,34 @@ def run_batch6b_tests(browser,base,route_map):
     alias=page.evaluate('JSON.parse(localStorage.getItem("__mockProfiles"))["users/fixture-0/preferences/publicProfile"].publicId')
     public=page.evaluate('(id)=>JSON.parse(localStorage.getItem("__mockProfiles"))["publicProfiles/"+id]',alias)
     assert not any(key in public for key in ['uid','ownerUid','email','location','technicalRole'])
+    open_garage(page);add_vehicle(page,'Showcase Bike','motorcycle');add_vehicle(page,'Private Car','car')
+    card=page.locator('.vehicle-card').filter(has=page.get_by_role('heading',name='Showcase Bike',exact=True))
+    card.get_by_role('button',name='Showcase options',exact=True).click();page.wait_for_selector('#showcase-form')
+    assert page.locator('#showcase-form-description').input_value()==''
+    page.fill('#showcase-form-description','Sunday road companion');page.check('#showcase-form-consent');page.locator('#showcase-form button[type=submit]').click()
+    page.wait_for_function('!document.getElementById("showcase-editor")');page.keyboard.press('Escape')
+    print('PASS: Batch 6B: explicit vehicle consent and separately entered public description; other Garage vehicles remain private')
     page.goto(base+'#/rider/'+alias,wait_until='networkidle');page.wait_for_selector('#screen-rider h1')
     assert page.locator('#screen-rider h1').inner_text()=='Garage Rider'
+    assert page.locator('#screen-rider .vehicle-card').count()==1
+    assert 'Showcase Bike' in page.locator('#screen-rider').inner_text() and 'Private Car' not in page.locator('#screen-rider').inner_text()
     assert '@' not in page.locator('#screen-rider').inner_text()
     page.reload(wait_until='networkidle');page.wait_for_selector('#screen-rider h1')
     assert page.locator('#screen-rider h1').inner_text()=='Garage Rider'
     print('PASS: Batch 6B: explicit profile publishing, safe projection and stable refreshed Pages profile route')
+    open_garage(page);page.wait_for_selector('#garage-dialog .vehicle-card')
+    card=page.locator('#garage-dialog .vehicle-card').filter(has=page.get_by_role('heading',name='Showcase Bike',exact=True))
+    card.get_by_role('button',name='Edit',exact=True).click();page.fill('#vehicle-form-nickname','Updated Bike');page.locator('#vehicle-form button[type=submit]').click()
+    page.wait_for_selector('#garage-add');page.keyboard.press('Escape')
+    page.goto(base+'#/rider/'+alias,wait_until='networkidle');page.wait_for_selector('#screen-rider .vehicle-card')
+    assert 'Updated Bike' in page.locator('#screen-rider').inner_text()
+    page.on('dialog',lambda d:d.accept())
+    open_garage(page);page.wait_for_selector('#garage-dialog .vehicle-card')
+    card=page.locator('#garage-dialog .vehicle-card').filter(has=page.get_by_role('heading',name='Updated Bike',exact=True))
+    card.get_by_role('button',name='Delete',exact=True).click();page.wait_for_function('!document.querySelector("#garage-dialog").textContent.includes("Updated Bike")');page.keyboard.press('Escape')
+    page.goto(base+'#/rider/'+alias,wait_until='networkidle');page.wait_for_selector('#screen-rider h1')
+    assert page.locator('#screen-rider .vehicle-card').count()==0
+    print('PASS: Batch 6B: Garage edit synchronizes the safe card; deletion removes showcase and featured reference')
     page.locator('#bottom-nav [data-destination=profile]').click();page.click('#profile-logout')
     page.wait_for_selector('#screen-landing');assert page.locator('#bottom-nav').is_hidden()
     print('PASS: Batch 6B: account entry and logout restore the correct shell without recording')
