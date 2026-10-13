@@ -10,6 +10,7 @@ import { riderMoving, onRiderMotion } from './rider-motion.js';
 import { RIDER_STATUSES, currentInviteToken, setRouteInvite, sessionURL } from './data/group-session.js';
 import { renderGroupOverview } from './ui/group-overview.js';
 import {liveClient} from './live/live-client.js';
+import {publicProfileLink} from './public-profile-ui.js';
 
 export function initGroupParticipantsUI() {
   onRiderMotion(moving=>{
@@ -80,7 +81,7 @@ export function initGroupParticipantsUI() {
           const card=element('article','feature-card');card.dataset.participantUid=member.uid;
           const name=element('strong','participant-name',names.get(member.uid)?.displayName);if(!name.textContent) labelText(name,'identity.member');
           const avatar=element('span','profile-avatar','●');avatar.setAttribute('aria-hidden','true');
-          const row=element('div','member-identity');row.append(avatar,name);card.append(row);
+          const row=element('div','member-identity');row.append(avatar,publicProfileLink(names.get(member.uid),'participant-name') || name);card.append(row);
           if(member.vehicle) card.append(element('p','',member.vehicle.nickname),labelText(element('p'),'category.'+member.vehicle.category));
           if(member.clubIdentity) {
             card.append(element('p','',member.clubIdentity.name));

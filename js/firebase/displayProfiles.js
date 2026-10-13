@@ -16,7 +16,8 @@ export async function loadDisplayProfiles(uid, targets) {
     if (data === undefined) {
       const record = await s.sdk.getDoc(s.sdk.doc(s.db, 'displayProfiles', target));
       s.assertCurrent();
-      data = record.exists() ? { displayName: record.data().displayName } : null;
+      data = record.exists() ? { displayName: record.data().displayName,publicProfileId:record.data().publicProfileId || null } : null;
+      if(cache.size>=200)cache.delete(cache.keys().next().value);
       if (owner === expectedOwner) cache.set(target, {data, expires: Date.now() + 60000});
     }
     result.set(target, data);

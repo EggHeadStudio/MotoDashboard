@@ -35,15 +35,88 @@ service cloud.firestore {
       allow delete: if false;
     }
     function signedIn() { return request.auth != null; }
+    // Public aliases are presentation handles, never Firebase identities or bearer permissions.
+    function publicAlias(id) { return id is string && id.matches('^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'); }
+    function publicIds(ids, max) {
+      return ids is list && ids.size() <= max && ids.toSet().size() == ids.size()
+        && (ids.size() < 1 || publicAlias(ids[0])) && (ids.size() < 2 || publicAlias(ids[1]))
+        && (ids.size() < 3 || publicAlias(ids[2])) && (ids.size() < 4 || publicAlias(ids[3]));
+    }
+    function publicSettings(data) {
+      return data.keys().hasAll(['publicId','state','visibility','bio','category','accent','banner','featuredVehicle','vehicleIds','affiliationIds','updatedAt'])
+        && data.keys().hasOnly(['publicId','state','visibility','bio','category','accent','banner','featuredVehicle','vehicleIds','affiliationIds','updatedAt'])
+        && publicAlias(data.publicId) && data.state in ['active','retired'] && data.visibility in ['private','public']
+        && shortText(data.bio,300) && (data.category == null || category(data.category))
+        && data.accent in ['gold','ocean','forest','rose'] && data.banner in ['road','horizon','grid']
+        && publicIds(data.vehicleIds,4) && publicIds(data.affiliationIds,2)
+        && (data.featuredVehicle == null || data.featuredVehicle in data.vehicleIds)
+        && data.updatedAt == request.time;
+    }
+    function publicProfileShape(data, id) {
+      return data.keys().hasAll(['id','displayName','bio','category','accent','banner','featuredVehicle','vehicleIds','affiliationIds','updatedAt'])
+        && data.keys().hasOnly(['id','displayName','bio','category','accent','banner','featuredVehicle','vehicleIds','affiliationIds','updatedAt'])
+        && data.id == id && publicAlias(id) && shortText(data.displayName,64) && data.displayName.size() > 0
+        && shortText(data.bio,300) && (data.category == null || category(data.category))
+        && data.accent in ['gold','ocean','forest','rose'] && data.banner in ['road','horizon','grid']
+        && publicIds(data.vehicleIds,4) && publicIds(data.affiliationIds,2)
+        && (data.featuredVehicle == null || data.featuredVehicle in data.vehicleIds) && data.updatedAt is timestamp;
+    }
+    function publicProjection(data, uid, id) {
+      let prefs = getAfter(/databases/$(database)/documents/users/$(uid)/preferences/publicProfile).data;
+      return publicProfileShape(data,id) && prefs.publicId == id && prefs.state == 'active'
+        && data.displayName == getAfter(/databases/$(database)/documents/users/$(uid)).data.displayName
+        && data.bio == prefs.bio && data.category == prefs.category && data.accent == prefs.accent && data.banner == prefs.banner
+        && data.featuredVehicle == prefs.featuredVehicle && data.vehicleIds == prefs.vehicleIds && data.affiliationIds == prefs.affiliationIds
+        && data.updatedAt == request.time;
+    }
+    function profileOwner(id) { return get(/databases/$(database)/documents/profileOwners/$(id)).data.ownerUid; }
+    function publicProfileAvailable(id) {
+      let uid = profileOwner(id);
+      let prefs = get(/databases/$(database)/documents/users/$(uid)/preferences/publicProfile).data;
+      return publicAlias(id) && prefs.publicId == id && prefs.state == 'active' && prefs.visibility == 'public';
+    }
+    match /profileOwners/{id} {
+      allow get: if signedIn() && (!exists(/databases/$(database)/documents/profileOwners/$(id)) || owns(resource.data.ownerUid));
+      allow list, update, delete: if false;
+      allow create: if signedIn() && publicAlias(id)
+        && request.resource.data.keys().hasAll(['ownerUid','createdAt']) && request.resource.data.keys().hasOnly(['ownerUid','createdAt'])
+        && request.resource.data.ownerUid == request.auth.uid && request.resource.data.createdAt == request.time
+        && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)/preferences/publicProfile).data.publicId == id;
+    }
+    match /users/{uid}/preferences/publicProfile {
+      allow get: if owns(uid);
+      allow list, delete: if false;
+      allow create: if owns(uid) && publicSettings(request.resource.data) && request.resource.data.state == 'active'
+        && getAfter(/databases/$(database)/documents/profileOwners/$(request.resource.data.publicId)).data.ownerUid == uid
+        && publicProjection(getAfter(/databases/$(database)/documents/publicProfiles/$(request.resource.data.publicId)).data,uid,request.resource.data.publicId);
+      allow update: if owns(uid) && publicSettings(request.resource.data) && resource.data.state == 'active'
+        && request.resource.data.publicId == resource.data.publicId
+        && (request.resource.data.state == 'retired' && request.resource.data.visibility == 'private'
+          || request.resource.data.state == 'active'
+            && publicProjection(getAfter(/databases/$(database)/documents/publicProfiles/$(resource.data.publicId)).data,uid,resource.data.publicId));
+    }
+    match /publicProfiles/{id} {
+      allow get: if publicProfileShape(resource.data,id) && (publicProfileAvailable(id) || owns(profileOwner(id)));
+      allow list, delete: if false;
+      allow create, update: if signedIn()
+        && getAfter(/databases/$(database)/documents/profileOwners/$(id)).data.ownerUid == request.auth.uid
+        && publicProjection(request.resource.data,request.auth.uid,id);
+    }
     // Display names are discoverable within the signed-in app; private profiles stay private.
     match /displayProfiles/{uid} {
       allow get: if signedIn() && (!exists(/databases/$(database)/documents/displayProfiles/$(uid))
-        || resource.data.keys().hasOnly(['displayName', 'updatedAt']));
+        || resource.data.keys().hasOnly(['displayName', 'updatedAt','publicProfileId']));
       allow list: if signedIn() && request.query.limit != null && request.query.limit <= 30
-        && resource.data.keys().hasOnly(['displayName', 'updatedAt']);
+        && resource.data.keys().hasOnly(['displayName', 'updatedAt','publicProfileId']);
       allow create, update: if owns(uid)
         && request.resource.data.keys().hasAll(['displayName', 'updatedAt'])
-        && request.resource.data.keys().hasOnly(['displayName', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['displayName', 'updatedAt','publicProfileId'])
+        && (!('publicProfileId' in request.resource.data) || request.resource.data.publicProfileId == null
+          || (publicAlias(request.resource.data.publicProfileId)
+            && getAfter(/databases/$(database)/documents/users/$(uid)/preferences/publicProfile).data.publicId == request.resource.data.publicProfileId
+            && getAfter(/databases/$(database)/documents/users/$(uid)/preferences/publicProfile).data.visibility == 'public'
+            && getAfter(/databases/$(database)/documents/users/$(uid)/preferences/publicProfile).data.state == 'active'
+            && getAfter(/databases/$(database)/documents/profileOwners/$(request.resource.data.publicProfileId)).data.ownerUid == uid))
         && request.resource.data.displayName is string
         && request.resource.data.displayName.size() > 0 && request.resource.data.displayName.size() <= 64
         && request.resource.data.displayName == getAfter(/databases/$(database)/documents/users/$(uid)).data.displayName

@@ -81,7 +81,7 @@ cannot retract content already downloaded. No claim of production testing is mad
 
 ## Progress
 
-Milestones 0–1 complete locally. Milestones 2–8 pending.
+Milestones 0–2 complete locally. Milestones 3–8 pending.
 
 ### Milestone 1 — landing
 
@@ -94,3 +94,16 @@ Existing private invitation and notification Auth routes are preserved.
 Checks: six Batch 6B landing cases, six existing Group/invitation browser groups,
 20 Batch 5 cases and two Pages compatibility groups pass. Pages checks cover
 252 references / 77 URLs under `/MotoDashboard/`. No physical phone test.
+
+### Milestone 2 — public profile foundation
+
+Own-only preferences and permanent opaque owner reservations; strict minimal
+public projection, Public/Private defaults and irreversible retirement Rules.
+Known-ID public routes, missing/private-unavailable states, refreshed hash routes,
+optional signed-in display alias and contextual member/participant links. Private
+user schema is unchanged. Existing accounts are never auto-published.
+
+Checks: 44 new actual-emulator assertions and 32 identity assertions pass; original
+private/Club/Group security and six Group browser regression groups pass. Seven
+Batch 6B browser cases pass, including explicit publishing and refreshed profile
+routes. Browser fixtures do not prove permissions; emulator denials do.

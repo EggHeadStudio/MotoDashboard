@@ -1,6 +1,7 @@
 import { createPositionPipeline } from './position-pipeline.js';
 import { initNavigation } from './ui/navigation.js';
 import {initLanding} from './ui/landing.js';
+import {initPublicProfiles} from './public-profile-ui.js';
 import { initShell, publishRideSummary } from './ui/shell.js';
 import {confirmDashboardReturn} from './ui/host-return.js';
 import {initNotifications} from './ui/notifications.js';
@@ -100,6 +101,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       initClubBrandingUI();
       initShell();
       initNotifications();
+      initPublicProfiles();
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(registrations => Promise.all(
           registrations.filter(registration => registration.scope === new URL('./', document.baseURI).href)

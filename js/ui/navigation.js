@@ -104,7 +104,7 @@ export function initNavigation() {
     document.getElementById('home-profile').hidden=!user;
     if(!external)navigate(user?'home':'landing',{write:false,focus:false});
   });
-  queueMicrotask(() => {if (!/^#\/(?:club|session)\//.test(location.hash)) route();});
+  queueMicrotask(() => {if (!/^#\/(?:club|session|rider)\//.test(location.hash)) route();});
   // Primary navigation is unavailable while driving; the existing HUD owns the map.
   new MutationObserver(() => {
     const driving = document.getElementById('start-overlay').style.display === 'none';

@@ -32,6 +32,19 @@ def run_batch6b_tests(browser,base,route_map):
     register(page,'landing@example.test')
     assert page.locator('#screen-home').is_visible() and page.locator('#bottom-nav').is_visible()
     assert page.locator('#notifications-bell').is_visible() and page.evaluate('window.__watches')==0
+    page.locator('#bottom-nav [data-destination=profile]').click();page.click('#public-profile-edit')
+    page.wait_for_selector('#public-profile-form');assert page.locator('#public-profile-form-visibility').input_value()=='private'
+    page.select_option('#public-profile-form-visibility','public');page.locator('#public-profile-form button[type=submit]').click()
+    page.wait_for_function('!document.getElementById("public-profile-editor")')
+    alias=page.evaluate('JSON.parse(localStorage.getItem("__mockProfiles"))["users/fixture-0/preferences/publicProfile"].publicId')
+    public=page.evaluate('(id)=>JSON.parse(localStorage.getItem("__mockProfiles"))["publicProfiles/"+id]',alias)
+    assert not any(key in public for key in ['uid','ownerUid','email','location','technicalRole'])
+    page.goto(base+'#/rider/'+alias,wait_until='networkidle');page.wait_for_selector('#screen-rider h1')
+    assert page.locator('#screen-rider h1').inner_text()=='Garage Rider'
+    assert '@' not in page.locator('#screen-rider').inner_text()
+    page.reload(wait_until='networkidle');page.wait_for_selector('#screen-rider h1')
+    assert page.locator('#screen-rider h1').inner_text()=='Garage Rider'
+    print('PASS: Batch 6B: explicit profile publishing, safe projection and stable refreshed Pages profile route')
     page.locator('#bottom-nav [data-destination=profile]').click();page.click('#profile-logout')
     page.wait_for_selector('#screen-landing');assert page.locator('#bottom-nav').is_hidden()
     print('PASS: Batch 6B: account entry and logout restore the correct shell without recording')

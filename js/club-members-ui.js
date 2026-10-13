@@ -5,6 +5,7 @@ import { t } from './i18n/i18n.js';
 import { element, button, field, labelText, disclosure } from './ui/forms.js';
 import { dataErrorKey } from './firebase/access.js';
 import { loadDisplayProfiles } from './firebase/displayProfiles.js';
+import {publicProfileLink} from './public-profile-ui.js';
 
 export function initClubMembersUI() {
   registerClubSection(async ({uid,model,body,status,action,stillCurrent})=>{
@@ -57,7 +58,7 @@ export function initClubMembersUI() {
         const avatar=element('span','profile-avatar','●');avatar.setAttribute('aria-hidden','true');
         const name=element('strong','member-name',identities.get(member.uid)?.displayName);
         if(!name.textContent) labelText(name,'identity.member');
-        identity.append(avatar,name);card.append(identity);
+        identity.append(avatar,publicProfileLink(identities.get(member.uid),'member-name') || name);card.append(identity);
         card.append(labelText(element('p','member-role role-badge'),'role.'+member.technicalRole),
           rank ? element('p','member-rank',rank.name) : labelText(element('p','member-rank'),'members.unassigned'));
         if(canAssignRank(role,uid,member)) {

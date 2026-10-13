@@ -7,6 +7,8 @@ earlier account-recovery proposal without removing future account requirements.
 No production data, settings or deployments are changed by this local batch.
 Batch 6B milestone 1 landing is implemented and locally verified: six landing
 cases, existing Group/invitation and Batch 5 regressions, and Pages checks pass.
+Milestone 2 public-profile foundation is implemented locally; 44 new emulator
+security assertions, identity/previous security regressions and profile routes pass.
 
 ## Batch 6A local status
 

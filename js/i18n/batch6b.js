@@ -1,5 +1,9 @@
 export const batch6b={
   en:{
+    'publicProfile.title':'Rider profile','publicProfile.settings':'Public profile settings','publicProfile.visibility':'Profile visibility',
+    'publicProfile.privacy':'Private by default. Publishing shares only your chosen presentation and showcase, never your email, private rides or location.',
+    'publicProfile.view':'View public profile','publicProfile.unavailable':'Profile unavailable',
+    'publicProfile.unavailableHint':'This profile may be private, removed or not published.','publicProfile.back':'Back to MotoDash',
     'landing.slogan':'Your Vehicle. Your Crew. Your Ride.',
     'landing.intro':'One place for your vehicles, your community and the moments you move together.',
     'landing.signIn':'Sign in','landing.register':'Create account','landing.try':'Try the dashboard',
@@ -19,6 +23,10 @@ export const batch6b={
     'landing.back':'Back to MotoDash','landing.local':'Local ride history','landing.guestHome':'Guest dashboard',
   },
   fi:{
+    'publicProfile.title':'Käyttäjäprofiili','publicProfile.settings':'Julkisen profiilin asetukset','publicProfile.visibility':'Profiilin näkyvyys',
+    'publicProfile.privacy':'Oletuksena yksityinen. Julkaiseminen jakaa vain valitsemasi esittelyn ja ajoneuvot, ei sähköpostia, yksityisiä ajoja tai sijaintia.',
+    'publicProfile.view':'Näytä julkinen profiili','publicProfile.unavailable':'Profiili ei ole saatavilla',
+    'publicProfile.unavailableHint':'Profiili voi olla yksityinen, poistettu tai julkaisematon.','publicProfile.back':'Takaisin MotoDashiin',
     'landing.slogan':'Sinun ajoneuvosi. Sinun porukkasi. Sinun matkasi.',
     'landing.intro':'Ajoneuvosi, yhteisösi ja yhteiset matkanne samassa paikassa.',
     'landing.signIn':'Kirjaudu sisään','landing.register':'Luo tili','landing.try':'Kokeile mittaristoa',
