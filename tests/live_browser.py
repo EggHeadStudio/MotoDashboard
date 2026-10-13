@@ -55,6 +55,15 @@ def run_live_tests(browser,base,route_map):
     page.wait_for_function('window.__geo.active === 1');assert len(requests)==1
     page.wait_for_selector('.live-rider-label');label=page.locator('.live-rider-label').inner_text()
     assert 'Other <Rider>' in label and 'Bike' in label and 'Captain' in label and 'Last location:' in label
+    # Regression: the former shrink-to-fit label was 26px x 984px, wrapping each character.
+    for width,height in [(320,568),(390,844),(844,390),(1280,800)]:
+        page.set_viewport_size({'width':width,'height':height})
+        rect=page.locator('.live-rider-label').bounding_box()
+        assert rect['width'] >= 150 and rect['height'] < 250, rect
+        controls=page.locator('#controls-row').bounding_box()
+        assert controls['y']+controls['height'] <= height+1, controls
+        assert page.locator('#live-dashboard').evaluate('(e)=>e.closest("#status-stack") !== null')
+    page.set_viewport_size({'width':320,'height':568})
     assert page.locator('.live-rider-label script').count()==0
     assert not page.locator('#start-overlay').is_visible()
     page.click('#live-dashboard');page.wait_for_selector('.live-summary')

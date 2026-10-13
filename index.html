@@ -23,7 +23,6 @@
   <!-- Map -->
   <div id="map" aria-label="Map" data-i18n-aria-label="ui.map" role="img"></div>
   <div id="map-controls"></div>
-  <button id="live-dashboard" type="button" hidden aria-live="polite"></button>
   <div id="history-detail" hidden aria-live="polite"><div id="history-detail-text"></div><div id="history-detail-actions"></div></div>
   <div id="storage-status" role="status"></div>
   <!-- Map shade overlay -->
@@ -69,7 +68,7 @@
       <div id="dashboard-vehicle"></div>
     </div>
 
-    <div></div>
+    <div class="hud-space" aria-hidden="true"></div>
 
     <div id="bottom-panel">
       <div id="session-stats-panel" class="panel" role="button" tabindex="0" aria-label="Hide or show session statistics" data-i18n-aria-label="ui.statsControl" aria-live="polite" aria-atomic="true">
@@ -82,6 +81,7 @@
         </div>
       </div>
       <div id="status-stack">
+        <button id="live-dashboard" type="button" hidden aria-live="polite"></button>
         <div id="gps-panel" class="panel status-panel is-collapsible" role="button" tabindex="0" aria-label="Hide GPS and network status" data-i18n-aria-label="ui.hideStatus">
           <div class="panel-label">GPS</div>
           <div id="gps-status-row" class="info-row status-moderate" aria-live="polite" aria-atomic="true" data-i18n="ui.readyStart">Ready to start</div>

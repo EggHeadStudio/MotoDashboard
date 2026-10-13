@@ -1,6 +1,7 @@
 // Product navigation and release diagnostics. No user content is translated here.
 export const product = {
   en: {
+    'live.compact': 'Live · sharing',
     'clubs.joined': 'Joined',
     'ui.saved': 'Saved.',
     'nav.label': 'Main navigation', 'nav.home': 'Home', 'nav.discover': 'Discover', 'nav.rides': 'Rides', 'nav.clubs': 'Clubs', 'nav.profile': 'Profile',
@@ -36,6 +37,7 @@ export const product = {
     'ui.loadingCards': 'Loading…', 'ui.skip': 'Skip to content'
   },
   fi: {
+    'live.compact': 'Live · jaetaan',
     'clubs.joined': 'Jäsen',
     'ui.saved': 'Tallennettu.',
     'nav.label': 'Päänavigointi', 'nav.home': 'Koti', 'nav.discover': 'Löydä', 'nav.rides': 'Ajot', 'nav.clubs': 'Klubit', 'nav.profile': 'Profiili',
