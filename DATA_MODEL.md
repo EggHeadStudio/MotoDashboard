@@ -1,3 +1,5 @@
+> **Batch 6A local extension (2026-10-13):** see [BATCH_6A_RESULT.md](BATCH_6A_RESULT.md) and [the current deployment checklist](DEPLOYMENT_CHECKLIST.md) for Open activity categories, source-verified private notifications and server-enforced Group deadlines. These changes are not deployed; existing 18 composites, read-only Worker identity, RTDB deny-all and DO binding/migration remain. Earlier deployed-version evidence below describes Batch 5.
+
 > **Current post-Batch 5 architecture (2026-10-12):** GitHub Pages frontend, Firebase Auth identity, Firestore persistent authorization/data, Cloudflare Worker + one Durable Object per Group Session + WebSockets for live locations. RTDB stays locked. See LIVE_TRACKING.md; older Batch 3 results below are historical. The operator reports deployed Auth/Firestore/Rules/all 18 Enabled indexes and Cloudflare Worker/DOs. Real-account/phone acceptance remains pending.
 
 # MotoDashboard data and authorization contract

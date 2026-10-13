@@ -7,7 +7,8 @@ Open [MotoDashboard](https://eggheadstudio.github.io/MotoDashboard/).
 
 Batch 5, Firebase Authentication/Firestore, all **18 composite indexes**, Firestore
 Rules, and the Cloudflare Worker/Durable Objects are **deployed, as reported by the
-operator**. Real-user, two-account and physical-phone acceptance is still pending.
+operator**. The operator reports Batch 5 manually tested. **Batch 6A is implemented
+locally and awaits publication and new two-account/physical-phone acceptance.**
 There are no built-in test accounts or passwords.
 
 ## What currently works
@@ -28,11 +29,16 @@ There are no built-in test accounts or passwords.
   Member permissions, visible custom ranks, controlled colors/links and private Info Wall.
 - Ride/Drive/Meet/Event Group Sessions: lifecycle, private meeting details, participant
   approval/invitations/vehicle selection/removal, safe discovery and local QR sharing.
+- Open / Any vehicle activities for Clubs/Groups/discovery; Garage retains real vehicle
+  categories. Bounded Group expiry and Host Home/end confirmation preserve personal rides.
+- Private in-app invitation and Club/Group approval notifications, unread bell, read
+  marking and target links. Club event and Group update broadcast notifications remain planned.
 - Opt-in live Group map through Cloudflare: authorized active participants, readable
   identity, current positions, stale/expired markers, reconnect and stop on logout/
   leave/end. Status and approximate straight-line separation are informational.
 
-These are implemented flows with local automated coverage. Deployment is separate
+These are implemented flows with local automated coverage. Batch 6A needs updated
+Rules and Worker enforcement as well as frontend publication. Deployment is separate
 from real Firebase/mobile acceptance; successful publication does not certify them.
 
 ## Architecture and privacy
@@ -41,7 +47,7 @@ from real Firebase/mobile acceptance; successful publication does not certify th
 | --- | --- |
 | GitHub Pages | Static HTML/CSS/native ES modules under `/MotoDashboard/`; no frontend build |
 | Firebase Authentication | Account identity and email/password sessions |
-| Cloud Firestore | Private profiles/Garage/rides, Clubs/roles/invites, Group admission and safe discovery |
+| Cloud Firestore | Private profiles/Garage/rides/notifications, Clubs/roles/invites, Group admission/deadlines and safe discovery |
 | Cloudflare Worker + one SQLite Durable Object per Group | Firebase token verification, read-only Firestore authority checks and latest-position WebSockets |
 | Browser IndexedDB/localStorage | Account-scoped local rides/outbox, guest rides and preferences |
 | Firebase Realtime Database | Locked and unused; no runtime adapter, imports or live-location writes |
@@ -88,6 +94,7 @@ python tests/run_security_rules.py
 python tests/run_group_rules.py
 python tests/run_identity_rules.py
 python tests/run_batch5_rules.py
+python tests/run_batch6a_rules.py
 python tests/run_realtime_rules.py
 python tools/validate_firebase_deployment.py
 python tests/run_firebase_deployment_contract.py
@@ -100,8 +107,11 @@ dependencies, a dry-run bundle and mocked Google/Firestore replies.
 
 ## Roadmap and project records
 
-[IDEA.md](IDEA.md) is the authoritative product roadmap. Batch 6 is **recommended,
-not implemented**: acceptance/reliability, password recovery/change, Google account
+[IDEA.md](IDEA.md) is the authoritative product roadmap. [Batch 6A](BATCH_6A_RESULT.md)
+fixes dashboard labels/layout, adds safe Firestore diagnostics/read recovery, Open
+activities, server-enforced Group expiration and a source-verified notification subset.
+Production MD-NETWORK is not claimed resolved. Batch 6B and later remain **planned**:
+password recovery/change, Google account
 linking and trusted complete-account-deletion architecture. Media uploads, vehicle
 photos, Club logos/banners, rank graphics, Official activities/rewards, subscriptions,
 Stripe, NFC and merchandise remain agreed future requirements. Group QR sharing is

@@ -1,4 +1,4 @@
-> **Current post-Batch 5 audit, 2026-10-12:** the operator reports Batch 5 published on Pages, Auth/Firestore configured, current Rules deployed, all **18 composites Enabled**, and Cloudflare Worker/Durable Objects deployed. This task authorizes repository cleanup/documentation and local tests/commits only. No Batch 6 implementation, push/deployment, production-data operation or branch deletion. Actual user/two-account/phone acceptance remains pending. This file is the authoritative product roadmap; dated audit/batch records below are historical evidence, not current deployment instructions.
+> **Current Batch 6A, 2026-10-13:** the operator reports Batch 5 deployed/manually tested, current Firebase Rules/all 18 Enabled indexes and Cloudflare deployed. Batch 6A locally implements dashboard layout, Firebase diagnostics/read recovery, Open activities, bounded Group lifecycle and secure direct notifications. See BATCH_6A_RESULT.md. No push/deployment or production writes; Batch 6B has not begun. New Rules/Worker and physical-phone acceptance remain pending. Earlier audit/batch scope and test records are historical; this remains the authoritative product roadmap.
 
 
 # MotoDash Platform --- IDEA.md
@@ -3488,13 +3488,13 @@ UI/i18n, Firestore repositories and Cloudflare/GPS boundaries; no frontend frame
 
 | Order | Recommended milestone | Dependencies and acceptance |
 | --- | --- | --- |
-| 6A ? acceptance baseline | Execute the current two-account/two-phone checklist, reproduce invitation/Lobby issues, prioritize verified defects and measure read/network behavior | Operator-run production tests, distinct accounts, record effective deployed versions; no invented test credentials, no weakening Rules |
+| 6A ? stability/lifecycle/notifications | Implemented locally: dashboard label/grid fix, scoped network diagnostics, Open activities, bounded Group lifecycle and secure direct notifications. Publication and new acceptance pending | New Rules/Worker, operation-specific network evidence, real Safari/Android acceptance. Broadcast fan-out remains future trusted work; see Section 20 |
 | 6B ? recovery/settings | Forgot-password email and change-password with recent reauthentication; accessible Account settings and EN/FI feedback | Auth email/action templates, password/enumeration policy, authorized Pages/localhost return URLs, rate/network failure tests, no password logging/storage |
 | 6C ? Google identity | Google sign-in and secure linking to existing email/password accounts; preserve owned data and invitation return destination | Approved provider setup; validate browser/Pages auth-domain and popup/redirect restrictions before implementation. Handle collisions/cancel/block/refresh without email-only automatic merge or duplicate profiles |
 | 6D ? privacy/deletion checkpoint | Complete deletion design and, only after backend/ownership/cost approval, a trusted resumable complete deletion implementation | Recent reauthentication, own-UID authorization, write/outbox fence, live ticket/socket revocation, private/public data inventory, owned Club/Group policy, preserved nonpersonal retired IDs and idempotent retry. Auth-only deletion is not completion |
 | 6E ? reliability/UX follow-up | Fix only reproduced acceptance issues; improve recovery/onboarding/empty states/invite feedback; constrain repeated-mount lifecycle and measured read hotspots where justified | 6A evidence, existing dashboard/GPS/local-ride regressions, accessible EN/FI/mobile checks; no schema/protocol/rules rewrites just to simplify code |
 
-Prefer a small first delivery of **6A + 6B**, followed by independently reviewable 6C
+Finish publication/acceptance of **6A** first. Start **6B only after explicit approval**, followed by independently reviewable 6C
 and 6D. If trusted deletion infrastructure/cost or ownership policy is not approved,
 stop at its reviewable design; keep wider public beta blocked rather than presenting
 partial erasure. Do not bundle all media, Official rewards and payments into this batch.
@@ -3529,5 +3529,51 @@ a private credential in Pages. No such backend is implemented by this audit.
    agreed requirement remains; priority is sequencing, not removal.
 
 The original product guardrails, full future account/media/Official checklists and
-non-speed completion rules remain authoritative. Batch 6 is not implemented and
-this audit stops for approval after local cleanup/documentation commits.
+non-speed completion rules remain authoritative. Batch 6A is implemented locally;
+Batch 6B and later are not begun. Publication and further implementation require approval.
+
+# 20. Batch 6A — current local implementation and retained requirements
+
+The authorized stability batch precedes 6B account recovery. It preserves the static
+Pages/native modules, one lazy Firebase app, existing GPS/recording/Leaflet and
+Cloudflare ticket/WebSocket/read-only authority architecture. Operator-reported
+Batch 5 testing does not certify these new changes.
+
+1. **Dashboard:** give the live rider label a stable width; it was reproduced at
+   26px × 984px, with identity/status/location-age text. Fix named HUD placement,
+   narrow/landscape panels and enlarged text. Keep real statistics/markers; compact
+   live status belongs with GPS/network and remains accessible. Physical Safari is pending.
+2. **Network stability:** retain safe operation-specific diagnostics, distinct
+   offline/deadline/permission/precondition states, bounded read retry and concurrency,
+   recoverable Home and no uncertain-write replay. The production Wi-Fi/cellular
+   symptom is not yet reproduced; follow the current checklist diagnostic procedure.
+3. **Open activity category:** Clubs/Groups/discovery/Lobby offer **Open / Any vehicle**
+   / **Avoin / Kaikki ajoneuvot**. This is not a Garage vehicle. Preserve every real
+   category, owner vehicle snapshot and independent membership/approval authorization.
+4. **Lifecycle:** organizer end/cancel, Host Home/end confirmation, state observation,
+   local marker cleanup and independent personal recording. Server deadline is earlier
+   of endsAt and startsAt+24h; activation at most 2h early, active times fixed, no old-ID
+   restart. Rules and existing DO authority/alarms enforce rights using server time.
+   Expired active/scheduled records present completed/cancelled; stored state may remain
+   unchanged without a trusted writer. Retain history/children, no recursive deletion
+   or claim of physical account erasure. Future trusted cleanup can materialize/archive
+   terminal states only after approval of IAM, retention, privacy and cost.
+5. **Notifications:** private user-specific invitation, Club approval and Group approval
+   records, exact source proof in the authorized transaction, no arbitrary sender/text,
+   unread bell, timestamps/read marking/target links/Auth return and EN/FI. Latest 30
+   and unread-to-50 listeners detach across accounts; no push/high-frequency polling.
+   **Club event announcements and Group update/cancellation notification fan-out remain
+   agreed requirements**, deferred to an approved trusted delivery/recipient/deduplication/
+   retention design. Do not remove them or substitute insecure client broadcast writes.
+6. **Verification/publication:** BATCH_6A_RESULT.md and DEPLOYMENT_CHECKLIST.md distinguish
+   local emulators/browser/workerd from pending production/device acceptance. Publish
+   new Firestore Rules and Worker explicitly; existing 18 composites/exemption, RTDB
+   deny-all, DO binding/migration, origins and separate credentials remain. No new
+   paid infrastructure, deployment branch or automatic backend deployment is required.
+
+Next approved scope remains 6B password recovery/change/account settings, then Google
+sign-in/linking and separately designed complete account deletion. Vehicle photos,
+Club logos/banners, rank graphics, Official MotoDash activities and all safe reward
+requirements, achievements, subscriptions/Stripe, NFC invitations and merchandise
+remain intact in their original sections and Section 19. Batch 6A is not approval
+to implement those features or begin Batch 6B.

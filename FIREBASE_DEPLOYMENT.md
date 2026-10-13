@@ -1,3 +1,5 @@
+> **Batch 6A local extension (2026-10-13):** see [BATCH_6A_RESULT.md](BATCH_6A_RESULT.md) and [the current deployment checklist](DEPLOYMENT_CHECKLIST.md) for Open activity categories, source-verified private notifications and server-enforced Group deadlines. These changes are not deployed; existing 18 composites, read-only Worker identity, RTDB deny-all and DO binding/migration remain. Earlier deployed-version evidence below describes Batch 5.
+
 # Firebase deployment and maintenance from main
 
 **Current state, 2026-10-12:** the operator reports successful Firestore Rules deployment and all **18 composite indexes Enabled**. No deployment was performed by this repository audit; real-account/phone acceptance remains pending. This guide is for future reviewed deployment or credential maintenance, not a request to redeploy.

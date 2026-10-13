@@ -1,3 +1,5 @@
+> **Batch 6A local extension (2026-10-13):** see [BATCH_6A_RESULT.md](BATCH_6A_RESULT.md) and [the current deployment checklist](DEPLOYMENT_CHECKLIST.md) for Open activity categories, source-verified private notifications and server-enforced Group deadlines. These changes are not deployed; existing 18 composites, read-only Worker identity, RTDB deny-all and DO binding/migration remain. Earlier deployed-version evidence below describes Batch 5.
+
 > **Current operator report, 2026-10-12:** motodash-live and LIVE_ROOMS Durable Objects are deployed, the production frontend endpoint is configured, Batch 5 is published, Firestore Rules deployed and all 18 composites Enabled. Real two-account/two-phone acceptance remains pending. This guide now covers maintenance/redeployment and acceptance; no setup/deployment action was performed by this audit. Firebase deployment identity and the Cloudflare read-only Firestore credential are separate.
 
 # Cloudflare maintenance and acceptance for MotoDashboard

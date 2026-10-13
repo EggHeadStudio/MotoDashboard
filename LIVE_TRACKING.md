@@ -1,3 +1,5 @@
+> **Batch 6A local extension (2026-10-13):** see [BATCH_6A_RESULT.md](BATCH_6A_RESULT.md) and [the current deployment checklist](DEPLOYMENT_CHECKLIST.md) for Open activity categories, source-verified private notifications and server-enforced Group deadlines. These changes are not deployed; existing 18 composites, read-only Worker identity, RTDB deny-all and DO binding/migration remain. Earlier deployed-version evidence below describes Batch 5.
+
 # MotoDash live architecture — Batch 4
 
 GitHub Pages: static native modules. Firebase Auth: identity. Firestore: permanent
@@ -112,4 +114,4 @@ Before wider beta, record two-account/two-phone acceptance, effective revocation
 read quotas and background limitations. Future complete account deletion must close
 live access/tickets before permanent cleanup, preserve nonpersonal ID reservations
 and handle hibernatable state. See [Batch 6 priorities](IDEA.md) and
-[repository audit](REPOSITORY_AUDIT.md). No Batch 6 work is implemented here.
+[repository audit](REPOSITORY_AUDIT.md). Batch 6A source extensions are local; deployment and device acceptance remain pending.

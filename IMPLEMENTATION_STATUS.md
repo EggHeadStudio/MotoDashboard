@@ -1,8 +1,28 @@
 # MotoDashboard implementation status
 
-Updated **2026-10-12**, after the operator reported successful Batch 5 and Firebase
-Rules/index deployment. This audit made local cleanup/documentation changes only.
+Updated **2026-10-13**, after local Batch 6A implementation. The operator reports
+Batch 5/Firebase/Worker deployed and Batch 5 manually tested. Batch 6A is not deployed.
 No production data, authentication settings, Rules, Worker or deployment was changed.
+
+## Batch 6A local status
+
+| Milestone | Current result / acceptance boundary |
+| --- | --- |
+| Dashboard | Reproduced Leaflet label at 26px × 984px; explicit width/bounded lines, named HUD grid, portrait/landscape controls and compact status. Chromium fixtures pass; physical Safari/Android pending. |
+| Firebase reliability | Safe operation codes, distinct offline/deadline/permission/precondition, read-only bounded retry, four-row hydration concurrency and recoverable Home. Production Wi-Fi/cellular symptom remains unconfirmed. |
+| Open activity category | Club/Group/Lobby/discovery validation and Rules accept open; Garage rejects it and keeps 12 real categories. No index/schema migration. |
+| Group lifecycle | Shared state listener, Host Home/end confirmation, terminal transitions and server deadline enforced by Rules/Worker/DO alarms. Expired stored records may retain old state; live rights deny. |
+| Notification center | Private invitation and Club/Group approval notices, source proofs, bell/count/read/target/Auth return/EN-FI. Club event and Group update/cancel fan-out deferred pending trusted delivery. |
+| Publication | New Rules and Worker require manual publication after approval. Existing 18 composites and RTDB deny-all unchanged. No new secret/IAM grant/DO migration. |
+
+Evidence and limitations: [BATCH_6A_RESULT.md](BATCH_6A_RESULT.md). Operator steps:
+[DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md).
+
+Local tests: **705 distinct Firestore assertions**, **50 Worker tests**, **68 RTDB
+denials**, **10 deployment contracts**, **3 YAML/15 Bash blocks**, Pages checks and
+the full browser matrix (**24 legacy groups + 20 Batch 5 + 13 Batch 6A**).
+Final passing runs have **0 failed, 0 skipped**. Physical Safari/WebKit and production
+Firebase/device tests are **NOT RUN**, not inferred from mobile Chromium fixtures.
 
 ## Evidence levels
 
@@ -42,7 +62,7 @@ Direct Worker navigation without the allowed Origin is expected to be denied.
   unmerged historical commit, so branch deletion is recommended after review; no
   branch has been deleted. Exact optional commands are in REPOSITORY_AUDIT.md.
 
-## Automated checks for this audit
+## Historical post-Batch 5 audit checks ? 2026-10-12
 
 Final results are recorded in [REPOSITORY_AUDIT.md](REPOSITORY_AUDIT.md). Baseline
 reruns and nested named browser cases are counted once, not added as independent suites.
@@ -83,7 +103,8 @@ bundle and passed the same 47 Worker tests; that rerun is counted once.
 ## Recommended next implementation
 
 The authoritative proposed Batch 6 scope and dependencies are in IDEA.md. First
-record production/two-phone acceptance and prioritize reproducible problems; then
+publish and accept Batch 6A and capture remaining operation-specific network
+failures; then
 account recovery/password changes and Pages-compatible Google sign-in/linking.
 Approve trusted full-deletion ownership/retention/backend/IAM/cost design before
 implementing erasure. Wider public beta remains gated on complete deletion and

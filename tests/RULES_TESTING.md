@@ -1,6 +1,6 @@
 # MotoDashboard security and regression tests
 
-Updated 2026-10-12. The operator reports deployed Rules/all 18 Enabled indexes,
+Updated 2026-10-13 after local Batch 6A. The operator reports deployed Rules/all 18 Enabled indexes,
 Batch 5 and the Cloudflare Worker. Real-account/phone acceptance is pending.
 Current operator procedure: [DEPLOYMENT_CHECKLIST.md](../DEPLOYMENT_CHECKLIST.md).
 
@@ -18,7 +18,8 @@ they rebuild shared fixtures. Count the repeated baseline once.
 | Group admission/Lobby/roles | 273 |
 | Minimal display identity | 32 |
 | Batch 5 authorization/query/index-source | 82 |
-| Total distinct Firestore | 626 |
+| Batch 6A Open/expiry/source-proven notifications | 79 |
+| Total distinct Firestore | 705 |
 | Separate locked RTDB | 68 |
 | Deployment contract | 10 |
 
@@ -41,6 +42,7 @@ python tests/run_security_rules.py
 python tests/run_group_rules.py
 python tests/run_identity_rules.py
 python tests/run_batch5_rules.py
+python tests/run_batch6a_rules.py
 ```
 
 Security/group runners already rebuild the baseline. For the separate RTDB lock:
@@ -69,18 +71,19 @@ python tests/run_firebase_deployment_contract.py
 
 Browser tests use fixture data/simulated GPS, real Leaflet and real pinned Firebase
 imports with cloud APIs blocked. SDK fixtures do not enforce Rules. The full run
-covers 24 existing regression groups and 20 named Batch 5 cases; nested domain/
+covers 24 existing regression groups, 20 named Batch 5 and 13 named Batch 6A cases; nested domain/
 registration cases are not added again. Pages tests use /MotoDashboard/.
 
 Worker developers with Node 22 and installed cloudflare lockfile dependencies run
 npm test at root (delegates to npm --prefix cloudflare test), or npm test inside
-cloudflare/. Both build with Wrangler --dry-run before 47 checks, including 12
+cloudflare/. Both build with Wrangler --dry-run before 50 checks, including 13
 local workerd cases using mocked Firebase/OAuth. OpenSSL creates fixture keys only
 outside the repository. Raw node --test without a build is not the supported path.
 
-The Firebase workflow runs config/contract and all four Firestore suites before
+The Firebase workflow runs config/contract and all five Firestore suites before
 explicit deployment. Validate mode performs no production operation. YAML/Bash/
-credential/scope results are recorded in REPOSITORY_AUDIT.md.
+credential/scope historical results are recorded in REPOSITORY_AUDIT.md; current
+Batch 6A results are in BATCH_6A_RESULT.md.
 
 ## Pending live acceptance and history
 
