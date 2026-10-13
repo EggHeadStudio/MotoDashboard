@@ -3488,14 +3488,16 @@ UI/i18n, Firestore repositories and Cloudflare/GPS boundaries; no frontend frame
 
 | Order | Recommended milestone | Dependencies and acceptance |
 | --- | --- | --- |
-| 6A ? stability/lifecycle/notifications | Implemented locally: dashboard label/grid fix, scoped network diagnostics, Open activities, bounded Group lifecycle and secure direct notifications. Publication and new acceptance pending | New Rules/Worker, operation-specific network evidence, real Safari/Android acceptance. Broadcast fan-out remains future trusted work; see Section 20 |
-| 6B ? recovery/settings | Forgot-password email and change-password with recent reauthentication; accessible Account settings and EN/FI feedback | Auth email/action templates, password/enumeration policy, authorized Pages/localhost return URLs, rate/network failure tests, no password logging/storage |
+| 6A — stability/lifecycle/notifications | Implemented and reported deployed/working: dashboard root fix, scoped diagnostics, Open activities, bounded Groups and direct notifications | Independent acceptance/network evidence still needed; broadcast fan-out remains future trusted work |
+| 6B — landing/public identity/continuity | New user-authorized scope implemented locally: premium landing, opt-in public profiles/showcase, controlled customization, Return to Ride and exclusive live UID claims | New Rules + Worker binding/v2 + frontend publication, physical acceptance; see Section 21/BATCH_6B_RESULT.md |
+| Future account recovery/settings | Forgot-password email and change-password with recent reauthentication; accessible Account settings and EN/FI feedback | Explicit approval, Auth templates/enumeration policy, authorized return URLs and no password logging/storage; remains agreed, outside 6B |
 | 6C ? Google identity | Google sign-in and secure linking to existing email/password accounts; preserve owned data and invitation return destination | Approved provider setup; validate browser/Pages auth-domain and popup/redirect restrictions before implementation. Handle collisions/cancel/block/refresh without email-only automatic merge or duplicate profiles |
 | 6D ? privacy/deletion checkpoint | Complete deletion design and, only after backend/ownership/cost approval, a trusted resumable complete deletion implementation | Recent reauthentication, own-UID authorization, write/outbox fence, live ticket/socket revocation, private/public data inventory, owned Club/Group policy, preserved nonpersonal retired IDs and idempotent retry. Auth-only deletion is not completion |
 | 6E ? reliability/UX follow-up | Fix only reproduced acceptance issues; improve recovery/onboarding/empty states/invite feedback; constrain repeated-mount lifecycle and measured read hotspots where justified | 6A evidence, existing dashboard/GPS/local-ride regressions, accessible EN/FI/mobile checks; no schema/protocol/rules rewrites just to simplify code |
 
-Finish publication/acceptance of **6A** first. Start **6B only after explicit approval**, followed by independently reviewable 6C
-and 6D. If trusted deletion infrastructure/cost or ownership policy is not approved,
+The operator reports 6A deployed; finish the approved **6B** publication/phone
+acceptance before further work. Account recovery, 6C Google and 6D deletion remain
+separately approved future milestones. If trusted deletion infrastructure/cost or ownership policy is not approved,
 stop at its reviewable design; keep wider public beta blocked rather than presenting
 partial erasure. Do not bundle all media, Official rewards and payments into this batch.
 
@@ -3530,11 +3532,13 @@ a private credential in Pages. No such backend is implemented by this audit.
 
 The original product guardrails, full future account/media/Official checklists and
 non-speed completion rules remain authoritative. Batch 6A is implemented locally;
-Batch 6B and later are not begun. Publication and further implementation require approval.
+Batch 6B is implemented locally under the later explicit scope in Section 21.
+Publication and subsequent implementation still require approval.
 
 # 20. Batch 6A — current local implementation and retained requirements
 
-The authorized stability batch precedes 6B account recovery. It preserves the static
+The authorized stability batch preceded the later approved 6B product scope.
+Account recovery remains future work. The stability batch preserves the static
 Pages/native modules, one lazy Firebase app, existing GPS/recording/Leaflet and
 Cloudflare ticket/WebSocket/read-only authority architecture. Operator-reported
 Batch 5 testing does not certify these new changes.
@@ -3571,9 +3575,58 @@ Batch 5 testing does not certify these new changes.
    deny-all, DO binding/migration, origins and separate credentials remain. No new
    paid infrastructure, deployment branch or automatic backend deployment is required.
 
-Next approved scope remains 6B password recovery/change/account settings, then Google
+The earlier recovery proposal is superseded by the approved 6B scope below. Future
+password recovery/change/account settings, then Google
 sign-in/linking and separately designed complete account deletion. Vehicle photos,
 Club logos/banners, rank graphics, Official MotoDash activities and all safe reward
 requirements, achievements, subscriptions/Stripe, NFC invitations and merchandise
 remain intact in their original sections and Section 19. Batch 6A is not approval
-to implement those features or begin Batch 6B.
+to implement those future account/commercial features. The separate user request
+authorized only the Batch 6B scope below.
+
+# 21. Batch 6B — local implementation result and approval boundary
+
+The new request supersedes the earlier proposal called 6B account recovery, while
+preserving every agreed product requirement. Milestones 0–8 are locally implemented
+and verified; deployment/physical acceptance remain separate. Do not start Batch 7.
+
+- [x] Audit/design before source changes; reuse static Pages/native modules, existing
+  Auth/Firestore/Cloudflare, GPS/recording, UI/i18n and all security/QR regressions.
+- [x] Premium anonymous landing: original SVG/CSS, real-feature sections, EN/FI,
+  sign-in/register and explicit guest entry, natural scroll/reduced motion, no GPS
+  on anonymous entry and preserved invitation return.
+- [x] Clearly proposed Free €0 / Rider €5.99 / Host €11.99 / Club €29.99 per month;
+  no billing, purchase actions, new subscription restriction or hidden Garage.
+- [x] Private-default opt-in public profiles with stable opaque routes, strict
+  minimal projections/private owner reservation, bio/category/initial avatar and
+  controlled accent/banner. No email, UID, private history or location field.
+- [x] Explicit selected-vehicle showcase/featured cards with separate public text,
+  source privacy/existence/incarnation gates and synchronized Garage deletion/edit.
+- [x] Public Club/rank opt-in where current public Club/membership/rank permits it;
+  technical permissions remain private and never follow ranks. Members-only profile
+  audience is explicitly deferred, not implemented by an ambiguous broad read rule.
+- [x] Return to Ride on all five screens, preserved record/vehicle/statistics/GPS,
+  independent personal/Group/sharing/view state, owned recovery and no restored live
+  consent after reload. Browsing/Home retains enabled sharing; explicit stop/leave/
+  end/logout clears live state.
+- [x] Second personal recorder blocked; same-origin/account Web Locks or atomic
+  IndexedDB fallback. Trusted UID-keyed SQLite live coordinator prevents concurrent
+  live Groups across devices with atomic acquire/nonce/renew/release/expiry. Keep
+  LIVE_ROOMS/v1; add LIVE_IDENTITIES/v2 without Firestore writer or new credentials.
+- [x] Final local regressions, updated current docs/model/runbook and separate commits.
+- [ ] User approves publication and runs real-account/Android/iPhone acceptance.
+
+Exact source, tests, commitments and limits: BATCH_6B_RESULT.md. Current publication
+order: quiet/drain sharing, pause auto Pages, publish reviewed main, Firestore Rules,
+Worker/v2, then Pages and physical acceptance. Existing 18 indexes/RTDB deny-all stay.
+No production operation or push was performed. Old numbered audits are historical;
+their UID-based public-profile proposals are superseded by the strict opaque model.
+
+Retain password recovery/change, Google linking, trusted complete deletion (a wider
+beta gate), vehicle photos, Club logos/banners, rank graphics, Official MotoDash
+activities/all safe reward rules, achievements/rewards, subscriptions/Stripe, NFC
+and merchandise. No account erasure, uploads, payments, Official/reward or next-batch
+implementation is included. Future entitlements must come from trusted backend
+authorization, not editable profile fields or frontend capability constants.
+
+**STOP after Batch 6B. Await explicit approval before publication or further work.**

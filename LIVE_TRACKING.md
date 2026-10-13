@@ -1,4 +1,58 @@
-> **Batch 6A local extension (2026-10-13):** see [BATCH_6A_RESULT.md](BATCH_6A_RESULT.md) and [the current deployment checklist](DEPLOYMENT_CHECKLIST.md) for Open activity categories, source-verified private notifications and server-enforced Group deadlines. These changes are not deployed; existing 18 composites, read-only Worker identity, RTDB deny-all and DO binding/migration remain. Earlier deployed-version evidence below describes Batch 5.
+> **Current Batch 6B (2026-10-13):** 6A deployment/working status is reported by
+> the operator. The new UID coordinator and continuity changes below are local;
+> publication and physical-phone acceptance are pending. Older results remain history.
+
+## Batch 6B exclusive live ownership and continuity
+
+Keep `LIVE_ROOMS -> LiveRoom` and SQLite **v1**. Append **v2** creating
+`LIVE_IDENTITIES -> LiveIdentity`: one private SQLite coordinator per verified
+Firebase UID, reached only through trusted Worker bindings. Public HTTP routes
+cannot access reserve/activate/renew/release or assert a target UID.
+
+The gateway derives UID from its verified ID token. A room first verifies actual
+Firestore admission, then atomically reserves that UID for its Group. Another live
+Group gets HTTP 409 `active_ride` and only that user's active session handle. One-use
+ticket redemption rechecks admission and activates a connection-specific nonce.
+Same-room reconnect may replace the previous publisher; another room never silently
+replaces it. Old uncoordinated tickets/attachments fail closed in the new code.
+
+The coordinator stores only roomId, nonce and until, never coordinates, route history,
+JWT or service-account credentials. Room receive/publish eligibility is clamped to
+the same expiry as the global claim, the 30-second authority lease, token expiry and
+Group deadline. Renewal requires the current live nonce and cannot regain an expired
+or newer claim. Source revocation/termination closes before releasing. Delayed old
+releases cannot free a replacement nonce, even from a different Group.
+
+Abandoned ticket reservations expire within 30 seconds. Connected claims additionally
+cannot outlive **45 seconds without inbound activity**; authority alarms cannot renew
+an abandoned open socket forever. Late alarms do not authorize frames after lease
+expiry. Coordinator failure denies new admission/renewal; existing leases are bounded.
+Normal heartbeats remain 25 seconds and GPS cadence remains 5/30 seconds. No new GPS
+watcher, Firestore writer or RTDB transport is introduced.
+
+Return to Ride separates owned personal recording/recovery, selected Group,
+sharing/connection and dashboard visibility. Home/navigation keeps enabled sharing;
+explicit Stop, leave, end and logout stop it. Reload revalidates a Group hint and never
+restores live consent. Personal/Group selection and stats survive navigation; the
+Group-only dashboard uses its admitted vehicle rather than a different Garage default.
+Personal record snapshots remain their original selection. Explicit guest Resume
+starts GPS; anonymous landing never does. Web Locks or an atomic IndexedDB lease
+protect a personal recorder across same-origin/account tabs; no cross-device private
+recording service is claimed. Without either safe primitive, recording fails closed.
+
+The new class uses the existing SQLite infrastructure and requires no new secret,
+write IAM grant or paid service. Quota usage increases: roughly one coordinator
+renewal per active UID per authority recheck (about 3/minute), plus acquisition,
+activation and release. Firestore authority/ACL reads remain additional costs.
+Prototype scale only; monitor the account's actual quotas and fail-closed outages.
+[Cloudflare SQLite storage](https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/),
+[Web Locks](https://www.w3.org/TR/web-locks/).
+
+Stop testers/sharing and drain old sessions before the first v2 rollout. Preserve
+both namespaces/migrations on rollback; never restore an uncoordinated old Worker
+while claiming global exclusivity. See DEPLOYMENT_CHECKLIST.md. Auth-disabled/revoked
+tokens can still last until expiry; complete erasure, abuse controls, capacity and
+native background behavior remain separate requirements.
 
 # MotoDash live architecture — Batch 4
 
@@ -62,6 +116,8 @@ table. Attachments retain current state through hibernation and are cleared on
 closure/replacement. Limits: 50 admitted riders, 70 total sockets, 100 tickets;
 1,024-byte client frames, 8 messages/10s plus per-type cadence. No raw token logs.
 Disconnected latest state is removed; locations stale at 45s, expire at 120s.
+Batch 6B additionally clamps live ownership to 45s without inbound activity and
+the shared UID claim, as described above; this replaces the former 70s idle cutoff.
 
 Consent starts the existing accepted GPS pipeline only after admission. No second
 watchPosition is added; personal recording keeps its watcher if sharing stops.
@@ -114,4 +170,5 @@ Before wider beta, record two-account/two-phone acceptance, effective revocation
 read quotas and background limitations. Future complete account deletion must close
 live access/tickets before permanent cleanup, preserve nonpersonal ID reservations
 and handle hibernatable state. See [Batch 6 priorities](IDEA.md) and
-[repository audit](REPOSITORY_AUDIT.md). Batch 6A source extensions are local; deployment and device acceptance remain pending.
+[repository audit](REPOSITORY_AUDIT.md). The operator now reports Batch 6A deployed;
+Batch 6B's new coordinator rollout and physical acceptance remain pending.

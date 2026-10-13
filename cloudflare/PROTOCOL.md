@@ -1,5 +1,12 @@
 # Live protocol v1
 
+Batch 6B retains wire version 1 and adds private server UID ownership coordination.
+Ticket acquisition/redemption can return `active_ride` / HTTP **409**, with only the
+verified caller's `activeSessionId`. A WebSocket error may include the same owned
+handle. The client offers Return/Cancel, never overwrites another live Group.
+No coordinator nonce/UID, JWT, service credential or source private record is exposed.
+LIVE_IDENTITIES/v2 is a storage migration, not wire protocol v2.
+
 POST /v1/sessions/{uuid}/ticket uses Authorization: Bearer Firebase-ID-token,
 empty body, exact allowed Origin, no URL query. Response: random 256-bit ticket,
 expiry 30 seconds. GET .../connect upgrades without any token in the URL.
@@ -30,13 +37,17 @@ connection/change/snapshot: safe display name, selected nickname/category, opted
 organizing Club/rank, informational status. No emails, UIDs, invite tokens or
 precise meeting instructions. A riderId is transient routing data, never a label.
 
-One publisher per UID/room; new connection replaces old (4002, no automatic client
+One live Group per UID, coordinated atomically by LIVE_IDENTITIES. One publisher
+per UID/room; new same-room connection replaces old (4002, no automatic client
 takeover loop). Max 50 authorized riders, 70 total pending/authorized sockets,
 100 outstanding tickets; 8 client messages/10s and stricter per-type rates.
 Closed/revoked sockets are pruned before broadcasts. No raw token or permanent
 GPS history in DO storage; latest state exists in hibernatable socket attachments.
 
 Authority lease 30s from check start; renew when <=10s remains, with 10s alarms.
+Every lease is also clamped to the coordinator expiry, token/Group deadline and
+**45s since last inbound activity**. Authority alarms cannot renew abandoned open
+sockets forever; old receivers are excluded after expiry even before alarm closure.
 Firestore reads share one parent readTime, deadline 8s across OAuth/read calls.
 Access errors close sockets; sends exclude expired leases even if an alarm is late.
 No zero-delay revocation promise: a committed removal can remain unseen during

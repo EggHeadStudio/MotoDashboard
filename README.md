@@ -5,16 +5,20 @@ cars and other vehicles. **Your vehicle. Your crew. Your ride.**
 
 Open [MotoDashboard](https://eggheadstudio.github.io/MotoDashboard/).
 
-Batch 5, Firebase Authentication/Firestore, all **18 composite indexes**, Firestore
-Rules, and the Cloudflare Worker/Durable Objects are **deployed, as reported by the
-operator**. The operator reports Batch 5 manually tested. **Batch 6A is implemented
-locally and awaits publication and new two-account/physical-phone acceptance.**
+The operator reports **Batch 6A deployed and working**, with Firebase Auth/Firestore,
+all **18 composite indexes Enabled**, Rules and the Cloudflare Worker deployed.
+**Batch 6B is implemented locally; publication and real-phone acceptance are pending.**
 There are no built-in test accounts or passwords.
 
 ## What currently works
 
 - **Home, Discover, Rides, Clubs and Profile** navigation with a shared dark/gold UI,
   loading/empty/error states, native dialogs and English/Finnish localization.
+- Anonymous landing with sign-in/register and explicit guest entry; original vector
+  artwork, real-feature sections, reduced motion and clearly proposed future prices.
+- Opt-in public profiles at shareable hash URLs: bio, category, initial avatar,
+  controlled accents/banners, selected Garage cards and permitted public Club/rank
+  identity. Existing accounts/vehicles are never automatically published.
 - Personal GPS dashboard: Leaflet map, speed, heading/north-up/manual rotation, map
   presets, clock, Open-Meteo weather, accuracy/network status and optional Wake Lock.
 - Local ride recording: validated GPS samples, automatic movement/stop detection,
@@ -36,9 +40,13 @@ There are no built-in test accounts or passwords.
 - Opt-in live Group map through Cloudflare: authorized active participants, readable
   identity, current positions, stale/expired markers, reconnect and stop on logout/
   leave/end. Status and approximate straight-line separation are informational.
+- Return to Ride across the five screens, preserved recording/vehicle/statistics,
+  owned refresh recovery and explicit guest Resume. Home keeps enabled sharing.
+- Competing personal recorders are blocked across tabs; a trusted UID coordinator
+  enforces one live Group across devices without replacing a different active ride.
 
-These are implemented flows with local automated coverage. Batch 6A needs updated
-Rules and Worker enforcement as well as frontend publication. Deployment is separate
+These are implemented flows with local automated coverage. Batch 6B needs updated
+Rules, the Worker coordinator binding/migration and frontend publication. Deployment is separate
 from real Firebase/mobile acceptance; successful publication does not certify them.
 
 ## Architecture and privacy
@@ -47,8 +55,8 @@ from real Firebase/mobile acceptance; successful publication does not certify th
 | --- | --- |
 | GitHub Pages | Static HTML/CSS/native ES modules under `/MotoDashboard/`; no frontend build |
 | Firebase Authentication | Account identity and email/password sessions |
-| Cloud Firestore | Private profiles/Garage/rides/notifications, Clubs/roles/invites, Group admission/deadlines and safe discovery |
-| Cloudflare Worker + one SQLite Durable Object per Group | Firebase token verification, read-only Firestore authority checks and latest-position WebSockets |
+| Cloud Firestore | Private profiles/Garage/rides/notifications, opt-in public projections, Clubs/roles/invites, Group admission and safe discovery |
+| Cloudflare Worker + SQLite objects per Group and UID | Token/Firestore authority, latest-position WebSockets and exclusive live claims |
 | Browser IndexedDB/localStorage | Account-scoped local rides/outbox, guest rides and preferences |
 | Firebase Realtime Database | Locked and unused; no runtime adapter, imports or live-location writes |
 
@@ -59,8 +67,11 @@ appropriate encrypted GitHub/Cloudflare secret, never in frontend files.
 
 Canonical Club/Group records and memberships are private. Safe projections contain
 no membership ledger, invitation token or precise live position. Custom ranks grant
-no technical rights. Garage visibility preferences do not make vehicles publicly
-readable. Club retirement permanently reserves the ID and denies retained children;
+no technical rights. Original Garage records always remain private. Publishing needs
+separate opt-in, a Public profile and a Public source vehicle. Rules deny stale cards
+after privacy/deletion and public Club identity after membership/privacy/rank changes.
+Public openings require a server response; previously downloaded content cannot be
+retracted. Club retirement permanently reserves the ID and denies retained children;
 it is access revocation, not physical account/data erasure.
 
 Location sharing requires consent and current active-session admission. Personal
@@ -95,6 +106,7 @@ python tests/run_group_rules.py
 python tests/run_identity_rules.py
 python tests/run_batch5_rules.py
 python tests/run_batch6a_rules.py
+python tests/run_batch6b_rules.py
 python tests/run_realtime_rules.py
 python tools/validate_firebase_deployment.py
 python tests/run_firebase_deployment_contract.py
@@ -107,12 +119,11 @@ dependencies, a dry-run bundle and mocked Google/Firestore replies.
 
 ## Roadmap and project records
 
-[IDEA.md](IDEA.md) is the authoritative product roadmap. [Batch 6A](BATCH_6A_RESULT.md)
-fixes dashboard labels/layout, adds safe Firestore diagnostics/read recovery, Open
-activities, server-enforced Group expiration and a source-verified notification subset.
-Production MD-NETWORK is not claimed resolved. Batch 6B and later remain **planned**:
-password recovery/change, Google account
-linking and trusted complete-account-deletion architecture. Media uploads, vehicle
+[IDEA.md](IDEA.md) is the authoritative product roadmap. [Batch 6B](BATCH_6B_RESULT.md)
+records the local implementation, security model, tests and exact publication/phone
+acceptance steps. Production MD-NETWORK is not independently claimed resolved.
+Password recovery/change, Google account linking and trusted complete-account
+deletion remain **planned**, outside the approved Batch 6B scope. Media uploads, vehicle
 photos, Club logos/banners, rank graphics, Official activities/rewards, subscriptions,
 Stripe, NFC and merchandise remain agreed future requirements. Group QR sharing is
 implemented; the separate Club QR sharing UI is still planned alongside existing Club links.

@@ -1,38 +1,34 @@
 # MotoDashboard implementation status
 
 Updated **2026-10-13**. The operator now reports Batch 6A deployed and working.
-Batch 6B milestone 0 audit/design is complete; implementation and tests follow the
-sequential plan in [BATCH_6B_RESULT.md](BATCH_6B_RESULT.md). New scope replaces the
-earlier account-recovery proposal without removing future account requirements.
-No production data, settings or deployments are changed by this local batch.
-Batch 6B milestone 1 landing is implemented and locally verified: six landing
-cases, existing Group/invitation and Batch 5 regressions, and Pages checks pass.
-Milestone 2 public-profile foundation is implemented locally; 44 new emulator
-security assertions, identity/previous security regressions and profile routes pass.
-Milestone 3 showcase is implemented locally: explicit consent, separate public
-description, bounded cards, Garage synchronization and Rules-enforced privacy/
-deletion/incarnation gates. 81 cumulative new emulator assertions and nine browser
-cases pass, with original Garage/navigation regressions preserved.
-Milestone 4 customization is implemented locally: controlled presets/name/bio/
-featured vehicle and explicitly shared public Club/rank cards. Current-source
-privacy/membership/rank gates pass 119 cumulative emulator assertions; 13 Batch 6B
-browser cases pass. Members-only policy and media remain planned.
-Milestone 5 ride continuity is implemented locally: Return to Ride on every
-destination, owned personal restore, explicit guest recovery and revalidated Group
-return without automatic live consent. Home now preserves enabled sharing. 15 Batch
-6B cases, existing live/notification and Pages regressions pass.
-Milestone 6 exclusivity is implemented locally: Web Locks/atomic IndexedDB personal
-ownership and server UID-keyed live coordinator. 64 Worker tests and 18 Batch 6B
-browser cases pass. New LIVE_IDENTITIES binding/v2 migration must be published;
-global live enforcement is not claimed deployed. No new secret/IAM write grant.
-Milestone 7 final checks pass: **840 Firestore**, **66 Worker (17 workerd)**,
+**Batch 6B milestones 0–8 are complete locally**, with sequential commits and the
+audit/result in [BATCH_6B_RESULT.md](BATCH_6B_RESULT.md). This scope replaces the earlier
+account-recovery proposal without removing future account requirements. No push,
+deployment, production operation or Batch 7 implementation was performed.
+
+| Batch 6B area | Local result / remaining boundary |
+| --- | --- |
+| Anonymous landing | Original SVG/CSS, real-feature sections, indicative prices, EN/FI and reduced motion; explicit guest entry, no automatic GPS |
+| Public identity | Private by default, opaque stable URLs, minimal projections, owner-only editing and server reads; Members-only audience deferred |
+| Garage showcase | Explicit card opt-in, separate public text, controlled featured selection and source privacy/deletion/incarnation gates; no media or subscription restriction |
+| Customization | Safe name/bio/category/preset accent/banner, initial avatar and opted-in current public Club/rank cards; no arbitrary HTML/CSS or technical privileges |
+| Ride continuity | Return to Ride beside bell across five screens; owned record/vehicle/statistics and shared GPS preserved; Home retains enabled sharing, refresh requires fresh live consent |
+| Personal ownership | Web Locks or atomic expiring IndexedDB lease across tabs; no safe primitive means recording fails visibly; personal recordings are not globally locked across devices |
+| Live ownership | Atomic verified-UID SQLite coordinator, nonce-safe renewal/release and bounded abandoned claims; LIVE_IDENTITIES/v2 must be deployed beside retained LIVE_ROOMS/v1 |
+| Final documentation | Current model/roadmap, cleanup inventory, browser-only ordered rollout and physical acceptance procedure; no obsolete runtime files were proven safe to remove |
+
+Final checks pass: **840 Firestore**, **66 Worker (17 workerd)**,
 **68 locked RTDB**, **77 browser groups/named cases**, **10 deployment contracts**,
 **3 YAML / 15 Bash blocks**, and **2 Pages groups (294 references / 83 URLs)**.
 Final completed runs: **0 failed, 0 skipped**. Native Safari/phones and real
 production Firebase remain NOT RUN. See BATCH_6B_RESULT.md for nested-count rules
 and intermediate test failures/refinements; publication is not acceptance.
+Required rollout: reviewed Rules → coordinated Worker → Pages, with the existing
+automatic Pages workflow paused before publishing main. Index definitions/exemption
+are unchanged; no new secrets, IAM write grant or paid service. Real acceptance and
+complete account erasure before a wider public beta remain gates.
 
-## Batch 6A local status
+## Batch 6A reference implementation — deployment reported by operator
 
 | Milestone | Current result / acceptance boundary |
 | --- | --- |
@@ -41,12 +37,12 @@ and intermediate test failures/refinements; publication is not acceptance.
 | Open activity category | Club/Group/Lobby/discovery validation and Rules accept open; Garage rejects it and keeps 12 real categories. No index/schema migration. |
 | Group lifecycle | Shared state listener, Host Home/end confirmation, terminal transitions and server deadline enforced by Rules/Worker/DO alarms. Expired stored records may retain old state; live rights deny. |
 | Notification center | Private invitation and Club/Group approval notices, source proofs, bell/count/read/target/Auth return/EN-FI. Club event and Group update/cancel fan-out deferred pending trusted delivery. |
-| Publication | New Rules and Worker require manual publication after approval. Existing 18 composites and RTDB deny-all unchanged. No new secret/IAM grant/DO migration. |
+| Publication | 6A deployment/working status now reported by operator. 6B needs its own Rules/Worker/v2/frontend rollout; see the current checklist. |
 
 Evidence and limitations: [BATCH_6A_RESULT.md](BATCH_6A_RESULT.md). Operator steps:
 [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md).
 
-Local tests: **705 distinct Firestore assertions**, **50 Worker tests**, **68 RTDB
+Historical 6A local tests: **705 distinct Firestore assertions**, **50 Worker tests**, **68 RTDB
 denials**, **10 deployment contracts**, **3 YAML/15 Bash blocks**, Pages checks and
 the full browser matrix (**24 legacy groups + 20 Batch 5 + 13 Batch 6A**).
 Final passing runs have **0 failed, 0 skipped**. Physical Safari/WebKit and production
@@ -112,12 +108,13 @@ bundle and passed the same 47 Worker tests; that rerun is counted once.
 - Password reset/change and Google sign-in/linking remain planned.
 - Club links are shareable, but Club QR generation/share UI is not implemented;
   Group QR code generation is implemented. Preserve the separate Club QR requirement.
-- app.js remains roughly 2,115 lines; lifecycle/render/store extraction requires
-  separately reviewed regressions. Multiple-tab recording has no exclusive owner lock.
+- app.js remains large; lifecycle/render/store extraction requires separately
+  reviewed regressions. Batch 6B adds exclusive same-origin/account recording locks;
+  it does not add a cross-device private-recording service.
 - Bounded Group/Club hydration creates multiple document reads per row. Measure
   real reads before changing admission/privacy logic or adding polling/listeners.
 - UI intervals/listeners/observers are page-lifetime and should gain teardown before
-  future repeated mounts. Display-profile cache uses TTL but no total size bound.
+  future repeated mounts. Display-profile cache now has a 200-entry bound and TTL.
 - JSON service-account keys require operator rotation; the Cloudflare read-only reader
   and Firebase configuration deployer must remain separate.
 - Live authority leases last 30 seconds; disabled/revoked Auth tokens can remain valid
@@ -130,10 +127,10 @@ bundle and passed the same 47 Worker tests; that rerun is counted once.
 
 ## Recommended next implementation
 
-The authoritative proposed Batch 6 scope and dependencies are in IDEA.md. First
-publish and accept Batch 6A and capture remaining operation-specific network
-failures; then
-account recovery/password changes and Pages-compatible Google sign-in/linking.
+The authoritative scope and dependencies are in IDEA.md. Finish approved Batch 6B
+publication/phone acceptance and capture remaining operation-specific network
+failures. Account recovery/password changes and Pages-compatible Google linking
+remain future work requiring explicit approval.
 Approve trusted full-deletion ownership/retention/backend/IAM/cost design before
 implementing erasure. Wider public beta remains gated on complete deletion and
 security/device acceptance. Media, Official rewards and commercial features follow

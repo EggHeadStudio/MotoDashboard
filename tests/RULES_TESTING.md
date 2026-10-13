@@ -1,7 +1,7 @@
 # MotoDashboard security and regression tests
 
-Updated 2026-10-13 after local Batch 6A. The operator reports deployed Rules/all 18 Enabled indexes,
-Batch 5 and the Cloudflare Worker. Real-account/phone acceptance is pending.
+Updated 2026-10-13 after local Batch 6B. The operator reports 6A deployed/working,
+all 18 Enabled indexes and the Worker. 6B publication/real-phone acceptance is pending.
 Current operator procedure: [DEPLOYMENT_CHECKLIST.md](../DEPLOYMENT_CHECKLIST.md).
 
 ## Isolation and coverage
@@ -19,7 +19,8 @@ they rebuild shared fixtures. Count the repeated baseline once.
 | Minimal display identity | 32 |
 | Batch 5 authorization/query/index-source | 82 |
 | Batch 6A Open/expiry/source-proven notifications | 79 |
-| Total distinct Firestore | 705 |
+| Batch 6B profile/showcase/affiliation privacy | 135 |
+| Total distinct Firestore | 840 |
 | Separate locked RTDB | 68 |
 | Deployment contract | 10 |
 
@@ -43,6 +44,7 @@ python tests/run_group_rules.py
 python tests/run_identity_rules.py
 python tests/run_batch5_rules.py
 python tests/run_batch6a_rules.py
+python tests/run_batch6b_rules.py
 ```
 
 Security/group runners already rebuild the baseline. For the separate RTDB lock:

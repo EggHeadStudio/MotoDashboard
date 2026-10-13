@@ -1,4 +1,57 @@
-> **Batch 6A local extension (2026-10-13):** see [BATCH_6A_RESULT.md](BATCH_6A_RESULT.md) and [the current deployment checklist](DEPLOYMENT_CHECKLIST.md) for Open activity categories, source-verified private notifications and server-enforced Group deadlines. These changes are not deployed; existing 18 composites, read-only Worker identity, RTDB deny-all and DO binding/migration remain. Earlier deployed-version evidence below describes Batch 5.
+> **Current Batch 6B (2026-10-13):** the operator reports 6A deployed/working.
+> The additive model below is implemented and emulator-tested locally; 6B Rules
+> and the Worker UID coordinator are not deployed. Earlier dated results are history.
+
+## Batch 6B public identity and showcase contract
+
+| Path | Data and access |
+| --- | --- |
+| `users/{uid}` | Existing six-field private profile unchanged; own name edits synchronize projections |
+| `users/{uid}/preferences/publicProfile` | publicId, state active/retired, visibility private/public, bio <=300, nullable real category, accent gold/ocean/forest/rose, banner road/horizon/grid, nullable featuredVehicle, up to 4 vehicle aliases, up to 2 affiliation aliases, updatedAt; owner only |
+| `profileOwners/{publicId}` | ownerUid, createdAt; owner-only get, no list; immutable permanent UUID reservation coupled to own preferences |
+| `publicProfiles/{publicId}` | id, displayName, bio, category, accent, banner, featuredVehicle, vehicleIds, affiliationIds, updatedAt; exact minimal projection, known-ID get only; public only when linked current preferences are active/Public, otherwise owner preview only |
+| `users/{uid}/showcaseRefs/{sourceVehicleId}` | profileId, publicId, createdAt; owner-only mapping, immutable while present |
+| `profileOwners/{profileId}/vehicles/{publicVehicleId}` | sourceVehicleId, sourceCreatedAt, createdAt; owner-only immutable mapping, source incarnation proof |
+| `publicProfiles/{profileId}/vehicles/{publicVehicleId}` | id, nickname/manufacturer/model <=64, nullable year, real category, separately entered publicDescription <=500, createdAt/updatedAt; exact safe card, no private description/UID/source ID |
+| `profileOwners/{profileId}/affiliations/{alias}` | clubId, joinedAt, createdAt; private owner mapping and membership-incarnation proof |
+| `publicProfiles/{profileId}/affiliations/{alias}` | id, currently public clubId, name, nullable visible rank, updatedAt; no UID, technical role, invitations or approval data |
+| `displayProfiles/{uid}` | Existing signed-in name/updatedAt projection may additionally contain nullable publicProfileId, validated against own active/Public preferences and reservation; legacy two-field records remain valid |
+
+Profiles use `#/rider/{opaqueUUID}` under `/MotoDashboard/`. IDs are generated
+independently of names; they confer no permissions. Private is the default, including
+existing accounts and vehicles whose old preference already said Public. Save of
+private customization may create a private projection, not an anonymous publication.
+Public collection/subcollection listing is denied. At most seven known public
+documents load per opening (root + four vehicles + two affiliations), with bounded
+concurrency. ACL-dependent Rules reads add to cost; measure them before public beta.
+
+Every public opening uses `getDocFromServer`; offline/unverified access reports an
+error rather than serving an old private preview from cache. Exact whole-document
+allowlists deny malformed projections, including trusted backfills with extra fields.
+See [Firebase server reads](https://firebase.google.com/docs/reference/js/firestore).
+Previously downloaded public information cannot be retracted.
+
+Vehicle read rights also require current profile privacy, current source Public
+visibility/existence, matching source createdAt, explicit private mapping and current
+alias slot. Deleting/recreating a source at the same path cannot revive an old card.
+Garage editing synchronizes opted-in cards; private/Club changes or deletion remove
+card/mappings/featured reference. Original Garage documents remain owner-only.
+Vehicle notes are never copied into publicDescription. Four cards is a prototype
+payload/read bound; future Free one-featured/Rider extras are not enforced now.
+
+Affiliation reads independently check current Club public/live state, membership
+incarnation, name and rank. A privacy, membership or rank change denies stale cards
+until explicit owner update/removal. Opaque root aliases disclose no private Club
+ID when a card is denied. The editor offers the latest 20 owned memberships and
+up to two affiliation cards. Members-only visibility awaits a defined audience policy.
+
+Retirement is irreversible for clients: preferences/reservation cannot be deleted,
+IDs cannot transfer/reuse and retired preferences cannot reactivate. This is not
+complete account erasure. Future trusted deletion must inventory all new paths,
+remove/anonymize personal owner mappings, preserve minimal nonpersonal retired-ID
+reservations and revoke live claims/tickets first. Auth-only deletion is insufficient.
+No paid entitlement, permissions, system-admin or upload field is client writable.
+No new composite index or single-field exemption is required; keep all existing 18.
 
 > **Current post-Batch 5 architecture (2026-10-12):** GitHub Pages frontend, Firebase Auth identity, Firestore persistent authorization/data, Cloudflare Worker + one Durable Object per Group Session + WebSockets for live locations. RTDB stays locked. See LIVE_TRACKING.md; older Batch 3 results below are historical. The operator reports deployed Auth/Firestore/Rules/all 18 Enabled indexes and Cloudflare Worker/DOs. Real-account/phone acceptance remains pending.
 
@@ -126,7 +179,8 @@ tests, publication and real-account/physical-device acceptance remain distinct e
 
 ## Group Session and display-identity contract
 
-`displayProfiles/{uid}`: exactly displayName and updatedAt, signed-in get and
+`displayProfiles/{uid}`: displayName and updatedAt, with the validated optional
+nullable publicProfileId added in Batch 6B, signed-in get and
 bounded list (up to 30); repository prefix search uses 10. Owner writes only, name
 matching private users/{uid} through getAfter. Own login maintains the projection;
 missing projections display Member / Jäsen. Never read another private users doc
@@ -194,7 +248,8 @@ New/changed `users/{uid}.displayName` is trimmed and 3–30 Unicode code points.
 Rules enforce normalized text and RE2 character bounds (string size in the
 emulator counts UTF-16 units). Existing unchanged legacy 1–64-unit names can
 still receive language updates; invalid legacy names prompt an owner correction.
-Owner editing synchronizes the two-field displayProfiles projection. No email
+Owner editing synchronizes the minimal displayProfiles projection (legacy two-field
+or the optional validated public alias). No email
 or UID is used as a visible fallback. Account deletion/export remain future
 requirements; this batch does not implement complete cloud erasure.
 

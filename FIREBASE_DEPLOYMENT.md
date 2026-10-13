@@ -1,4 +1,9 @@
-> **Batch 6A local extension (2026-10-13):** see [BATCH_6A_RESULT.md](BATCH_6A_RESULT.md) and [the current deployment checklist](DEPLOYMENT_CHECKLIST.md) for Open activity categories, source-verified private notifications and server-enforced Group deadlines. These changes are not deployed; existing 18 composites, read-only Worker identity, RTDB deny-all and DO binding/migration remain. Earlier deployed-version evidence below describes Batch 5.
+> **Current Batch 6B (2026-10-13):** 6A is reported deployed/working. New 6B Rules
+> for opt-in public projections/private mappings are local; the existing manual
+> main workflow now also runs **tests/run_batch6b_rules.py**. Index inventory remains
+> exactly 18 plus routeChunks.pointsJson exemption; no new secret or role is needed.
+> Use the current [deployment checklist](DEPLOYMENT_CHECKLIST.md) for the coordinated
+> Rules → Worker/v2 → Pages rollout and acceptance. Older setup evidence remains below.
 
 # Firebase deployment and maintenance from main
 

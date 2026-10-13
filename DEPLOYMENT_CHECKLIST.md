@@ -1,7 +1,175 @@
 # MotoDashboard deployment and acceptance checklist
 
-Updated **2026-10-13** after local Batch 6A. Batch 5 was deployed/manually tested,
-per operator; **Batch 6A Rules, Worker and frontend are not deployed**.
+Updated **2026-10-13** for Batch 6B. The operator reports **6A deployed/working**;
+**6B is implemented/tested locally and is not deployed**. Use the following current
+runbook. The older 6A publication instructions below describe the preceding rollout.
+
+## Batch 6B publication — current browser-only runbook
+
+No deployment or production data operation was performed by the agent. Run these
+steps only after approving the local commits. No Node/npm/CLI installation or new
+deployment branch is needed on this computer.
+
+| Classification | Finding / correction |
+| --- | --- |
+| BLOCKER — 6B publication | Publish new **firestore.rules**, Worker **LIVE_IDENTITIES/LiveIdentity + v2 migration**, then the compatible frontend. Existing 6A backend versions do not implement 6B privacy/ownership paths. |
+| BLOCKER — acceptance | Production two-account/phone tests and native Safari are NOT RUN. Local emulator/workerd/Chromium evidence does not certify live policy. |
+| BLOCKER — wider public beta | Trusted complete account deletion remains absent; all new projection/mapping/claim paths must join its inventory. Auth-only deletion is insufficient. |
+| WARNING | Previously downloaded public content cannot be retracted. Anonymous known-ID reads add ACL reads/quota and need abuse controls before wider use. |
+| WARNING | Members-only profile policy, uploads and paid entitlements are deferred. Four showcase/two affiliation slots are prototype read/payload bounds, not subscriptions. |
+| WARNING | Auth-disabled/revoked tokens can last until expiry; background GPS and operational quotas remain unaccepted. Browsers without Web Locks and writable IndexedDB cannot safely start a personal recorder. |
+| INFORMATION | Existing **18** composites and routeChunks.pointsJson exemption remain unchanged; all 18 Enabled is operator-reported. No new indexes, secrets, IAM write grant, Firebase service or paid infrastructure is required. |
+| INFORMATION | 6B defaults existing profiles/vehicles to unpublished, including legacy Public preferences. Collections are created only by explicit owner actions; no automatic production migration/backfill. |
+
+### 1. Publish reviewed main without starting Pages prematurely
+
+1. Read BATCH_6B_RESULT.md. Record the reviewed main SHA, currently deployed secure
+   frontend/Rules/Worker versions and current namespace IDs for rollback.
+2. Ask the prototype testers to stop live sharing and finish or safely save their
+   personal rides. Close old live tabs and wait **two minutes** before the Worker
+   upgrade, covering the previous backend's abandoned-socket/lease window. This is
+   a quiet rollout, not a data purge; retain Clubs, Groups, rides and reservations.
+3. GitHub repository → **Actions → Deploy to GitHub Pages → … → Disable workflow**.
+   The existing published site stays online. This pauses main's automatic Pages
+   trigger without editing the workflow or creating another branch.
+   [GitHub's browser procedure](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/disable-and-enable-workflows).
+4. In the VS Code terminal, after choosing to publish:
+
+   ```powershell
+   git switch main
+   git status --short
+   git log --oneline origin/main..main
+   git push origin main
+   ```
+
+   Expect a clean tree and the reviewed local commits. No force push. This makes
+   backend source available to manual Actions; it does not deploy either backend.
+
+### 2. Firestore — manual workflow from that main revision
+
+1. **Actions → Validate or deploy MotoDash Firestore → Run workflow**.
+2. Branch **main**; operation **deploy**; confirmation **motodash-87bf8**; scope
+   **rules-and-indexes**. A separate **operation=validate** run is optional: deploy already
+   requires the validation job, including **tests/run_batch6b_rules.py**.
+3. Existing GitHub Secret **FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON** must belong to
+   **motodash-firebase-deployer@motodash-87bf8.iam.gserviceaccount.com**, with the
+   unchanged **firebase-deployer-role.json** configuration-only permissions.
+   Never reuse Cloudflare's read-only reader key.
+4. Confirm both jobs succeed for the intended SHA. Sources are **firestore.rules**,
+   **firestore.indexes.json**, **firebase.deploy.json**, database **(default)** in
+   **motodash-87bf8**. No Auth, Hosting, RTDB, Storage or Cloudflare deployment occurs.
+5. Firebase Console → select **MotoDash / motodash-87bf8** → **Build → Firestore
+   Database → Rules**. Verify publication time and full source, including
+   `publicProfileAvailable`, `showcaseAvailable`, `affiliationAvailable`, private
+   owner mappings and default deny. Preserve all earlier private/retired-ID rules.
+6. **Indexes → Composite:** retain all **18 Enabled**, comparing the table below.
+   **Single field:** retain routeChunks.pointsJson exemption and automatic indexes
+   for notifications.createdAt/readAt, displayProfiles.displayName and existing refs.
+7. **Authentication → Settings → Authorized domains:** retain
+   **eggheadstudio.github.io** and **localhost**, without `/MotoDashboard/` in the
+   domain entry. Email/password stays enabled. No new Firebase settings are needed.
+8. Keep **database.rules.json** read/write false; do not deploy or enable RTDB.
+
+### 3. Cloudflare — append the coordinator migration
+
+1. **Actions → Deploy MotoDash Cloudflare Worker → Run workflow → main**.
+   **No additional inputs.** Use the same reviewed revision. Its npm test/dry-run
+   gate includes actual workerd coordinator tests before deployment.
+2. Existing GitHub Secrets: **CLOUDFLARE_API_TOKEN**, **CLOUDFLARE_ACCOUNT_ID**.
+   The official Wrangler Action uses **cloudflare/wrangler.jsonc**, Worker
+   **motodash-live**, preserving **LIVE_ROOMS → LiveRoom / v1** and appending
+   **LIVE_IDENTITIES → LiveIdentity / v2**. Do not delete/recreate v1 or either namespace.
+3. Cloudflare Dashboard → **Workers & Pages → motodash-live → Settings → Bindings**:
+   verify both Durable Object bindings and the new SQLite namespace. Record deployed
+   version/namespace evidence. The migration is created by Wrangler, not a frontend
+   toggle or a manually invented replacement namespace.
+4. Verify unchanged variables **FIREBASE_PROJECT_ID=motodash-87bf8** and
+   **ALLOWED_ORIGINS=https://eggheadstudio.github.io**, and existing encrypted
+   **FIRESTORE_SERVICE_ACCOUNT**. Keep its read-only IAM; no new secret or Firestore
+   write access is required. No origin wildcard, scheduled trigger or paid service.
+5. Endpoint stays **https://motodash-live.old-sound-55f2.workers.dev**; HTTPS tickets
+   and WSS sockets remain. Direct navigation returning origin_denied is expected
+   and does not prove authenticated live behavior. Monitor actual request/storage/read
+   quotas: coordinator renewals add about 3 requests/minute per active UID.
+
+### 4. Publish Pages last
+
+1. **Actions → Deploy to GitHub Pages → Enable workflow**.
+2. **Run workflow → main**, no additional inputs. Confirm success and the reviewed SHA.
+3. Open **https://eggheadstudio.github.io/MotoDashboard/**. Reload/close old tabs;
+   verify **1.4.0-batch6b** via the existing version diagnostics. Do not clear local
+   rides/IndexedDB to force an update. There is no new service worker to deploy.
+4. Confirm anonymous landing, intentional guest entry, private navigation after
+   login, EN/FI, public `#/rider/{opaque-id}` refresh and unchanged Group invitation/QR
+   return. All frontend assets remain relative beneath `/MotoDashboard/`.
+5. Run the acceptance procedure below and record outcomes. Deployment success is
+   separate from effective Rules, cross-device authorization and physical GPS.
+
+### 5. Two-account/two-phone acceptance — NOT RUN
+
+Use disposable accounts **A/B**, Android Chromium and iPhone Safari, over HTTPS,
+stationary/on foot and foreground. Choose a deliberate testing window; these steps
+create test data. Record versions, language, device/browser, safe error codes and
+expected/actual outcomes; never save passwords, tokens or precise locations in logs.
+
+1. Signed out: EN/FI landing, proposed prices, Sign in/Create account, reduced motion,
+   natural scrolling/portrait/landscape. No GPS prompt. Try dashboard then explicitly
+   Start Ride; permission denial/retry and explicit guest refresh Resume work.
+2. A adds two vehicles with private notes. Public preferences alone publish nothing.
+   A configures a bio/accent/banner, opts into Public profile and explicitly publishes
+   selected cards with separate public text. B opens the copied profile URL signed
+   out and after refresh. Name/category/cards appear; email, UID, private notes,
+   unselected Garage, history, precise location and technical roles do not.
+3. A makes the profile Private: new B server reads of root/cards deny. Restore Public,
+   then make a vehicle Private or delete it: the card/featured reference disappears;
+   raw retained-card reads deny. A can manage its own Garage/history; B's own signed-in
+   SDK reads/writes to A's private records and projection/mapping writes must deny.
+   The privileged Console editor is not a client-permission test.
+4. A explicitly publishes current identity/rank from a public Club. Private Club
+   identity cannot publish. Privacy/rank/membership changes deny the stale card;
+   A updates/removes it. Visible ranks never grant technical rights.
+5. A records and shares in active Group **X**; B is actually admitted and opts in.
+   Verify two readable markers, Group-selected vehicle, stats, stale status and one
+   GPS watcher. Browse all five screens: bell and Return to Ride remain reachable;
+   return preserves record/vehicle/stats/socket. Home does not stop sharing.
+6. Second personal Start offers Return/Cancel and preserves the old ride. Open the
+   same account in another tab: competing personal resume/Start cannot start GPS.
+   Close/release the owner tab, then explicitly Resume the durable record.
+7. For the actual same-UID cross-device test, keep A sharing in X on phone 1; sign
+   phone 2 out of B and into **A**. A is admitted to another active Group **Y** on that
+   phone. Starting Y must return the active-ride conflict, leave X on phone 1 running
+   and send no Y coordinates. Return on phone 2 is sharing-off until explicit consent.
+   Explicit same-X reconnect may replace its earlier publisher, never another Group.
+8. Stop/leave/end/logout: markers/private live state clear. Ending a Group does not
+   finish an independent personal record. Logout stops GPS and returns to landing.
+   Refresh never auto-restores live consent; remembered Group authority is rechecked.
+9. Remove/ban B or end X while B is silent: expired authority receives no later
+   positions within the documented lease bound. Test network loss/reconnect and
+   lock-screen suspension: abandoned claims expire; new active sharing never overlaps
+   an expired old receiver. Capture safe diagnostics on Wi-Fi and mobile data if needed.
+
+Use the earlier full role/retirement/QR procedure below for existing functionality.
+A third account is still needed for the complete Admin/Host permission matrix.
+Mark unavailable physical/authorization paths NOT RUN rather than inferred PASS.
+
+### 6. Safe rollback
+
+- Keep the current secure Rules/Worker while rolling back compatible frontend files
+  to a reviewed secure commit. Restore only frontend paths in a new main commit;
+  do not force push or accidentally revert migrations/backend security files.
+- Once v2 exists, retain both class exports, bindings and migration history even
+  when disabling new UI. Never roll back to a Worker that lacks global coordination
+  and describe it as exclusive. Drain sharing before any reviewed backend rollback.
+- Rules rollback must be a reviewed **schema-compatible secure revision**. A pre-6B
+  Rules history can deny three-field displayProfiles and break invitations/search;
+  do not publish it blindly. Use the manual Firebase workflow's **rules-only** scope
+  with the same project confirmation for a compatible secure fix. Leave indexes intact.
+- For a real public-data incident, a deliberately reviewed stricter deny-public policy
+  is safer than widening access. Inspect Console source/publication and effective client
+  denials. Back up evidence, preserve immutable reservations and do not purge data.
+
+Full source/model, counts, operational limitations and commits: BATCH_6B_RESULT.md.
+No live acceptance item above is marked complete by local automation.
 This is the current runbook. Older preparation, security reproductions and full
 migration/probe records are preserved in [the historical checklist](docs/history/pre-batch6/DEPLOYMENT_CHECKLIST.md).
 The audit performed no push, deployment, branch deletion or production-data operation.
@@ -14,9 +182,9 @@ The audit performed no push, deployment, branch deletion or production-data oper
 | INFORMATION | Firebase Authentication/Firestore configured; Firestore Rules deployment succeeded and all 18 composites are Enabled, per operator. The previous one-index/missing-17 blocker is resolved by that report. |
 | INFORMATION | motodash-live Worker and SQLite Durable Objects deployed; production endpoint configured. |
 | INFORMATION | Main contains the current Pages, manual Firebase and manual Worker workflows. No deployment branch is needed. |
-| BLOCKER — Batch 6A publication | Publish the reviewed new firestore.rules and Worker deadline enforcement as well as the frontend. Existing deployed Batch 5 versions do not implement these changes. No new composite, secret, IAM grant or DO migration is needed. |
-| BLOCKER ? wider public beta | Full account deletion is not implemented. Auth-only deletion and client recursive deletion are unacceptable substitutes. |
-| BLOCKER ? acceptance | Real-user/two-account/two-phone behavior and effective live security remain untested. Do not mark the release fully validated from publication or emulator results. |
+| INFORMATION — Batch 6A | The operator reports its Rules/Worker/frontend deployed and working. Batch 6B publication requirements are the current runbook above. |
+| BLOCKER — wider public beta | Full account deletion is not implemented. Auth-only deletion and client recursive deletion are unacceptable substitutes. |
+| BLOCKER — acceptance | Real-user/two-account/two-phone behavior and effective live security remain untested. Do not mark the release fully validated from publication or emulator results. |
 | WARNING | Exact published commit/Rules version, retained single-field exemptions, IAM/key policy and legacy-data inventory should be recorded by the operator. This audit did not access private consoles. |
 | WARNING | Club retirement denies access but retains private children/ID reservations. Never erase the reservation or reuse a retired ID. |
 | WARNING | Token revocation, Spark/read quotas, whole-service abuse, mobile suspension and provider commercial terms remain operational limitations. |
@@ -30,7 +198,7 @@ The audit performed no push, deployment, branch deletion or production-data oper
 | Firestore default database | `firestore.rules`, `firestore.indexes.json`, `firebase.deploy.json`; persistent data/admission, no live GPS collection |
 | Firebase deployment identity | `firebase-deployer-role.json`; dedicated motodash-firebase-deployer account, configuration permissions only |
 | RTDB | `database.rules.json`: root read/write false; no runtime transport or initialization |
-| Cloudflare live transport | `cloudflare/wrangler.jsonc`, `cloudflare/src/`; motodash-live, LIVE_ROOMS -> LiveRoom, SQLite v1 migration |
+| Cloudflare live transport | `cloudflare/wrangler.jsonc`, `cloudflare/src/`; motodash-live, LIVE_ROOMS/LiveRoom/v1 retained plus local LIVE_IDENTITIES/LiveIdentity/v2 |
 | Public live endpoint | `live-config.js`: https://motodash-live.old-sound-55f2.workers.dev |
 
 Firebase project **motodash-87bf8**, database **(default)**. Public web config fields:
@@ -235,9 +403,10 @@ Audit-local results, removed/retained files and technical debt are in
 account deletion, media/backend/IAM/cost review, provider commercial licensing and
 other future launch requirements remain in [IDEA.md](IDEA.md). No Batch 6 feature was
 implemented by the historical cleanup audit. Batch 6A's local implementation and
-new acceptance boundary are detailed below; Batch 6B has not begun.
+new acceptance boundary are retained below. Batch 6B is implemented locally; use
+the current publication and acceptance runbook at the top of this document.
 
-## Batch 6A publication and acceptance — current instructions
+## Historical Batch 6A publication and acceptance — superseded by 6B above
 
 **Nothing was deployed by the agent.** This section is for the operator after
 approving the local commits. No software installation is needed on this computer.

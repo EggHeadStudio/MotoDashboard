@@ -1,5 +1,9 @@
 # MotoDashboard — Batch 6A result
 
+> Subsequent operator report: Batch 6A is deployed and working. The record below
+> preserves its original local completion/test evidence. Current Batch 6B source
+> and publication steps are in BATCH_6B_RESULT.md and DEPLOYMENT_CHECKLIST.md.
+
 Date: **2026-10-13**. Frontend version: **1.3.0-batch6a**.
 
 Batch 6A is local implementation and verification. The operator reports Batch 5,

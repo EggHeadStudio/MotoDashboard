@@ -1,4 +1,11 @@
-> **Batch 6A local extension (2026-10-13):** see [BATCH_6A_RESULT.md](BATCH_6A_RESULT.md) and [the current deployment checklist](DEPLOYMENT_CHECKLIST.md) for Open activity categories, source-verified private notifications and server-enforced Group deadlines. These changes are not deployed; existing 18 composites, read-only Worker identity, RTDB deny-all and DO binding/migration remain. Earlier deployed-version evidence below describes Batch 5.
+> **Current Batch 6B (2026-10-13):** the operator reports 6A deployed/working.
+> 6B is local and adds **LIVE_IDENTITIES → LiveIdentity / SQLite v2**, retaining
+> **LIVE_ROOMS → LiveRoom / v1**. Use the current [deployment checklist](DEPLOYMENT_CHECKLIST.md)
+> before the older setup/6A source-only instructions below. No new secrets/IAM write
+> grant or paid service. Drain sharing, deploy the coordinator before new Pages,
+> preserve both namespaces/migrations and perform same-account two-device conflicts.
+> Abandoned connected ownership is bounded by 45s without inbound activity; authority
+> leases remain 30s. Quota usage increases by coordinator renewals (about 3/min/UID).
 
 > **Current operator report, 2026-10-12:** motodash-live and LIVE_ROOMS Durable Objects are deployed, the production frontend endpoint is configured, Batch 5 is published, Firestore Rules deployed and all 18 composites Enabled. Real two-account/two-phone acceptance remains pending. This guide now covers maintenance/redeployment and acceptance; no setup/deployment action was performed by this audit. Firebase deployment identity and the Cloudflare read-only Firestore credential are separate.
 
@@ -419,7 +426,7 @@ fixes just to make UI work. Keeping current secure rules with disabled live is
 preferable. Keep RTDB deny-all. Rules rollback does not restore/delete documents,
 change indexes or undo product writes. No production restore/purge is automated.
 
-## Workflow preparation verification — 2026-10-11
+## Historical workflow preparation verification — 2026-10-11
 
 The workflow and existing config are checked locally for YAML syntax, manual-only
 trigger, action input names, working directory, credential references and room
@@ -427,10 +434,11 @@ binding/migration/export alignment. No new software is installed for deployment;
 Node/npm/Wrangler installation in this workflow is confined to GitHub runners.
 This is configuration validation, not a GitHub-hosted run or a production test.
 No push, workflow dispatch, Cloudflare change or Firebase operation is performed.
-The frontend workflow and cloudflare/wrangler.jsonc are unchanged.
+On that date the frontend workflow and cloudflare/wrangler.jsonc were unchanged.
+Batch 6B now appends LIVE_IDENTITIES/v2; its current procedure is at the top of this guide.
 
 
-## Post-Batch 5 audit
+## Historical post-Batch 5 audit
 
 The existing Worker/DO binding, v1 SQLite migration, exact origin, protocol and
 credential configuration are preserved. Local Worker checks are in REPOSITORY_AUDIT.md;
