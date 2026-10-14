@@ -864,6 +864,9 @@ service cloud.firestore {
         && request.resource.data == groupSummary(getAfter(groupPath(id)).data) && request.resource.data.updatedAt == request.time;
       allow delete: if groupProjectionWriter(id) && !lobbyEligible(getAfter(groupPath(id)).data);
     }
+    // Private trusted media references. Neither ownership nor public visibility is
+    // inferred from a client-written mirror. Media is served through Worker policy.
+    match /mediaRecords/{id} { allow read, write: if false; }
     // System admins, live locations, Official activities and every unknown path stay denied.
     match /{document=**} { allow read, write: if false; }
   }

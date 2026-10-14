@@ -1,5 +1,7 @@
 export {LiveRoom} from './LiveRoom.js';
 export {LiveIdentity} from './LiveIdentity.js';
+export {MediaState} from './MediaState.js';
+import {decodeJwt} from 'jose';
 import {verifyFirebaseToken,PROJECT} from './auth.js';
 export function allowedOrigin(request, env) {
   const origin=request.headers.get('Origin');
@@ -13,9 +15,29 @@ export default {
     if(!allowedOrigin(request,env)) return Response.json({error:'origin_denied'},{status:403});
     const origin=request.headers.get('Origin');
     const headers={'Access-Control-Allow-Origin':origin,'Vary':'Origin','Cache-Control':'no-store',
-      'Access-Control-Allow-Methods':'POST, GET, OPTIONS','Access-Control-Allow-Headers':'Authorization, Content-Type'};
+      'Access-Control-Allow-Methods':'POST, PUT, DELETE, GET, OPTIONS','Access-Control-Allow-Headers':'Authorization, Content-Type, If-Match, X-Media-Published'};
     const reply=(error,status)=>Response.json({error},{status,headers});
     if(request.method==='OPTIONS') return new Response(null,{status:204,headers});
+    if(url.pathname.startsWith('/v1/media/')) {
+      if(env.FIREBASE_PROJECT_ID!==PROJECT || !env.MEDIA_BUCKET || !env.MEDIA_STATE || !env.MEDIA_SERVICE_ACCOUNT)return reply('not_configured',503);
+      if(url.search || url.hash || url.protocol!=='https:')return reply('bad_request',400);
+      let identity=null;
+      const authorization=request.headers.get('Authorization');
+      if(authorization)try{
+        if(!authorization.startsWith('Bearer '))throw Error('invalid_token');
+        const token=authorization.slice(7);identity={...await verifyFirebaseToken(token,PROJECT),authTime:decodeJwt(token).auth_time*1000};
+      }catch{return reply('invalid_token',401);}
+      if(request.method!=='GET'&&!identity)return reply('invalid_token',401);
+      const caller=identity?'uid:'+identity.uid:'ip:'+(request.headers.get('CF-Connecting-IP') || 'unknown');
+      const hash=[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(caller)))].map(x=>x.toString(16).padStart(2,'0')).join('');
+      const internal=new Headers(request.headers);internal.set('X-MotoDash-Identity',JSON.stringify(identity));internal.set('X-MotoDash-Caller',hash);internal.delete('Authorization');
+      try {
+        const result=await env.MEDIA_STATE.get(env.MEDIA_STATE.idFromName('prototype-v1')).fetch(new Request(request,{headers:internal}));
+        const mediaHeaders=new Headers(result.headers);
+        for(const [key,value] of Object.entries(headers))if(key!=='Cache-Control'||!mediaHeaders.has(key))mediaHeaders.set(key,value);
+        return new Response(result.body,{status:result.status,headers:mediaHeaders});
+      }catch{return reply('unavailable',503);}
+    }
     if(env.FIREBASE_PROJECT_ID!==PROJECT || !env.FIRESTORE_SERVICE_ACCOUNT || !env.LIVE_ROOMS || !env.LIVE_IDENTITIES) return reply('not_configured',503);
     if(url.search || url.hash || (url.protocol!=='https:' && !['localhost','127.0.0.1'].includes(url.hostname))) return reply('bad_request',400);
     const match=/^\/v1\/sessions\/([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/(ticket|connect)$/.exec(url.pathname);

@@ -9,7 +9,8 @@
     "FIREBASE_PROJECT_ID": "motodash-87bf8",
     "ALLOWED_ORIGINS": "https://eggheadstudio.github.io"
   },
-  "durable_objects": {"bindings": [{"name":"LIVE_ROOMS", "class_name":"LiveRoom"},{"name":"LIVE_IDENTITIES", "class_name":"LiveIdentity"}]},
-  "migrations": [{"tag":"v1", "new_sqlite_classes":["LiveRoom"]},{"tag":"v2", "new_sqlite_classes":["LiveIdentity"]}],
+  "r2_buckets": [{"binding":"MEDIA_BUCKET", "bucket_name":"motodash-media"}],
+  "durable_objects": {"bindings": [{"name":"LIVE_ROOMS", "class_name":"LiveRoom"},{"name":"LIVE_IDENTITIES", "class_name":"LiveIdentity"},{"name":"MEDIA_STATE", "class_name":"MediaState"}]},
+  "migrations": [{"tag":"v1", "new_sqlite_classes":["LiveRoom"]},{"tag":"v2", "new_sqlite_classes":["LiveIdentity"]},{"tag":"v3", "new_sqlite_classes":["MediaState"]}],
   "observability": {"enabled": false}
 }

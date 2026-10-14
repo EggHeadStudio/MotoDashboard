@@ -24,6 +24,17 @@ strictly inspected raster containers, never arbitrary SVG.
 
 Milestones and exact final tests/commit inventory will be recorded as completed.
 
+Milestone 1: private R2 binding and additive SQLite MediaState/v3; exact source
+authorization, per-image publication, signature/dimension/size gates, hashed caller
+rates, owner/global quotas, optimistic revision fences, revocation checks and
+deny-first deletion with retry journal. Private Firestore mediaRecords mirror
+explicitly denies all client operations; previous deny-all already had this effect.
+No composite/index change. Existing live bindings/origin/reader are preserved.
+Local dry-run build, 11 policy/container groups and actual workerd/R2 lifecycle
+passed. The first full Worker run had a duplicate-case cache-header failure;
+normalized Headers fixed it, and the actual media runtime rerun passed. Final full
+regression will be rerun at milestone 10. No production test is claimed.
+
 Milestone 0 verification: 17 focused browser cases/groups (including 26 camera and
 25 replay nested assertions) passed, 0 failed/skipped. Mobile disclosures preserve
 playback, speed and more than 250px clear map space with both collapsed; exports,

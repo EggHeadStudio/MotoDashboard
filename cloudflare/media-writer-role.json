@@ -1,0 +1,6 @@
+{
+  "title": "MotoDash Media Backend",
+  "description": "Dedicated private media mirror writer, source authorization reader and Auth revocation checker. Never use for live tracking or configuration deployment.",
+  "stage": "GA",
+  "includedPermissions": ["datastore.databases.get", "datastore.entities.get", "datastore.entities.create", "datastore.entities.update", "datastore.entities.delete", "firebaseauth.users.get"]
+}

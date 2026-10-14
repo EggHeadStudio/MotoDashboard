@@ -15,6 +15,8 @@ function seed(id=roomA) {
 }
 function encode(value) {
   if(value===null)return {nullValue:null};if(typeof value==='string')return {stringValue:value};
+  if(typeof value==='boolean')return {booleanValue:value};
+  if(Array.isArray(value))return {arrayValue:{values:value.map(encode)}};
   if(typeof value==='number')return {integerValue:String(value)};
   return {mapValue:{fields:Object.fromEntries(Object.entries(value).map(([k,v])=>[k,encode(v)]))}};
 }
@@ -24,15 +26,19 @@ before(async()=>{
   execFileSync(openssl,['req','-x509','-newkey','rsa:2048','-keyout',join(fixtureDir,'key.pem'),'-out',join(fixtureDir,'cert.pem'),'-days','1','-nodes','-subj','/CN=local-test'],{stdio:'ignore'});
   const pem=await readFile(join(fixtureDir,'key.pem'),'utf8');cert=await readFile(join(fixtureDir,'cert.pem'),'utf8');key=await importPKCS8(pem,'RS256');seed();seed(roomB);
   mf=new Miniflare({modules:true,scriptPath:new URL('../dist/index.js',import.meta.url).pathname.replace(/^\/([A-Z]:)/,'$1'),
-    compatibilityDate:'2026-08-06',durableObjects:{LIVE_ROOMS:{className:'LiveRoom',useSQLite:true},LIVE_IDENTITIES:{className:'LiveIdentity',useSQLite:true}},
+    compatibilityDate:'2026-08-06',r2Buckets:['MEDIA_BUCKET'],durableObjects:{LIVE_ROOMS:{className:'LiveRoom',useSQLite:true},LIVE_IDENTITIES:{className:'LiveIdentity',useSQLite:true},MEDIA_STATE:{className:'MediaState',useSQLite:true}},
     bindings:{FIREBASE_PROJECT_ID:project,ALLOWED_ORIGINS:origin,FIRESTORE_SERVICE_ACCOUNT:JSON.stringify({project_id:project,
-      client_email:'test-reader@'+project+'.iam.gserviceaccount.com',private_key:pem})},
+      client_email:'test-reader@'+project+'.iam.gserviceaccount.com',private_key:pem}),MEDIA_SERVICE_ACCOUNT:JSON.stringify({project_id:project,
+      client_email:'test-media@'+project+'.iam.gserviceaccount.com',private_key:pem})},
     outboundService:async request=>{
       const url=new URL(request.url);
       if(url.hostname==='www.googleapis.com' && url.pathname.includes('/metadata/x509/'))return Response.json({'fixture-key':cert},{headers:{'Cache-Control':'max-age=3600'}});
       if(url.hostname==='oauth2.googleapis.com')return Response.json({access_token:'local-oauth',expires_in:3600});
+      if(url.hostname==='identitytoolkit.googleapis.com') {const body=await request.json();return Response.json({users:body.localId.map(localId=>({localId,validSince:'0'}))});}
       if(url.hostname!=='firestore.googleapis.com')throw Error('Unexpected network destination');
-      const body=await request.json();return Response.json(body.documents.map(name=>{
+      const body=await request.json();
+      if(body.writes){for(const write of body.writes){assert((write.update?.name || write.delete).includes('/documents/mediaRecords/'));}return Response.json({commitTime:new Date().toISOString()});}
+      return Response.json(body.documents.map(name=>{
         const path=name.split('/documents/')[1],data=docs.get(path);
         return {...(data?{found:{name,fields:Object.fromEntries(Object.entries(data).map(([k,v])=>[k,encode(v)]))}}:{missing:name}),readTime:new Date().toISOString()};
       }));
@@ -81,6 +87,28 @@ test('runtime health, CORS, unknown routes and invalid Firebase tokens',async()=
   assert.equal((await ticket('outsider')).status,403);
 });
 let alice,bob;
+const mediaProfile='11111111-1111-4111-8111-111111111111';
+async function media(path,uid='alice',options={}) {
+  return mf.dispatchFetch('https://worker.test/v1/media/'+path,{...options,headers:{Origin:origin,...(uid?{Authorization:'Bearer '+await token(uid)}:{}),...options.headers}});
+}
+test('media runtime private R2 upload/read/replace/delete has no permanent URL or object path',async()=>{
+  docs.set('profileOwners/'+mediaProfile,{ownerUid:'alice'});
+  docs.set('users/alice/preferences/publicProfile',{publicId:mediaProfile,state:'active',visibility:'public',vehicleIds:[]});
+  docs.set('publicProfiles/'+mediaProfile,{id:mediaProfile});
+  const path='resources/profile/'+mediaProfile,fixtures=JSON.parse(await readFile(new URL('./media-fixtures.json',import.meta.url),'utf8'));
+  const bytes=Buffer.from(fixtures['image/png'],'base64');
+  let r=await media(path);assert.equal(r.status,200);assert.deepEqual((await r.json()).images,[]);
+  const upload=async revision=>media(path+'/slots/avatar','alice',{method:'POST',headers:{'Content-Type':'image/png','If-Match':String(revision),'X-Media-Published':'false'},body:bytes});
+  r=await upload(0);assert.equal(r.status,201,await r.clone().text());const first=await r.json();
+  r=await media('images/'+first.id);assert.equal(r.status,200);assert.equal(r.headers.get('Cache-Control'),'private, no-store');assert.deepEqual(Buffer.from(await r.arrayBuffer()),bytes);
+  assert.equal((await media('images/'+first.id,null)).status,403);
+  assert.equal((await media(path+'/slots/avatar','bob',{method:'POST',headers:{'Content-Type':'image/png','If-Match':'1','X-Media-Published':'true'},body:bytes})).status,403);
+  r=await media(path);const data=await r.json();assert.equal(data.images[0].id,first.id);assert(!JSON.stringify(data).includes('objectKey'));assert(!JSON.stringify(data).includes('alice'));
+  r=await upload(1);assert.equal(r.status,201);const second=await r.json();assert.notEqual(first.id,second.id);assert.equal((await media('images/'+first.id)).status,404);
+  assert.equal((await upload(1)).status,409);
+  r=await media(path+'/slots/avatar','alice',{method:'DELETE',headers:{'If-Match':String(second.revision)}});assert.equal(r.status,200);
+  assert.equal((await media('images/'+second.id)).status,404);
+});
 test('pending socket gets no private messages; two verified riders receive snapshot',async()=>{
   const pending=await connect();await new Promise(resolve=>setTimeout(resolve,30));assert.equal(pending.messages.length,0);pending.ws.close();
   alice=await enter();bob=await enter('bob');const snapshot=await wait(bob,'snapshot');
