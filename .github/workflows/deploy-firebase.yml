@@ -85,14 +85,14 @@ jobs:
           firebase emulators:exec --only firestore --project demo-motodash
           --config firebase.deploy.json --non-interactive
           "python3 tests/run_security_rules.py && python3 tests/run_group_rules.py &&
-          python3 tests/run_identity_rules.py && python3 tests/run_batch5_rules.py && python3 tests/run_batch6a_rules.py && python3 tests/run_batch6b_rules.py"
+          python3 tests/run_identity_rules.py && python3 tests/run_batch5_rules.py && python3 tests/run_batch6a_rules.py && python3 tests/run_batch6b_rules.py && python3 tests/run_batch7_rules.py"
 
       - name: Record successful validation and reviewed revision
         env:
           REVIEWED_SHA: ${{ github.sha }}
         run: |
           echo "Validated revision: $REVIEWED_SHA" >> "$GITHUB_STEP_SUMMARY"
-          echo 'Exact 18 composites and all Firestore emulator suites passed. No production deployment in this job.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Exact 19 composites and all Firestore emulator suites passed. No production deployment in this job.' >> "$GITHUB_STEP_SUMMARY"
 
   deploy:
     needs: validate
@@ -157,7 +157,7 @@ jobs:
           REVIEWED_SHA: ${{ github.sha }}
         run: |
           echo "Submitted Firestore deployment from revision: $REVIEWED_SHA" >> "$GITHUB_STEP_SUMMARY"
-          echo 'Project: motodash-87bf8; database: (default). Check Firebase Console Rules publication and all 18 indexes Enabled. A successful CLI submission is not index readiness or live application acceptance.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Project: motodash-87bf8; database: (default). Check Firebase Console Rules publication and all 19 indexes Enabled. A successful CLI submission is not index readiness or live application acceptance.' >> "$GITHUB_STEP_SUMMARY"
 
       - name: Remove local deployment debug logs
         if: always()

@@ -91,6 +91,7 @@ export async function getDocs(input) {
   }
   return {docs,empty:docs.length===0,size:docs.length};
 }
+export async function getDocsFromServer(input) {window.__mock.serverReads=(window.__mock.serverReads || 0)+1;return getDocs(input);}
 export async function setDoc(ref,data) { write(ref,data); }
 export async function deleteDoc(ref) { const records=read(); delete records[ref]; localStorage.setItem('__mockProfiles',JSON.stringify(records)); }
 export function writeBatch(db) { const ops=[]; return {set:(ref,data)=>ops.push(['set',ref,data]),delete:ref=>ops.push(['delete',ref]),

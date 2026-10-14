@@ -16,7 +16,8 @@ def validate(root=ROOT):
     assert set(data) == {'indexes', 'fieldOverrides'}
     optional = ['activityType', 'category', 'meetingArea', 'clubId']
     expected = {('sessions', (('uploadState', 'ASCENDING'), ('startedAt', 'DESCENDING'))),
-                ('clubDirectory', (('category', 'ASCENDING'), ('name', 'ASCENDING')))}
+                ('clubDirectory', (('category', 'ASCENDING'), ('name', 'ASCENDING'))),
+                ('profileDirectory', (('visibility', 'ASCENDING'), ('searchName', 'ASCENDING')))}
     for bits in itertools.product([False, True], repeat=4):
         fields = ['visibility', 'state'] + [name for name, use in zip(optional, bits) if use] + ['startsAt']
         expected.add(('lobbyEvents', tuple((name, 'ASCENDING') for name in fields)))
@@ -26,14 +27,14 @@ def validate(root=ROOT):
         assert index['queryScope'] == 'COLLECTION'
         assert all(set(field) == {'fieldPath', 'order'} for field in index['fields'])
         actual.append((index['collectionGroup'], tuple((field['fieldPath'], field['order']) for field in index['fields'])))
-    assert len(actual) == 18 and len(set(actual)) == 18 and set(actual) == expected, 'Missing, duplicate or unexpected composite index'
+    assert len(actual) == 19 and len(set(actual)) == 19 and set(actual) == expected, 'Missing, duplicate or unexpected composite index'
     assert data['fieldOverrides'] == [{'collectionGroup': 'routeChunks', 'fieldPath': 'pointsJson', 'indexes': []}], 'Required route-chunk exemption changed'
     rules = (root / 'firestore.rules').read_text(encoding='utf-8')
     assert "rules_version = '2';" in rules
     assert 'match /{document=**} { allow read, write: if false; }' in rules, 'Default-deny rules required'
     for name in ['firestore.rules', 'firestore.indexes.json']:
         print(f'{name}: SHA256 {hashlib.sha256((root / name).read_bytes()).hexdigest()}')
-    print('PASS: exact 18 composites, required single-field exemption, Firestore-only config and default-deny guard')
+    print('PASS: exact 19 composites, required single-field exemption, Firestore-only config and default-deny guard')
     print('Rules compilation/authorization still require the emulator suites; production indexes require Console verification.')
 
 

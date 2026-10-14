@@ -3,6 +3,7 @@ import {getFirestoreService} from './firestore.js';
 import {publicId,profileDefaults,profileInput,profileProjection,MAX_SHOWCASE,showcaseProjection} from '../data/public-profile.js';
 import {validId,text} from '../data/schema.js';
 import {displayNameInput} from '../data/identity.js';
+import {syncProfileDirectory} from './profileDirectory.js';
 
 export async function loadOwnPublicProfile(uid) {
   const s=await ownDatabase(uid,'profile'),record=await boundedRequest(s.sdk.getDoc(s.sdk.doc(s.db,'users',uid,'preferences','publicProfile')));
@@ -23,6 +24,7 @@ export async function savePublicProfile(uid,input) {
     const next={...settings,...values,publicId:id,featuredVehicle:featured,updatedAt:sdk.serverTimestamp()};
     if(!settings.publicId)tx.set(sdk.doc(db,'profileOwners',id),{ownerUid:uid,createdAt:sdk.serverTimestamp()});
     tx.set(ref,next);
+    syncProfileDirectory(tx,sdk,db,next,name);
     if(name!==user.data().displayName)tx.update(userRef,{displayName:name,updatedAt:sdk.serverTimestamp()});
     tx.set(sdk.doc(db,'publicProfiles',id),profileProjection(id,next,name,sdk.serverTimestamp()));
     tx.set(sdk.doc(db,'displayProfiles',uid),{displayName:name,publicProfileId:next.visibility==='public'?id:null,updatedAt:sdk.serverTimestamp()});
@@ -69,7 +71,7 @@ export async function prepareShowcaseChange(tx,s,vehicleId) {
     if(settings?.state==='active') {
       const ids=settings.vehicleIds.filter(value=>value!==id);
       const next={...settings,vehicleIds:ids,featuredVehicle:settings.featuredVehicle===id?(ids[0] || null):settings.featuredVehicle,updatedAt:sdk.serverTimestamp()};
-      tx.set(prefRef,next);tx.set(sdk.doc(db,'publicProfiles',profileId),profileProjection(profileId,next,user.data().displayName,sdk.serverTimestamp()));
+      tx.set(prefRef,next);syncProfileDirectory(tx,sdk,db,next,user.data().displayName);tx.set(sdk.doc(db,'publicProfiles',profileId),profileProjection(profileId,next,user.data().displayName,sdk.serverTimestamp()));
     }
   };
 }
@@ -94,7 +96,7 @@ export async function publishShowcaseVehicle(uid,vehicleId,description='') {
       tx.set(sdk.doc(db,'profileOwners',profileId,'vehicles',id),{sourceVehicleId:vehicleId,sourceCreatedAt:source.data().createdAt,createdAt:sdk.serverTimestamp()});
     }
     tx.set(cardRef,showcaseProjection(id,vehicle,description,old.exists()?old.data().createdAt:sdk.serverTimestamp(),sdk.serverTimestamp()));
-    tx.set(prefRef,next);tx.set(sdk.doc(db,'publicProfiles',profileId),profileProjection(profileId,next,user.data().displayName,sdk.serverTimestamp()));
+    tx.set(prefRef,next);syncProfileDirectory(tx,sdk,db,next,user.data().displayName);tx.set(sdk.doc(db,'publicProfiles',profileId),profileProjection(profileId,next,user.data().displayName,sdk.serverTimestamp()));
     return id;
   }));
 }
@@ -135,7 +137,7 @@ export async function publishProfileAffiliation(uid,clubId) {
     if(!old)tx.set(sdk.doc(db,'profileOwners',profile,'affiliations',id),{clubId,joinedAt:member.data().joinedAt,createdAt:sdk.serverTimestamp()});
     tx.set(sdk.doc(db,'publicProfiles',profile,'affiliations',id),{id,clubId,name:club.data().name,rank:rank?.exists()?rank.data().name:null,updatedAt:sdk.serverTimestamp()});
     const next={...settings,affiliationIds:[...new Set([...settings.affiliationIds,id])],updatedAt:sdk.serverTimestamp()};
-    tx.set(prefRef,next);tx.set(sdk.doc(db,'publicProfiles',profile),profileProjection(profile,next,user.data().displayName,sdk.serverTimestamp()));return id;
+    tx.set(prefRef,next);syncProfileDirectory(tx,sdk,db,next,user.data().displayName);tx.set(sdk.doc(db,'publicProfiles',profile),profileProjection(profile,next,user.data().displayName,sdk.serverTimestamp()));return id;
   }));
 }
 export async function removeProfileAffiliation(uid,id) {
@@ -145,6 +147,6 @@ export async function removeProfileAffiliation(uid,id) {
     if(!pref.exists()||pref.data().state!=='active')throw dataError('invalid-input');
     const settings=pref.data(),profile=settings.publicId,next={...settings,affiliationIds:settings.affiliationIds.filter(value=>value!==id),updatedAt:sdk.serverTimestamp()};
     tx.delete(sdk.doc(db,'publicProfiles',profile,'affiliations',id));tx.delete(sdk.doc(db,'profileOwners',profile,'affiliations',id));
-    tx.set(ref,next);tx.set(sdk.doc(db,'publicProfiles',profile),profileProjection(profile,next,user.data().displayName,sdk.serverTimestamp()));
+    tx.set(ref,next);syncProfileDirectory(tx,sdk,db,next,user.data().displayName);tx.set(sdk.doc(db,'publicProfiles',profile),profileProjection(profile,next,user.data().displayName,sdk.serverTimestamp()));
   }));
 }

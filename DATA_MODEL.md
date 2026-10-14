@@ -1,4 +1,35 @@
-> **Current Batch 6B (2026-10-13):** the operator reports 6A deployed/working.
+> **Current Batch 7 (2026-10-14):** the operator reports 6B deployed/core working.
+> M1 adds the locally tested search contract below; new Rules and 19th index are
+> not deployed by the agent. Dated 6B/earlier descriptions are historical.
+
+## Batch 7 People discovery contract
+
+`profileDirectory/{publicUUID}`: exact **id, displayName, searchName, category,
+accent, visibility, updatedAt**. No UID/email/source Garage ID, bio, private notes,
+membership or technical fields. Signed-in get and queries with **limit <=10**, zero
+offset and Public visibility constraint. Root publicProfiles list remains denied.
+Anonymous known-ID public profile access remains separate from search.
+
+Owner writes require the immutable alias owner, active/Public preferences, current
+private/profile display name, selected category/accent and server timestamp. Changes
+to privacy/retirement must atomically delete the directory; name/category/accent
+must synchronize any present entry. Missing legacy entries are allowed and are
+created only during an owned login/save of an already-Public profile. Private
+accounts remain unpublished. No production backfill was performed.
+
+Queries trim/fold ASCII A–Z and Finnish/Swedish Ä/Ö/Å to matching searchName, order
+searchName, limit 10 and page with DocumentSnapshots (implicit document-name tie
+ordering). Other scripts/accents remain valid, with case preserved. The actual
+Rules lower() is ASCII-only; no unverified universal casefold/diacritic removal.
+UI requires two characters/cooldown and at most five pages; these are abuse friction,
+not server rate limiting. Determined authenticated scraping/quotas remain a risk.
+
+New composite: **profileDirectory / Collection / visibility ASC, searchName ASC**;
+source now has **19**, all previous 18/exemption preserved. Future trusted complete
+deletion must remove this directory before identity cleanup and prevent stale jobs
+from recreating it. IAM administrators bypass Rules and must preserve the same policy.
+
+> **Historical Batch 6B (2026-10-13):** the operator reports 6A deployed/working.
 > The additive model below is implemented and emulator-tested locally; 6B Rules
 > and the Worker UID coordinator are not deployed. Earlier dated results are history.
 

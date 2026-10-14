@@ -2,6 +2,7 @@ import { getFirebase } from './firebase.js';
 import { getFirestoreService } from './firestore.js';
 import { displayNameInput } from '../data/identity.js';
 import {profileProjection} from '../data/public-profile.js';
+import {syncProfileDirectory} from './profileDirectory.js';
 
 async function ownProfile(user) {
   const { auth } = await getFirebase();
@@ -21,6 +22,10 @@ export async function ensureProfile(user, language, displayName) {
     if (snapshot.exists()) {
       const profile = snapshot.data();
       const nextName = displayName ?? profile.displayName;
+      if(settings.exists()) {
+        const prefs=settings.data();syncProfileDirectory(transaction,sdk,db,prefs,nextName);
+        if(prefs.state==='active')transaction.set(sdk.doc(db,'publicProfiles',prefs.publicId),profileProjection(prefs.publicId,prefs,nextName,sdk.serverTimestamp()));
+      }
       if (nextName?.trim() && (!display.exists() || display.data().displayName !== nextName)) {
         const prefs=settings.exists()?settings.data():null;
         const alias=prefs?.state==='active' && prefs.visibility==='public'?prefs.publicId:null;

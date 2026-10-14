@@ -3657,14 +3657,16 @@ Sequential milestones, each reviewed/checked and committed:
 
 - [x] **0 Audit/roadmap:** document this inventory and retained future requirements
   before application changes. Detailed design/evidence: BATCH_7_RESULT.md.
-- [ ] **1 People:** signed-in search of a minimal `profileDirectory/{opaqueId}`,
+- [x] **1 People:** signed-in search of a minimal `profileDirectory/{opaqueId}`,
   normalized lowercase display-name prefix, limit 10 with snapshot pagination and
   explicit minimum search length/cooldown. Rules couple directory privacy/name to
   current owner settings, deny unknown fields/foreign writes and anonymous search.
-  One additional composite is planned; no private UID/email/Garage fields or paid
+  One additional composite is implemented locally (19 total); no private UID/email/Garage fields or paid
   search service. Existing Public profiles synchronize on an owned login/save;
   private profiles are never silently published. App rate bounds are not a trusted
   service-wide abuse limiter; record remaining enumeration/quota risk.
+  Normalization folds A–Z and Ä/Ö/Å consistently with the actual Rules engine;
+  other scripts/accents stay valid and preserve case, pending trusted broader normalization.
 - [ ] **2 Showcase UX:** reuse mapping/source gates; show explicit state/actions,
   featured selection, public link and visitor-mode preview. A private owner preview
   must not masquerade as anonymous permission. Preserve private defaults/CRUD/history.

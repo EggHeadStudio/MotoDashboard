@@ -4,6 +4,7 @@ import { t } from '../i18n/i18n.js';
 
 const operations = new Set(['data','group-load','group-list','hosting-clubs','group-management','group-edit','group-state','group-approve','group-remove','group-invite','group-admission','group-vehicle','group-status','group-records','group-record-delete','invitation-check','group-create','lobby-list','club-discovery','club-search','club-load','club-list','club-create','club-management','garage-load','garage-change','ride-history','ride-sync','profile','identity-search','identity-load','notifications','group-watch']);
 const safeOperation = value => operations.has(value) ? value : 'data';
+operations.add('people-search');
 const diagnostics=[];
 export const getDataDiagnostics = () => diagnostics.map(row=>({...row}));
 export function requestDiagnostic(error, operation='data') {
@@ -40,7 +41,7 @@ export async function ownDatabase(uid, operation='data') {
     if (auth.currentUser?.uid !== ownerUid) throw dataError('account-changed');
   };
   const scopedSDK={...sdk};
-  for(const name of ['getDoc','getDocs','runTransaction','setDoc','updateDoc','deleteDoc']) {
+  for(const name of ['getDoc','getDocs','getDocFromServer','getDocsFromServer','runTransaction','setDoc','updateDoc','deleteDoc']) {
     if(!sdk[name]) continue;
     scopedSDK[name]=(...args)=>{
       const promise=(async()=>{
@@ -49,7 +50,7 @@ export async function ownDatabase(uid, operation='data') {
         try {return await sdk[name](...args);}
         catch(error) {
           // One retry of a failed READ only. Never replay a timed-out or uncertain write.
-          if(['getDoc','getDocs'].includes(name) && error?.code==='unavailable' && globalThis.navigator?.onLine!==false) {
+          if(['getDoc','getDocs','getDocFromServer','getDocsFromServer'].includes(name) && error?.code==='unavailable' && globalThis.navigator?.onLine!==false) {
             await new Promise(resolve=>setTimeout(resolve,300));assertCurrent();
             return sdk[name](...args);
           }
@@ -75,6 +76,7 @@ export function dataErrorKey(error) {
   if (['auth-required', 'account-changed', 'unauthenticated'].includes(code)) return 'data.signIn';
   if (code === 'permission-denied') return 'data.denied';
   if (code === 'invalid-input') return 'data.invalid';
+  if (code === 'people-prefix') return 'data.peoplePrefix';
   if(code==='showcase-limit')return 'showcase.limit';
   if(code==='affiliation-limit')return 'publicProfile.affiliationLimit';
   if (code === 'conflict') return 'data.conflict';

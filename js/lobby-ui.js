@@ -6,10 +6,12 @@ import { dataErrorKey } from './firebase/access.js';
 import { openView, dialog, element, field, labelText, button, runAction, disclosure } from './ui/forms.js';
 import { groupCard, clubCard, skeletons, emptyState } from './ui/cards.js';
 import { vehicleIcon } from './ui/icons.js';
+import {createPeopleDiscovery} from './ui/people.js';
 
 const chips=['open','motorcycle','car','off-road','bicycle','snowmobile','caravan','other'];
 export function initLobbyUI() {
   const view=dialog('lobby-dialog','nav.discover');let uid=null,version=0,busy=false,pending=false,input={},cursor=null,tab='featured';
+  const people=createPeopleDiscovery(view,()=>tab==='people' && view.node.open);
   const current=(owner,token)=>uid===owner && getAccount()?.uid===owner && token===version;
   function action(fn) {
     if(busy) {pending=true;return;}busy=true;
@@ -27,11 +29,13 @@ export function initLobbyUI() {
       node.setAttribute('aria-pressed',String(input.category===category));node.addEventListener('click',()=>chooseCategory(category));categories.append(node);
     }
     const tabs=element('div','discovery-tabs');
-    for(const name of ['rides','meets','events','clubs']) {
+    for(const name of ['rides','meets','events','clubs','people']) {
       const node=button('discover.'+name,()=>{tab=name;input.activityType=name==='meets'?'meet':name==='events'?'event':'';cursor=null;render();action(()=>load());});
       node.setAttribute('aria-pressed',String(tab===name));tabs.append(node);
     }
-    view.body.append(categories,tabs);if(tab!=='clubs') renderFilters();
+    view.body.append(tabs);
+    if(tab==='people'){people.mount(view.body);return;}
+    view.body.append(categories);if(tab!=='clubs') renderFilters();
     const results=element('section','card-grid');results.id='lobby-results';view.body.append(results);
   }
   function chooseCategory(category) {input.category=category;cursor=null;render();action(()=>load());}
@@ -64,6 +68,7 @@ export function initLobbyUI() {
     });
   }
   async function load(more=false) {
+    if(tab==='people')return;
     const owner=uid,token=++version;if(!owner) return;
     const results=document.getElementById('lobby-results');if(!results)return;if(!more) skeletons(results);
     try {

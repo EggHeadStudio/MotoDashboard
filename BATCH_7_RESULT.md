@@ -83,9 +83,45 @@ milestones in IDEA.md Section 23, together with all prior agreed requirements.
 
 ## Progress
 
-- Milestone 0: complete; source implementation has not begun.
-- Milestones 1–7: pending sequential implementation and actual verification.
+- Milestones 0–1: complete locally with checks/commits.
+- Milestones 2–7: pending sequential implementation and actual verification.
 - Physical/native Safari/production account tests: NOT RUN.
 - Push/deployment/production writes: NOT PERFORMED.
 
 Each subsequent milestone records actual files/checks/commit and remaining limits.
+
+## Milestone 1 — People discovery
+
+New profileDirectory repository/synchronization, People discovery view and Batch 7
+EN/FI dictionary; connected to existing Discover/native hash profiles. Exact seven
+public fields (id, displayName, searchName, nullable category, accent, visibility,
+updatedAt); signed-in search only, limit 10, document-snapshot pagination. Minimum
+two characters, 500ms submission cooldown and 50 loaded matches before refining.
+No global user download or private recipient/profile/Garage query. Club member and
+Group participant profile links remain connected to the existing public resolver.
+
+Directory writes prove immutable own alias, active/Public preferences, current
+private name and safe root name. Privacy/retirement cannot retain the directory;
+name/category/accent edits cannot retain a stale entry. Existing Public profiles
+index through owned login/save, never through admin backfill or private publishing.
+All profile/showcase/affiliation transactions preserve that coupling.
+
+One new composite: **profileDirectory(visibility ASC, searchName ASC)**, Collection
+scope, retaining all previous 18 and routeChunks.pointsJson exemption. Validator,
+workflow summary/security gate and browser fixtures reflect **19**. No Worker,
+secret, paid service or runtime dependency changes.
+
+Actual emulator found a helper collision (renamed) and Firestore Rules lower()
+folding ASCII only. EN/FI normalization explicitly folds A–Z/Ä/Ö/Å in both client
+and Rules; other scripts remain valid/case-preserved. Broader accent/script folding
+needs a reviewed trusted normalizer, not client-forged normalized names. A REST
+duplicate-name test also needed explicit document-name ordering in its cursor;
+the browser SDK already derives this from a DocumentSnapshot.
+
+Checks: **96 new actual-emulator assertions**, including eight-write showcase/index
+transactions, privacy/retirement/malicious fields, rename, foreign access and 23
+duplicate-name results over three pages; **135 existing 6B assertions** pass.
+**5 Batch 7 browser cases + 20 Batch 6B cases** pass. **10 deployment contracts**,
+index/config validation and **3 YAML/15 Bash** checks pass; all completed final
+checks zero failed/skipped. Production indexes/phone policy remain NOT RUN.
+Only M1 checks have run; the complete final regression is still milestone 7.

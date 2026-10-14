@@ -25,6 +25,7 @@ service cloud.firestore {
         && request.resource.data.displayName == request.resource.data.displayName.trim()
         && request.resource.data.createdAt == request.time;
       allow update: if owns(uid) && validProfile(uid)
+        && discoveryIdentityConsistent(uid)
         && (request.resource.data.displayName == resource.data.displayName
           || (request.resource.data.displayName.matches('(?s).{3,30}')
             && request.resource.data.displayName == request.resource.data.displayName.trim()))
@@ -35,6 +36,47 @@ service cloud.firestore {
       allow delete: if false;
     }
     function signedIn() { return request.auth != null; }
+    // Search is a separate safe projection, never a list grant on private users/publicProfiles.
+    function directoryShape(data,id) {
+      return publicAlias(id) && data.keys().hasAll(['id','displayName','searchName','category','accent','visibility','updatedAt'])
+        && data.keys().hasOnly(['id','displayName','searchName','category','accent','visibility','updatedAt'])
+        && data.id == id && shortText(data.displayName,64) && data.displayName.size() > 0
+        && data.searchName == data.displayName.lower().replace('Ä','ä').replace('Ö','ö').replace('Å','å') && data.visibility == 'public'
+        && (data.category == null || category(data.category)) && data.accent in ['gold','ocean','forest','rose']
+        && data.updatedAt is timestamp;
+    }
+    function profileDirectoryMatches(uid,prefs) {
+      let data = getAfter(/databases/$(database)/documents/profileDirectory/$(prefs.publicId)).data;
+      let profile = getAfter(/databases/$(database)/documents/publicProfiles/$(prefs.publicId)).data;
+      return directoryShape(data,prefs.publicId)
+        && data.displayName == getAfter(/databases/$(database)/documents/users/$(uid)).data.displayName
+        && data.displayName == profile.displayName && data.category == prefs.category && data.accent == prefs.accent;
+    }
+    function directoryPrivacy(uid,prefs) {
+      // Legacy public profiles without a directory remain safe and searchable on owned login/save.
+      return prefs.state == 'active' && prefs.visibility == 'public'
+        ? (!existsAfter(/databases/$(database)/documents/profileDirectory/$(prefs.publicId)) || profileDirectoryMatches(uid,prefs))
+        : !existsAfter(/databases/$(database)/documents/profileDirectory/$(prefs.publicId));
+    }
+    function discoveryIdentityConsistent(uid) {
+      let path = /databases/$(database)/documents/users/$(uid)/preferences/publicProfile;
+      return !existsAfter(path) || directoryPrivacy(uid,getAfter(path).data);
+    }
+    match /profileDirectory/{id} {
+      allow get: if signedIn() && resource.data.visibility == 'public'
+        && resource.data.keys().hasOnly(['id','displayName','searchName','category','accent','visibility','updatedAt']);
+      allow list: if signedIn() && request.query.limit != null && request.query.limit > 0 && request.query.limit <= 10
+        && (request.query.offset == null || request.query.offset == 0) && resource.data.visibility == 'public'
+        && resource.data.keys().hasOnly(['id','displayName','searchName','category','accent','visibility','updatedAt']);
+      allow create, update: if signedIn() && directoryShape(request.resource.data,id)
+        && getAfter(/databases/$(database)/documents/profileOwners/$(id)).data.ownerUid == request.auth.uid
+        && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)/preferences/publicProfile).data.publicId == id
+        && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)/preferences/publicProfile).data.state == 'active'
+        && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)/preferences/publicProfile).data.visibility == 'public'
+        && profileDirectoryMatches(request.auth.uid,getAfter(/databases/$(database)/documents/users/$(request.auth.uid)/preferences/publicProfile).data)
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if signedIn() && owns(profileOwner(id));
+    }
     // Public aliases are presentation handles, never Firebase identities or bearer permissions.
     function publicAlias(id) { return id is string && id.matches('^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'); }
     function publicIds(ids, max) {
@@ -87,9 +129,11 @@ service cloud.firestore {
       allow get: if owns(uid);
       allow list, delete: if false;
       allow create: if owns(uid) && publicSettings(request.resource.data) && request.resource.data.state == 'active'
+        && directoryPrivacy(uid,request.resource.data)
         && getAfter(/databases/$(database)/documents/profileOwners/$(request.resource.data.publicId)).data.ownerUid == uid
         && publicProjection(getAfter(/databases/$(database)/documents/publicProfiles/$(request.resource.data.publicId)).data,uid,request.resource.data.publicId);
       allow update: if owns(uid) && publicSettings(request.resource.data) && resource.data.state == 'active'
+        && directoryPrivacy(uid,request.resource.data)
         && request.resource.data.publicId == resource.data.publicId
         && (request.resource.data.state == 'retired' && request.resource.data.visibility == 'private'
           || request.resource.data.state == 'active'

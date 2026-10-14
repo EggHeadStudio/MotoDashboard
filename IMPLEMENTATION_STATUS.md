@@ -1,9 +1,11 @@
 # MotoDashboard implementation status
 
 **Current, 2026-10-14:** the operator reports Batch 6B deployed/core working.
-Batch 7 milestone 0 audit/roadmap is complete; milestones 1–7 are pending under the
+Batch 7 milestones 0–1 are complete; milestones 2–7 are pending under the
 new explicit request. See BATCH_7_RESULT.md and IDEA.md Section 22. No application
-code/push/deployment/production operation in this audit. The dated 6B evidence below
+push/deployment/production operation in this batch. People discovery is implemented
+locally with 96 new Rules assertions, 5 browser cases and retained 6B regressions;
+new profileDirectory composite raises the source inventory to 19. The dated 6B evidence below
 is historical; physical/security acceptance is not inferred from reported publication.
 
 Updated **2026-10-13**. The operator now reports Batch 6A deployed and working.

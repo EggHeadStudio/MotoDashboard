@@ -1,5 +1,14 @@
 # MotoDashboard deployment and acceptance checklist
 
+**Current Batch 7 preparation, 2026-10-14:** Batch 6B deployment/core working is now
+operator-reported. Batch 7 is local only. Its Rules add profileDirectory privacy/
+search coupling and its indexes add **profileDirectory(visibility ASC, searchName
+ASC), Collection scope**: **19 total**. Deploy the complete new Rules/index inventory
+before the 7 frontend, after approval; wait for the new index Enabled. Existing
+manual Firebase workflow validates the new Batch 7 suite. No new secret/paid service
+or Worker change is needed for M1. The 6B rollout below is historical; the final
+Batch 7 runbook/acceptance will be completed after all milestones. Nothing deployed.
+
 Updated **2026-10-13** for Batch 6B. The operator reports **6A deployed/working**;
 **6B is implemented/tested locally and is not deployed**. Use the following current
 runbook. The older 6A publication instructions below describe the preceding rollout.
