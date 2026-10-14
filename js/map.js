@@ -17,7 +17,7 @@ function createTileLayer(L, tileConfig) {
     maxZoom: 19,
     subdomains: tileConfig.subdomains,
     // Keep a wider off-screen tile buffer to avoid blank/dark blocks when the map is rotated/scaled.
-    keepBuffer: 12,
+    keepBuffer: 3,
     updateWhenIdle: false,
     updateWhenZooming: true,
     crossOrigin: true
@@ -69,8 +69,8 @@ export function initLeafletMap(input) {
 
   if (typeof onUserMapInteraction === 'function') {
     map.on('dragstart', onUserMapInteraction);
-    map.on('zoomstart', onUserMapInteraction);
-    map.on('movestart', onUserMapInteraction);
+    // Leaflet's programmatic move events have no originalEvent; real gestures explicitly interrupt follow.
+    for(const type of ['pointerdown','touchstart','wheel','keydown'])map.getContainer().addEventListener(type,onUserMapInteraction,{passive:true});
   }
 
   window.setTimeout(function () {
@@ -133,43 +133,6 @@ export function setMapThemeLayer(input) {
   });
 
   return nextLayer;
-}
-
-export function setFollowMapView(input) {
-  var map = input.map;
-  var L = input.L;
-  var lat = Number(input.lat);
-  var lon = Number(input.lon);
-  var hasAppliedInitialFollowZoom = !!input.hasAppliedInitialFollowZoom;
-
-  if (!map) {
-    return hasAppliedInitialFollowZoom;
-  }
-
-  var latLng = L ? L.latLng(lat, lon) : [lat, lon];
-
-  if (!hasAppliedInitialFollowZoom && map.getZoom() < 14) {
-    map.setView(latLng, 16, { animate: true });
-    return true;
-  }
-
-  var center = map.getCenter ? map.getCenter() : null;
-  var centerDistanceM = center && L && typeof map.distance === 'function'
-    ? map.distance(center, latLng)
-    : Infinity;
-
-  if (centerDistanceM < 4) {
-    return true;
-  }
-
-  map.panTo(latLng, {
-    animate: true,
-    duration: 0.35,
-    easeLinearity: 0.35,
-    noMoveStart: true
-  });
-
-  return true;
 }
 
 export function updateMapPositionLayers(input) {

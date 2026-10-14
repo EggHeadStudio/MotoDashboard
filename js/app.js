@@ -1,4 +1,5 @@
 import { createPositionPipeline } from './position-pipeline.js';
+import {createFollowCamera,rotationCanvasSize,DEFAULT_FOLLOW_ZOOM} from './follow-camera.js';
 import { initNavigation } from './ui/navigation.js';
 import {initLanding} from './ui/landing.js';
 import {initPublicProfiles} from './public-profile-ui.js';
@@ -47,7 +48,6 @@ import {
   MAX_POINT_JUMP_SPEED_KMH,
   HEADING_MIN_SPEED_KMH,
   HEADING_MIN_DISTANCE_M,
-  ROTATION_SMOOTHING,
   NORTH_UP_DELAY_MS
 } from './config.js';
 import { getDomRefs } from './dom.js';
@@ -67,7 +67,6 @@ import { fetchAndRenderWeather } from './weather.js';
 import { smoothSpeed } from './speed.js';
 import { createRouteRecorder } from './route-recorder.js';
 import {
-  computeRotationVisualScale,
   computeRotationAwarePanDelta,
   parseVisualRotationAngle,
   getReliableHeadingCandidate,
@@ -83,7 +82,7 @@ import {
 } from './session-manager.js';
 import { isGeolocationSupported, startGeoWatch, stopGeoWatch, getGeolocationErrorMessage } from './gps.js';
 import { setCollapsedState, setTextContent } from './ui.js';
-import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeLayer } from './map.js';
+import { initLeafletMap, updateMapPositionLayers, setMapThemeLayer } from './map.js';
 
 (function () {
     'use strict';
@@ -175,6 +174,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       var elCompassOverlayNeedle = document.getElementById('compass-overlay-needle');
 
       var map = null;
+      var camera=null,autoHeadingDeg=0,rotationCoverage=false;
       var liveGpsRequested = false;
       var mapPane = null;
       var mapTileLayer = null;
@@ -224,6 +224,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       var touchRotationActive = false;
       var touchRotationStartAngle = 0;
       var touchRotationStartMapAngle = 0;
+      var touchZoomStartDistance=0,touchZoomStartValue=0;
       var rotationPanActive = false;
       var rotationPanLastPoint = null;
       var desktopRotationActive = false;
@@ -509,6 +510,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           return;
         }
 
+        resizeRotationCanvas(rotationCoverage,true);
         map.invalidateSize({ pan: false, debounceMoveend: true });
         if (mapTileLayer && typeof mapTileLayer.redraw === 'function') {
           mapTileLayer.redraw();
@@ -556,15 +558,23 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         showThemeToast(() => themeLabel(currentIndex));
       }
 
-      function applyMapRotationVisual(angleDeg) {
+      function resizeRotationCanvas(overscan,force=false) {
+        if(!elMap || !map || (!force && rotationCoverage===overscan))return;
+        const center=map.getCenter(),zoom=map.getZoom();rotationCoverage=overscan;
+        if(overscan){const side=rotationCanvasSize(window.innerWidth,window.innerHeight);
+          Object.assign(elMap.style,{width:side+'px',height:side+'px',left:'50%',top:'50%',right:'auto',bottom:'auto',marginLeft:-side/2+'px',marginTop:-side/2+'px'});
+        }else Object.assign(elMap.style,{width:'',height:'',left:'',top:'',right:'',bottom:'',marginLeft:'',marginTop:''});
+        map.invalidateSize({pan:false});map.setView(center,zoom,{animate:false});
+      }
+
+      function renderMapRotation(angleDeg) {
         if (!mapRotationSupported) {
           return;
         }
 
-        renderedMapRotationDeg += shortestAngleDelta(normalizeAngle(renderedMapRotationDeg), angleDeg);
+        renderedMapRotationDeg=angleDeg;
         if (elMap) {
-          var visualScale = getRotationVisualScale(angleDeg);
-          elMap.style.transform = 'rotate(' + renderedMapRotationDeg + 'deg) scale(' + visualScale + ')';
+          elMap.style.transform = 'rotate(' + renderedMapRotationDeg + 'deg)';
           elMap.style.setProperty('--live-counter-rotation',(-renderedMapRotationDeg)+'deg');
         }
 
@@ -574,17 +584,10 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         if (elCompassOverlayNeedle) {
           elCompassOverlayNeedle.style.transform = 'rotate(' + renderedMapRotationDeg + 'deg)';
         }
+        if(!headingUpEnabled && Math.abs(shortestAngleDelta(angleDeg,0))<0.01)resizeRotationCanvas(false);
       }
 
-      function getRotationVisualScale(angleDeg) {
-        return computeRotationVisualScale({
-          headingUpEnabled: headingUpEnabled,
-          mapRotationSupported: mapRotationSupported,
-          angleDeg: angleDeg,
-          width: elMap ? (elMap.clientWidth || window.innerWidth || 1) : (window.innerWidth || 1),
-          height: elMap ? (elMap.clientHeight || window.innerHeight || 1) : (window.innerHeight || 1)
-        });
-      }
+      function applyMapRotationVisual(angleDeg) {if(camera)camera.rotateTo(angleDeg,{immediate:true});else renderMapRotation(angleDeg);}
 
       function setMapDraggingForMode() {
         if (!map || !map.dragging) {
@@ -593,8 +596,10 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
 
         if (headingUpEnabled && mapRotationSupported) {
           map.dragging.disable();
+          map.touchZoom?.disable();
         } else {
           map.dragging.enable();
+          map.touchZoom?.enable();
         }
       }
 
@@ -604,7 +609,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           dx: dx,
           dy: dy,
           angleDeg: visualAngle,
-          scale: getRotationVisualScale(visualAngle)
+          scale: 1
         });
       }
 
@@ -625,6 +630,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         }
 
         var adjustedDelta = getRotationAwarePanDelta(dx, dy);
+        camera?.manual();
         map.panBy([adjustedDelta[0], adjustedDelta[1]], { animate: false });
         followUser = false;
       }
@@ -690,7 +696,10 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
 
         if (!headingUpEnabled) {
           currentHeadingDeg = 0;
-          applyMapRotationVisual(0);
+          if(camera)camera.rotateTo(0);else renderMapRotation(0);
+        }else {
+          resizeRotationCanvas(true);
+          camera?.rotateTo(-autoHeadingDeg);
         }
 
         if (persist) {
@@ -750,10 +759,10 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           headingCandidate: headingCandidate,
           movingConfident: movingConfident,
           now: now,
-          currentHeadingDeg: currentHeadingDeg,
+          currentHeadingDeg: autoHeadingDeg,
           lastReliableHeadingAt: lastReliableHeadingAt,
           northUpDelayMs: NORTH_UP_DELAY_MS,
-          rotationSmoothing: ROTATION_SMOOTHING,
+          rotationSmoothing: 1,
           shortestAngleDelta: shortestAngleDelta,
           normalizeAngle: normalizeAngle
         });
@@ -762,9 +771,9 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           return;
         }
 
-        currentHeadingDeg = headingUpdate.currentHeadingDeg;
+        autoHeadingDeg = headingUpdate.currentHeadingDeg;
         lastReliableHeadingAt = headingUpdate.lastReliableHeadingAt;
-        applyMapRotationVisual(-currentHeadingDeg);
+        if(followUser)camera?.rotateTo(-autoHeadingDeg);
       }
 
       function getTouchAngleDeg(touchA, touchB) {
@@ -824,7 +833,9 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           followUser = false;
 
           touchRotationStartAngle = getTouchAngleDeg(event.touches[0], event.touches[1]);
-          touchRotationStartMapAngle = currentHeadingDeg;
+          touchRotationStartMapAngle = getVisualRotationAngleDeg();
+          touchZoomStartDistance=Math.hypot(event.touches[1].clientX-event.touches[0].clientX,event.touches[1].clientY-event.touches[0].clientY);
+          touchZoomStartValue=map.getZoom();
           touchRotationActive = true;
           setCompassGestureOverlayActive(true);
         }, { passive: true });
@@ -845,6 +856,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
             resetTouchState();
             return;
           }
+          event.preventDefault();
 
           stopRotationAwarePan();
           followUser = false;
@@ -854,12 +866,16 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           var currentTouchAngle = getTouchAngleDeg(event.touches[0], event.touches[1]);
           if (!touchRotationActive) {
             touchRotationStartAngle = currentTouchAngle;
-            touchRotationStartMapAngle = currentHeadingDeg;
+            touchRotationStartMapAngle = getVisualRotationAngleDeg();
+            touchZoomStartDistance=Math.hypot(event.touches[1].clientX-event.touches[0].clientX,event.touches[1].clientY-event.touches[0].clientY);
+            touchZoomStartValue=map.getZoom();
             touchRotationActive = true;
             return;
           }
 
           var delta = shortestAngleDelta(touchRotationStartAngle, currentTouchAngle);
+          const pinch=Math.hypot(event.touches[1].clientX-event.touches[0].clientX,event.touches[1].clientY-event.touches[0].clientY);
+          if(touchZoomStartDistance>0 && pinch>0)map.setZoom(Math.max(12,Math.min(19,touchZoomStartValue+Math.log2(pinch/touchZoomStartDistance))),{animate:false});
           currentHeadingDeg = normalizeAngle(touchRotationStartMapAngle + delta);
           applyMapRotationVisual(currentHeadingDeg);
         }, { passive: false });
@@ -902,7 +918,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
             event.preventDefault();
             var dragDelta = getRotationDeltaFromDrag(event.clientX - desktopRotationLastPoint.x, event.clientY - desktopRotationLastPoint.y);
             if (dragDelta !== 0) {
-              currentHeadingDeg = normalizeAngle(currentHeadingDeg + dragDelta);
+              currentHeadingDeg = normalizeAngle(getVisualRotationAngleDeg() + dragDelta);
               applyMapRotationVisual(currentHeadingDeg);
               setCompassGestureOverlayActive(true);
             }
@@ -933,7 +949,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
 
           event.preventDefault();
           followUser = false;
-          touchRotationStartMapAngle = currentHeadingDeg;
+          touchRotationStartMapAngle = getVisualRotationAngleDeg();
           setCompassGestureOverlayActive(true);
         }, { passive: false });
 
@@ -973,7 +989,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
             return;
           }
 
-          currentHeadingDeg = normalizeAngle(currentHeadingDeg + rotateStep);
+          currentHeadingDeg = normalizeAngle(getVisualRotationAngleDeg() + rotateStep);
           applyMapRotationVisual(currentHeadingDeg);
           setCompassGestureOverlayActive(true);
 
@@ -1092,6 +1108,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         updateSessionStatsPanel(activeSession);
         renderVehicle();
         applyHeadingModeSettings('lukittu', false);
+        camera?.manual();camera?.rotateTo(0,{immediate:true});
         document.getElementById('history-detail').hidden = false;
         setTextContent(document.getElementById('history-detail-text'), () => formatCompletedSessionSummary(session, { formatDate, formatDuration, formatSpeedKmh }));
         document.getElementById('history-detail-actions').replaceChildren(
@@ -1248,7 +1265,9 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         sessionHistoryViewActive = false;
         setSessionStatsCollapsed(false);
         activeSession = createSession();
+        followUser=true;
         hasAppliedInitialFollowZoom = false;
+        camera?.reset();
         resetMovementState();
         sessionActive = true;
         setRecordingContext(accountUid,activeSession.id,activeSession.id);
@@ -1283,6 +1302,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         if (sessionActive) persistActiveSession(true);
         clearExistingWatch();
         activeSession = structuredClone(session);
+        camera?.reset();
         resetMovementState();
         hasAppliedInitialFollowZoom = false;
         followUser = true;
@@ -1362,9 +1382,8 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
 
         try {
           var onUserMapInteraction = function (event) {
-            if (event && event.originalEvent) {
-              followUser = false;
-            }
+            if(event?.type==='keydown' && !['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','+','-','='].includes(event.key))return;
+            followUser = false;camera?.manual();
           };
 
           var mapInit = initLeafletMap({
@@ -1378,6 +1397,12 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           });
 
           map = mapInit.map;
+          camera=createFollowCamera({map,onRotation:renderMapRotation});
+          const cameraVisibility=()=>camera.setVisible(document.visibilityState==='visible' && elStartOverlay.style.display==='none' && !sessionHistoryViewActive);
+          new MutationObserver(cameraVisibility).observe(elStartOverlay,{attributes:true,attributeFilter:['style']});cameraVisibility();
+          const zoom=Number(readSettingFromLocalStorage('mapFollowZoom'));
+          camera.setDefaultZoom(zoom>=13&&zoom<=17?zoom:DEFAULT_FOLLOW_ZOOM);
+          const choice=document.getElementById('follow-zoom');if(choice)choice.value=String(zoom>=13&&zoom<=17?zoom:DEFAULT_FOLLOW_ZOOM);
           attachLiveMap(map,L);
           mapPane = mapInit.mapPane;
           mapTileLayer = mapInit.tileLayer;
@@ -1411,16 +1436,8 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         }
       }
 
-      function setFollowView(lat, lon) {
-        hasAppliedInitialFollowZoom = setFollowMapView({
-          map: map,
-          L: typeof L !== 'undefined' ? L : null,
-          lat: lat,
-          lon: lon,
-          hasAppliedInitialFollowZoom: hasAppliedInitialFollowZoom,
-          headingUpEnabled: headingUpEnabled,
-          mapRotationSupported: mapRotationSupported
-        });
+      function setFollowView(lat, lon,accuracy=lastGoodCoords?.accuracy || 5,speedKmh=lastGoodCoords?.speedKmh || 0,timestamp=Date.now()) {
+        if(camera?.update({lat,lon,accuracy,speedKmh,timestamp},{initial:!hasAppliedInitialFollowZoom}))hasAppliedInitialFollowZoom=true;
       }
 
       function updateMapPosition(lat, lon, accuracy) {
@@ -1442,7 +1459,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         logoRingMarker = positionUpdate.logoRingMarker;
 
         if (followUser) {
-          setFollowView(lat, lon);
+          setFollowView(lat, lon,accuracy);
         }
 
       }
@@ -1582,7 +1599,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         recordRiderMotion(sample);
         publishLiveSample(sample);
         const heading = getReliableHeading(coords, lat, lon, sample.validatedSpeedKmh, sample.segmentBreak);
-        updateMapRotation(heading, sample.moving && sample.validatedSpeedKmh >= HEADING_MIN_SPEED_KMH, now);
+        updateMapRotation(accuracy<=35?heading:null, accuracy<=35 && sample.moving && sample.validatedSpeedKmh >= HEADING_MIN_SPEED_KMH, now);
         if (sessionActive && activeSession?.status === 'active') {
           if(!recordingLock.held())return;
           activeSession.movingDurationMs += sample.movingDeltaMs;
@@ -1592,7 +1609,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
           persistActiveSession(false);
         }
         setSpeedDisplay(smoothedSpeed);
-        lastGoodCoords = { lat, lon };
+        lastGoodCoords = { lat, lon,accuracy,speedKmh:sample.validatedSpeedKmh || 0 };
         prevCoords = { lat, lon, t: now };
         updateMapPosition(lat, lon, accuracy);
         if (lastWeatherFetch === 0 || Date.now() - lastWeatherFetch >= 15 * 60 * 1000) {
@@ -1849,6 +1866,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         void recordingLock.release();
         clearExistingWatch(); releaseWakeLockSafely(); resetMovementState(); cancelSessionSave();
         ++accountEpoch; accountUid = uid; recordingReady = false;
+        camera?.reset();autoHeadingDeg=0;camera?.rotateTo(0,{immediate:true});
         historyCursor=null;cloudHistoryMore=false;historyLoading=false;
         document.getElementById('history-more').hidden=true;
         document.getElementById('history-status').textContent='';
@@ -1892,6 +1910,8 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
 
       elCenterBtn.addEventListener('click', function () {
         followUser = true;
+        camera?.recenter();
+        if(headingUpEnabled)camera?.rotateTo(-autoHeadingDeg);
         if (map && lastGoodCoords) {
           setFollowView(lastGoodCoords.lat, lastGoodCoords.lon);
         }
@@ -1964,6 +1984,9 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         setSessionSummary(() => t('ui.cleared'));
       });
       elBackToStartBtn.addEventListener('click', async()=>{if(await confirmDashboardReturn())returnToStartView();});
+      document.getElementById('follow-zoom')?.addEventListener('change',event=>{
+        const zoom=Number(event.target.value);camera?.setDefaultZoom(zoom);writeSettingToLocalStorage('mapFollowZoom',zoom);saveSettingToIndexedDb('mapFollowZoom',zoom);
+      });
       elFinishSessionBtn.addEventListener('click', finishSession);
       elStatusTab.addEventListener('click', expandStatusDock);
       elTopTab.addEventListener('click', expandTopDock);
@@ -2114,6 +2137,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
       });
 
       document.addEventListener('visibilitychange', function () {
+        camera?.setVisible(document.visibilityState==='visible' && elStartOverlay.style.display==='none' && !sessionHistoryViewActive);
         if (document.visibilityState === 'hidden') {
           persistActiveSession(true);
           return;
@@ -2151,6 +2175,7 @@ import { initLeafletMap, setFollowMapView, updateMapPositionLayers, setMapThemeL
         }
       });
       window.addEventListener('pagehide', () => {
+        camera?.destroy();
         const epoch=accountEpoch;
         persistActiveSession(true);sessionActive=false;
         setRecordingContext(accountUid,null,activeSession?.status==='active'?activeSession.id:null);

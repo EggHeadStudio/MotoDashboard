@@ -72,7 +72,8 @@
       background: #1b1b1b;
       touch-action: pan-x pan-y pinch-zoom;
       transform-origin: 50% 50%;
-      transition: transform 220ms linear;
+      /* The visual camera owns rotation frames; no competing CSS transition or scale. */
+      transition: none;
       will-change: transform;
     }
 

@@ -75,3 +75,34 @@ def run_batch7_tests(browser,base,route_map):
     print('PASS: Batch 7: visitor preview denies retained private source cards and direct Hide removes publication without deleting Garage')
     assert not errors,errors
     context.close()
+    context=browser.new_context(viewport={'width':390,'height':844});route_map(context);install(context);page=context.new_page();errors=[]
+    page.on('pageerror',lambda e:errors.append(str(e)))
+    page.add_init_script('''let library;Object.defineProperty(window,'L',{configurable:true,get:()=>library,set:value=>{library=value;const factory=value.map;value.map=function(...args){const map=factory(...args);window.__cameraMap=map;return map;};}});
+      window.__geo={count:0,active:0};Object.defineProperty(navigator,'geolocation',{value:{watchPosition(success){window.__geo.callback=success;window.__geo.count++;window.__geo.active++;return 1;},clearWatch(){window.__geo.active=0;},getCurrentPosition(){}}});
+      window.__fix=(v)=>{const [lat,lon,speed,time,heading=90,accuracy=5]=v;const original=Date.now;Date.now=()=>time;try{window.__geo.callback?.({timestamp:time,coords:{latitude:lat,longitude:lon,speed:speed/3.6,heading,accuracy}});}finally{Date.now=original;}};
+      Element.prototype.requestFullscreen=undefined;navigator.wakeLock=undefined;''')
+    page.goto(base,wait_until='networkidle');output=page.evaluate('async()=> (await import("./tests/camera-tests.js")).runCameraTests()');print('PASS: Batch 7:',output)
+    page.click('#landing-try');page.locator('#screen-home details').filter(has=page.locator('#follow-zoom')).locator('summary').click();page.select_option('#follow-zoom','14')
+    page.locator('#start-btn').click();page.wait_for_function('window.__geo.active===1');at=page.evaluate('Date.now()')
+    for i in range(5):page.evaluate('(v)=>window.__fix(v)',[60+i*.00009,25,36,at+i*1000,90])
+    page.wait_for_timeout(750);assert page.evaluate('window.__cameraMap.getZoom()')<=14
+    page.click('#heading-btn');page.evaluate('(v)=>window.__fix(v)',[60.0005,25,36,at+6000,90]);page.wait_for_timeout(1600)
+    assert 'scale(' not in page.locator('#map').evaluate('(node)=>node.style.transform')
+    size=page.locator('#map').evaluate('(node)=>({w:node.offsetWidth,h:node.offsetHeight})');assert size['w']==size['h'] and size['w']>=928
+    assert page.evaluate('window.__geo.count')==1 and page.locator('#hud').evaluate('(node)=>getComputedStyle(node).transform')=='none'
+    print('PASS: Batch 7: real Leaflet heading coverage has no visual magnification, honors follow zoom and retains one GPS watcher')
+    # Deliberate manual zoom stays untouched until explicit Center.
+    page.dispatch_event('#map','pointerdown',{'pointerType':'mouse','clientX':150,'clientY':400})
+    page.evaluate('window.__cameraMap.setZoom(17,{animate:false})');before=page.evaluate('window.__cameraMap.getCenter()')
+    for i in range(5):page.evaluate('(v)=>window.__fix(v)',[60.0006+i*.0002,25,100,at+7000+i*1000,80])
+    page.wait_for_timeout(800);assert page.evaluate('window.__cameraMap.getZoom()')==17 and page.evaluate('window.__cameraMap.getCenter()')==before
+    page.click('#center-btn');page.wait_for_timeout(800);assert page.evaluate('window.__cameraMap.getZoom()')<17
+    page.click('#heading-btn');page.wait_for_function('document.querySelector("#map").style.transform==="rotate(0deg)"');assert page.locator('#map').evaluate('(node)=>node.offsetWidth')==390
+    points=page.evaluate('''async()=>{const c=await import('./js/config.js');const {createSessionStore}=await import('./js/session-store.js');
+      const store=createSessionStore({sessionStorageKey:c.SESSION_STORAGE_KEY,settingsStorageKey:c.SETTINGS_STORAGE_KEY,dbName:c.DB_NAME,dbVersion:c.DB_VERSION,sessionsStoreName:c.SESSIONS_STORE_NAME,settingsStoreName:c.SETTINGS_STORE_NAME,ownerUid:null});return (await store.loadSessions()).find(ride=>ride.status==='active').routePoints.filter(p=>!p.break);}''')
+    allowed_lats=[60+i*.00009 for i in range(5)]+[60.0005]+[60.0006+i*.0002 for i in range(5)]
+    assert points and all(any(abs(point['latitude']-lat)<1e-10 for lat in allowed_lats) for point in points)
+    assert all(point['speedKmh'] in [36,100] for point in points)
+    assert not errors,errors
+    print('PASS: Batch 7: manual zoom/pan pauses follow, explicit Center resumes, north-up restores coverage and saved GPS remains original')
+    context.close()

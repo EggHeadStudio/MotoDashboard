@@ -3670,7 +3670,7 @@ Sequential milestones, each reviewed/checked and committed:
 - [x] **2 Showcase UX:** reuse mapping/source gates; show explicit state/actions,
   featured selection, public link and visitor-mode preview. A private owner preview
   must not masquerade as anonymous permission. Preserve private defaults/CRUD/history.
-- [ ] **3 Camera:** rotation coverage without visual scale, one camera owner,
+- [x] **3 Camera:** rotation coverage without visual scale, one camera owner,
   filtered short-angle heading, speed-aware bounded zoom/default setting and explicit
   manual interruption/recenter. Visual animation never changes recorded GPS data.
 - [ ] **4 Saved viewer:** dedicated localized title/date/duration/distance/speeds/

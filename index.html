@@ -155,6 +155,12 @@
       <button id="home-join" class="wide action-row" type="button" data-i18n="home.join">Join a group ride</button>
       <section class="home-section"><div class="section-heading"><h2 data-i18n="home.upcoming">Up next</h2><button id="home-refresh" class="icon-button" type="button" data-i18n="common.refresh">Refresh</button></div><div id="home-upcoming" class="card-grid"></div><p id="home-data-status" role="status"></p></section>
       <section class="home-section"><h2 data-i18n="home.vehicle">Ready to roll</h2><div class="vehicle-preview"><div id="home-vehicle-icon" aria-hidden="true"></div><div id="selected-vehicle" aria-live="polite"></div></div></section>
+      <details class="disclosure"><summary data-i18n="camera.settings">Map preferences</summary>
+        <label class="field"><span data-i18n="camera.defaultZoom">Default follow zoom</span><select id="follow-zoom">
+          <option value="13" data-i18n="camera.wide">Wide · 13</option><option value="14" data-i18n="camera.relaxed">Relaxed · 14</option>
+          <option value="15" selected data-i18n="camera.balanced">Balanced · 15</option><option value="16" data-i18n="camera.close">Close · 16</option><option value="17" data-i18n="camera.detail">Detailed · 17</option>
+        </select></label><p class="muted" data-i18n="camera.hint">Follow widens at higher speeds. Manual pan or zoom pauses follow until Center.</p>
+      </details>
       <section class="home-section"><h2 data-i18n="home.clubs">Your riding community</h2><div id="home-clubs" class="card-grid"></div></section>
       <section class="home-section"><h2 data-i18n="home.recent">Last ride</h2><div id="session-summary" class="surface" aria-live="polite" data-i18n="ui.noRides">No saved rides yet.</div><button id="history-btn" class="text-button" data-i18n="ui.history">Saved rides</button></section>
       <div id="start-status" aria-live="assertive" aria-atomic="true" data-i18n="ui.ready">Ready</div>

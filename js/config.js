@@ -65,5 +65,4 @@ export const MAX_FALLBACK_SPEED_KMH = 220;
 
 export const HEADING_MIN_SPEED_KMH = 4;
 export const HEADING_MIN_DISTANCE_M = 6;
-export const ROTATION_SMOOTHING = 0.26;
 export const NORTH_UP_DELAY_MS = 12000;

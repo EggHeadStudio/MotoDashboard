@@ -1,27 +1,3 @@
-export function computeRotationVisualScale(input) {
-  var headingUpEnabled = !!input.headingUpEnabled;
-  var mapRotationSupported = !!input.mapRotationSupported;
-  var angleDeg = Number(input.angleDeg);
-  var width = Number(input.width);
-  var height = Number(input.height);
-
-  if (!headingUpEnabled || !mapRotationSupported) {
-    return 1;
-  }
-
-  if (!isFinite(angleDeg) || !isFinite(width) || !isFinite(height) || width <= 0 || height <= 0) {
-    return 1.48;
-  }
-
-  var ratioWH = width / height;
-  var ratioHW = height / width;
-  var radians = Math.abs(angleDeg) * Math.PI / 180;
-  var cosA = Math.abs(Math.cos(radians));
-  var sinA = Math.abs(Math.sin(radians));
-
-  return Math.max(cosA + ratioWH * sinA, cosA + ratioHW * sinA, 1);
-}
-
 export function computeRotationAwarePanDelta(input) {
   var dx = Number(input.dx);
   var dy = Number(input.dy);

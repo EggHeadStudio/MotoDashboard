@@ -1,4 +1,7 @@
 export const batch7={en:{
+  'camera.settings':'Map preferences','camera.defaultZoom':'Default follow zoom',
+  'camera.wide':'Wide · 13','camera.relaxed':'Relaxed · 14','camera.balanced':'Balanced · 15','camera.close':'Close · 16','camera.detail':'Detailed · 17',
+  'camera.hint':'Follow widens at higher speeds. Manual pan or zoom pauses follow until Center.',
   'showcase.show':'Show on profile','showcase.hide':'Hide from profile','showcase.makeFeatured':'Set as featured vehicle',
   'showcase.visitor':'Preview as visitor','showcase.profilePrivate':'Your profile is Private. Selected vehicles are not visible to visitors.',
   'showcase.profilePublic':'Your profile is Public. Only explicitly selected vehicles are shown.',
@@ -11,6 +14,9 @@ export const batch7={en:{
   'people.prefixHint':'Enter at least two characters to search.','people.empty':'No public profiles match this name.',
   'people.refine':'Refine the name to find more people.','data.peoplePrefix':'Enter between 2 and 64 characters.'
 },fi:{
+  'camera.settings':'Kartta-asetukset','camera.defaultZoom':'Seurannan oletuszoomaus',
+  'camera.wide':'Laaja · 13','camera.relaxed':'Väljä · 14','camera.balanced':'Tasapainoinen · 15','camera.close':'Lähellä · 16','camera.detail':'Tarkka · 17',
+  'camera.hint':'Seuranta näyttää laajemman alueen nopeuden kasvaessa. Kartan siirtäminen tai zoomaus keskeyttää seurannan, kunnes painat Keskitä.',
   'showcase.show':'Näytä profiilissa','showcase.hide':'Piilota profiilista','showcase.makeFeatured':'Aseta esittelyajoneuvoksi',
   'showcase.visitor':'Esikatsele vierailijana','showcase.profilePrivate':'Profiilisi on yksityinen. Valitut ajoneuvot eivät näy vierailijoille.',
   'showcase.profilePublic':'Profiilisi on julkinen. Vain erikseen valitut ajoneuvot näkyvät.',

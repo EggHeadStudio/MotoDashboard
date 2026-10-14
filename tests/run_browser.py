@@ -202,7 +202,7 @@ def run():
             assert page.locator('#heading-btn').inner_text() == 'Direction: heading-up', 'Heading preference survives refresh'
             page.click('#heading-btn')
             assert page.locator('#heading-btn').inner_text() == 'Direction: north-up'
-            assert 'rotate(0deg)' in page.locator('#map').evaluate('(el) => el.style.transform')
+            page.wait_for_function('document.querySelector("#map").style.transform === "rotate(0deg)"')
             page.evaluate("Object.defineProperty(navigator,'onLine',{value:false,configurable:true}); window.dispatchEvent(new Event('offline'))")
             assert page.locator('#network-row').inner_text() == 'Offline'
             page.evaluate("Object.defineProperty(navigator,'onLine',{value:true,configurable:true}); window.dispatchEvent(new Event('online'))")

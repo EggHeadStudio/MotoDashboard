@@ -1,7 +1,7 @@
 # MotoDashboard implementation status
 
 **Current, 2026-10-14:** the operator reports Batch 6B deployed/core working.
-Batch 7 milestones 0–2 are complete; milestones 3–7 are pending under the
+Batch 7 milestones 0–3 are complete; milestones 4–7 are pending under the
 new explicit request. See BATCH_7_RESULT.md and IDEA.md Section 22. No application
 push/deployment/production operation in this batch. People discovery is implemented
 locally with 96 new Rules assertions, 5 browser cases and retained 6B regressions;
@@ -9,6 +9,10 @@ new profileDirectory composite raises the source inventory to 19. The dated 6B e
 Showcase now has direct publish/hide/featured actions, effective visibility labels,
 public links and an owner visitor-policy preview. Eight Batch 7 browser cases and
 existing 6B security/browser/Pages regressions pass. Production phone acceptance pending.
+Camera now uses one visual RAF, unscaled rotation coverage, speed-aware half-step
+zoom/hysteresis, Home follow-zoom preference and explicit manual interruption.
+Full browser regression passes with 11 Batch 7 cases/26 nested camera assertions;
+GPS recording samples and existing live markers/themes remain separate/preserved.
 is historical; physical/security acceptance is not inferred from reported publication.
 
 Updated **2026-10-13**. The operator now reports Batch 6A deployed and working.

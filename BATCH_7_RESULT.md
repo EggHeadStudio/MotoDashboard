@@ -83,8 +83,8 @@ milestones in IDEA.md Section 23, together with all prior agreed requirements.
 
 ## Progress
 
-- Milestones 0–2: complete locally with checks/commits.
-- Milestones 3–7: pending sequential implementation and actual verification.
+- Milestones 0–3: complete locally with checks/commits.
+- Milestones 4–7: pending sequential implementation and actual verification.
 - Physical/native Safari/production account tests: NOT RUN.
 - Push/deployment/production writes: NOT PERFORMED.
 
@@ -154,3 +154,38 @@ Checks: **8 cumulative Batch 7 browser cases**, **20 Batch 6B cases**, **96 new 
 assertions** and **2 Pages groups (309 references/87 URLs)** pass, zero final
 failed/skipped. Existing 135 6B Rules assertions passed with the unchanged M1 policy.
 No Rules/index/Worker change is introduced by M2. Phone/native Safari remain NOT RUN.
+
+## Milestone 3 — smooth heading/follow camera
+
+Confirmed source causes: initial zoom 16; bearing/aspect-dependent CSS scale;
+per-sample animated pans plus CSS rotation transitions; unreliable originalEvent
+gesture detection and native rotated pinch operating beside custom rotation.
+The replacement uses one visual requestAnimationFrame owner, actual-fix center
+interpolation, short-angle heading smoothing and no overlapping Leaflet animations.
+Overscanned square coverage preserves the same visual zoom instead of scaling;
+north-up returns to the normal viewport after its smooth transition.
+
+Default follow zoom is 15 and configurable (13–17) from Home Map preferences.
+Speed bands have hysteresis and widen follow, with bounded half-step zoom at most
+every four seconds. Automatic camera/heading avoids accuracy above 35m; the original
+55m recorder threshold is unchanged. No extrapolated position or modified timestamp,
+distance, speed or route point enters recording/live transmission.
+
+Real pointer/touch/wheel/keyboard gestures interrupt follow until Center. Rotated
+pinch/drag uses the visual angle and center zoom, with native rotated pinch disabled
+to avoid competing handlers. HUD/attribution/live labels remain unrotated. Hidden
+shell/document suspends visual frames, logout clears old camera data, and page exit
+cancels pending frames. Raster keepBuffer is reduced from 12 to 3; themes/providers
+are retained and physical rendering/provider performance remains manual acceptance.
+
+New module/test: follow-camera.js and camera-tests.js. Removed superseded
+setFollowMapView/computeRotationVisualScale/per-sample smoothing constant only after
+reference checks; no entire working module/test was removed. Recording code/schema,
+Rules/indexes and Worker are unchanged in M3.
+
+Checks: **26 deterministic camera assertions**, **11 cumulative Batch 7 browser
+cases**, and **the full existing browser matrix** pass (zero final failed/skipped).
+Actual Leaflet tests check no magnification, one watcher, default/urban/highway
+behavior, manual hold/recenter/north transition and original saved GPS values.
+Old instantaneous-north assertion now waits for the requested smooth transition.
+No physical Safari/GPS/rendering benchmark or production test is claimed.
