@@ -45,6 +45,20 @@ def run_batch7_tests(browser,base,route_map):
     rect=page.locator('#people-search').bounding_box();assert rect['x']>=0 and rect['x']+rect['width']<=321
     assert not errors,errors
     print('PASS: Batch 7: Finnish People controls and 320px mobile layout')
+    network=page.evaluate('''async()=>{const a=await import('./js/firebase/access.js');const {sdk,db}=await a.ownDatabase('fixture-0','people-search');
+      const ref=sdk.doc(db,'test-flight','same');window.__mock.docDelay={ref,ms:80};const before=window.__mock.docReads?.[ref] || 0;
+      const first=sdk.getDoc(ref),second=sdk.getDoc(ref);let timeout;try{await a.boundedRequest(first,10);}catch(e){timeout=a.requestDiagnostic(e);}
+      const third=sdk.getDoc(ref);await Promise.all([second,third]);
+      const reads=window.__mock.docReads[ref]-before;delete window.__mock.docDelay;
+      return {reads,timeout,auth:a.requestDiagnostic({code:'auth-required',operation:'people-search'}),unavailable:a.dataErrorKey({code:'unavailable'}),pending:a.getReadDiagnostics().pending};}''')
+    assert network=={'reads':1,'timeout':'MD-TIMEOUT/PEOPLE-SEARCH','auth':'MD-AUTH/PEOPLE-SEARCH','unavailable':'data.unavailable','pending':0},network
+    print('PASS: Batch 7: concurrent/timed-out pending reads coalesce once, settle cleanly and report distinct safe timeout/Auth/unavailable diagnostics')
+    page.locator('#bottom-nav [data-destination=discover]').click();page.get_by_role('button',name='Ihmiset',exact=True).click()
+    page.evaluate("window.__mock.queryFailure={path:'profileDirectory',code:'unavailable'}")
+    page.fill('#people-search-name','mä');page.locator('#people-search button[type=submit]').click();page.wait_for_selector('#people-retry')
+    assert page.locator('#people-discovery').get_attribute('aria-busy')=='false'
+    page.evaluate('delete window.__mock.queryFailure');page.click('#people-retry');page.wait_for_selector('#people-results .person-card')
+    print('PASS: Batch 7: optional People failure remains inline with stopped loading and explicit retry recovery')
     page.select_option('#language-select','en');page.keyboard.press('Escape')
     open_garage(page);add_vehicle(page,'Selected Bike','motorcycle');add_vehicle(page,'Private Car','car')
     bike=page.locator('#garage-dialog .vehicle-card').filter(has=page.get_by_role('heading',name='Selected Bike',exact=True))

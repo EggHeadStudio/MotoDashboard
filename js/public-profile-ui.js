@@ -6,7 +6,7 @@ import {listMyClubs} from './firebase/clubRepository.js';
 import {validDisplayName} from './data/identity.js';
 import {element,labelText,button,dialog,openView,runAction,field} from './ui/forms.js';
 import {navigate} from './ui/navigation.js';
-import {dataErrorMessage} from './firebase/access.js';
+import {dataErrorMessage,boundedRequest} from './firebase/access.js';
 import {t,onLanguageChange,setLocalizedText} from './i18n/i18n.js';
 import {vehicleIcon} from './ui/icons.js';
 
@@ -22,8 +22,8 @@ export function initPublicProfiles() {
     const match=/^#\/rider\/([^/]+)$/.exec(location.hash);if(!match)return;
     const token=++epoch;loaded=null;screen.replaceChildren(labelText(element('p'),'common.loading'));
     document.getElementById('start-overlay').style.display='flex';navigate('rider',{write:false});
-    try {const result=await loadPublicProfile(match[1]);if(token!==epoch || location.hash!==match[0])return;loaded=result;render();}
-    catch(error){if(token===epoch){screen.replaceChildren(labelText(element('h1'),'publicProfile.title'));setLocalizedText(screen.appendChild(element('p')),()=>dataErrorMessage(error));}}
+    try {const result=await boundedRequest(loadPublicProfile(match[1]),25000,'profile');if(token!==epoch || location.hash!==match[0])return;loaded=result;render();}
+    catch(error){if(token===epoch && location.hash===match[0]){screen.replaceChildren(labelText(element('h1'),'publicProfile.title'));setLocalizedText(screen.appendChild(element('p')),()=>dataErrorMessage(error));screen.append(button('common.refresh',()=>void resolve()));}}
   }
   function render() {
     screen.replaceChildren();

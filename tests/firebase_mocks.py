@@ -61,13 +61,17 @@ export async function runTransaction(_,fn) {
 }
 export async function updateDoc(ref,changes) { write(ref,{...read()[ref],...changes}); }
 function snap(ref,data) { return {id:ref.split('/').at(-1),ref,exists:()=>!!data,data:()=>structuredClone(data)}; }
-export async function getDoc(ref) { if(window.__mock.docFailure?.ref===ref)throw Object.assign(new Error('Injected doc failure'),{code:window.__mock.docFailure.code}); return snap(ref,read()[ref]); }
+export async function getDoc(ref) { (window.__mock.docReads ||= {})[ref]=((window.__mock.docReads || {})[ref] || 0)+1;
+  if(window.__mock.docDelay?.ref===ref)await new Promise(resolve=>setTimeout(resolve,window.__mock.docDelay.ms));
+  if(window.__mock.docFailure?.ref===ref)throw Object.assign(new Error('Injected doc failure'),{code:window.__mock.docFailure.code}); return snap(ref,read()[ref]); }
 export async function getDocFromServer(ref) {window.__mock.serverReads=(window.__mock.serverReads || 0)+1;return getDoc(ref);}
 export const where=(field,op,value)=>({kind:'where',field,op,value});
 export const orderBy=(field,direction='asc')=>({kind:'order',field,direction});
 export const limit=value=>({kind:'limit',value});
 export const startAfter=value=>({kind:'after',value});
 export const query=(path,...filters)=>({path,filters});
+export const refEqual=(a,b)=>a===b;
+export const queryEqual=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 export async function getDocs(input) {
   const {path,filters=[]}=typeof input==='string'?{path:input}:input;
   if(window.__mock.queryFailure?.path===path) throw Object.assign(new Error('Injected query failure'),{code:window.__mock.queryFailure.code});

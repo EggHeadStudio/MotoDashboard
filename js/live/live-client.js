@@ -1,4 +1,5 @@
 import {getFirebase} from '../firebase/firebase.js';
+import {boundedRequest} from '../firebase/access.js';
 import {getAccount,onAccountChange} from '../auth-state.js';
 import {liveConfig} from '../../live-config.js';
 
@@ -34,7 +35,7 @@ export function createLiveClient({endpoint=liveConfig.endpoint,fetchImpl=fetch,m
     if(!base){stop('notConfigured');return;}
     state={...state,connection:'connecting'};emit();
     try {
-      const auth=await identity();if(!same(token) || auth.uid!==state.uid)return;
+      const auth=await boundedRequest(identity(),12000,'live-identity');if(!same(token) || auth.uid!==state.uid)return;
       const path='/v1/sessions/'+state.sessionId;
       const response=await fetchImpl(base+path+'/ticket',{method:'POST',headers:{Authorization:'Bearer '+auth.token},
         credentials:'omit',cache:'no-store',referrerPolicy:'no-referrer',signal:AbortSignal.timeout(12000)});

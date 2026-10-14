@@ -6,7 +6,7 @@ import {effectiveGroup,groupDeadline} from '../data/group-lifecycle.js';
 const watches=new Map();
 function close(entry) {
   if(entry.closed)return;
-  entry.closed=true;entry.off?.();clearTimeout(entry.timer);
+  entry.closed=true;entry.off?.();clearTimeout(entry.timer);clearTimeout(entry.initialTimer);
   if(watches.get(entry.key)===entry)watches.delete(entry.key);
 }
 onAccountChange(({user})=>{for(const entry of watches.values())if(entry.uid!==user?.uid)close(entry);});
@@ -25,10 +25,14 @@ export function watchGroup(uid,id,listener) {
     entry.attach=()=>{
       if(entry.closed||entry.pending)return;
       entry.pending=true;entry.failed=false;entry.off?.();entry.off=null;
+      clearTimeout(entry.initialTimer);entry.initialTimer=setTimeout(()=>{
+        if(!entry.closed && getAccount()?.uid===uid)dispatchEvent(new CustomEvent('motodash-data-diagnostic',{detail:requestDiagnostic({code:'deadline-exceeded'},'group-watch')}));
+      },12000);
       void ownDatabase(uid,'group-watch').then(s=>{
       if(entry.closed)return;
       entry.off=s.sdk.onSnapshot(s.sdk.doc(s.db,'groupPages',id),snapshot=>{
         if(entry.closed||getAccount()?.uid!==uid)return;
+        clearTimeout(entry.initialTimer);
         clearTimeout(entry.timer);
         entry.value=snapshot.exists()?effectiveGroup(snapshot.data()):null;emit();
         if(entry.value && ['scheduled','active'].includes(entry.value.state)) {
@@ -36,12 +40,14 @@ export function watchGroup(uid,id,listener) {
         }
       },error=>{
         if(entry.closed)return;
+        clearTimeout(entry.initialTimer);
         entry.failed=true;
         dispatchEvent(new CustomEvent('motodash-data-diagnostic',{detail:requestDiagnostic(error,'group-watch')}));
         // Authorization loss clears private live data; a transient outage is handled by its server lease.
         if(error.code==='permission-denied'){entry.value=null;emit();}
       });
       }).catch(error=>{
+        clearTimeout(entry.initialTimer);
         if(!entry.closed){entry.failed=true;dispatchEvent(new CustomEvent('motodash-data-diagnostic',{detail:requestDiagnostic(error,'group-watch')}));}
       }).finally(()=>{entry.pending=false;});
     };

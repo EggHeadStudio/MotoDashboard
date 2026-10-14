@@ -46,7 +46,7 @@ export function createPeopleDiscovery(view,isVisible) {
     }catch(error) {
       if(!current(token,uid))return;
       setLocalizedText(status,()=>dataErrorMessage(error));
-      const retry=button('common.refresh',()=>{retry.remove();void load(more);},'people-retry');results.append(retry);
+      const retry=button('common.refresh',()=>{retry.remove();lastSearch=0;void load(more);},'people-retry');results.append(retry);
     }finally {
       if(current(token,uid)){busy=false;root.setAttribute('aria-busy','false');form.querySelector('button').disabled=false;
         document.getElementById('people-more')?.removeAttribute('disabled');}

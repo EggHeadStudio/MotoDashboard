@@ -83,8 +83,8 @@ milestones in IDEA.md Section 23, together with all prior agreed requirements.
 
 ## Progress
 
-- Milestones 0–5: complete locally with checks/commits.
-- Milestones 6–7: pending sequential implementation and actual verification.
+- Milestones 0–6: complete locally with checks/commits.
+- Milestone 7: final full verification/documentation pending.
 - Physical/native Safari/production account tests: NOT RUN.
 - Push/deployment/production writes: NOT PERFORMED.
 
@@ -242,3 +242,30 @@ invalid/missing/duplicate times/coordinates, dateline and immutable originals),
 browser regressions pass, zero final failed/skipped. Actual local saved replay tests
 cover controls/end/follow/overview and zero active GPS/extra Firestore writes; teardown
 removes replay marker/UI. No native Safari/physical phone benchmark is claimed.
+
+## Milestone 6 — bounded request recovery and safe diagnostics
+
+Identical same-account/reference/query/method pending reads share one SDK operation
+using SDK refEqual/queryEqual. A timed-out caller can attach to the same underlying
+read; it cannot create a new duplicate query storm. No result cache or cross-account
+reuse is added; entries clear on settlement/account change and are bounded at 128.
+An SDK request cannot be cancelled by Promise.race; a permanently stalled channel
+may require tab reload/reopen while preserving local storage. No forced polling or
+global network reset is introduced without production transport evidence.
+
+Own-service initialization has a 12s deadline, public profile opening a 25s workflow
+deadline with visible Refresh, live identity a 12s deadline before existing ticket/
+socket deadlines. Initial Group observation has a scoped timeout without granting
+authority; its listener can still recover. Offline/TIMEOUT/PERMISSION/PRECONDITION/
+AUTH/UNAVAILABLE/NETWORK are distinct, enum-scoped diagnostics. Caller errors are
+separate sanitized objects so shared work cannot overwrite another operation's label.
+No payload/UID/location/token is logged; read diagnostic aggregates contain counts only.
+Writes are never coalesced or replayed on timeout; original refresh-before-retry warning
+and one transient read retry remain. Optional People errors remain inline, and explicit
+retry bypasses submission cooldown (a browser test caught the lost immediate Retry).
+
+Checks: **16 cumulative Batch 7 browser cases** and **13 Batch 6A cases** pass,
+zero final failed/skipped; pending-read reuse, safe scopes, failure/retry, shared Group
+watch recovery and exact teardown are covered. Cloudflare Worker/protocol/config/
+secrets remain unchanged. Production Wi-Fi/cellular failure remains unconfirmed;
+final runbook requires safe operation/domain/timing comparison, not a claim of cure.

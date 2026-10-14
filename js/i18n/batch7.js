@@ -1,4 +1,6 @@
 export const batch7={en:{
+  'data.unavailable':'The data service is temporarily unavailable or unreachable. Refresh when the connection recovers.',
+  'publicProfile.privacy':'Public profiles can be found by link and in signed-in People search. Vehicles require their own opt-in. Members-only is not available yet.',
   'replay.title':'Recorded ride replay','replay.play':'Play','replay.pause':'Pause','replay.restart':'Restart',
   'replay.speed':'Playback speed','replay.timeline':'Recorded timeline','replay.follow':'Follow replay position','replay.overview':'Full route overview',
   'replay.noTiming':'Route overview only: reliable point timestamps are missing or out of order.',
@@ -24,6 +26,8 @@ export const batch7={en:{
   'people.prefixHint':'Enter at least two characters to search.','people.empty':'No public profiles match this name.',
   'people.refine':'Refine the name to find more people.','data.peoplePrefix':'Enter between 2 and 64 characters.'
 },fi:{
+  'data.unavailable':'Tietopalvelu ei tilapäisesti vastaa tai siihen ei saada yhteyttä. Päivitä yhteyden palauduttua.',
+  'publicProfile.privacy':'Julkiset profiilit löytyvät linkillä ja kirjautuneiden Ihmiset-haussa. Ajoneuvot vaativat oman suostumuksensa. Vain jäsenille -näkyvyys ei ole vielä käytössä.',
   'replay.title':'Tallennetun ajon toisto','replay.play':'Toista','replay.pause':'Keskeytä','replay.restart':'Alusta',
   'replay.speed':'Toistonopeus','replay.timeline':'Tallennettu aikajana','replay.follow':'Seuraa toiston sijaintia','replay.overview':'Koko reitin yleiskuva',
   'replay.noTiming':'Vain reitin yleiskuva: pisteiden aikaleimat puuttuvat tai eivät ole järjestyksessä.',

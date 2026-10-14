@@ -34,7 +34,7 @@ export async function savePublicProfile(uid,input) {
 }
 export async function loadPublicProfile(id) {
   if(!publicId(id))return null;
-  const {sdk,db}=await getFirestoreService();
+  const {sdk,db}=await boundedRequest(getFirestoreService(),12000,'profile');
   try {
     const visitor=await ownerVisitorPolicy({sdk,db},id);
     if(visitor && !visitorAvailable(visitor))return null;

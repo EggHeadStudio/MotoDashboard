@@ -3678,7 +3678,7 @@ Sequential milestones, each reviewed/checked and committed:
 - [x] **5 Replay:** pure timestamp model plus bounded mobile rendering, play/pause,
   seek/1x/2x/4x/8x/restart/end/follow/overview. Preserve breaks and gaps; unknown
   timestamps or movement get overview/clear limitation, not invented coordinates.
-- [ ] **6 Network:** improve verified recovery issues, no blind uncertain-write
+- [x] **6 Network:** improve verified recovery issues, no blind uncertain-write
   retry or repeated background global toasts; document safe real-device diagnostics.
 - [ ] **7 Integration/docs:** full emulator/Worker/browser/Pages/localization/layout/
   deployment validation, current schema/index/source/runbook, exact counts/limitations

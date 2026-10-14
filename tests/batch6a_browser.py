@@ -25,7 +25,7 @@ def run_batch6a_tests(browser,base,route_map):
         index:a.dataErrorKey({code:'failed-precondition'}),diagnostic:a.requestDiagnostic({code:'unavailable',operation:'group-load',message:'secret uid token'}),
         sanitized:a.requestDiagnostic({code:'private-token',operation:'private-uid'})};
     }''')
-    assert result=={'timeout':'deadline-exceeded','offline':'data.offline','permission':'data.denied','index':'data.indexRequired','diagnostic':'MD-NETWORK/GROUP-LOAD','sanitized':'MD-REQUEST/DATA'},result
+    assert result=={'timeout':'deadline-exceeded','offline':'data.offline','permission':'data.denied','index':'data.indexRequired','diagnostic':'MD-UNAVAILABLE/GROUP-LOAD','sanitized':'MD-REQUEST/DATA'},result
     done('timeout/offline/permission/index distinction and no private diagnostic content')
     result=page.evaluate('''async()=>{
       const {ownDatabase}=await import('./js/firebase/access.js'),{getAccount}=await import('./js/auth-state.js');
@@ -97,7 +97,7 @@ def run_batch6a_tests(browser,base,route_map):
     page.evaluate('window.__watchStops[0]()');assert page.evaluate('window.__mock.snapshotListeners')==3
     page.evaluate('''id=>{window.__mock.docFailure={ref:'groupPages/'+id,code:'unavailable'};dispatchEvent(new Event('__mockFirestoreChanged'));}''',group)
     page.wait_for_function('window.__mock.snapshotListeners===2')
-    assert 'MD-NETWORK/GROUP-WATCH' in page.locator('#firestore-diagnostic').text_content()
+    assert 'MD-UNAVAILABLE/GROUP-WATCH' in page.locator('#firestore-diagnostic').text_content()
     page.evaluate("delete window.__mock.docFailure;dispatchEvent(new Event('online'))")
     page.wait_for_function('window.__mock.snapshotListeners===3')
     page.evaluate('window.__watchStops[1]()');assert page.evaluate('window.__mock.snapshotListeners')==2
