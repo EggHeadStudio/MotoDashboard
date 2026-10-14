@@ -3,8 +3,8 @@ from pathlib import Path
 import json
 from firebase_mocks import install
 from batch2_browser import register,open_garage,add_vehicle
-from clubs_browser import open_clubs
-from navigation_helpers import click_action
+from clubs_browser import open_clubs,lookup
+from navigation_helpers import click_action,click_control
 import base64,uuid
 
 def run_batch8_tests(browser,base,route_map):
@@ -45,7 +45,7 @@ def run_batch8_tests(browser,base,route_map):
         state['revision']+=1
         if request.method=='POST':
             slot=path.split('/')[-1];ident=str(uuid.uuid4());payloads[ident]=request.post_data_buffer
-            assert payloads[ident][:2]==b'\xff\xd8' and len(payloads[ident])<=1500000
+            assert (payloads[ident][:2]==b'\xff\xd8' or payloads[ident][:8]==b'\x89PNG\r\n\x1a\n') and len(payloads[ident])<=1500000
             state['images']=[img for img in state['images'] if img['slot']!=slot]+[{'id':ident,'slot':slot,'width':24,'height':24,'published':request.headers.get('x-media-published')=='true'}]
             route.fulfill(status=201,json={'id':ident,'revision':state['revision']},headers=headers)
         elif request.method=='DELETE':
@@ -103,4 +103,14 @@ def run_batch8_tests(browser,base,route_map):
         page.wait_for_selector('#groups-dialog .media-preview:not([hidden])');page.locator('#media-group-form button[type=submit]').click();page.wait_for_selector('#groups-dialog .media-gallery-item')
     assert not errors,errors
     print('PASS: Batch 8: Event/Meet/Ride share the authorized Group banner/theme editor and existing activity cards')
+    open_clubs(page);clubid=page.evaluate('Object.values(JSON.parse(localStorage.getItem("__mockProfiles"))).find(v=>v.name==="Media Club"&&v.schemaVersion===1).id')
+    lookup(page,clubid);click_control(page,'#rank-add');page.fill('#rank-form-name','Captain');page.locator('#rank-form button[type=submit]').click();page.wait_for_selector('[data-media-kind=rank]')
+    state['images']=[];page.locator('[data-media-kind=rank] summary').click();page.wait_for_selector('#media-rank-form')
+    page.locator('#media-rank-form-file').set_input_files({'name':'rank.png','mimeType':'image/png','buffer':base64.b64decode(fixtures['image/png'])})
+    page.wait_for_selector('#clubs-dialog .media-preview:not([hidden])');page.locator('#media-rank-form button[type=submit]').click();page.wait_for_selector('[data-media-kind=rank] .media-gallery-item')
+    form=page.locator('#media-theme-rank');form.locator('..').locator('summary').click();page.select_option('#media-theme-rank-icon','star');page.select_option('#media-theme-rank-badge','crest');form.locator('button[type=submit]').click()
+    page.wait_for_function('document.querySelector("#media-theme-rank-icon").value==="star" && !document.querySelector("#media-theme-rank-icon").disabled')
+    assert state['theme']['icon']=='star' and state['theme']['badge']=='crest'
+    assert not errors,errors
+    print('PASS: Batch 8: safe raster rank upload, vetted icon/badge/color selection and graphic preview')
     context.close()

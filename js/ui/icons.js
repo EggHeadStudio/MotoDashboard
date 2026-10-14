@@ -1,5 +1,9 @@
 // Small original line icons; no external fonts, images or runtime dependency.
 const paths = {
+  shield:'M12 2 3 5v6c0 6 9 11 9 11s9-5 9-11V5Z',
+  star:'m12 2 3 7 8 1-6 5 2 8-7-4-7 4 2-8-6-5 8-1Z',
+  flag:'M4 22V2m0 1h15l-4 5 4 5H4',
+  wheel:'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 3v14M5 8l14 8M5 16l14-8',
   home: 'M3 10 12 3l9 7v11h-6v-7H9v7H3Z',
   discover: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm4 6-3 5-5 3 3-5Z',
   rides: 'M4 21V6a3 3 0 0 1 6 0v12a3 3 0 0 0 6 0V3m-3 3 3-3 3 3',

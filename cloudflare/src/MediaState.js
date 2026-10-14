@@ -79,6 +79,7 @@ export class MediaState {
     if(request.method!=='POST')throw Error('bad_request');await this.limit(caller+':upload',10,3600000);
     const published=request.headers.get('X-Media-Published');if(!['true','false'].includes(published))throw Error('bad_request');
     const bytes=await boundedBody(request),image=inspectImage(bytes,request.headers.get('Content-Type'));
+    if(kind==='rank' && (image.mime==='image/jpeg'||image.width>256||image.height>256))throw Error('invalid_image');
     const all=await this.state.storage.list({prefix:'image:',limit:MAX_FILES+1});
     let ownerFiles=0,ownerBytes=0,totalBytes=0;for(const record of all.values()){totalBytes+=record.bytes;if(record.ownerUid===resource.ownerUid){ownerFiles++;ownerBytes+=record.bytes;}}
     if(all.size>=MAX_FILES || totalBytes+bytes.length>MAX_BYTES || ownerFiles>=MAX_OWNER_FILES+(oldId?1:0) || ownerBytes+bytes.length>MAX_OWNER_BYTES+(oldId?1500000:0))throw Error('quota');

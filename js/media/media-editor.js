@@ -53,7 +53,7 @@ export function mountMediaEditor(root,target,slots,{themeFields=[]}={}) {
     const upload=button('media.upload');upload.type='submit';upload.disabled=true;form.append(upload);
     async function prepare() {
       if(!file||disposed)return;const token=++version;upload.disabled=true;progress.hidden=false;
-      try{const blob=await prepareImage(file,{aspect:MEDIA_ASPECTS[slot.value.startsWith('photo')?'photo':slot.value],zoom:Number(zoom.value),x:Number(x.value),y:Number(y.value),onProgress:value=>{if(token===version)progress.value=value;}});
+      try{const blob=await prepareImage(file,{aspect:MEDIA_ASPECTS[slot.value.startsWith('photo')?'photo':slot.value],format:slot.value==='icon'?'image/png':'image/jpeg',maxDimension:slot.value==='icon'?256:1600,zoom:Number(zoom.value),x:Number(x.value),y:Number(y.value),onProgress:value=>{if(token===version)progress.value=value;}});
         if(token!==version||disposed)return;prepared=blob;if(previewURL)URL.revokeObjectURL(previewURL);previewURL=URL.createObjectURL(blob);preview.src=previewURL;preview.hidden=false;upload.disabled=false;status.textContent='';}
       catch(error){if(token===version&&!disposed){prepared=null;preview.hidden=true;labelText(status,mediaError(error));}}finally{if(token===version)progress.hidden=true;}
     }

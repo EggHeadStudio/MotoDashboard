@@ -1,18 +1,21 @@
 import {getMedia,mediaObjectURL,releaseMediaURL,mediaError} from './media-client.js';
 import {element,labelText,disclosure} from '../ui/forms.js';
 import {getAccount} from '../auth-state.js';
+import {icon} from '../ui/icons.js';
 const active=new Set();let observer;
 function ensureCleanup(){if(observer)return;observer=new MutationObserver(()=>{
   for(const entry of active)if(!entry.node.isConnected){entry.dispose();active.delete(entry);}
 });observer.observe(document.body,{childList:true,subtree:true});}
 export function decorateMedia(node,target,placements={banner:node},options={}) {
   ensureCleanup();const controller=new AbortController(),urls=[],images=[];let started=false,disposed=false;
+  if(options.rank)node.append(icon('shield'));
   const entry={node,dispose(){disposed=true;controller.abort();visibility?.disconnect();for(const url of urls)releaseMediaURL(url);for(const image of images)image.remove();}};
   active.add(entry);
   async function load(){if(started||disposed)return;started=true;const owner=getAccount()?.uid;
     try {
       const resource=await getMedia(target,controller.signal);if(disposed||owner!==getAccount()?.uid)return;
       if(options.theme!==false)applyMediaTheme(node,resource.theme);
+      if(options.rank){node.querySelector('svg')?.remove();node.prepend(icon(['shield','star','flag','wheel'].includes(resource.theme.icon)?resource.theme.icon:'shield'));}
       for(const [slot,container] of Object.entries(placements)) {
         const media=slot==='cover'?resource.images.find(item=>item.slot.startsWith('photo')):resource.images.find(item=>item.slot===slot);
         if(!media)continue;const url=await mediaObjectURL(media.id,controller.signal);if(disposed||owner!==getAccount()?.uid){releaseMediaURL(url);return;}urls.push(url);

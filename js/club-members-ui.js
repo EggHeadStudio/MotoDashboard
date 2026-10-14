@@ -6,6 +6,8 @@ import { element, button, field, labelText, disclosure } from './ui/forms.js';
 import { dataErrorKey } from './firebase/access.js';
 import { loadDisplayProfiles } from './firebase/displayProfiles.js';
 import {publicProfileLink} from './public-profile-ui.js';
+import {decorateMedia} from './media/media-render.js';
+import {mountMediaEditor} from './media/media-editor.js';
 
 export function initClubMembersUI() {
   registerClubSection(async ({uid,model,body,status,action,stillCurrent})=>{
@@ -33,11 +35,13 @@ export function initClubMembersUI() {
       if(isManager(role)) rankList.append(button('members.addRank',()=>rankForm(null),'rank-add'));
       if(!ranks.length) rankList.append(labelText(element('p'),'members.noRanks'));
       for(const rank of ranks) {
-        const row=element('div','feature-actions');row.dataset.rankId=rank.id;
-        row.append(element('span','',rank.name));
+        const row=element('div','feature-actions rank-media-row');row.dataset.rankId=rank.id;
+        const graphic=element('span','rank-graphic');graphic.setAttribute('aria-hidden','true');row.append(graphic,element('span','',rank.name));
+        decorateMedia(graphic,{kind:'rank',id:club.id,child:rank.id},{icon:graphic},{rank:true});
         if(isManager(role)) row.append(button('common.edit',()=>rankForm(rank)),button('common.delete',()=>{
           if(confirm(t('members.deleteRankConfirm'))) action(owner=>deleteRank(owner,club.id,rank.id));
         }));rankList.append(row);
+        if(isManager(role))mountMediaEditor(row,{kind:'rank',id:club.id,child:rank.id},['icon'],{themeFields:['icon','badge','accent','secondary']});
       }
       if(page.more) rankList.append(button('clubs.more',()=>{
         loadRanks().then(()=>{if(stillCurrent()){memberCursor=null;memberList.replaceChildren();return loadMembers();}})
@@ -61,6 +65,7 @@ export function initClubMembersUI() {
         identity.append(avatar,publicProfileLink(identities.get(member.uid),'member-name') || name);card.append(identity);
         card.append(labelText(element('p','member-role role-badge'),'role.'+member.technicalRole),
           rank ? element('p','member-rank',rank.name) : labelText(element('p','member-rank'),'members.unassigned'));
+        if(rank){const graphic=element('span','rank-graphic');graphic.setAttribute('aria-hidden','true');card.querySelector('.member-rank').prepend(graphic);decorateMedia(graphic,{kind:'rank',id:club.id,child:rank.id},{icon:graphic},{rank:true});}
         if(canAssignRank(role,uid,member)) {
           const form=element('form');form.id='member-'+member.uid;
           let roleInput=null;

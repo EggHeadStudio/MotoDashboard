@@ -75,3 +75,10 @@ and unlisted media require admitted audiences; invitations alone are not image
 access. Five cumulative browser groups pass (all three requested activity forms).
 Baseline browser fixtures now intercept media so no production Worker request is
 made; existing live-test token replacement remains supported.
+
+Milestone 7: original vetted Shield/Star/Flag/Wheel SVG paths; plain/pill/crest
+badges, controlled colors, rank preview and optimized PNG (<=256px) uploads.
+JPEG/SVG rank uploads are denied server-side; raster replacement/removal shares
+the safe lifecycle. Club member/rank views render decorative graphics only. Six
+cumulative browser groups pass, including icon/badge saving and PNG preparation.
+No role, rank authorization or existing Firestore schema changed.
