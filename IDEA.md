@@ -3675,7 +3675,7 @@ Sequential milestones, each reviewed/checked and committed:
   manual interruption/recenter. Visual animation never changes recorded GPS data.
 - [x] **4 Saved viewer:** dedicated localized title/date/duration/distance/speeds/
   vehicle/route/back and export/share; omit unavailable historical values.
-- [ ] **5 Replay:** pure timestamp model plus bounded mobile rendering, play/pause,
+- [x] **5 Replay:** pure timestamp model plus bounded mobile rendering, play/pause,
   seek/1x/2x/4x/8x/restart/end/follow/overview. Preserve breaks and gaps; unknown
   timestamps or movement get overview/clear limitation, not invented coordinates.
 - [ ] **6 Network:** improve verified recovery issues, no blind uncertain-write

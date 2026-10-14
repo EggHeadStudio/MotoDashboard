@@ -1,4 +1,12 @@
 export const batch7={en:{
+  'replay.title':'Recorded ride replay','replay.play':'Play','replay.pause':'Pause','replay.restart':'Restart',
+  'replay.speed':'Playback speed','replay.timeline':'Recorded timeline','replay.follow':'Follow replay position','replay.overview':'Full route overview',
+  'replay.noTiming':'Route overview only: reliable point timestamps are missing or out of order.',
+  'replay.tooShort':'Route overview only: at least two distinct timed points are needed.',
+  'replay.noMap':'The map could not load. Recorded details and exports remain available.',
+  'replay.gaps':'Position is hidden during gaps where movement was not recorded.',
+  'replay.simplified':'Simplified map preview. Exports retain all recorded points.',
+  'replay.done':'Replay complete','replay.playing':'Playing recorded route','replay.paused':'Replay paused','replay.gap':'No recorded position in this interval',
   'viewer.back':'Back to History','viewer.duration':'Duration','viewer.average':'Average moving speed','viewer.maximum':'Maximum speed',
   'viewer.vehicle':'Recorded vehicle','viewer.notRecorded':'Not recorded','viewer.noRoute':'No route points were recorded for this ride.',
   'camera.settings':'Map preferences','camera.defaultZoom':'Default follow zoom',
@@ -16,6 +24,14 @@ export const batch7={en:{
   'people.prefixHint':'Enter at least two characters to search.','people.empty':'No public profiles match this name.',
   'people.refine':'Refine the name to find more people.','data.peoplePrefix':'Enter between 2 and 64 characters.'
 },fi:{
+  'replay.title':'Tallennetun ajon toisto','replay.play':'Toista','replay.pause':'Keskeytä','replay.restart':'Alusta',
+  'replay.speed':'Toistonopeus','replay.timeline':'Tallennettu aikajana','replay.follow':'Seuraa toiston sijaintia','replay.overview':'Koko reitin yleiskuva',
+  'replay.noTiming':'Vain reitin yleiskuva: pisteiden aikaleimat puuttuvat tai eivät ole järjestyksessä.',
+  'replay.tooShort':'Vain reitin yleiskuva: tarvitaan vähintään kaksi erillistä ajastettua pistettä.',
+  'replay.noMap':'Karttaa ei voitu ladata. Tallennetut tiedot ja vienti ovat käytettävissä.',
+  'replay.gaps':'Sijainti piilotetaan katkoissa, joista liikettä ei tallennettu.',
+  'replay.simplified':'Yksinkertaistettu karttaesitys. Vientitiedosto säilyttää kaikki tallennetut pisteet.',
+  'replay.done':'Toisto päättyi','replay.playing':'Tallennetun reitin toisto','replay.paused':'Toisto keskeytetty','replay.gap':'Tältä aikaväliltä ei ole tallennettua sijaintia',
   'viewer.back':'Takaisin ajohistoriaan','viewer.duration':'Kesto','viewer.average':'Keskinopeus liikkeellä','viewer.maximum':'Suurin nopeus',
   'viewer.vehicle':'Tallennettu ajoneuvo','viewer.notRecorded':'Ei tallennettu','viewer.noRoute':'Tästä ajosta ei tallennettu reittipisteitä.',
   'camera.settings':'Kartta-asetukset','camera.defaultZoom':'Seurannan oletuszoomaus',

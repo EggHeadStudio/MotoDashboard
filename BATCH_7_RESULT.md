@@ -83,8 +83,8 @@ milestones in IDEA.md Section 23, together with all prior agreed requirements.
 
 ## Progress
 
-- Milestones 0–4: complete locally with checks/commits.
-- Milestones 5–7: pending sequential implementation and actual verification.
+- Milestones 0–5: complete locally with checks/commits.
+- Milestones 6–7: pending sequential implementation and actual verification.
 - Physical/native Safari/production account tests: NOT RUN.
 - Push/deployment/production writes: NOT PERFORMED.
 
@@ -212,3 +212,33 @@ the **full existing browser matrix** pass; cloud fresh-storage JSON/GPX/share an
 GPS/history/account regressions retained. A targeted rotation/resize check confirms
 finite Leaflet center and usable bounded landscape panel. Zero final failures/skips;
 physical phones/native Safari and production tests remain NOT RUN.
+
+## Milestone 5 — recorded route replay
+
+Pure ride-replay model indexes original points with typed time/source/segment arrays,
+uses binary seek and interpolates only within a valid observed interval. Explicit
+breaks, >15s gaps, invalid coordinates and impossible recorded jumps separate paths;
+position is hidden between their anchors. Missing/nonmonotonic times, zero-duration,
+empty/single-point routes get overview-only feedback. Duplicate observations are
+handled without invented intervals. No stored schema/statistic/source point is changed.
+
+Saved viewer supplies Play/Pause, timeline/seek, 1×/2×/4×/8×, Restart/completion,
+vehicle marker, route progress, opt-in camera follow and Full route overview. Manual
+map gestures clear replay follow; background/page exit pauses; close/logout tears
+down marker/routes/frames/listeners. No current GPS, live publisher, SDK write or
+extra upload exists in replay. Existing validated lazy cloud routes and local routes
+both use the same model. Current instrumentation stays hidden.
+
+One pass prepares the model; display geometry is capped around 2,501 sampled points
+with separate gap paths. The complete original points remain available for binary
+seek and unchanged exports. Progress path drawing is throttled to 10Hz; marker
+interpolation uses one RAF. Simplification is explicitly disclosed for long routes.
+This is an approximate visual replay of recorded fixes, not missing telemetry or a
+claim that the vehicle followed a known exact road between samples.
+
+Checks: **25 deterministic replay assertions** (including 50,000 points, gaps,
+invalid/missing/duplicate times/coordinates, dateline and immutable originals),
+**14 cumulative Batch 7 browser cases**, 26 camera assertions and full existing
+browser regressions pass, zero final failed/skipped. Actual local saved replay tests
+cover controls/end/follow/overview and zero active GPS/extra Firestore writes; teardown
+removes replay marker/UI. No native Safari/physical phone benchmark is claimed.

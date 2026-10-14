@@ -1118,6 +1118,7 @@ import { initLeafletMap, updateMapPositionLayers, setMapThemeLayer } from './map
         posMarker=null;logoRingMarker=null;accuracyCircle=null;
 
         updateRouteLayer();
+        if(routeLayer && map?.hasLayer(routeLayer))map.removeLayer(routeLayer);routeLayer=null;
         savedViewer.open(session);
 
         setStartStatus(() => t("ui.viewRide"));
@@ -1182,6 +1183,7 @@ import { initLeafletMap, updateMapPositionLayers, setMapThemeLayer } from './map
       }
 
       function updateRouteLayer() {
+        if(sessionHistoryViewActive)return;
         routeLayer = routeRecorder.updateRouteLayer({
           map: map,
           leaflet: typeof L !== 'undefined' ? L : undefined,

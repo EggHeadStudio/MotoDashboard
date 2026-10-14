@@ -4,6 +4,12 @@
 
 ## Batch 7 People discovery contract
 
+Saved viewer/replay reuse local schema v2 and decoded cloud schema v1 unchanged.
+Numeric point timestamps and explicit breaks drive playback; unknown intervals do
+not produce positions. A transient typed index/display simplification is browser
+memory only, never new GPS, Firestore payload, permanent telemetry or entitlement.
+Exports preserve the original complete route; replay is private read-only detail.
+
 `profileDirectory/{publicUUID}`: exact **id, displayName, searchName, category,
 accent, visibility, updatedAt**. No UID/email/source Garage ID, bio, private notes,
 membership or technical fields. Signed-in get and queries with **limit <=10**, zero

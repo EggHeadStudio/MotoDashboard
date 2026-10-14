@@ -115,6 +115,18 @@ def run_batch7_tests(browser,base,route_map):
     page.select_option('#saved-language','fi');assert page.locator('#saved-back').inner_text()=='Takaisin ajohistoriaan'
     assert 'Ei tallennettu' in page.locator('#history-detail').inner_text() and 'Tallennettu ajoneuvo' in page.locator('#history-detail').inner_text()
     page.select_option('#saved-language','en')
+    output=page.evaluate('async()=> (await import("./tests/replay-tests.js")).runReplayTests()');print('PASS: Batch 7:',output)
+    assert page.locator('#replay-play').is_visible() and page.locator('#replay-speed option').count()==4
+    writes=page.evaluate('window.__mock.writes')
+    page.click('#replay-play');page.wait_for_timeout(300);page.click('#replay-play');offset=float(page.locator('#replay-timeline').input_value());page.wait_for_timeout(150)
+    assert offset>0 and float(page.locator('#replay-timeline').input_value())==offset
+    page.evaluate('''()=>{const node=document.getElementById('replay-timeline');node.value=node.max/2;node.dispatchEvent(new Event('input',{bubbles:true}));}''')
+    page.check('#replay-follow');page.click('#replay-overview');assert not page.locator('#replay-follow').is_checked()
+    page.select_option('#replay-speed','8');page.click('#replay-restart');assert page.locator('#replay-timeline').input_value()=='0'
+    page.evaluate('''()=>{const node=document.getElementById('replay-timeline');node.value=node.max-100;node.dispatchEvent(new Event('input',{bubbles:true}));}''');page.click('#replay-play')
+    page.wait_for_function('document.querySelector(".replay-status").textContent==="Replay complete"')
+    assert page.evaluate('window.__geo.active')==0 and page.evaluate('window.__mock.writes')==writes
+    print('PASS: Batch 7: local replay Play/Pause/seek/8x/restart/completion/follow/overview uses no GPS or extra Firestore writes')
     page.set_viewport_size({'width':844,'height':390});page.wait_for_timeout(300)
     assert page.evaluate('Number.isFinite(window.__cameraMap.getCenter().lat) && Number.isFinite(window.__cameraMap.getCenter().lng)')
     assert page.locator('#history-detail').bounding_box()['height']<=391
@@ -122,6 +134,7 @@ def run_batch7_tests(browser,base,route_map):
     with page.expect_download() as download:page.locator('#history-detail-actions').get_by_role('button',name='Download JSON',exact=True).click()
     assert download.value.suggested_filename.endswith('.json')
     page.click('#saved-back');assert page.locator('#screen-rides').is_visible() and page.evaluate('window.__geo.active')==0
+    assert page.locator('#ride-replay').count()==0 and page.locator('.replay-marker').count()==0
     assert not page.evaluate('document.body.classList.contains("saved-ride-view")') and not errors,errors
     print('PASS: Batch 7: saved ride has only recorded metadata/route, EN/FI, export and Back to History with no GPS/current telemetry')
     context.close()

@@ -2,28 +2,23 @@ import {element,labelText,button,runAction} from './forms.js';
 import {getSessionDisplayName} from '../session-manager.js';
 import {formatDate,formatDuration,formatDistanceKm,formatSpeedKmh} from '../utils.js';
 import {getLanguage,setLanguage,onLanguageChange,setLocalizedText,t} from '../i18n/i18n.js';
-
-export function savedRouteBounds(points) {
-  let minLat=Infinity,maxLat=-Infinity,minLon=Infinity,maxLon=-Infinity,count=0;
-  for(const p of points || []) {
-    if(p?.break || !Number.isFinite(p?.latitude)||Math.abs(p.latitude)>90||!Number.isFinite(p.longitude)||Math.abs(p.longitude)>180)continue;
-    minLat=Math.min(minLat,p.latitude);maxLat=Math.max(maxLat,p.latitude);minLon=Math.min(minLon,p.longitude);maxLon=Math.max(maxLon,p.longitude);count++;
-  }
-  return count?[[minLat,minLon],[maxLat,maxLon]]:null;
-}
+import {prepareRideReplay} from '../ride-replay.js';
+import {mountRideReplay} from './ride-replay.js';
 
 export function createSavedRideViewer({root,map,onBack,onExport}) {
   const text=root.querySelector('#history-detail-text'),actions=root.querySelector('#history-detail-actions');
-  let active=false,bounds=null,languageSelect=null,resizeTimer=null;
+  let active=false,bounds=null,languageSelect=null,resizeTimer=null,player=null;
   const status=element('p','feature-status');status.id='saved-ride-status';status.setAttribute('role','status');root.append(status);
   function fit() {
     if(!active || !map || !bounds)return;
-    const rect=root.getBoundingClientRect(),landscape=innerWidth>innerHeight;
-    map.stop();map.fitBounds(bounds,{animate:false,maxZoom:16,paddingTopLeft:landscape?[rect.width+24,24]:[24,rect.height+24],paddingBottomRight:[24,36]});
+    const rect=root.getBoundingClientRect(),landscape=innerWidth>innerHeight,replay=document.getElementById('ride-replay');
+    const bottom=(replay?.getBoundingClientRect().height || 24)+12;
+    map.stop();map.fitBounds(bounds,{animate:false,maxZoom:16,paddingTopLeft:landscape?[rect.width+24,24]:[24,rect.height+12],paddingBottomRight:[24,Math.min(innerHeight*0.4,bottom)]});
   }
   addEventListener('resize',()=>{if(active){clearTimeout(resizeTimer);resizeTimer=setTimeout(fit,180);}});
   onLanguageChange(()=>{if(active){languageSelect.value=getLanguage();fit();}});
   return {open(session) {
+    player?.dispose();player=null;
     active=true;root.hidden=false;document.body.classList.add('saved-ride-view');
     root.setAttribute('role','region');root.setAttribute('aria-labelledby','saved-ride-title');root.removeAttribute('aria-live');
     text.replaceChildren();actions.replaceChildren();status.textContent='';
@@ -49,11 +44,12 @@ export function createSavedRideViewer({root,map,onBack,onExport}) {
     for(const [key,format,share] of [['rides.json','json',false],['rides.gpx','gpx',false],['rides.share','gpx',true]]) {
       actions.append(button(key,()=>void runAction(actions,status,()=>onExport(format,share))));
     }
-    bounds=savedRouteBounds(session.routePoints);
+    const model=prepareRideReplay(session.routePoints);bounds=model.bounds;
+    player=mountRideReplay({model,session,map,onOverview:fit});
     if(!bounds)text.append(labelText(element('p','muted'),'viewer.noRoute'));
     fit();title.focus({preventScroll:true});
   },close() {
-    active=false;bounds=null;clearTimeout(resizeTimer);root.hidden=true;document.body.classList.remove('saved-ride-view');
+    player?.dispose();player=null;active=false;bounds=null;clearTimeout(resizeTimer);root.hidden=true;document.body.classList.remove('saved-ride-view');
     text.replaceChildren();actions.replaceChildren();status.textContent='';languageSelect=null;
   },fit,status};
 }
