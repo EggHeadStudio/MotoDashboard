@@ -5,9 +5,10 @@ cars and other vehicles. **Your vehicle. Your crew. Your ride.**
 
 Open [MotoDashboard](https://eggheadstudio.github.io/MotoDashboard/).
 
-The operator reports **Batch 6A deployed and working**, with Firebase Auth/Firestore,
-all **18 composite indexes Enabled**, Rules and the Cloudflare Worker deployed.
-**Batch 6B is implemented locally; publication and real-phone acceptance are pending.**
+The operator reports **Batch 6B deployed and core features working**, with Firebase
+Auth/Firestore and the Cloudflare Worker configured. **Batch 7 is complete locally;
+publication and independent real-phone/security acceptance are pending.** Its Rules
+and one new People-search index must be deployed first: **19 composites total**.
 There are no built-in test accounts or passwords.
 
 ## What currently works
@@ -19,12 +20,20 @@ There are no built-in test accounts or passwords.
 - Opt-in public profiles at shareable hash URLs: bio, category, initial avatar,
   controlled accents/banners, selected Garage cards and permitted public Club/rank
   identity. Existing accounts/vehicles are never automatically published.
+- Discover People: bounded signed-in public-name prefix search, duplicate-name
+  pagination and public profile/showcase links. Garage has clear sharing/featured
+  states and direct publish/hide/featured/visitor-preview actions.
 - Personal GPS dashboard: Leaflet map, speed, heading/north-up/manual rotation, map
   presets, clock, Open-Meteo weather, accuracy/network status and optional Wake Lock.
 - Local ride recording: validated GPS samples, automatic movement/stop detection,
   segmented routes, distance/moving-time/average/maximum statistics and recovery.
 - Ride history, route details, rename/delete, JSON/GPX export, file sharing/download,
   and account-scoped completed-ride synchronization with offline retry.
+- Dedicated saved-ride view and timestamp replay with play/pause/seek/speeds,
+  progress/overview and optional follow. Gaps hide position; insufficient timing gets
+  overview only. Replay uses saved data, no current GPS or additional uploads.
+- Smooth unscaled heading-up camera, configurable follow zoom, speed-aware widening
+  and manual gestures respected until Center. Visual smoothing never changes recording.
 - Email/password registration with password confirmation, login/logout, display-name
   editing and saved language preference. Guest recording remains usable without Firebase.
 - Private Garage CRUD, 12 vehicle categories, default/next-ride selection and vehicle
@@ -45,8 +54,8 @@ There are no built-in test accounts or passwords.
 - Competing personal recorders are blocked across tabs; a trusted UID coordinator
   enforces one live Group across devices without replacing a different active ride.
 
-These are implemented flows with local automated coverage. Batch 6B needs updated
-Rules, the Worker coordinator binding/migration and frontend publication. Deployment is separate
+These are implemented flows with local automated coverage. Batch 7 needs its Rules,
+new index and frontend publication; Cloudflare code/configuration is unchanged. Deployment is separate
 from real Firebase/mobile acceptance; successful publication does not certify them.
 
 ## Architecture and privacy
@@ -107,6 +116,7 @@ python tests/run_identity_rules.py
 python tests/run_batch5_rules.py
 python tests/run_batch6a_rules.py
 python tests/run_batch6b_rules.py
+python tests/run_batch7_rules.py
 python tests/run_realtime_rules.py
 python tools/validate_firebase_deployment.py
 python tests/run_firebase_deployment_contract.py
@@ -119,14 +129,16 @@ dependencies, a dry-run bundle and mocked Google/Firestore replies.
 
 ## Roadmap and project records
 
-[IDEA.md](IDEA.md) is the authoritative product roadmap. [Batch 6B](BATCH_6B_RESULT.md)
-records the local implementation, security model, tests and exact publication/phone
+[IDEA.md](IDEA.md) is the authoritative product roadmap. [Batch 7](BATCH_7_RESULT.md)
+records the current implementation, security model, tests and exact publication/phone
 acceptance steps. Production MD-NETWORK is not independently claimed resolved.
 Password recovery/change, Google account linking and trusted complete-account
 deletion remain **planned**, outside the approved Batch 6B scope. Media uploads, vehicle
 photos, Club logos/banners, rank graphics, Official activities/rewards, subscriptions,
 Stripe, NFC and merchandise remain agreed future requirements. Group QR sharing is
 implemented; the separate Club QR sharing UI is still planned alongside existing Club links.
+User/vehicle/Club/event media, a dedicated final branding/accessibility/performance
+milestone and optional future marketplace ideas remain planned; none is enabled now.
 
 - [Implementation status](IMPLEMENTATION_STATUS.md): current implemented/deployed/tested boundaries.
 - [Repository audit](REPOSITORY_AUDIT.md): cleanup evidence, branch recommendation, tests and technical debt.

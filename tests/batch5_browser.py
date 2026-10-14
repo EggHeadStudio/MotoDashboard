@@ -90,7 +90,7 @@ def run_batch5_tests(browser,base,route_map):
     assert 'People who enjoy the journey.' in page.locator('#club-branding').inner_text()
     done('public Club cards route to branded details and the correct navigation destination')
     # An explicit operator failure remains visible with a safe diagnostic, never raw messages.
-    for code,diagnostic in [('failed-precondition','MD-PRECONDITION'),('permission-denied','MD-PERMISSION'),('unavailable','MD-NETWORK'),('unknown','MD-UNEXPECTED')]:
+    for code,diagnostic in [('failed-precondition','MD-PRECONDITION'),('permission-denied','MD-PERMISSION'),('unavailable','MD-UNAVAILABLE'),('unknown','MD-UNEXPECTED')]:
         page.evaluate('(code)=>{window.__mock.queryFailure={path:"lobbyEvents",code};}',code)
         nav('discover');page.wait_for_function('(code)=>document.querySelector("#lobby-dialog .feature-status").textContent.includes(code)',arg=diagnostic)
         assert page.locator('#lobby-results .skeleton-card').count()==0

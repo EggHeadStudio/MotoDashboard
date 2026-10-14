@@ -3680,7 +3680,7 @@ Sequential milestones, each reviewed/checked and committed:
   timestamps or movement get overview/clear limitation, not invented coordinates.
 - [x] **6 Network:** improve verified recovery issues, no blind uncertain-write
   retry or repeated background global toasts; document safe real-device diagnostics.
-- [ ] **7 Integration/docs:** full emulator/Worker/browser/Pages/localization/layout/
+- [x] **7 Integration/docs:** full emulator/Worker/browser/Pages/localization/layout/
   deployment validation, current schema/index/source/runbook, exact counts/limitations
   and phone checklist. Stop; no Batch 8, push/deploy or production operations.
 

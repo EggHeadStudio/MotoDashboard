@@ -1,5 +1,5 @@
 > **Current Batch 7 (2026-10-14):** the operator reports 6B deployed/core working.
-> M1 adds the locally tested search contract below; new Rules and 19th index are
+> Milestones 0–7 add the locally tested contract below; new Rules and 19th index are
 > not deployed by the agent. Dated 6B/earlier descriptions are historical.
 
 ## Batch 7 People discovery contract

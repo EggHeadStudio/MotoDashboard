@@ -1,11 +1,11 @@
 # MotoDashboard implementation status
 
 **Current, 2026-10-14:** the operator reports Batch 6B deployed/core working.
-Batch 7 milestones 0–6 are complete; milestone 7 is pending under the
+Batch 7 milestones 0–7 are complete locally under the
 new explicit request. See BATCH_7_RESULT.md and IDEA.md Section 22. No application
 push/deployment/production operation in this batch. People discovery is implemented
 locally with 96 new Rules assertions, 5 browser cases and retained 6B regressions;
-new profileDirectory composite raises the source inventory to 19. The dated 6B evidence below
+new profileDirectory composite raises the source inventory to 19.
 Showcase now has direct publish/hide/featured actions, effective visibility labels,
 public links and an owner visitor-policy preview. Eight Batch 7 browser cases and
 existing 6B security/browser/Pages regressions pass. Production phone acceptance pending.
@@ -23,7 +23,16 @@ Pending reads now coalesce by same account/SDK reference; initialization/profile
 live identity deadlines and scoped Auth/unavailable diagnostics prevent unbounded
 loading. Sixteen cumulative Batch 7 and 13 Batch 6A cases pass; no automatic write
 retry or unproven Wi-Fi/transport fix. Final version is 1.5.0-batch7.
+Final evidence: **936 distinct Firestore assertions**, **66 Worker (17 actual workerd)**,
+**68 locked RTDB**, **93 browser groups/cases** (24 legacy +20 B5 +13 B6A +20 B6B +16 B7),
+**26 camera +25 replay nested assertions**, **2 Pages groups (327 references/92 URLs)**,
+**10 deployment contracts**, **3 YAML/15 Bash blocks**. Final completed runs have
+zero failed/skipped. Physical phones/native Safari/production acceptance are NOT RUN.
+Rollout after approval: pause automatic Pages, publish reviewed main, manual Rules/
+indexes, wait all 19 Enabled, Pages last. No Worker run/new credential/cost service.
 is historical; physical/security acceptance is not inferred from reported publication.
+
+## Historical Batch 6B local evidence (2026-10-13)
 
 Updated **2026-10-13**. The operator now reports Batch 6A deployed and working.
 **Batch 6B milestones 0–8 are complete locally**, with sequential commits and the

@@ -83,8 +83,8 @@ milestones in IDEA.md Section 23, together with all prior agreed requirements.
 
 ## Progress
 
-- Milestones 0–6: complete locally with checks/commits.
-- Milestone 7: final full verification/documentation pending.
+- Milestones 0–7: complete locally with checks/commits.
+- Publication/physical/production acceptance: pending explicit approval.
 - Physical/native Safari/production account tests: NOT RUN.
 - Push/deployment/production writes: NOT PERFORMED.
 
@@ -269,3 +269,154 @@ zero final failed/skipped; pending-read reuse, safe scopes, failure/retry, share
 watch recovery and exact teardown are covered. Cloudflare Worker/protocol/config/
 secrets remain unchanged. Production Wi-Fi/cellular failure remains unconfirmed;
 final runbook requires safe operation/domain/timing comparison, not a claim of cure.
+
+## Milestone 7 — final verification, documentation and approval boundary
+
+Final application **1.5.0-batch7**. Complete source/file inventory is reproducible
+with `git diff --name-status 4c9fa7d..HEAD`. New runtime files: profileDirectory.js,
+profileVisitor.js, follow-camera.js, ride-replay.js, ui/people.js, ui/saved-ride.js,
+ui/ride-replay.js, i18n/batch7.js and css/saved-ride.css. New tests: batch7_browser.py,
+camera-tests.js, replay-tests.js, run_batch7_rules.py; BATCH_7_RESULT.md is new.
+Existing app/Garage/Profile/Discover/map/recorder-rendering/navigation/access/live
+client/localization, Rules/indexes, Firebase validation workflow/tools and related
+browser fixtures are changed. **No file removed, no new dependency/build/paid service.**
+Superseded follow/scale/last-point helpers/imports were removed only after reference
+checks; useful tests, historical migrations and locked RTDB coverage are retained.
+No installed tools/dependencies were removed or new software installed.
+
+| Final completed check | Evidence |
+| --- | --- |
+| Actual Firestore demo emulator | **936 distinct passed**, 0 failed/skipped: 102 baseline +137 Club security +273 Groups +32 identity +82 B5 +79 B6A +135 B6B +96 B7; repeated baselines counted once |
+| Worker | Dry-run build + **66 passed**, including **17 actual local workerd/SQLite**; 0 failed/skipped, mocked Google/Firestore |
+| Browser | **93 groups/named cases**: 24 legacy +20 B5 +13 B6A +20 B6B +16 B7; 0 failed/skipped |
+| Nested domain evidence | **26 camera +25 replay**, plus existing 36 domain/17 confirmation assertions; included in browser groups, not extra totals |
+| RTDB | **68 passed**, 0 failed/skipped; locked demo only |
+| Pages | **2 groups**, **327 literal references /92 URLs HTTP 200** beneath /MotoDashboard/; degraded Firebase preserves guest GPS/history |
+| Deployment | **10 contracts**, exact 19 composites/exemption and Firestore-only config; **3 YAML /15 Bash** checks, no workflow dispatched |
+| Not run | Production accounts/Rules/19th index, physical GPS/phones/native Safari/WebKit, provider rendering/battery/quota benchmarks |
+
+Intermediate failures are retained honestly: Rules helper collision; ASCII-only Rules
+lowercase versus client Unicode fold (fixed with consistent EN/FI folding); REST
+cursor needed explicit document ordering; a translated parent label removed the
+viewer selector (fixed); immediate People Retry hit cooldown (fixed). The final
+full run initially encountered an older B5 expectation of MD-NETWORK for unavailable;
+it now checks MD-UNAVAILABLE, preserving visible-error/security assertions. Final
+complete rerun passes. None establishes the production Wi-Fi root cause.
+
+### Changes to backend and required publication
+
+Rules add exact private-source-proven profileDirectory and privacy/name coupling;
+private users/Garage/history, publicProfile list denial, role/retired-ID protections
+and source-sensitive showcase remain. **One new composite**, profileDirectory
+(visibility ASC, searchName ASC), Collection scope; previous 18/exemption retained.
+No Firestore live GPS, recording/upload schema change or production backfill.
+Cloudflare source/config/migrations/origins/IAM/secrets/protocol are **unchanged**.
+Frontend live identity timeout changes no authorization/consent requirement.
+
+After approval: pause automatic Pages → publish reviewed main → **Validate or deploy
+MotoDash Firestore**, main, operation=deploy, confirmation=motodash-87bf8,
+scope=rules-and-indexes → verify Rules/all **19 Enabled** → enable/manual **Deploy
+to GitHub Pages**, main, no inputs. **Do not run the Worker workflow for Batch 7.**
+No new credential: reuse dedicated FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON only for
+configuration deployment. Exact Console/rollback/diagnostics/eight-step mobile
+procedure is the current section in DEPLOYMENT_CHECKLIST.md.
+
+### Remaining gates and limits
+
+- New Rules/index/frontend publication and real-account/phone acceptance are pending;
+  neither emulator nor mobile Chromium fixture proves native Safari/production policy.
+- Search requires sign-in and bounded queries, but client cooldown/prefix/50-result
+  bounds are not trusted rate limiting. Authenticated scraping/abuse/read quotas need
+  a reviewed wider-release design. Only ASCII/Ä/Ö/Å casefold is consistent; other
+  accents/scripts preserve case. Missing older Public directory entries require
+  owner login/save; no mass user migration was performed.
+- Visitor preview independently checks the owner's current policy/source. It is
+  not an anonymous SDK identity; verify actual B/signed-out reads in production.
+  Already downloaded public content cannot be recalled.
+- Visual center/replay interpolation never creates recording/telemetry. Gaps and
+  insufficient timestamps remain unknown; simplified maps retain complete exports.
+  Native background GPS/rendering/performance is unaccepted. Replay pauses on
+  suspension and must be explicitly played again.
+- SDK operations cannot be aborted with Promise.race; retained pending reads may
+  need a storage-preserving app reload if transport never settles. Writes may commit
+  after timeout: refresh first. Production diagnostics are required before any forced
+  polling/transport/network-root-cause claim.
+- Trusted complete account deletion remains a wider-beta blocker; inventory the
+  new directory alongside prior maps/projections/live state. Token-revocation latency,
+  global abuse/capacity and original provider commercial terms remain future work.
+- Media/photos/galleries/Club/event/rank graphics, final logo/typography/iconography/
+  navigation/layout/accessibility/performance polish, optional vehicle/Club marketplace,
+  account recovery/Google/deletion, Official safe rewards, Stripe/subscriptions/NFC/
+  merchandise and every prior agreed requirement remain in IDEA.md; none implemented now.
+
+### Logical local commits
+
+| Milestone | Commit |
+| --- | --- |
+| 0 audit/roadmap | 3e3b49b |
+| 1 People/security/index | e5cfeff |
+| 2 showcase/visitor preview | 038cce8 |
+| 3 smooth camera | 6a82d2c |
+| 4 saved viewer | f530f41 |
+| 5 replay | 7133d73 |
+| 6 network recovery | 2e48d3d |
+| 7 final review/docs | This final commit; obtain its SHA with git log -1 --oneline |
+
+**STOP after Batch 7. No push/deploy/production operation/Batch 8 was performed.
+Await explicit approval.**
+
+## Exact file inventory
+
+14 new /33 modified /0 removed files relative to 4c9fa7d:
+
+| Status | File |
+| --- | --- |
+| Modified | `.github/workflows/deploy-firebase.yml` |
+| New | `BATCH_7_RESULT.md` |
+| Modified | `DATA_MODEL.md` |
+| Modified | `DEPLOYMENT_CHECKLIST.md` |
+| Modified | `IDEA.md` |
+| Modified | `IMPLEMENTATION_STATUS.md` |
+| Modified | `README.md` |
+| Modified | `css/dashboard.css` |
+| Modified | `css/design-system.css` |
+| New | `css/saved-ride.css` |
+| Modified | `firestore.indexes.json` |
+| Modified | `firestore.rules` |
+| Modified | `index.html` |
+| Modified | `js/app.js` |
+| Modified | `js/config.js` |
+| Modified | `js/firebase/access.js` |
+| Modified | `js/firebase/groupWatch.js` |
+| New | `js/firebase/profileDirectory.js` |
+| Modified | `js/firebase/profileRepository.js` |
+| New | `js/firebase/profileVisitor.js` |
+| Modified | `js/firebase/publicProfileRepository.js` |
+| New | `js/follow-camera.js` |
+| Modified | `js/garage-ui.js` |
+| New | `js/i18n/batch7.js` |
+| Modified | `js/i18n/dictionary.js` |
+| Modified | `js/live/live-client.js` |
+| Modified | `js/lobby-ui.js` |
+| Modified | `js/map-rotation.js` |
+| Modified | `js/map.js` |
+| Modified | `js/public-profile-ui.js` |
+| New | `js/ride-replay.js` |
+| Modified | `js/route-recorder.js` |
+| Modified | `js/ui/navigation.js` |
+| New | `js/ui/people.js` |
+| New | `js/ui/ride-replay.js` |
+| New | `js/ui/saved-ride.js` |
+| Modified | `tests/batch2_browser.py` |
+| Modified | `tests/batch5_browser.py` |
+| Modified | `tests/batch6a_browser.py` |
+| New | `tests/batch7_browser.py` |
+| New | `tests/camera-tests.js` |
+| Modified | `tests/firebase_mocks.py` |
+| New | `tests/replay-tests.js` |
+| New | `tests/run_batch7_rules.py` |
+| Modified | `tests/run_browser.py` |
+| Modified | `tools/validate_firebase_deployment.py` |
+| Modified | `tools/validate_workflows.cjs` |
+
+Final documentation verification: 30 local Markdown targets resolve, no tracked private-key payload/files, git diff --check passes. Existing Pages/Worker workflows and Cloudflare/configuration/RTDB/deployer sources are unchanged. Local demo emulators stopped after tests; caches/dependencies retained.

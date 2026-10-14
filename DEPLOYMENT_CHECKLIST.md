@@ -7,13 +7,118 @@ ASC), Collection scope**: **19 total**. Deploy the complete new Rules/index inve
 before the 7 frontend, after approval; wait for the new index Enabled. Existing
 manual Firebase workflow validates the new Batch 7 suite. No new secret/paid service
 or Worker change is needed for M1. The 6B rollout below is historical; the final
-Batch 7 runbook/acceptance will be completed after all milestones. Nothing deployed.
+Batch 7 runbook/acceptance is immediately below. Nothing deployed.
+
+## Batch 7 — exact current browser-only publication
+
+Batch 7 is implemented and tested locally, **not deployed by the agent**. Its scope
+is Firestore Rules/indexes + static frontend. **No Cloudflare deployment, migration,
+new secret/environment variable, Auth/Hosting/RTDB/Storage change or paid service.**
+Existing LIVE_ROOMS/v1 and LIVE_IDENTITIES/v2 stay intact. The older 6B rollout below
+is historical; do not redeploy that earlier revision over the reviewed Batch 7 source.
+
+1. After approval, record reviewed main SHA and current secure Rules/frontend versions.
+   In GitHub Actions temporarily disable **Deploy to GitHub Pages**, leaving the
+   current published site online. This prevents main push publishing UI before Rules/index.
+2. VS Code terminal: `git switch main`, `git status --short`,
+   `git log --oneline origin/main..main`, then **only after approval** `git push origin main`.
+   No force push, installation or additional branch. Keep older tabs/profile editors
+   idle during the short mixed Rules/UI window; refresh them after publication.
+3. Actions → **Validate or deploy MotoDash Firestore** → Run workflow:
+   branch **main**, **operation=deploy**, **confirmation=motodash-87bf8**,
+   **scope=rules-and-indexes**. Existing **FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON** from
+   the dedicated configuration deployer remains; never use Cloudflare's read-only key.
+   Sources: **firestore.rules**, **firestore.indexes.json**, **firebase.deploy.json**.
+   Demo validation includes **run_batch7_rules.py** before any production credentials.
+4. Firebase Console → **motodash-87bf8 → Firestore → Rules**: verify current source
+   including profileDirectoryMatches/directoryPrivacy, bounded authenticated directory
+   queries, unchanged private/profile/showcase/Club/Group boundaries and default deny.
+   **Indexes → Composite**: verify all previous 18 remain Enabled, and the new
+   **profileDirectory / Collection / visibility ASC + searchName ASC** becomes
+   **Enabled**. Total **19**, not just submission success. Retain routeChunks.pointsJson
+   exemption; authorized domains **eggheadstudio.github.io** and **localhost** unchanged.
+5. Do **not** run Deploy MotoDash Cloudflare Worker for this batch. Its source/config/
+   bindings/protocol are unchanged; Dashboard can be inspected read-only for the
+   already deployed 6B Worker. Keep origins/secrets/IAM and RTDB deny-all unchanged.
+6. Re-enable **Deploy to GitHub Pages** and manually Run workflow on **main**, no
+   inputs. Confirm reviewed SHA, **1.5.0-batch7**, `/MotoDashboard/` assets/hash refresh.
+   No service worker update or local ride-data clearing. Backend workflow success is
+   separate from effective client authorization and physical acceptance.
+
+Existing Public profiles enter the new directory during their owner's login/save;
+private accounts/vehicles never publish automatically. No agent-run migration or
+production backfill. Record actual rollout/index evidence yourself.
+
+### Batch 7 two-account/mobile acceptance — NOT RUN
+
+Use disposable A/B accounts on Android Chromium/iPhone Safari, stationary/on foot:
+
+1. EN/FI anonymous landing, explicit guest entry/no GPS, login and invitation return.
+   Sign in A/B. A is Private: B's **Discover → People** prefix search cannot find A.
+2. A explicitly sets profile Public. Search mixed-case name including Ä/Ö/Å; test
+   duplicate names, More pages and public URL refresh. Search cards/root must contain
+   no email/UID/private notes/history/location. Other accents/scripts preserve case.
+3. A creates two vehicles, Show on profile with separate public text/consent, Set as
+   featured, View public profile/Preview as visitor. Confirm visible/selected/private
+   labels. Hide, edit/delete and profile Private remove visibility; fresh B reads deny.
+   Retest permitted Club-member/Group-participant profile links and existing ranks.
+4. Home → Map preferences: select a default follow zoom. On a safe test walk/ride,
+   compare low/stopped/urban/highway conditions (highway behavior can be simulated,
+   do not interact while driving). Heading changes stay smooth/unscaled; poor accuracy
+   does not pull the camera. Manual pan/pinch holds until Center. Test themes/markers,
+   north transition, portrait/landscape, background resume and one GPS watcher.
+5. Finish a local ride, History → Open: only recorded metadata/route/export appear,
+   no current GPS/weather/clock/speed/recording/sharing controls. Back returns to History.
+   Repeat with lazily loaded private cloud history; B's foreign reads/writes still deny.
+6. Replay Play/Pause/seek/1×/2×/4×/8×/Restart/end/follow/overview. Gap position hides;
+   short/untimed routes explain overview-only. Test long-route simplification, EN/FI,
+   keyboard/text scaling and rotation. No new GPS/Firestore writes during replay;
+   closing/logout removes playback/marker/controls. Exports retain full original points.
+7. Retest two-phone Group sharing/Return to Ride, same-UID second-Group conflict,
+   stop/leave/end/logout/removal and fresh consent after refresh from the 6B checklist.
+8. Simulate offline/restore and an optional Discover error. Loading must stop, feedback
+   remain inline, Refresh recover. Confirm other GPS/live/local recording stays usable.
+
+### Safe network evidence — root cause remains unconfirmed
+
+Record app version, operation, safe **MD-TIMEOUT/OFFLINE/PERMISSION/PRECONDITION/
+AUTH/UNAVAILABLE/NETWORK + operation enum**, device/browser/time and expected/actual
+result. Do not infer Wi-Fi, missing index or server failure solely from a generic code.
+Compare the same operation on Wi-Fi/cellular, recording blockers/VPN if known.
+Existing DevTools, on the app page, can show safe in-memory information:
+
+```javascript
+const a = await import('./js/firebase/access.js');
+console.table(a.getDataDiagnostics());
+console.table(a.getReadDiagnostics());
+```
+
+These expose codes/times/aggregate pending/coalesced counts, no paths/tokens/coordinates.
+Inspect endpoint class/status/timing locally (Auth, Firestore, Worker, tiles/weather);
+never share HAR/headers/payloads/query strings. Check failed-precondition's actual
+index/precondition locally against the 19-source inventory. Timed-out writes may
+still finish: refresh actual state before resubmission. Pending SDK reads cannot be
+aborted by Promise.race; if channel recovery stalls, reload/reopen the app without
+clearing IndexedDB/local rides. No forced polling/automatic transport reset is enabled.
+
+### Rollback
+
+Prefer a reviewed compatible frontend restore while keeping the secure new Rules
+and all 19 indexes. Do not blindly restore 6B Rules: new clients create profileDirectory
+and privacy changes must remove it atomically. Use a reviewed stricter/schema-compatible
+Rules correction via the same manual workflow, **scope=rules-only**, same project
+confirmation. Keep all indexes/reservations/locked RTDB and Cloudflare namespaces;
+no purge or private-read widening. Reverify effective two-account denials afterward.
+
+Publication and physical/production acceptance remain gates. Complete trusted account
+deletion, service-wide abuse/quota control and immediate token revocation remain
+separate wider-release work. Full evidence: BATCH_7_RESULT.md.
 
 Updated **2026-10-13** for Batch 6B. The operator reports **6A deployed/working**;
 **6B is implemented/tested locally and is not deployed**. Use the following current
 runbook. The older 6A publication instructions below describe the preceding rollout.
 
-## Batch 6B publication — current browser-only runbook
+## Historical Batch 6B publication — browser-only runbook
 
 No deployment or production data operation was performed by the agent. Run these
 steps only after approving the local commits. No Node/npm/CLI installation or new
@@ -237,9 +342,9 @@ storageBucket does not establish a provisioned upload service.
 
 ## Exact composite indexes and exemptions
 
-All 18 definitions use **Collection** scope. They are reported Enabled. Keep the
-source inventory authoritative for future reviewed deployments; no need to recreate
-or delete indexes during this audit.
+All **19 source definitions** use Collection scope. The previous 18 are reported
+Enabled; Batch 7's 19th is locally prepared and requires publication/Console verification.
+Keep every previous definition and the exemption; no old index deletion is required.
 
 | # | Collection | Ordered fields |
 | --- | --- | --- |
@@ -261,6 +366,7 @@ or delete indexes during this audit.
 | 16 | `lobbyEvents` | visibility ASC, state ASC, activityType ASC, category ASC, meetingArea ASC, startsAt ASC |
 | 17 | `lobbyEvents` | visibility ASC, state ASC, activityType ASC, category ASC, meetingArea ASC, clubId ASC, startsAt ASC |
 | 18 | `clubDirectory` | category ASC, name ASC |
+| 19 | `profileDirectory` | visibility ASC, searchName ASC |
 
 Single-field exemption: **routeChunks.pointsJson**, `indexes: []`. Retain automatic
 collection indexes for displayProfiles.displayName, clubDirectory.name/category,
