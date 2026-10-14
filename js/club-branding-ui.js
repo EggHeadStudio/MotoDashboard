@@ -5,6 +5,8 @@ import { LINK_KEYS, THEMES, safeURL } from './data/schema.js';
 import { readableText, clubSessionTheme } from './data/branding.js';
 import { element, field, button, labelText, disclosure } from './ui/forms.js';
 import { vehicleIcon } from './ui/icons.js';
+import {mountMediaEditor} from './media/media-editor.js';
+import {decorateMedia} from './media/media-render.js';
 
 export function initClubBrandingUI() {
   registerClubSection(async ({model,uid,body,action,stillCurrent})=>{
@@ -16,6 +18,8 @@ export function initClubBrandingUI() {
     badge.style.backgroundColor=prepared.accentColor;badge.style.color=readableText(prepared.accentColor);
     banner.append(badge,element('h3','',club.name),labelText(element('p'),'category.'+club.category),element('p','club-description',club.description));
     body.querySelector('#club-identity')?.replaceWith(banner);
+    decorateMedia(banner,{kind:'club',id:club.id},{logo:badge,banner});
+    if(canBrand(role))mountMediaEditor(body,{kind:'club',id:club.id},['logo','banner'],{themeFields:['accent','secondary','header','card']});
     const links=element('div','feature-actions');links.id='club-links';
     for(const key of LINK_KEYS) {
       let href;

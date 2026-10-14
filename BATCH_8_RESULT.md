@@ -61,3 +61,10 @@ showcase gallery. Current source/profile/ref/incarnation gates revoke public
 access on hiding/deletion; private Garage is never broadly readable. Three
 cumulative browser groups pass, including two photos/cover reordering. Existing
 backend Garage privacy/deletion/incarnation assertions remain unchanged.
+
+Milestone 5: current Owner/Admin branding gates, Club logo/banner and safe
+secondary/accent/header/card presets with live preview. Club cards and headers
+retain placeholders and readable text. Four cumulative browser groups pass. The
+preset test found FormData was captured after selects were disabled; capturing
+values before disabling fixed the underlying save failure. Backend role/rank/
+revocation denials are retained; no permission-schema change.

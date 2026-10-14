@@ -2,6 +2,7 @@ import { element, labelText, button } from './forms.js';
 import { vehicleIcon, icon } from './icons.js';
 import { getLocale } from '../i18n/i18n.js';
 import { readableText } from '../data/branding.js';
+import {decorateMedia} from '../media/media-render.js';
 
 export function groupCard(group, open, {featured = false, detail = false} = {}) {
   const card = element('article', 'feature-card event-card' + (featured ? ' featured' : '') + (detail ? ' group-hero' : ''));
@@ -29,7 +30,8 @@ export function clubCard(club, open, {member = false} = {}) {
   if(member || club.membershipRole) body.append(labelText(element('p','badge'),'clubs.joined'));
   if (club.description) body.append(element('p','card-description',club.description));
   if (Number.isFinite(club.memberCount)) body.append(labelText(element('p','muted'),'clubs.memberCount',{count:club.memberCount}));
-  body.append(labelText(element('p','badge'),'policy.'+club.membershipPolicy),button('ui.open',open)); card.append(mark,body); return card;
+  body.append(labelText(element('p','badge'),'policy.'+club.membershipPolicy),button('ui.open',open)); card.append(mark,body);
+  decorateMedia(card,{kind:'club',id:club.id},{logo:mark,banner:card});return card;
 }
 export function skeletons(root) {
   const section=element('div','skeleton-grid'); section.setAttribute('role','status'); section.append(labelText(element('span','sr-only'),'ui.loadingCards'));

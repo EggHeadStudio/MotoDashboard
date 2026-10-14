@@ -3,6 +3,7 @@ from pathlib import Path
 import json
 from firebase_mocks import install
 from batch2_browser import register,open_garage,add_vehicle
+from clubs_browser import open_clubs
 import base64,uuid
 
 def run_batch8_tests(browser,base,route_map):
@@ -78,4 +79,15 @@ def run_batch8_tests(browser,base,route_map):
     assert state['images'][0]['slot']=='photo0' and state['images'][1]['id']==first
     assert not errors,errors
     print('PASS: Batch 8: bounded six-slot private Garage gallery, second photo and featured/reordering controls')
+    page.locator('#garage-dialog .feature-header button').click();state['images']=[]
+    open_clubs(page);page.click('#club-create');page.fill('#club-form-name','Media Club');page.locator('#club-form button[type=submit]').click();page.wait_for_selector('#club-edit')
+    page.locator('[data-media-kind=club] summary').click();page.wait_for_selector('#media-club-form')
+    assert page.locator('#media-club-form-slot option').count()==2
+    page.locator('#media-club-form-file').set_input_files({'name':'logo.png','mimeType':'image/png','buffer':base64.b64decode(fixtures['image/png'])})
+    page.wait_for_selector('.media-preview:not([hidden])');page.locator('#media-club-form button[type=submit]').click();page.wait_for_selector('.media-gallery-item')
+    appearance=page.locator('.media-theme-form');appearance.locator('..').locator('summary').click()
+    page.select_option('#media-theme-club-secondary','navy');assert page.locator('.media-theme-preview').get_attribute('data-media-secondary')=='navy'
+    appearance.locator('button[type=submit]').click();page.wait_for_function('document.querySelector("#media-theme-club-secondary").value==="navy" && !document.querySelector("#media-theme-club-secondary").disabled')
+    assert state['theme']['secondary']=='navy' and not errors,errors
+    print('PASS: Batch 8: Club logo slots, controlled secondary/accent/header/card presets and live preview')
     context.close()

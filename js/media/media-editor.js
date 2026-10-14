@@ -3,7 +3,8 @@ import {prepareImage,MEDIA_ASPECTS} from './prepare-image.js';
 import {element,labelText,button,field,disclosure} from '../ui/forms.js';
 import {getAccount,onAccountChange} from '../auth-state.js';
 import {t} from '../i18n/i18n.js';
-export function mountMediaEditor(root,target,slots) {
+import {mountThemeEditor} from './theme-editor.js';
+export function mountMediaEditor(root,target,slots,{themeFields=[]}={}) {
   const section=element('section','media-editor'),content=element('div'),details=disclosure('media.title',section);details.dataset.mediaKind=target.kind;root.append(details);
   const status=element('p','feature-status');status.setAttribute('role','status');const progress=element('progress');progress.max=100;progress.value=0;progress.hidden=true;progress.setAttribute('aria-label',t('media.progress'));
   section.append(labelText(element('p','muted'),'media.privacy'),status,progress,content);
@@ -63,6 +64,7 @@ export function mountMediaEditor(root,target,slots) {
       file=null;prepared=null;if(previewURL){URL.revokeObjectURL(previewURL);previewURL=null;}await refresh();
       dispatchEvent(new CustomEvent('motodash-media-updated',{detail:{target}}));
     });});
+    if(themeFields.length)mountThemeEditor(content,target,resource,refresh,themeFields);
   }
   content.append(button('common.refresh',()=>void action(refresh)));
   return {details,refresh:()=>action(refresh),dispose:cleanup};
