@@ -1,0 +1,31 @@
+import {getMedia,mediaObjectURL,releaseMediaURL,mediaError} from './media-client.js';
+import {element,labelText} from '../ui/forms.js';
+import {getAccount} from '../auth-state.js';
+const active=new Set();let observer;
+function ensureCleanup(){if(observer)return;observer=new MutationObserver(()=>{
+  for(const entry of active)if(!entry.node.isConnected){entry.dispose();active.delete(entry);}
+});observer.observe(document.body,{childList:true,subtree:true});}
+export function decorateMedia(node,target,placements={banner:node},options={}) {
+  ensureCleanup();const controller=new AbortController(),urls=[],images=[];let started=false,disposed=false;
+  const entry={node,dispose(){disposed=true;controller.abort();visibility?.disconnect();for(const url of urls)releaseMediaURL(url);for(const image of images)image.remove();}};
+  active.add(entry);
+  async function load(){if(started||disposed)return;started=true;const owner=getAccount()?.uid;
+    try {
+      const resource=await getMedia(target,controller.signal);if(disposed||owner!==getAccount()?.uid)return;
+      if(options.theme!==false)applyMediaTheme(node,resource.theme);
+      for(const [slot,container] of Object.entries(placements)) {
+        const media=slot==='cover'?resource.images.find(item=>item.slot.startsWith('photo')):resource.images.find(item=>item.slot===slot);
+        if(!media)continue;const url=await mediaObjectURL(media.id,controller.signal);if(disposed||owner!==getAccount()?.uid){releaseMediaURL(url);return;}urls.push(url);
+        const img=element('img','media-image media-'+slot);img.dataset.motodashMedia='';img.alt='';img.src=url;img.decoding='async';container.classList.add('has-media');container.append(img);images.push(img);
+      }
+    }catch(error){if(disposed)return;if(options.showError){const status=labelText(element('p','muted media-load-status'),mediaError(error));node.append(status);}}
+  }
+  let visibility;
+  if(typeof IntersectionObserver==='function'){visibility=new IntersectionObserver(entries=>{if(entries.some(e=>e.isIntersecting)){visibility.disconnect();void load();}});visibility.observe(node);}else void load();
+  return entry.dispose;
+}
+export function applyMediaTheme(node,theme) {
+  if(!theme)return;
+  const choices={accent:['gold','ocean','forest','rose'],secondary:['slate','navy','charcoal'],header:['road','horizon','grid'],card:['outlined','solid','minimal'],layout:['grid','list'],icon:['shield','star','flag','wheel'],badge:['plain','pill','crest']};
+  for(const [key,allowed] of Object.entries(choices))if(allowed.includes(theme[key]))node.dataset['media'+key[0].toUpperCase()+key.slice(1)]=theme[key];
+}

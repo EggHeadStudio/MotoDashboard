@@ -2,6 +2,8 @@
 from pathlib import Path
 import json
 from firebase_mocks import install
+from batch2_browser import register
+import base64,uuid
 
 def run_batch8_tests(browser,base,route_map):
     context=browser.new_context(viewport={'width':320,'height':568})
@@ -25,4 +27,41 @@ def run_batch8_tests(browser,base,route_map):
     }''',fixtures)
     assert output==5 and not errors,errors
     print('PASS: Batch 8: PNG/JPEG/WebP decode/crop/re-encode with bounded output; unsupported and oversized input denied')
+    state={'revision':0,'images':[],'theme':{'accent':'gold','secondary':'slate','header':'road','card':'outlined','layout':'grid','icon':'shield','badge':'plain'},'canWrite':True}
+    payloads={};requests=[]
+    def media_route(route):
+        request=route.request;path=request.url.split('/v1/media/')[1];requests.append((request.method,path))
+        headers={'Access-Control-Allow-Origin':request.headers.get('origin','*'),'Access-Control-Allow-Headers':'Authorization, Content-Type, If-Match, X-Media-Published','Access-Control-Allow-Methods':'GET, POST, PUT, DELETE, OPTIONS','Cache-Control':'no-store'}
+        if request.method=='OPTIONS':route.fulfill(status=204,headers=headers);return
+        if path.startswith('images/'):
+            ident=path.split('/')[-1]
+            if ident not in payloads:route.fulfill(status=404,json={'error':'not_found'},headers=headers);return
+            route.fulfill(body=payloads[ident],content_type='image/jpeg',headers=headers);return
+        if request.method=='GET':route.fulfill(json=state,headers=headers);return
+        assert request.headers.get('authorization')=='Bearer local-media-fixture'
+        assert request.headers.get('if-match')==str(state['revision'])
+        state['revision']+=1
+        if request.method=='POST':
+            slot=path.split('/')[-1];ident=str(uuid.uuid4());payloads[ident]=request.post_data_buffer
+            assert payloads[ident][:2]==b'\xff\xd8' and len(payloads[ident])<=1500000
+            state['images']=[img for img in state['images'] if img['slot']!=slot]+[{'id':ident,'slot':slot,'width':24,'height':24,'published':request.headers.get('x-media-published')=='true'}]
+            route.fulfill(status=201,json={'id':ident,'revision':state['revision']},headers=headers)
+        elif request.method=='DELETE':
+            state['images']=[img for img in state['images'] if img['slot']!=path.split('/')[-1]];route.fulfill(json={'revision':state['revision']},headers=headers)
+        elif request.method=='PUT':
+            body=request.post_data_json;state['theme']=body['theme'];old={img['id']:img for img in state['images']};state['images']=[dict(old[ident],slot='photo'+str(index)) for index,ident in enumerate(body['order'])] if '/vehicle/' in path else state['images'];route.fulfill(json={'revision':state['revision']},headers=headers)
+    context.route('https://motodash-live.old-sound-55f2.workers.dev/v1/media/**',media_route)
+    register(page,'batch8@example.test');page.locator('#bottom-nav [data-destination=profile]').click();page.click('#public-profile-edit');page.wait_for_selector('#public-profile-form')
+    assert page.get_by_text('Save your profile settings first, then reopen to add images.').is_visible()
+    page.locator('#public-profile-form button[type=submit]').click();page.wait_for_function('!document.getElementById("public-profile-editor")')
+    page.click('#public-profile-edit');page.wait_for_selector('[data-media-kind=profile]')
+    page.locator('[data-media-kind=profile] summary').click();page.wait_for_selector('#media-profile-form')
+    page.locator('#media-profile-form-file').set_input_files({'name':'camera.png','mimeType':'image/png','buffer':base64.b64decode(fixtures['image/png'])})
+    page.wait_for_selector('.media-preview:not([hidden])');assert not page.locator('[name=published]').is_checked()
+    page.locator('#media-profile-form button[type=submit]').click();page.wait_for_selector('.media-gallery-item')
+    assert state['images'][0]['slot']=='avatar' and not state['images'][0]['published']
+    page.on('dialog',lambda dialog:dialog.accept());page.locator('.media-gallery-item').get_by_role('button',name='Delete',exact=True).click();page.wait_for_function('document.querySelectorAll(".media-gallery-item").length===0')
+    page.select_option('#language-select','fi');assert page.locator('[data-media-kind=profile] summary').inner_text()=='Kuvat ja ulkoasu'
+    assert not errors,errors
+    print('PASS: Batch 8: profile media private default, crop preview/progress/upload/delete and Finnish mobile controls')
     context.close()

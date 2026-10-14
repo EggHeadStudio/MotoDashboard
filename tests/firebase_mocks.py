@@ -15,7 +15,9 @@ const auth={currentUser:JSON.parse(localStorage.getItem('__mockUser') || 'null')
 export const browserLocalPersistence = 'local';
 export const getAuth = () => auth;
 export async function setPersistence() { window.__mock.persistence++; }
-function notify() { localStorage.setItem('__mockUser',JSON.stringify(auth.currentUser)); for(const fn of listeners) fn(auth.currentUser); }
+function hydrate(user){if(user&&!user.getIdToken)Object.defineProperty(user,'getIdToken',{value:async()=> 'local-media-fixture',configurable:true});return user;}
+hydrate(auth.currentUser);
+function notify() { hydrate(auth.currentUser);localStorage.setItem('__mockUser',JSON.stringify(auth.currentUser)); for(const fn of listeners) fn(auth.currentUser); }
 export function onAuthStateChanged(_,fn) { listeners.add(fn); queueMicrotask(()=>fn(auth.currentUser)); return ()=>listeners.delete(fn); }
 function fail(code) { throw Object.assign(new Error(code),{code}); }
 export async function createUserWithEmailAndPassword(_,email,password) {

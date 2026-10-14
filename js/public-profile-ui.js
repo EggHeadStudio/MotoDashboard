@@ -9,6 +9,8 @@ import {navigate} from './ui/navigation.js';
 import {dataErrorMessage,boundedRequest} from './firebase/access.js';
 import {t,onLanguageChange,setLocalizedText} from './i18n/i18n.js';
 import {vehicleIcon} from './ui/icons.js';
+import {decorateMedia} from './media/media-render.js';
+import {mountMediaEditor} from './media/media-editor.js';
 
 let epoch=0,loaded=null;
 export function publicProfileLink(identity,className='text-button') {
@@ -33,6 +35,7 @@ export function initPublicProfiles() {
       const hero=element('div','public-profile-hero'),avatar=element('div','large-avatar',p.displayName.trim().slice(0,2).toLocaleUpperCase());avatar.setAttribute('aria-hidden','true');
       hero.append(avatar,element('h1','',p.displayName));if(p.bio)hero.append(element('p','public-bio',p.bio));
       if(p.category)hero.append(labelText(element('p','category-chip'),'category.'+p.category));screen.append(hero);
+      decorateMedia(hero,{kind:'profile',id:p.id},{avatar,banner:hero});
       const garage=element('section');garage.append(labelText(element('h2'),'showcase.title'));
       const grid=element('div','card-grid');
       const vehicles=[...loaded.vehicles].sort((a,b)=>(b.id===p.featuredVehicle)-(a.id===p.featuredVehicle));
@@ -53,6 +56,14 @@ export function initPublicProfiles() {
     screen.append(button('publicProfile.back',()=>navigate(getAccount()?'home':'landing')));
   }
   const own=document.getElementById('screen-profile');
+  let disposeOwnMedia=null,ownMediaEpoch=0;
+  async function ownMedia(){
+    const uid=getAccount()?.uid,token=++ownMediaEpoch;disposeOwnMedia?.();disposeOwnMedia=null;if(!uid)return;
+    try{const prefs=await loadOwnPublicProfile(uid);if(token!==ownMediaEpoch||getAccount()?.uid!==uid||!prefs.publicId)return;
+      const hero=own.querySelector('.profile-hero');disposeOwnMedia=decorateMedia(hero,{kind:'profile',id:prefs.publicId},{avatar:document.getElementById('profile-avatar'),banner:hero});
+    }catch{/* Account data errors remain in the existing Profile flow, optional art falls back. */}
+  }
+  addEventListener('motodash-profile-updated',()=>void ownMedia());addEventListener('motodash-media-updated',()=>void ownMedia());
   const entry=button('publicProfile.settings',()=>void edit(),'public-profile-edit');own.querySelector('.profile-actions').append(entry);
   async function edit() {
     const uid=getAccount()?.uid;if(!uid)return;
@@ -81,6 +92,8 @@ export function initPublicProfiles() {
         await savePublicProfile(uid,{...settings,displayName:name.value,bio:bio.value,category:category.value,accent:accent.value,banner:banner.value,featuredVehicle:featured.value,visibility:visibility.value});
         if(getAccount()?.uid===uid){publishDisplayIdentity(uid,name.value.trim());dispatchEvent(new Event('motodash-profile-updated'));labelText(view.status,'ui.saved');view.node.close();}
       });});view.body.append(form);
+      if(settings.publicId)mountMediaEditor(view.body,{kind:'profile',id:settings.publicId},['avatar','banner']);
+      else view.body.append(labelText(element('p','muted'),'media.saveProfileFirst'));
       const affiliations=element('section');affiliations.append(labelText(element('h3'),'publicProfile.affiliations'),labelText(element('p','muted'),'publicProfile.affiliationHint'));view.body.append(affiliations);
       const refreshEditor=()=>{if(getAccount()?.uid===uid){view.node.close();void edit();}};
       for(const card of cards.affiliations){const row=element('div','surface');row.append(element('p','',card.name+(card.rank?' · '+card.rank:'')),button('common.delete',()=>void runAction(view.body,view.status,async()=>{await removeProfileAffiliation(uid,card.id);refreshEditor();})));affiliations.append(row);}
@@ -98,6 +111,6 @@ export function initPublicProfiles() {
   }
   addEventListener('hashchange',()=>void resolve());
   let owner;
-  onAccountChange(({user})=>{const next=user?.uid || null;if(next===owner)return;owner=next;epoch++;loaded=null;screen.replaceChildren();document.getElementById('public-profile-editor')?.close();if(location.hash.startsWith('#/rider/'))void resolve();});
+  onAccountChange(({user})=>{const next=user?.uid || null;if(next===owner)return;owner=next;epoch++;loaded=null;screen.replaceChildren();document.getElementById('public-profile-editor')?.close();void ownMedia();if(location.hash.startsWith('#/rider/'))void resolve();});
   onLanguageChange(()=>{if(location.hash.startsWith('#/rider/'))render();});
 }

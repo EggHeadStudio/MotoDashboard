@@ -42,6 +42,14 @@ no credential URL or image cache, scoped deadlines/progress and account-change
 abort/blob revocation. One browser preparation group (five format/rejection paths)
 passed, zero failed/skipped; actual phone camera/HEIC remains manual acceptance.
 
+Milestone 3: shared accessible media editor in Profile settings, avatar/banner
+slots, independent public photo opt-in, crop/preview/progress/replace/remove;
+private/public profile rendering uses current authorized Worker responses and
+initial placeholders. Own profile hero also renders private owner media.
+Two cumulative browser groups pass (preparation plus Profile/editor EN/FI at320px).
+11 backend policy/container groups and the R2 runtime lifecycle passed previously;
+production R2/Auth and physical devices remain untested.
+
 Milestone 0 verification: 17 focused browser cases/groups (including 26 camera and
 25 replay nested assertions) passed, 0 failed/skipped. Mobile disclosures preserve
 playback, speed and more than 250px clear map space with both collapsed; exports,
