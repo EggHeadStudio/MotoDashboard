@@ -83,8 +83,8 @@ milestones in IDEA.md Section 23, together with all prior agreed requirements.
 
 ## Progress
 
-- Milestones 0–1: complete locally with checks/commits.
-- Milestones 2–7: pending sequential implementation and actual verification.
+- Milestones 0–2: complete locally with checks/commits.
+- Milestones 3–7: pending sequential implementation and actual verification.
 - Physical/native Safari/production account tests: NOT RUN.
 - Push/deployment/production writes: NOT PERFORMED.
 
@@ -125,3 +125,32 @@ duplicate-name results over three pages; **135 existing 6B assertions** pass.
 index/config validation and **3 YAML/15 Bash** checks pass; all completed final
 checks zero failed/skipped. Production indexes/phone policy remain NOT RUN.
 Only M1 checks have run; the complete final regression is still milestone 7.
+
+## Milestone 2 — clear showcase controls and visitor preview
+
+Garage cards distinguish unpublished/private, selected while profile Private,
+effectively visible, featured and unavailable/unverified. Direct Show on profile
+still requires the separate public description/consent form; Hide removes the card,
+not the private vehicle. Featured changes use current owner transaction data,
+preserving theme/privacy and directory consistency. Profile/Garage both link to the
+public URL and Preview as visitor. Existing Showcase options remains useful for
+editing its separate public text; no duplicate publishing system or paid restriction.
+
+`profileVisitor.js` checks an owner's current server preferences and source mappings/
+visibility/incarnations/member/rank before that owner sees the shared-page view.
+Private/retired owner profiles are unavailable in this mode; retained owner-readable
+private vehicles cannot masquerade as visitor-visible. Foreign/anonymous reads are
+still enforced by actual Rules. This preview does not impersonate an anonymous SDK
+identity or certify production permission; real second-account/anonymous acceptance
+remains required. All openings use server reads and bounded child concurrency.
+
+Garage status loads only up to four published mappings/cards, rather than one status
+read per private Garage item. Unknown errors are labeled unverified; no automatic
+publication. An owner visitor preview adds bounded private proof reads (up to three
+per vehicle plus affiliation source/rank checks and preference recheck); ordinary
+public rendering never exposes those private proofs.
+
+Checks: **8 cumulative Batch 7 browser cases**, **20 Batch 6B cases**, **96 new Rules
+assertions** and **2 Pages groups (309 references/87 URLs)** pass, zero final
+failed/skipped. Existing 135 6B Rules assertions passed with the unchanged M1 policy.
+No Rules/index/Worker change is introduced by M2. Phone/native Safari remain NOT RUN.

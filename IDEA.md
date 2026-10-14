@@ -3667,7 +3667,7 @@ Sequential milestones, each reviewed/checked and committed:
   service-wide abuse limiter; record remaining enumeration/quota risk.
   Normalization folds A–Z and Ä/Ö/Å consistently with the actual Rules engine;
   other scripts/accents stay valid and preserve case, pending trusted broader normalization.
-- [ ] **2 Showcase UX:** reuse mapping/source gates; show explicit state/actions,
+- [x] **2 Showcase UX:** reuse mapping/source gates; show explicit state/actions,
   featured selection, public link and visitor-mode preview. A private owner preview
   must not masquerade as anonymous permission. Preserve private defaults/CRUD/history.
 - [ ] **3 Camera:** rotation coverage without visual scale, one camera owner,

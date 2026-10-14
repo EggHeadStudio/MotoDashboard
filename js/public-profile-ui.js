@@ -76,7 +76,7 @@ export function initPublicProfiles() {
       const visibility=field(form,'visibility','publicProfile.visibility',{choices:['private','public'],prefix:'visibility',value:settings.visibility});
       form.append(labelText(element('p','muted'),'publicProfile.privacy'));
       const save=button('common.save');save.type='submit';form.append(save);
-      if(settings.publicId && settings.visibility==='public'){const link=labelText(element('a'),'publicProfile.view');link.href=profileURL(settings.publicId);link.addEventListener('click',()=>view.node.close());form.append(link);}
+      if(settings.publicId){for(const key of ['publicProfile.view','showcase.visitor']){const link=labelText(element('a'),key);link.href=profileURL(settings.publicId);link.addEventListener('click',()=>view.node.close());form.append(link);}}
       form.addEventListener('submit',event=>{event.preventDefault();if(!validDisplayName(name.value)){labelText(view.status,'auth.nameLength');name.focus();return;}void runAction(form,view.status,async()=>{
         await savePublicProfile(uid,{...settings,displayName:name.value,bio:bio.value,category:category.value,accent:accent.value,banner:banner.value,featuredVehicle:featured.value,visibility:visibility.value});
         if(getAccount()?.uid===uid){publishDisplayIdentity(uid,name.value.trim());dispatchEvent(new Event('motodash-profile-updated'));labelText(view.status,'ui.saved');view.node.close();}

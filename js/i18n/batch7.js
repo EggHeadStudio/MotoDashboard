@@ -1,10 +1,22 @@
 export const batch7={en:{
+  'showcase.show':'Show on profile','showcase.hide':'Hide from profile','showcase.makeFeatured':'Set as featured vehicle',
+  'showcase.visitor':'Preview as visitor','showcase.profilePrivate':'Your profile is Private. Selected vehicles are not visible to visitors.',
+  'showcase.profilePublic':'Your profile is Public. Only explicitly selected vehicles are shown.',
+  'showcase.notPublished':'Private · not shown on profile','showcase.publicNow':'Visible on your public profile',
+  'showcase.selectedPrivate':'Selected · profile is Private','showcase.stateUnknown':'Sharing state could not be verified. Refresh before relying on it.',
+  'showcase.unavailable':'Selected vehicle is currently unavailable to visitors',
   'discover.people':'People',
   'people.search':'Public display name','people.find':'Find people',
   'people.hint':'Find public profiles and their selected Garage showcases. Names are not unique.',
   'people.prefixHint':'Enter at least two characters to search.','people.empty':'No public profiles match this name.',
   'people.refine':'Refine the name to find more people.','data.peoplePrefix':'Enter between 2 and 64 characters.'
 },fi:{
+  'showcase.show':'Näytä profiilissa','showcase.hide':'Piilota profiilista','showcase.makeFeatured':'Aseta esittelyajoneuvoksi',
+  'showcase.visitor':'Esikatsele vierailijana','showcase.profilePrivate':'Profiilisi on yksityinen. Valitut ajoneuvot eivät näy vierailijoille.',
+  'showcase.profilePublic':'Profiilisi on julkinen. Vain erikseen valitut ajoneuvot näkyvät.',
+  'showcase.notPublished':'Yksityinen · ei näy profiilissa','showcase.publicNow':'Näkyy julkisessa profiilissasi',
+  'showcase.selectedPrivate':'Valittu · profiili on yksityinen','showcase.stateUnknown':'Jakamisen tilaa ei voitu varmistaa. Päivitä tiedot ennen kuin luotat siihen.',
+  'showcase.unavailable':'Valittu ajoneuvo ei tällä hetkellä näy vierailijoille',
   'discover.people':'Ihmiset',
   'people.search':'Julkinen näyttönimi','people.find':'Etsi ihmisiä',
   'people.hint':'Löydä julkisia profiileja ja niiden valitut ajoneuvot. Sama nimi voi olla usealla käyttäjällä.',

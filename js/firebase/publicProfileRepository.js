@@ -4,9 +4,10 @@ import {publicId,profileDefaults,profileInput,profileProjection,MAX_SHOWCASE,sho
 import {validId,text} from '../data/schema.js';
 import {displayNameInput} from '../data/identity.js';
 import {syncProfileDirectory} from './profileDirectory.js';
+import {ownerVisitorPolicy,visitorAvailable,visitorVehicle,visitorAffiliation,sameTimestamp} from './profileVisitor.js';
 
-export async function loadOwnPublicProfile(uid) {
-  const s=await ownDatabase(uid,'profile'),record=await boundedRequest(s.sdk.getDoc(s.sdk.doc(s.db,'users',uid,'preferences','publicProfile')));
+export async function loadOwnPublicProfile(uid,{server=false}={}) {
+  const s=await ownDatabase(uid,'profile'),record=await boundedRequest(s.sdk[server?'getDocFromServer':'getDoc'](s.sdk.doc(s.db,'users',uid,'preferences','publicProfile')));
   return record.exists()?record.data():profileDefaults();
 }
 export async function savePublicProfile(uid,input) {
@@ -35,18 +36,27 @@ export async function loadPublicProfile(id) {
   if(!publicId(id))return null;
   const {sdk,db}=await getFirestoreService();
   try {
+    const visitor=await ownerVisitorPolicy({sdk,db},id);
+    if(visitor && !visitorAvailable(visitor))return null;
     // Visibility is checked on the server on every public opening, never inferred from a cached copy.
     const record=await boundedRequest(sdk.getDocFromServer(sdk.doc(db,'publicProfiles',id)));
     if(!record.exists())return null;
     const data=record.data();
     const children=await settleReads((data.vehicleIds || []).slice(0,MAX_SHOWCASE),async child=>{
-      try {const doc=await boundedRequest(sdk.getDocFromServer(sdk.doc(db,'publicProfiles',id,'vehicles',child)));return doc.exists()?doc.data():null;}
+      try {const doc=await boundedRequest(sdk.getDocFromServer(sdk.doc(db,'publicProfiles',id,'vehicles',child)));
+        if(!doc.exists() || visitor && !await visitorVehicle(visitor,child))return null;return doc.data();}
       catch(error){if(error?.code==='permission-denied')return null;throw error;}
     },2);
     const affiliations=await settleReads((data.affiliationIds || []).slice(0,2),async child=>{
-      try {const doc=await boundedRequest(sdk.getDocFromServer(sdk.doc(db,'publicProfiles',id,'affiliations',child)));return doc.exists()?doc.data():null;}
+      try {const doc=await boundedRequest(sdk.getDocFromServer(sdk.doc(db,'publicProfiles',id,'affiliations',child)));
+        if(!doc.exists() || visitor && !await visitorAffiliation(visitor,child,doc.data()))return null;return doc.data();}
       catch(error){if(error?.code==='permission-denied')return null;throw error;}
     },2);
+    if(visitor){const latest=await loadOwnPublicProfile(visitor.uid,{server:true});
+      if(latest.publicId!==id || !visitorAvailable({prefs:latest}))return null;
+      for(const row of children)if(row.value && !latest.vehicleIds.includes(row.value.id))row.value=null;
+      for(const row of affiliations)if(row.value && !latest.affiliationIds.includes(row.value.id))row.value=null;
+    }
     return {profile:data,vehicles:children.filter(row=>row.status==='fulfilled' && row.value).map(row=>row.value),
       affiliations:affiliations.filter(row=>row.status==='fulfilled' && row.value).map(row=>row.value),partial:[...children,...affiliations].some(row=>row.status==='rejected')};
   }catch(error) {
@@ -54,6 +64,40 @@ export async function loadPublicProfile(id) {
     if(error && typeof error==='object')error.operation='profile';
     throw error;
   }
+}
+
+// Bounded by published slots, rather than one status query per private Garage vehicle.
+export async function loadShowcaseOverview(uid,vehicles) {
+  const prefs=await loadOwnPublicProfile(uid,{server:true}),s=await ownDatabase(uid,'profile');
+  const rows=await settleReads(prefs.vehicleIds,async id=>{
+    const [mapping,card]=await Promise.all([
+      boundedRequest(s.sdk.getDocFromServer(s.sdk.doc(s.db,'profileOwners',prefs.publicId,'vehicles',id))),
+      boundedRequest(s.sdk.getDocFromServer(s.sdk.doc(s.db,'publicProfiles',prefs.publicId,'vehicles',id)))
+    ]);
+    if(!mapping.exists())return null;
+    const source=vehicles.find(vehicle=>vehicle.id===mapping.data().sourceVehicleId);
+    return {sourceId:mapping.data().sourceVehicleId,id,featured:prefs.featuredVehicle===id,
+      available:card.exists() && source?.visibility==='public' && sameTimestamp(source.createdAt,mapping.data().sourceCreatedAt)};
+  },2);
+  s.assertCurrent();
+  return {prefs,entries:rows.filter(row=>row.status==='fulfilled' && row.value).map(row=>row.value),partial:rows.some(row=>row.status==='rejected')};
+}
+
+export async function featureShowcaseVehicle(uid,vehicleId) {
+  const s=await ownDatabase(uid,'profile'),{sdk,db}=s;
+  return boundedRequest(sdk.runTransaction(db,async tx=>{
+    const prefRef=sdk.doc(db,'users',uid,'preferences','publicProfile');
+    const [pref,user,ref,vehicle]=await Promise.all([tx.get(prefRef),tx.get(sdk.doc(db,'users',uid)),
+      tx.get(sdk.doc(db,'users',uid,'showcaseRefs',vehicleId)),tx.get(sdk.doc(db,'users',uid,'vehicles',vehicleId))]);
+    if(!pref.exists() || pref.data().state!=='active' || !ref.exists() || !vehicle.exists() || vehicle.data().visibility!=='public')throw dataError('invalid-input');
+    const settings=pref.data(),id=ref.data().publicId;
+    const [mapping,card]=await Promise.all([tx.get(sdk.doc(db,'profileOwners',settings.publicId,'vehicles',id)),tx.get(sdk.doc(db,'publicProfiles',settings.publicId,'vehicles',id))]);
+    if(!settings.vehicleIds.includes(id)||ref.data().profileId!==settings.publicId||!mapping.exists()||!card.exists()
+      || !sameTimestamp(mapping.data().sourceCreatedAt,vehicle.data().createdAt))throw dataError('invalid-input');
+    s.assertCurrent();const next={...settings,featuredVehicle:id,updatedAt:sdk.serverTimestamp()};
+    tx.set(prefRef,next);tx.set(sdk.doc(db,'publicProfiles',settings.publicId),profileProjection(settings.publicId,next,user.data().displayName,sdk.serverTimestamp()));
+    syncProfileDirectory(tx,sdk,db,next,user.data().displayName);
+  }));
 }
 
 export async function prepareShowcaseChange(tx,s,vehicleId) {
