@@ -1,4 +1,4 @@
-> **Current Batch 6B authorization, 2026-10-13:** the operator reports Batch 6A deployed and working. The approved local Batch 6B scope is landing, opt-in public profiles/Garage showcase, controlled customization, active ride continuity and single live Group enforcement. See BATCH_6B_RESULT.md for the audited sequential plan. This supersedes the earlier proposal called 6B account recovery; recovery/change, Google, trusted deletion and every agreed future requirement remain planned. Each milestone is tested and committed separately; stop after this batch. No push, backend deployment, production writes or Batch 7 is authorized. Earlier dated results retain their original evidence.
+> **Current Batch 7 authorization, 2026-10-14:** the operator reports Batch 6B deployed and its core features working. Batch 7 authorizes local discovery/user search, clearer showcase controls, smooth map follow, a dedicated saved-ride viewer, timestamp-based replay and network recovery improvements. Audit first; implement/test in logical commits; stop after Batch 7. No push, backend deployment or production-data operation. Media uploads, payments, marketplace and final branding remain future work. Section 22 is the current audited plan; dated earlier stops/results are historical.
 
 
 # MotoDash Platform --- IDEA.md
@@ -1052,7 +1052,7 @@ later explicitly moves them into scope:
 -   Achievements;
 -   Vehicle Passport;
 -   Ride Memories;
--   Ride Replay;
+-   Ride Replay (later explicitly authorized in Batch 7; see Section 22);
 -   Safe Zone;
 -   full moderation system;
 -   business analytics dashboard;
@@ -2344,7 +2344,9 @@ Shareable visual route/session cards.
 
 ## Ride Replay
 
-Animated playback of a completed session.
+Animated playback of a completed session. The user explicitly moved lightweight
+timestamp-based local replay into Batch 7; do not infer approval for public ride
+sharing, extra GPS uploads or fabricated telemetry.
 
 ## Vehicle Passport
 
@@ -3489,14 +3491,14 @@ UI/i18n, Firestore repositories and Cloudflare/GPS boundaries; no frontend frame
 | Order | Recommended milestone | Dependencies and acceptance |
 | --- | --- | --- |
 | 6A — stability/lifecycle/notifications | Implemented and reported deployed/working: dashboard root fix, scoped diagnostics, Open activities, bounded Groups and direct notifications | Independent acceptance/network evidence still needed; broadcast fan-out remains future trusted work |
-| 6B — landing/public identity/continuity | New user-authorized scope implemented locally: premium landing, opt-in public profiles/showcase, controlled customization, Return to Ride and exclusive live UID claims | New Rules + Worker binding/v2 + frontend publication, physical acceptance; see Section 21/BATCH_6B_RESULT.md |
+| 6B — landing/public identity/continuity | Implemented and now reported deployed/core working: premium landing, opt-in profiles/showcase, customization, Return to Ride and exclusive live UID claims | Independent security/physical acceptance remains; historical source/evidence in Section 21/BATCH_6B_RESULT.md |
 | Future account recovery/settings | Forgot-password email and change-password with recent reauthentication; accessible Account settings and EN/FI feedback | Explicit approval, Auth templates/enumeration policy, authorized return URLs and no password logging/storage; remains agreed, outside 6B |
 | 6C ? Google identity | Google sign-in and secure linking to existing email/password accounts; preserve owned data and invitation return destination | Approved provider setup; validate browser/Pages auth-domain and popup/redirect restrictions before implementation. Handle collisions/cancel/block/refresh without email-only automatic merge or duplicate profiles |
 | 6D ? privacy/deletion checkpoint | Complete deletion design and, only after backend/ownership/cost approval, a trusted resumable complete deletion implementation | Recent reauthentication, own-UID authorization, write/outbox fence, live ticket/socket revocation, private/public data inventory, owned Club/Group policy, preserved nonpersonal retired IDs and idempotent retry. Auth-only deletion is not completion |
 | 6E ? reliability/UX follow-up | Fix only reproduced acceptance issues; improve recovery/onboarding/empty states/invite feedback; constrain repeated-mount lifecycle and measured read hotspots where justified | 6A evidence, existing dashboard/GPS/local-ride regressions, accessible EN/FI/mobile checks; no schema/protocol/rules rewrites just to simplify code |
 
-The operator reports 6A deployed; finish the approved **6B** publication/phone
-acceptance before further work. Account recovery, 6C Google and 6D deletion remain
+The operator now reports 6B deployed/core working and explicitly approved Batch 7
+below; its remaining acceptance does not authorize unrelated features. Account recovery, 6C Google and 6D deletion remain
 separately approved future milestones. If trusted deletion infrastructure/cost or ownership policy is not approved,
 stop at its reviewable design; keep wider public beta blocked rather than presenting
 partial erasure. Do not bundle all media, Official rewards and payments into this batch.
@@ -3584,7 +3586,10 @@ remain intact in their original sections and Section 19. Batch 6A is not approva
 to implement those future account/commercial features. The separate user request
 authorized only the Batch 6B scope below.
 
-# 21. Batch 6B — local implementation result and approval boundary
+# 21. Batch 6B — historical local result and approval boundary
+
+The operator reports 6B deployed/core working on 2026-10-14. This original local
+result preserves its evidence; the later Batch 7 request supersedes its work stop.
 
 The new request supersedes the earlier proposal called 6B account recovery, while
 preserving every agreed product requirement. Milestones 0–8 are locally implemented
@@ -3630,3 +3635,82 @@ implementation is included. Future entitlements must come from trusted backend
 authorization, not editable profile fields or frontend capability constants.
 
 **STOP after Batch 6B. Await explicit approval before publication or further work.**
+
+# 22. Batch 7 — audit, authorized scope and sequential plan (2026-10-14)
+
+Baseline `4c9fa7d`, clean main matching origin/main. Preserve static Pages/native
+modules, Firebase Auth/Firestore, Cloudflare LIVE_ROOMS/v1 + LIVE_IDENTITIES/v2,
+Leaflet/OpenStreetMap, Open-Meteo, the existing GPS pipeline and EN/FI design system.
+No production console/data/deployment action was performed by this audit.
+
+| Area | Existing | Missing or correction authorized now |
+| --- | --- | --- |
+| Profiles | Opaque stable hash routes, private defaults, safe projections and source gates, member/participant links | Discover People prefix search; publicProfiles listing must remain denied |
+| Garage | Explicit showcase publish/remove, separate public text, featured selection in Profile editor | Clear private/selected/visible/featured state, direct actions and a visitor-safe preview |
+| Discover | Public Clubs, public/approval Ride/Drive/Meet/Event filters and paged indexed Lobby | Minimal searchable public identity projection with duplicate-name pagination |
+| Map | Accepted GPS, one watcher, bearing smoothing, native follow and manual rotated gestures | Rotation currently applies aspect/bearing-dependent CSS scale; initial zoom is hard-coded 16, motion can overlap and native gesture events do not reliably disable follow |
+| Saved ride | Local/private cloud route, metadata, statistics, exports and fitBounds | Separate read-only view without current GPS/weather/clock/speed/recording UI |
+| Replay | Points include epoch-ms timestamps and explicit breaks; no replay yet | Timestamp playback/seek/speeds/progress, no interpolation through missing data, safe overview fallback |
+| Network | 12s request deadlines, one transient read retry, scoped diagnostics, retained local recording and no service worker | Shared read work, stale-response guards, reliable loading cleanup/retry and safe unavailable/Auth diagnostics; production cause unconfirmed |
+
+Sequential milestones, each reviewed/checked and committed:
+
+- [x] **0 Audit/roadmap:** document this inventory and retained future requirements
+  before application changes. Detailed design/evidence: BATCH_7_RESULT.md.
+- [ ] **1 People:** signed-in search of a minimal `profileDirectory/{opaqueId}`,
+  normalized lowercase display-name prefix, limit 10 with snapshot pagination and
+  explicit minimum search length/cooldown. Rules couple directory privacy/name to
+  current owner settings, deny unknown fields/foreign writes and anonymous search.
+  One additional composite is planned; no private UID/email/Garage fields or paid
+  search service. Existing Public profiles synchronize on an owned login/save;
+  private profiles are never silently published. App rate bounds are not a trusted
+  service-wide abuse limiter; record remaining enumeration/quota risk.
+- [ ] **2 Showcase UX:** reuse mapping/source gates; show explicit state/actions,
+  featured selection, public link and visitor-mode preview. A private owner preview
+  must not masquerade as anonymous permission. Preserve private defaults/CRUD/history.
+- [ ] **3 Camera:** rotation coverage without visual scale, one camera owner,
+  filtered short-angle heading, speed-aware bounded zoom/default setting and explicit
+  manual interruption/recenter. Visual animation never changes recorded GPS data.
+- [ ] **4 Saved viewer:** dedicated localized title/date/duration/distance/speeds/
+  vehicle/route/back and export/share; omit unavailable historical values.
+- [ ] **5 Replay:** pure timestamp model plus bounded mobile rendering, play/pause,
+  seek/1x/2x/4x/8x/restart/end/follow/overview. Preserve breaks and gaps; unknown
+  timestamps or movement get overview/clear limitation, not invented coordinates.
+- [ ] **6 Network:** improve verified recovery issues, no blind uncertain-write
+  retry or repeated background global toasts; document safe real-device diagnostics.
+- [ ] **7 Integration/docs:** full emulator/Worker/browser/Pages/localization/layout/
+  deployment validation, current schema/index/source/runbook, exact counts/limitations
+  and phone checklist. Stop; no Batch 8, push/deploy or production operations.
+
+# 23. Retained future media, final polish and optional commerce
+
+These are future requirements, not Batch 7 implementation approval. Earlier account,
+Official/safe-reward, subscription/Stripe, NFC, merchandise, privacy/erasure, Safe Zone,
+Club QR, notification fan-out and commercial-provider requirements are preserved.
+
+## Media and customization — future milestone
+
+- [ ] User profile photos and banners; vehicle showcase photos and galleries.
+- [ ] Club logos/banners; event, ride and meet banners.
+- [ ] Custom rank graphics using approved PNG/SVG; graphics never grant permissions.
+- [ ] Controlled profile/Club/event colors and safe layout/style presets.
+- [ ] Secure decoded-media validation, resizing, optimization and storage; sanitize
+  SVG or prohibit unsafe content, remove sensitive metadata, enforce owner/manager
+  access, retention/replacement/deletion and moderation controls.
+- [ ] Approve storage provisioning/billing/IAM and complete-deletion dependencies
+  before implementation; do not add uploads or paid infrastructure now.
+
+## Dedicated final visual polish — after core feature acceptance
+
+- [ ] Final MotoDash logo/branding, typography/font system and consistent iconography.
+- [ ] Navigation consistency, animations/reduced motion and visual hierarchy.
+- [ ] All screen layouts and final premium mobile UX, both languages/safe areas.
+- [ ] Accessibility and performance review with real devices before broad release.
+
+## Long-term optional marketplace — no current implementation
+
+- [ ] Optional vehicle marketplace and sale listings.
+- [ ] Club-related marketplace opportunities, after validation of demand, ownership,
+  moderation/privacy, consumer terms and costs. No sales/payment/marketplace code now.
+
+**STOP after Batch 7 and await explicit approval.**

@@ -1,5 +1,11 @@
 # MotoDashboard implementation status
 
+**Current, 2026-10-14:** the operator reports Batch 6B deployed/core working.
+Batch 7 milestone 0 audit/roadmap is complete; milestones 1–7 are pending under the
+new explicit request. See BATCH_7_RESULT.md and IDEA.md Section 22. No application
+code/push/deployment/production operation in this audit. The dated 6B evidence below
+is historical; physical/security acceptance is not inferred from reported publication.
+
 Updated **2026-10-13**. The operator now reports Batch 6A deployed and working.
 **Batch 6B milestones 0–8 are complete locally**, with sequential commits and the
 audit/result in [BATCH_6B_RESULT.md](BATCH_6B_RESULT.md). This scope replaces the earlier
