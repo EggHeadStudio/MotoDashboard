@@ -4,6 +4,7 @@ import json
 from firebase_mocks import install
 from batch2_browser import register,open_garage,add_vehicle
 from clubs_browser import open_clubs
+from navigation_helpers import click_action
 import base64,uuid
 
 def run_batch8_tests(browser,base,route_map):
@@ -90,4 +91,16 @@ def run_batch8_tests(browser,base,route_map):
     appearance.locator('button[type=submit]').click();page.wait_for_function('document.querySelector("#media-theme-club-secondary").value==="navy" && !document.querySelector("#media-theme-club-secondary").disabled')
     assert state['theme']['secondary']=='navy' and not errors,errors
     print('PASS: Batch 8: Club logo slots, controlled secondary/accent/header/card presets and live preview')
+    click_action(page,'#groups-btn');page.wait_for_selector('#group-create');state['images']=[]
+    for activity in ['event','meet','ride']:
+        if page.locator('#group-create').count()==0:
+            page.locator('#groups-dialog').get_by_role('button',name='Back to Group Sessions',exact=True).click();page.wait_for_selector('#group-create')
+        page.click('#group-create');page.wait_for_selector('#group-form');page.fill('#group-form-title','Media '+activity);page.fill('#group-form-meetingArea','Helsinki');page.select_option('#group-form-activityType',activity)
+        page.locator('#group-form button[type=submit]').click();page.wait_for_selector('#group-edit')
+        page.locator('[data-media-kind=group] summary').click();page.wait_for_selector('#media-group-form')
+        assert page.locator('#media-group-form-slot option').count()==1
+        page.locator('#media-group-form-file').set_input_files({'name':'event.png','mimeType':'image/png','buffer':base64.b64decode(fixtures['image/png'])})
+        page.wait_for_selector('#groups-dialog .media-preview:not([hidden])');page.locator('#media-group-form button[type=submit]').click();page.wait_for_selector('#groups-dialog .media-gallery-item')
+    assert not errors,errors
+    print('PASS: Batch 8: Event/Meet/Ride share the authorized Group banner/theme editor and existing activity cards')
     context.close()

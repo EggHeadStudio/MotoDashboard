@@ -68,3 +68,10 @@ retain placeholders and readable text. Four cumulative browser groups pass. The
 preset test found FormData was captured after selects were disabled; capturing
 values before disabling fixed the underlying save failure. Backend role/rank/
 revocation denials are retained; no permission-schema change.
+
+Milestone 6: Event/Meet/Ride/Drive use existing Group identity, banner and safe
+theme editor, with media on shared Discover/detail/Club activity cards. Private
+and unlisted media require admitted audiences; invitations alone are not image
+access. Five cumulative browser groups pass (all three requested activity forms).
+Baseline browser fixtures now intercept media so no production Worker request is
+made; existing live-test token replacement remains supported.

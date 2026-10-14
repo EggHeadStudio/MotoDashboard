@@ -20,7 +20,7 @@ export function groupCard(group, open, {featured = false, detail = false} = {}) 
   body.append(labelText(element('p','muted'),'policy.'+group.joiningPolicy));
   if(['scheduled','active'].includes(group.state)) body.append(labelText(element('p','availability'),group.maxParticipants && group.participantCount >= group.maxParticipants?'lobby.full':'lobby.available'));
   body.append(footer);
-  card.append(art,body); return card;
+  card.append(art,body);decorateMedia(card,{kind:'group',id:group.id},{banner:art});return card;
 }
 export function clubCard(club, open, {member = false} = {}) {
   const card = element('article','feature-card community-card');

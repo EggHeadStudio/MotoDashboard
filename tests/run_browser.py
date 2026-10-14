@@ -41,6 +41,7 @@ def run():
         context = browser.new_context(viewport={'width': 390, 'height': 844})
         pixel = base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a7WQAAAAASUVORK5CYII=')
         def route_map(ctx):
+            ctx.route('https://motodash-live.old-sound-55f2.workers.dev/v1/media/**',lambda route:route.fulfill(status=503,json={'error':'not_configured'},headers={'Access-Control-Allow-Origin':'*'}))
             ctx.route('https://unpkg.com/**', lambda route: route.fulfill(
                 body=(cached / route.request.url.rsplit('/', 1)[-1]).read_bytes(),
                 content_type='text/css' if route.request.url.endswith('.css') else 'application/javascript'))

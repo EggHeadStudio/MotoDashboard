@@ -11,6 +11,7 @@ import { groupCard, emptyState } from './ui/cards.js';
 import {watchGroup} from './firebase/groupWatch.js';
 import {getRideContext} from './ride-context.js';
 import {showActiveRideConflict} from './ui/ride-return.js';
+import {mountMediaEditor} from './media/media-editor.js';
 
 const sections = new Set();
 export const registerGroupSection = render => sections.add(render);
@@ -110,6 +111,7 @@ export function initGroupUI() {
       button('common.refresh',()=>action(()=>Promise.resolve())),groupCard(group,null,{featured:true,detail:true}));
     if(group.endsAt) view.body.append(element('p','',formatGroupTime(group.endsAt)));
     if((participant || manager) && group.meetingLocation) view.body.append(element('p','group-meeting',group.meetingLocation));
+    if(manager && ['scheduled','active'].includes(group.state))mountMediaEditor(view.body,{kind:'group',id:group.id},['banner'],{themeFields:['accent','secondary','header','card']});
     if(manager && ['scheduled','active'].includes(group.state)) {
       view.body.append(button('common.edit',()=>action(()=>edit(group),()=>{}),'group-edit'));
       const state=group.state==='scheduled'?'active':'completed';
