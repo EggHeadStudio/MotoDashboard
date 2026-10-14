@@ -35,6 +35,13 @@ passed. The first full Worker run had a duplicate-case cache-header failure;
 normalized Headers fixed it, and the actual media runtime rerun passed. Final full
 regression will be rerun at milestone 10. No production test is claimed.
 
+Milestone 2: browser signature preflight, mobile-friendly image decode, bounded
+crop/zoom/position, 1600px JPEG canvas re-encoding and 1.5MB upload cap. Originals,
+EXIF/GPS and arbitrary SVG never upload. Native fetch/XHR use Auth headers only,
+no credential URL or image cache, scoped deadlines/progress and account-change
+abort/blob revocation. One browser preparation group (five format/rejection paths)
+passed, zero failed/skipped; actual phone camera/HEIC remains manual acceptance.
+
 Milestone 0 verification: 17 focused browser cases/groups (including 26 camera and
 25 replay nested assertions) passed, 0 failed/skipped. Mobile disclosures preserve
 playback, speed and more than 250px clear map space with both collapsed; exports,
