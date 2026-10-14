@@ -35,7 +35,7 @@ export function initPublicProfiles() {
       const hero=element('div','public-profile-hero'),avatar=element('div','large-avatar',p.displayName.trim().slice(0,2).toLocaleUpperCase());avatar.setAttribute('aria-hidden','true');
       hero.append(avatar,element('h1','',p.displayName));if(p.bio)hero.append(element('p','public-bio',p.bio));
       if(p.category)hero.append(labelText(element('p','category-chip'),'category.'+p.category));screen.append(hero);
-      decorateMedia(hero,{kind:'profile',id:p.id},{avatar,banner:hero});
+      decorateMedia(hero,{kind:'profile',id:p.id},{avatar,banner:hero},{themeRoot:screen});
       const garage=element('section');garage.append(labelText(element('h2'),'showcase.title'));
       const grid=element('div','card-grid');
       const vehicles=[...loaded.vehicles].sort((a,b)=>(b.id===p.featuredVehicle)-(a.id===p.featuredVehicle));
@@ -45,7 +45,7 @@ export function initPublicProfiles() {
         if(vehicle.id===p.featuredVehicle)info.append(labelText(element('p','badge'),'showcase.featured'));
         info.append(labelText(element('p','muted'),'category.'+vehicle.category),element('p','',[vehicle.manufacturer,vehicle.model,vehicle.modelYear].filter(Boolean).join(' ')));
         if(vehicle.publicDescription)info.append(element('p','public-bio',vehicle.publicDescription));card.append(art,info);grid.append(card);
-        const target={kind:'showcase',id:p.id,child:vehicle.id};decorateMedia(art,target,{cover:art},{theme:false});mountMediaGallery(info,target);
+        const target={kind:'showcase',id:p.id,child:vehicle.id};decorateMedia(card,target,{cover:art});mountMediaGallery(info,target);
       }
       if(!vehicles.length)grid.append(labelText(element('p','muted'),'showcase.empty'));garage.append(grid);screen.append(garage);
       if(loaded.partial)screen.append(labelText(element('p','muted'),'showcase.partial'));

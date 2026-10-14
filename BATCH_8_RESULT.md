@@ -82,3 +82,10 @@ JPEG/SVG rank uploads are denied server-side; raster replacement/removal shares
 the safe lifecycle. Club member/rank views render decorative graphics only. Six
 cumulative browser groups pass, including icon/badge saving and PNG preparation.
 No role, rank authorization or existing Firestore schema changed.
+
+Milestone 8: controlled accent/secondary/header/card/grid-list templates across
+profiles, public/private Garage, Clubs and all Group activity types. Live preview
+and reset, safe inherited variables/templates, image scrims and contrast checks;
+no arbitrary HTML/CSS, entitlement, global logo or typography redesign. Seven
+cumulative browser groups pass, including reset/layout and >=4.5 preset text
+contrast. Narrow real-phone/text-scale acceptance remains manual.

@@ -4,7 +4,7 @@ import {element,labelText,button,field,disclosure} from '../ui/forms.js';
 import {getAccount,onAccountChange} from '../auth-state.js';
 import {t} from '../i18n/i18n.js';
 import {mountThemeEditor} from './theme-editor.js';
-export function mountMediaEditor(root,target,slots,{themeFields=[]}={}) {
+export function mountMediaEditor(root,target,slots,{themeFields=['accent','secondary','header','card','layout']}={}) {
   const section=element('section','media-editor'),content=element('div'),details=disclosure('media.title',section);details.dataset.mediaKind=target.kind;root.append(details);
   const status=element('p','feature-status');status.setAttribute('role','status');const progress=element('progress');progress.max=100;progress.value=0;progress.hidden=true;progress.setAttribute('aria-label',t('media.progress'));
   section.append(labelText(element('p','muted'),'media.privacy'),status,progress,content);

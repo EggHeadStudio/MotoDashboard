@@ -3,8 +3,10 @@
 .has-media>.media-image {position:absolute;inset:0;z-index:0;}
 .has-media>:not(.media-image) {position:relative;z-index:1;}
 .has-media>.media-avatar,.has-media>.media-logo {z-index:2;}
-.public-profile-hero.has-media {background:#101214;min-height:200px;}
+.public-profile .public-profile-hero.has-media {background:#101214;min-height:200px;}
 .public-profile-hero.has-media>.media-banner {opacity:.42;}
+.profile-hero.has-media {background:#101214;color:#f4f4f4;}.profile-hero.has-media>.media-banner {opacity:.25;}
+.club-banner.has-media {background-color:#101214!important;color:#f4f4f4!important;}
 .media-editor {padding:12px 0;}
 .media-editor input[type=file] {max-width:100%;font:inherit;min-height:44px;}
 .media-editor progress {display:block;width:100%;min-height:12px;accent-color:var(--md-gold);}
@@ -32,4 +34,11 @@
 [data-media-header=road]>.public-profile-hero,.media-theme-preview[data-media-header=road]{background-image:linear-gradient(135deg,transparent 55%,#ffffff0a 55%,#ffffff0a 57%,transparent 57%);}
 [data-media-header=horizon]>.public-profile-hero,.media-theme-preview[data-media-header=horizon]{background-image:linear-gradient(180deg,#ffffff0d,transparent);}
 [data-media-header=grid]>.public-profile-hero,.media-theme-preview[data-media-header=grid]{background-image:linear-gradient(#ffffff08 1px,transparent 1px),linear-gradient(90deg,#ffffff08 1px,transparent 1px);background-size:24px 24px;}
+[data-media-layout=list] .card-grid {grid-template-columns:1fr;}
+.vehicle-card[data-media-layout=list],.event-card[data-media-layout=list],.community-card[data-media-layout=list] {display:grid;grid-template-columns:minmax(72px,100px) minmax(0,1fr);}
+.vehicle-card[data-media-layout=grid],.event-card[data-media-layout=grid],.community-card[data-media-layout=grid] {display:grid;grid-template-columns:minmax(0,1fr);}
+.public-profile[data-media-header=road]>.public-profile-hero {background-image:linear-gradient(135deg,transparent 55%,#ffffff0a 55%,#ffffff0a 57%,transparent 57%);}
+.public-profile[data-media-header=horizon]>.public-profile-hero {background-image:linear-gradient(180deg,#ffffff0d,transparent);}
+.public-profile[data-media-header=grid]>.public-profile-hero {background-image:linear-gradient(#ffffff08 1px,transparent 1px),linear-gradient(90deg,#ffffff08 1px,transparent 1px);background-size:24px 24px;}
+.media-theme-preview[data-media-card=minimal]{border-color:transparent;}
 @media(max-width:380px){.media-gallery {grid-template-columns:1fr 1fr;}.media-crop {grid-template-columns:1fr;}}

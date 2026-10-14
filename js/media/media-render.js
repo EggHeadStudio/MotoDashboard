@@ -14,7 +14,7 @@ export function decorateMedia(node,target,placements={banner:node},options={}) {
   async function load(){if(started||disposed)return;started=true;const owner=getAccount()?.uid;
     try {
       const resource=await getMedia(target,controller.signal);if(disposed||owner!==getAccount()?.uid)return;
-      if(options.theme!==false)applyMediaTheme(node,resource.theme);
+      if(options.theme!==false)applyMediaTheme(options.themeRoot || node,resource.theme);
       if(options.rank){node.querySelector('svg')?.remove();node.prepend(icon(['shield','star','flag','wheel'].includes(resource.theme.icon)?resource.theme.icon:'shield'));}
       for(const [slot,container] of Object.entries(placements)) {
         const media=slot==='cover'?resource.images.find(item=>item.slot.startsWith('photo')):resource.images.find(item=>item.slot===slot);

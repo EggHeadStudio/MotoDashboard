@@ -19,7 +19,7 @@ export function initClubBrandingUI() {
     banner.append(badge,element('h3','',club.name),labelText(element('p'),'category.'+club.category),element('p','club-description',club.description));
     body.querySelector('#club-identity')?.replaceWith(banner);
     decorateMedia(banner,{kind:'club',id:club.id},{logo:badge,banner});
-    if(canBrand(role))mountMediaEditor(body,{kind:'club',id:club.id},['logo','banner'],{themeFields:['accent','secondary','header','card']});
+    if(canBrand(role))mountMediaEditor(body,{kind:'club',id:club.id},['logo','banner']);
     const links=element('div','feature-actions');links.id='club-links';
     for(const key of LINK_KEYS) {
       let href;

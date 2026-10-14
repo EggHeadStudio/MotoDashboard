@@ -57,18 +57,18 @@ def run_batch8_tests(browser,base,route_map):
     assert page.get_by_text('Save your profile settings first, then reopen to add images.').is_visible()
     page.locator('#public-profile-form button[type=submit]').click();page.wait_for_function('!document.getElementById("public-profile-editor")')
     page.click('#public-profile-edit');page.wait_for_selector('[data-media-kind=profile]')
-    page.locator('[data-media-kind=profile] summary').click();page.wait_for_selector('#media-profile-form')
+    page.locator('[data-media-kind=profile] > summary').click();page.wait_for_selector('#media-profile-form')
     page.locator('#media-profile-form-file').set_input_files({'name':'camera.png','mimeType':'image/png','buffer':base64.b64decode(fixtures['image/png'])})
     page.wait_for_selector('.media-preview:not([hidden])');assert not page.locator('[name=published]').is_checked()
     page.locator('#media-profile-form button[type=submit]').click();page.wait_for_selector('.media-gallery-item')
     assert state['images'][0]['slot']=='avatar' and not state['images'][0]['published']
     page.on('dialog',lambda dialog:dialog.accept());page.locator('.media-gallery-item').get_by_role('button',name='Delete',exact=True).click();page.wait_for_function('document.querySelectorAll(".media-gallery-item").length===0')
-    page.select_option('#language-select','fi');assert page.locator('[data-media-kind=profile] summary').inner_text()=='Kuvat ja ulkoasu'
+    page.select_option('#language-select','fi');assert page.locator('[data-media-kind=profile] > summary').inner_text()=='Kuvat ja ulkoasu'
     assert not errors,errors
     print('PASS: Batch 8: profile media private default, crop preview/progress/upload/delete and Finnish mobile controls')
     page.select_option('#language-select','en');page.locator('#public-profile-editor .feature-header button').click()
     open_garage(page);add_vehicle(page,'Photo motorcycle','motorcycle')
-    page.locator('[data-media-kind=vehicle] summary').click();page.wait_for_selector('#media-vehicle-form')
+    page.locator('[data-media-kind=vehicle] > summary').click();page.wait_for_selector('#media-vehicle-form')
     assert page.locator('#media-vehicle-form-slot option').count()==6
     for index in range(2):
         page.locator('#media-vehicle-form-file').set_input_files({'name':'garage.png','mimeType':'image/png','buffer':base64.b64decode(fixtures['image/png'])})
@@ -82,12 +82,12 @@ def run_batch8_tests(browser,base,route_map):
     print('PASS: Batch 8: bounded six-slot private Garage gallery, second photo and featured/reordering controls')
     page.locator('#garage-dialog .feature-header button').click();state['images']=[]
     open_clubs(page);page.click('#club-create');page.fill('#club-form-name','Media Club');page.locator('#club-form button[type=submit]').click();page.wait_for_selector('#club-edit')
-    page.locator('[data-media-kind=club] summary').click();page.wait_for_selector('#media-club-form')
+    page.locator('[data-media-kind=club] > summary').click();page.wait_for_selector('#media-club-form')
     assert page.locator('#media-club-form-slot option').count()==2
     page.locator('#media-club-form-file').set_input_files({'name':'logo.png','mimeType':'image/png','buffer':base64.b64decode(fixtures['image/png'])})
     page.wait_for_selector('.media-preview:not([hidden])');page.locator('#media-club-form button[type=submit]').click();page.wait_for_selector('.media-gallery-item')
-    appearance=page.locator('.media-theme-form');appearance.locator('..').locator('summary').click()
-    page.select_option('#media-theme-club-secondary','navy');assert page.locator('.media-theme-preview').get_attribute('data-media-secondary')=='navy'
+    appearance=page.locator('#media-theme-club');appearance.locator('..').locator('summary').click()
+    page.select_option('#media-theme-club-secondary','navy');assert page.locator('#clubs-dialog .media-theme-preview').get_attribute('data-media-secondary')=='navy'
     appearance.locator('button[type=submit]').click();page.wait_for_function('document.querySelector("#media-theme-club-secondary").value==="navy" && !document.querySelector("#media-theme-club-secondary").disabled')
     assert state['theme']['secondary']=='navy' and not errors,errors
     print('PASS: Batch 8: Club logo slots, controlled secondary/accent/header/card presets and live preview')
@@ -97,7 +97,7 @@ def run_batch8_tests(browser,base,route_map):
             page.locator('#groups-dialog').get_by_role('button',name='Back to Group Sessions',exact=True).click();page.wait_for_selector('#group-create')
         page.click('#group-create');page.wait_for_selector('#group-form');page.fill('#group-form-title','Media '+activity);page.fill('#group-form-meetingArea','Helsinki');page.select_option('#group-form-activityType',activity)
         page.locator('#group-form button[type=submit]').click();page.wait_for_selector('#group-edit')
-        page.locator('[data-media-kind=group] summary').click();page.wait_for_selector('#media-group-form')
+        page.locator('[data-media-kind=group] > summary').click();page.wait_for_selector('#media-group-form')
         assert page.locator('#media-group-form-slot option').count()==1
         page.locator('#media-group-form-file').set_input_files({'name':'event.png','mimeType':'image/png','buffer':base64.b64decode(fixtures['image/png'])})
         page.wait_for_selector('#groups-dialog .media-preview:not([hidden])');page.locator('#media-group-form button[type=submit]').click();page.wait_for_selector('#groups-dialog .media-gallery-item')
@@ -105,7 +105,7 @@ def run_batch8_tests(browser,base,route_map):
     print('PASS: Batch 8: Event/Meet/Ride share the authorized Group banner/theme editor and existing activity cards')
     open_clubs(page);clubid=page.evaluate('Object.values(JSON.parse(localStorage.getItem("__mockProfiles"))).find(v=>v.name==="Media Club"&&v.schemaVersion===1).id')
     lookup(page,clubid);click_control(page,'#rank-add');page.fill('#rank-form-name','Captain');page.locator('#rank-form button[type=submit]').click();page.wait_for_selector('[data-media-kind=rank]')
-    state['images']=[];page.locator('[data-media-kind=rank] summary').click();page.wait_for_selector('#media-rank-form')
+    state['images']=[];page.locator('[data-media-kind=rank] > summary').click();page.wait_for_selector('#media-rank-form')
     page.locator('#media-rank-form-file').set_input_files({'name':'rank.png','mimeType':'image/png','buffer':base64.b64decode(fixtures['image/png'])})
     page.wait_for_selector('#clubs-dialog .media-preview:not([hidden])');page.locator('#media-rank-form button[type=submit]').click();page.wait_for_selector('[data-media-kind=rank] .media-gallery-item')
     form=page.locator('#media-theme-rank');form.locator('..').locator('summary').click();page.select_option('#media-theme-rank-icon','star');page.select_option('#media-theme-rank-badge','crest');form.locator('button[type=submit]').click()
@@ -113,4 +113,11 @@ def run_batch8_tests(browser,base,route_map):
     assert state['theme']['icon']=='star' and state['theme']['badge']=='crest'
     assert not errors,errors
     print('PASS: Batch 8: safe raster rank upload, vetted icon/badge/color selection and graphic preview')
+    page.locator('#bottom-nav [data-destination=profile]').click();page.click('#public-profile-edit');page.wait_for_selector('[data-media-kind=profile]');page.locator('[data-media-kind=profile] > summary').click();page.wait_for_selector('#media-theme-profile',state='attached')
+    appearance=page.locator('#media-theme-profile');appearance.locator('..').locator('summary').click();page.select_option('#media-theme-profile-layout','list');page.select_option('#media-theme-profile-accent','rose')
+    assert page.locator('#public-profile-editor .media-theme-preview').get_attribute('data-media-layout')=='list'
+    appearance.get_by_role('button',name='Reset preview to defaults').click();assert page.locator('#media-theme-profile-layout').input_value()=='grid'
+    contrast=page.evaluate('''async()=>{const {contrast}=await import('./js/data/branding.js');return ['#1c2530','#162438','#242424'].every(bg=>contrast(bg,'#f4f4f4')>=4.5) && ['#e9bf73','#6bbde9','#7cd29d','#f9a3bb'].every(color=>contrast('#101214',color)>=4.5);}''')
+    assert contrast and not errors,errors
+    print('PASS: Batch 8: controlled profile/Garage/Club/activity templates, live layout preview/reset and WCAG text contrast presets')
     context.close()
