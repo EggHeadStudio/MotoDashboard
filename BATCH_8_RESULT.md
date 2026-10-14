@@ -89,3 +89,13 @@ and reset, safe inherited variables/templates, image scrims and contrast checks;
 no arbitrary HTML/CSS, entitlement, global logo or typography redesign. Seven
 cumulative browser groups pass, including reset/layout and >=4.5 preset text
 contrast. Narrow real-phone/text-scale acceptance remains manual.
+
+Milestone 9: source-lifetime cleanup distinct from roles; metadata retry journals
+cannot resurrect retired images; bounded source/resource rotation, stream/reader
+deadlines, exact dedicated writer identity, optimistic concurrent mutation fences,
+quota accounting including temporary/pending/deleting objects and per-photo
+publication without re-upload. Auth-disabled/revoked accounts are checked on each
+media request; this does not change live-token expiry behavior. Local evidence:
+29 media container/policy/state groups, 2 native gateway/R2/SQLite groups, 61 real
+Firestore mirror-denial assertions and 8 cumulative media browser groups pass.
+Zero final failed/skipped. Final integrated rerun remains milestone 10.

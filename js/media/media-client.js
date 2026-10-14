@@ -12,6 +12,12 @@ async function headers() {
   const {auth}=await getFirebase();if(auth.currentUser?.uid!==account.uid)throw Error('invalid_token');
   return {Authorization:'Bearer '+await auth.currentUser.getIdToken()};
 }
+async function timedHeaders(signal) {
+  let timer,abort;
+  try{return await Promise.race([headers(),new Promise((_,reject)=>{
+    const fail=()=>reject(Error('unavailable'));timer=setTimeout(fail,12000);abort=fail;signal?.addEventListener('abort',abort,{once:true});if(signal?.aborted)fail();
+  })]);}finally{clearTimeout(timer);signal?.removeEventListener('abort',abort);}
+}
 function endpoint(path) {
   const url=new URL(liveConfig.endpoint);if(url.protocol!=='https:'||url.pathname!=='/'||url.search||url.hash||url.username||url.password)throw Error('not_configured');
   return url.origin+'/v1/media/'+path;
@@ -23,7 +29,7 @@ export async function mediaRequest(path,{method='GET',body,revision,extraHeaders
   const token=epoch,controller=new AbortController();controllers.add(controller);
   const timeout=setTimeout(()=>controller.abort(),20000),abort=()=>controller.abort();signal?.addEventListener('abort',abort,{once:true});
   try {
-    const auth=await headers();if(signal?.aborted||token!==epoch)throw Error('invalid_token');
+    const auth=await timedHeaders(controller.signal);if(signal?.aborted||token!==epoch)throw Error('invalid_token');
     const r=await fetch(endpoint(path),{method,body,headers:{...auth,...extraHeaders,...(revision===undefined?{}:{'If-Match':String(revision)})},
       cache:'no-store',credentials:'omit',referrerPolicy:'no-referrer',signal:controller.signal});
     if(!r.ok){let code;try{code=(await r.json()).error;}catch{}throw Error(code || 'unavailable');}
@@ -33,9 +39,10 @@ export async function mediaRequest(path,{method='GET',body,revision,extraHeaders
 export const getMedia=(target,signal)=>mediaRequest(resourcePath(target),{signal});
 export const saveMediaTheme=(target,revision,theme,order)=>mediaRequest(resourcePath(target),{method:'PUT',revision,body:JSON.stringify({theme,order}),extraHeaders:{'Content-Type':'application/json'}});
 export const removeMedia=(target,slot,revision)=>mediaRequest(resourcePath(target)+'/slots/'+slot,{method:'DELETE',revision});
+export const publishMedia=(target,slot,revision,published)=>mediaRequest(resourcePath(target)+'/slots/'+slot,{method:'PUT',revision,body:JSON.stringify({published}),extraHeaders:{'Content-Type':'application/json'}});
 export async function uploadMedia(target,slot,blob,revision,published,onProgress=()=>{},signal) {
   // XHR exposes actual upload progress without storing credentials in URLs/logs.
-  const token=epoch,auth=await headers();if(token!==epoch||signal?.aborted)throw Error('invalid_token');
+  const token=epoch,auth=await timedHeaders(signal);if(token!==epoch||signal?.aborted)throw Error('invalid_token');
   return new Promise((resolve,reject)=>{
     const controller=new AbortController();controllers.add(controller);const xhr=new XMLHttpRequest(),abort=()=>xhr.abort();
     controller.signal.addEventListener('abort',abort,{once:true});signal?.addEventListener('abort',abort,{once:true});

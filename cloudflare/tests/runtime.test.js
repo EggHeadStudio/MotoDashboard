@@ -6,7 +6,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {importPKCS8,SignJWT} from 'jose';
-let mf,key,cert,fixtureDir;const docs=new Map(),sockets=[];
+let mf,key,cert,fixtureDir;const docs=new Map(),sockets=[],accountOverrides=new Map();
 const origin='https://example.test',project='motodash-87bf8';
 const roomA='12345678-1234-4123-8123-123456789012',roomB='87654321-1234-4123-8123-123456789012';
 function seed(id=roomA) {
@@ -28,13 +28,13 @@ before(async()=>{
   mf=new Miniflare({modules:true,scriptPath:new URL('../dist/index.js',import.meta.url).pathname.replace(/^\/([A-Z]:)/,'$1'),
     compatibilityDate:'2026-08-06',r2Buckets:['MEDIA_BUCKET'],durableObjects:{LIVE_ROOMS:{className:'LiveRoom',useSQLite:true},LIVE_IDENTITIES:{className:'LiveIdentity',useSQLite:true},MEDIA_STATE:{className:'MediaState',useSQLite:true}},
     bindings:{FIREBASE_PROJECT_ID:project,ALLOWED_ORIGINS:origin,FIRESTORE_SERVICE_ACCOUNT:JSON.stringify({project_id:project,
-      client_email:'test-reader@'+project+'.iam.gserviceaccount.com',private_key:pem}),MEDIA_SERVICE_ACCOUNT:JSON.stringify({project_id:project,
-      client_email:'test-media@'+project+'.iam.gserviceaccount.com',private_key:pem})},
+      client_email:'test-reader@'+project+'.iam.gserviceaccount.com',private_key:pem}),MEDIA_SERVICE_ACCOUNT:JSON.stringify({type:'service_account',project_id:project,
+      client_email:'motodash-media@'+project+'.iam.gserviceaccount.com',private_key:pem})},
     outboundService:async request=>{
       const url=new URL(request.url);
       if(url.hostname==='www.googleapis.com' && url.pathname.includes('/metadata/x509/'))return Response.json({'fixture-key':cert},{headers:{'Cache-Control':'max-age=3600'}});
       if(url.hostname==='oauth2.googleapis.com')return Response.json({access_token:'local-oauth',expires_in:3600});
-      if(url.hostname==='identitytoolkit.googleapis.com') {const body=await request.json();return Response.json({users:body.localId.map(localId=>({localId,validSince:'0'}))});}
+      if(url.hostname==='identitytoolkit.googleapis.com') {const body=await request.json();return Response.json({users:body.localId.map(localId=>({localId,validSince:'0',...accountOverrides.get(localId)}))});}
       if(url.hostname!=='firestore.googleapis.com')throw Error('Unexpected network destination');
       const body=await request.json();
       if(body.writes){for(const write of body.writes){assert((write.update?.name || write.delete).includes('/documents/mediaRecords/'));}return Response.json({commitTime:new Date().toISOString()});}
@@ -108,6 +108,22 @@ test('media runtime private R2 upload/read/replace/delete has no permanent URL o
   assert.equal((await upload(1)).status,409);
   r=await media(path+'/slots/avatar','alice',{method:'DELETE',headers:{'If-Match':String(second.revision)}});assert.equal(r.status,200);
   assert.equal((await media('images/'+second.id)).status,404);
+});
+test('media runtime gateway rejects forged identity/origin/expired tokens and native visibility transitions',async()=>{
+  const id=crypto.randomUUID(),path='resources/profile/'+id;
+  docs.set('profileOwners/'+id,{ownerUid:'media-owner'});docs.set('users/media-owner/preferences/publicProfile',{publicId:id,state:'active',visibility:'public',vehicleIds:[]});docs.set('publicProfiles/'+id,{id});
+  const fixtures=JSON.parse(await readFile(new URL('./media-fixtures.json',import.meta.url),'utf8')),bytes=Buffer.from(fixtures['image/png'],'base64');
+  assert.equal((await media(path,'media-owner',{headers:{Origin:'https://evil.test'}})).status,403);
+  assert.equal((await media(path,null,{headers:{'X-MotoDash-Identity':'{"uid":"media-owner"}','X-MotoDash-Caller':'a'.repeat(64)}})).status,200); // Safe public summary, cannot assert owner.
+  assert.equal((await media(path+'/slots/avatar',null,{method:'POST',headers:{'If-Match':'0','Content-Type':'image/png','X-Media-Published':'true','X-MotoDash-Identity':'{"uid":"media-owner"}'},body:bytes})).status,401);
+  assert.equal((await mf.dispatchFetch('https://worker.test/v1/media/'+path,{headers:{Origin:origin,Authorization:'Bearer '+await token('media-owner',{exp:1})}})).status,401);
+  const uploaded=await media(path+'/slots/avatar','media-owner',{method:'POST',headers:{'If-Match':'0','Content-Type':'image/png','X-Media-Published':'true'},body:bytes});assert.equal(uploaded.status,201);const image=await uploaded.json();
+  assert.equal((await media('images/'+image.id,null)).status,200);
+  docs.get('users/media-owner/preferences/publicProfile').visibility='private';assert.equal((await media('images/'+image.id,null)).status,403);
+  docs.get('users/media-owner/preferences/publicProfile').visibility='public';assert.equal((await media('images/'+image.id,null)).status,200);
+  accountOverrides.set('media-owner',{disabled:true});assert.equal((await media('images/'+image.id,'media-owner')).status,401);accountOverrides.delete('media-owner');
+  const results=await Promise.all([media(path+'/slots/avatar','media-owner',{method:'DELETE',headers:{'If-Match':'1'}}),media(path+'/slots/avatar','media-owner',{method:'DELETE',headers:{'If-Match':'1'}})]);
+  assert.deepEqual(results.map(r=>r.status).sort(),[200,409]);assert.equal((await media('images/'+image.id,null)).status,404);
 });
 test('pending socket gets no private messages; two verified riders receive snapshot',async()=>{
   const pending=await connect();await new Promise(resolve=>setTimeout(resolve,30));assert.equal(pending.messages.length,0);pending.ws.close();

@@ -1,4 +1,4 @@
-export const batch8={en:{'viewer.details':'Ride details','media.gallery':'Photo gallery','media.empty':'No shared photos'},fi:{'viewer.details':'Ajon tiedot','media.gallery':'Kuvagalleria','media.empty':'Ei jaettuja kuvia'}};
+export const batch8={en:{'viewer.details':'Ride details','media.gallery':'Photo gallery','media.empty':'No shared photos','media.publishImage':'Allow public presentation','media.unpublishImage':'Restrict to private audience'},fi:{'viewer.details':'Ajon tiedot','media.gallery':'Kuvagalleria','media.empty':'Ei jaettuja kuvia','media.publishImage':'Salli julkinen esittely','media.unpublishImage':'Rajaa yksityiselle yleisölle'}};
 
 const media={
   "en": {

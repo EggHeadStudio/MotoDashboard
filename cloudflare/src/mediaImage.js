@@ -3,12 +3,14 @@ export async function boundedBody(request,max=MAX_IMAGE_BYTES) {
   const declared=Number(request.headers.get('Content-Length') || 0);
   if(declared>max)throw Error('too_large');
   if(!request.body)throw Error('invalid_image');const reader=request.body.getReader(),chunks=[];let length=0;
-  try {while(true){const next=await reader.read();if(next.done)break;length+=next.value.byteLength;
+  const deadline=Date.now()+10000;
+  try {while(true){let timer;const next=await Promise.race([reader.read(),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('bad_request')),Math.max(1,deadline-Date.now()));})]).finally(()=>clearTimeout(timer));if(next.done)break;length+=next.value.byteLength;
     if(length>max)throw Error('too_large');chunks.push(next.value);}}
   finally{await reader.cancel();}
   const result=new Uint8Array(length);let offset=0;for(const chunk of chunks){result.set(chunk,offset);offset+=chunk.length;}return result;
 }
 const ascii=(bytes,start,length)=>String.fromCharCode(...bytes.subarray(start,start+length));
+const crcTable=Uint32Array.from({length:256},(_,n)=>{let crc=n;for(let k=0;k<8;k++)crc=(crc>>>1)^((crc&1)?0xedb88320:0);return crc>>>0;});
 export function inspectImage(bytes,mime) {
   if(bytes.length>MAX_IMAGE_BYTES)throw Error('too_large');if(bytes.length<24)throw Error('invalid_image');
   const v=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);let width=0,height=0,type;
@@ -32,7 +34,7 @@ export function inspectImage(bytes,mime) {
     while(offset+12<=bytes.length) {
       const size=v.getUint32(offset),kind=ascii(bytes,offset+4,4),start=offset+8,end=start+size;
       if(end+4>bytes.length || !['IHDR','IDAT','IEND','sRGB','gAMA','cHRM'].includes(kind))throw Error('invalid_image');
-      let crc=0xffffffff;for(let i=offset+4;i<end;i++){crc^=bytes[i];for(let k=0;k<8;k++)crc=(crc>>>1)^((crc&1)?0xedb88320:0);}
+      let crc=0xffffffff;for(let i=offset+4;i<end;i++)crc=(crc>>>8)^crcTable[(crc^bytes[i])&255];
       if((crc^0xffffffff)>>>0!==v.getUint32(end))throw Error('invalid_image');
       if(first){if(kind!=='IHDR'||size!==13)throw Error('invalid_image');width=v.getUint32(start);height=v.getUint32(start+4);
         if(bytes[start+8]!==8 || ![2,6].includes(bytes[start+9]) || bytes[start+10]||bytes[start+11]||bytes[start+12])throw Error('invalid_image');first=false;}

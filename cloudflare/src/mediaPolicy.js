@@ -42,9 +42,9 @@ export async function mediaResource(get,target,uid,write=false) {
     const banned=uid?await get(`groupSessions/${rid}/bans/${uid}`):null;
     let club=null,role=null;
     if(source.clubId){club=await get('clubs/'+source.clubId);if(!live(club))return denied();role=uid?(await get(`clubs/${source.clubId}/members/${uid}`))?.technicalRole:null;}
-    canWrite=!!uid&&(source.clubId?(role==='admin'||(uid===ownerUid&&['owner','host'].includes(role))):uid===ownerUid)
-      && ['scheduled','active'].includes(source.state) && Date.now()<Math.min(source.endsAt??Infinity,source.startsAt+86400000);
-    publicRead=!!uid&&['public','approval'].includes(source.visibility);privateRead=!!uid&&!banned&&(!!member||canWrite);canRead=!banned&&(publicRead||privateRead);
+    const manager=!!uid&&(source.clubId?(club.ownerUid===uid||role==='admin'||(uid===ownerUid&&['owner','host'].includes(role))):uid===ownerUid);
+    canWrite=manager&&['scheduled','active'].includes(source.state)&&Date.now()<Math.min(source.endsAt??Infinity,source.startsAt+86400000);
+    publicRead=!!uid&&['public','approval'].includes(source.visibility);privateRead=!!uid&&!banned&&(!!member||manager);canRead=!banned&&(publicRead||privateRead);
     incarnation=source.createdAt;key=`group:${rid}`;
   } else throw Error('bad_request');
   if(!incarnation || !(write?canWrite:canRead))return denied();
@@ -61,4 +61,13 @@ export async function authorizeStored(get,record,uid,write=false) {
   if(resource.key!==record.key || resource.incarnation!==record.incarnation)return denied();
   if(!write && !resource.canWrite && !resource.privateRead && !record.published)return denied();
   return resource;
+}
+// Retention checks source lifetime, not an uploader's subsequently changed role.
+export async function mediaSourceExists(get,record) {
+  const {kind,id:rid,child}=record.target;let source;
+  if(kind==='profile') {const prefs=await get(`users/${record.ownerUid}/preferences/publicProfile`);return prefs?.publicId===rid&&prefs.state==='active'&&!!await get('publicProfiles/'+rid);}
+  if(kind==='vehicle')source=await get(`users/${record.ownerUid}/vehicles/${rid}`);
+  if(kind==='club'||kind==='rank') {const club=await get('clubs/'+rid);if(!live(club))return false;source=kind==='rank'?await get(`clubs/${rid}/ranks/${child}`):club;}
+  if(kind==='group'){source=await get('groupSessions/'+rid);if(source?.clubId&&!live(await get('clubs/'+source.clubId)))return false;}
+  return !!source&&source.createdAt===record.incarnation;
 }

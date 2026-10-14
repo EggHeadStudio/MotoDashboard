@@ -1,4 +1,4 @@
-import {getMedia,uploadMedia,removeMedia,saveMediaTheme,releaseMediaURL,mediaObjectURL,mediaError} from './media-client.js';
+import {getMedia,uploadMedia,removeMedia,publishMedia,saveMediaTheme,releaseMediaURL,mediaObjectURL,mediaError} from './media-client.js';
 import {prepareImage,MEDIA_ASPECTS} from './prepare-image.js';
 import {element,labelText,button,field,disclosure} from '../ui/forms.js';
 import {getAccount,onAccountChange} from '../auth-state.js';
@@ -6,18 +6,18 @@ import {t} from '../i18n/i18n.js';
 import {mountThemeEditor} from './theme-editor.js';
 export function mountMediaEditor(root,target,slots,{themeFields=['accent','secondary','header','card','layout']}={}) {
   const section=element('section','media-editor'),content=element('div'),details=disclosure('media.title',section);details.dataset.mediaKind=target.kind;root.append(details);
-  const status=element('p','feature-status');status.setAttribute('role','status');const progress=element('progress');progress.max=100;progress.value=0;progress.hidden=true;progress.setAttribute('aria-label',t('media.progress'));
+  const status=element('p','feature-status');status.setAttribute('role','status');const progress=element('progress');progress.max=100;progress.value=0;progress.hidden=true;progress.setAttribute('aria-label',t('media.progress'));progress.setAttribute('data-i18n-aria-label','media.progress');
   section.append(labelText(element('p','muted'),'media.privacy'),status,progress,content);
   let resource=null,busy=false,prepared=null,file=null,previewURL=null,version=0,disposed=false,loaded=false,timer,disconnected;
   const owner=getAccount()?.uid,controller=new AbortController(),urls=[];
-  function cleanup(){if(disposed)return;disposed=true;version++;clearTimeout(timer);controller.abort();if(previewURL)URL.revokeObjectURL(previewURL);for(const url of urls)releaseMediaURL(url);unlisten();disconnected?.disconnect();}
+  function cleanup(){if(disposed)return;disposed=true;version++;clearTimeout(timer);controller.abort();file=prepared=null;if(previewURL)URL.revokeObjectURL(previewURL);for(const url of urls)releaseMediaURL(url);unlisten();disconnected?.disconnect();}
   const unlisten=onAccountChange(({user})=>{if(user?.uid!==owner)queueMicrotask(cleanup);});
   const view=root.closest('dialog');view?.addEventListener('close',cleanup,{once:true});
   disconnected=new MutationObserver(()=>{if(!details.isConnected)cleanup();});disconnected.observe(document.body,{childList:true,subtree:true});
   async function action(fn) {
-    if(busy||disposed)return;busy=true;section.setAttribute('aria-busy','true');const controls=[...content.querySelectorAll('button,input,select')];controls.forEach(n=>n.disabled=true);labelText(status,'common.loading');
+    if(busy||disposed)return;busy=true;section.setAttribute('aria-busy','true');const controls=[...content.querySelectorAll('button,input,select')],disabled=controls.map(n=>n.disabled);controls.forEach(n=>n.disabled=true);labelText(status,'common.loading');
     try{await fn();if(!disposed)labelText(status,'media.saved');}catch(error){if(!disposed)labelText(status,mediaError(error));}
-    finally{busy=false;section.setAttribute('aria-busy','false');controls.forEach(n=>n.disabled=false);progress.hidden=true;}
+    finally{busy=false;section.setAttribute('aria-busy','false');controls.forEach((n,i)=>n.disabled=disabled[i]);progress.hidden=true;}
   }
   async function refresh() {
     const next=await getMedia(target,controller.signal);if(disposed||getAccount()?.uid!==owner)return;
@@ -25,6 +25,7 @@ export function mountMediaEditor(root,target,slots,{themeFields=['accent','secon
   }
   details.addEventListener('toggle',()=>{if(details.open&&!loaded)void action(refresh);});
   function render() {
+    version++;prepared=file=null;if(previewURL){URL.revokeObjectURL(previewURL);previewURL=null;}
     content.replaceChildren();for(const url of urls)releaseMediaURL(url);urls.length=0;
     if(!resource?.canWrite){content.append(labelText(element('p'),'media.access_denied'));return;}
     const list=element('div','media-gallery');content.append(list);
@@ -33,6 +34,7 @@ export function mountMediaEditor(root,target,slots,{themeFields=['accent','secon
       const picture=element('img');picture.alt=t('media.'+(image.slot.startsWith('photo')?'photo':image.slot));picture.dataset.motodashMedia='';card.append(picture,labelText(element('p'),'media.'+(image.slot.startsWith('photo')?'photo':image.slot)));
       mediaObjectURL(image.id,controller.signal).then(url=>{if(disposed||!picture.isConnected){releaseMediaURL(url);return;}urls.push(url);picture.src=url;}).catch(()=>{if(picture.isConnected)picture.remove();});
       card.append(button('common.delete',()=>{if(confirm(t('media.deleteConfirm')))void action(async()=>{await removeMedia(target,image.slot,resource.revision);await refresh();});}));
+      card.append(button(image.published?'media.unpublishImage':'media.publishImage',()=>void action(async()=>{await publishMedia(target,image.slot,resource.revision,!image.published);await refresh();})));
       if(target.kind==='vehicle') {
         card.append(button('media.cover',()=>void action(async()=>{const order=[image.id,...resource.images.map(n=>n.id).filter(id=>id!==image.id)];await saveMediaTheme(target,resource.revision,resource.theme,order);await refresh();})));
         const index=resource.images.indexOf(image);
@@ -43,7 +45,7 @@ export function mountMediaEditor(root,target,slots,{themeFields=['accent','secon
     const slot=field(form,'slot','media.slot',{choices:slots,prefix:'media',value:slots.find(id=>!resource.images.some(n=>n.slot===id)) || slots[0]});
     const fileLabel=labelText(element('label','field'),'media.select'),input=element('input');input.type='file';input.accept='image/jpeg,image/png,image/webp';input.id=form.id+'-file';fileLabel.htmlFor=input.id;form.append(fileLabel,input);
     const camera=button('media.camera',()=>{input.setAttribute('capture','environment');input.click();input.removeAttribute('capture');});form.append(camera);
-    const preview=element('img','media-preview');preview.alt=t('media.preview');preview.hidden=true;form.append(preview);
+    const preview=element('img','media-preview');preview.alt=t('media.preview');preview.setAttribute('data-i18n-alt','media.preview');preview.hidden=true;form.append(preview);
     const crop=element('div','media-crop');form.append(crop);
     const zoom=field(crop,'zoom','media.zoom',{type:'range',min:1,maxValue:3,value:1});zoom.step='.05';
     const x=field(crop,'x','media.horizontal',{type:'range',min:0,maxValue:100,value:50}),y=field(crop,'y','media.vertical',{type:'range',min:0,maxValue:100,value:50});

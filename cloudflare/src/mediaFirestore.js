@@ -26,8 +26,8 @@ export async function mediaToken(env) {
   if(cache?.secret===secret && cache.until>Date.now()+60000)return cache.token;
   if(!pending)pending=(async()=>{
     const sa=JSON.parse(secret);
-    if(sa.project_id!==PROJECT || !sa.client_email?.endsWith('.iam.gserviceaccount.com') || !sa.private_key
-      || secret===env.FIRESTORE_SERVICE_ACCOUNT)throw Error('not_configured');
+    if(sa.project_id!==PROJECT || sa.type!=='service_account' || sa.client_email!==`motodash-media@${PROJECT}.iam.gserviceaccount.com` || !sa.private_key
+      || secret===env.FIRESTORE_SERVICE_ACCOUNT || sa.client_email===JSON.parse(env.FIRESTORE_SERVICE_ACCOUNT || '{}').client_email)throw Error('not_configured');
     const assertion=await new SignJWT({scope:'https://www.googleapis.com/auth/cloud-platform'})
       .setProtectedHeader({alg:'RS256'}).setIssuer(sa.client_email).setAudience('https://oauth2.googleapis.com/token')
       .setIssuedAt().setExpirationTime('1h').sign(await importPKCS8(sa.private_key,'RS256'));
@@ -39,10 +39,10 @@ export async function mediaToken(env) {
   })().finally(()=>{pending=null;});return pending;
 }
 export function createMediaReader(env) {
-  let readTime=null;const docs=new Map();
+  let readTime=null;const docs=new Map(),signal=AbortSignal.timeout(8000);
   return async path=>{
     if(docs.has(path))return docs.get(path);
-    const r=await fetch(base+':batchGet',{method:'POST',redirect:'manual',signal:AbortSignal.timeout(6000),
+    const r=await fetch(base+':batchGet',{method:'POST',redirect:'manual',signal,
       headers:{Authorization:'Bearer '+await mediaToken(env),'Content-Type':'application/json'},
       body:JSON.stringify({documents:[name+'/'+path],...(readTime?{readTime}:{})})});
     if(!r.ok)throw Error('unavailable');const rows=await r.json();

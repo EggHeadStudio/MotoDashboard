@@ -85,7 +85,7 @@ jobs:
           firebase emulators:exec --only firestore --project demo-motodash
           --config firebase.deploy.json --non-interactive
           "python3 tests/run_security_rules.py && python3 tests/run_group_rules.py &&
-          python3 tests/run_identity_rules.py && python3 tests/run_batch5_rules.py && python3 tests/run_batch6a_rules.py && python3 tests/run_batch6b_rules.py && python3 tests/run_batch7_rules.py"
+          python3 tests/run_identity_rules.py && python3 tests/run_batch5_rules.py && python3 tests/run_batch6a_rules.py && python3 tests/run_batch6b_rules.py && python3 tests/run_batch7_rules.py && python3 tests/run_batch8_rules.py"
 
       - name: Record successful validation and reviewed revision
         env:

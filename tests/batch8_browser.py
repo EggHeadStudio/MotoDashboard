@@ -51,7 +51,13 @@ def run_batch8_tests(browser,base,route_map):
         elif request.method=='DELETE':
             state['images']=[img for img in state['images'] if img['slot']!=path.split('/')[-1]];route.fulfill(json={'revision':state['revision']},headers=headers)
         elif request.method=='PUT':
-            body=request.post_data_json;state['theme']=body['theme'];old={img['id']:img for img in state['images']};state['images']=[dict(old[ident],slot='photo'+str(index)) for index,ident in enumerate(body['order'])] if '/vehicle/' in path else state['images'];route.fulfill(json={'revision':state['revision']},headers=headers)
+            body=request.post_data_json
+            if '/slots/' in path:
+                for image in state['images']:
+                    if image['slot']==path.split('/')[-1]:image['published']=body['published']
+            else:
+                state['theme']=body['theme'];old={img['id']:img for img in state['images']};state['images']=[dict(old[ident],slot='photo'+str(index)) for index,ident in enumerate(body['order'])] if '/vehicle/' in path else state['images']
+            route.fulfill(json={'revision':state['revision']},headers=headers)
     context.route('https://motodash-live.old-sound-55f2.workers.dev/v1/media/**',media_route)
     register(page,'batch8@example.test');page.locator('#bottom-nav [data-destination=profile]').click();page.click('#public-profile-edit');page.wait_for_selector('#public-profile-form')
     assert page.get_by_text('Save your profile settings first, then reopen to add images.').is_visible()
@@ -62,6 +68,8 @@ def run_batch8_tests(browser,base,route_map):
     page.wait_for_selector('.media-preview:not([hidden])');assert not page.locator('[name=published]').is_checked()
     page.locator('#media-profile-form button[type=submit]').click();page.wait_for_selector('.media-gallery-item')
     assert state['images'][0]['slot']=='avatar' and not state['images'][0]['published']
+    page.locator('#public-profile-editor .media-gallery-item').get_by_role('button',name='Allow public presentation').click();page.wait_for_selector('#public-profile-editor button:has-text("Restrict to private audience")')
+    assert state['images'][0]['published']
     page.on('dialog',lambda dialog:dialog.accept());page.locator('.media-gallery-item').get_by_role('button',name='Delete',exact=True).click();page.wait_for_function('document.querySelectorAll(".media-gallery-item").length===0')
     page.select_option('#language-select','fi');assert page.locator('[data-media-kind=profile] > summary').inner_text()=='Kuvat ja ulkoasu'
     assert not errors,errors
@@ -120,4 +128,11 @@ def run_batch8_tests(browser,base,route_map):
     contrast=page.evaluate('''async()=>{const {contrast}=await import('./js/data/branding.js');return ['#1c2530','#162438','#242424'].every(bg=>contrast(bg,'#f4f4f4')>=4.5) && ['#e9bf73','#6bbde9','#7cd29d','#f9a3bb'].every(color=>contrast('#101214',color)>=4.5);}''')
     assert contrast and not errors,errors
     print('PASS: Batch 8: controlled profile/Garage/Club/activity templates, live layout preview/reset and WCAG text contrast presets')
+    # Connection failure stays inside optional media, without breaking profile/dashboard.
+    page.locator('#public-profile-editor .feature-header button').click()
+    context.route('https://motodash-live.old-sound-55f2.workers.dev/v1/media/**',lambda route:route.fulfill(status=503,json={'error':'not_configured'},headers={'Access-Control-Allow-Origin':'*'}))
+    page.click('#public-profile-edit');page.wait_for_selector('[data-media-kind=profile]');page.locator('[data-media-kind=profile] > summary').click()
+    page.wait_for_selector('.media-editor .feature-status:has-text("Media service needs operator setup")')
+    assert page.locator('#public-profile-form').is_visible() and not errors,errors
+    print('PASS: Batch 8: explicit photo publication and scoped Worker-not-configured recovery preserve profile functionality')
     context.close()

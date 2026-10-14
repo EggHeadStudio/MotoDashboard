@@ -9,7 +9,7 @@ function ensureCleanup(){if(observer)return;observer=new MutationObserver(()=>{
 export function decorateMedia(node,target,placements={banner:node},options={}) {
   ensureCleanup();const controller=new AbortController(),urls=[],images=[];let started=false,disposed=false;
   if(options.rank)node.append(icon('shield'));
-  const entry={node,dispose(){disposed=true;controller.abort();visibility?.disconnect();for(const url of urls)releaseMediaURL(url);for(const image of images)image.remove();}};
+  const entry={node,dispose(){disposed=true;active.delete(entry);controller.abort();visibility?.disconnect();for(const url of urls)releaseMediaURL(url);for(const image of images)image.remove();}};
   active.add(entry);
   async function load(){if(started||disposed)return;started=true;const owner=getAccount()?.uid;
     try {
