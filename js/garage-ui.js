@@ -7,6 +7,8 @@ import { openView, dialog, element, button, field, labelText, runAction } from '
 import { vehicleIcon } from './ui/icons.js';
 import {loadVehicleShowcase,publishShowcaseVehicle,unpublishShowcaseVehicle,loadShowcaseOverview,featureShowcaseVehicle} from './firebase/publicProfileRepository.js';
 import {profileURL} from './data/public-profile.js';
+import {mountMediaEditor} from './media/media-editor.js';
+import {decorateMedia} from './media/media-render.js';
 
 const listeners = new Set();
 let state = { uid: null, vehicles: [], defaultVehicleId: null, selectedId: null, ready: false };
@@ -110,6 +112,8 @@ export function initGarageUI() {
       controls.append(button(entry?'showcase.hide':'showcase.show',()=>entry?action(uid=>unpublishShowcaseVehicle(uid,vehicle.id)):void showcase(vehicle)));
       if(entry?.available && !entry.featured)controls.append(button('showcase.makeFeatured',()=>action(uid=>featureShowcaseVehicle(uid,vehicle.id))));
       info.append(controls);card.append(art,info); view.body.append(card);
+      decorateMedia(art,{kind:'vehicle',id:vehicle.id},{cover:art},{theme:false});
+      mountMediaEditor(info,{kind:'vehicle',id:vehicle.id},['photo0','photo1','photo2','photo3','photo4','photo5']);
     }
     view.body.append(button('garage.noVehicle', () => { state.selectedId = null; publish(); render(); view.node.close(); }));
   }

@@ -2,7 +2,7 @@
 from pathlib import Path
 import json
 from firebase_mocks import install
-from batch2_browser import register
+from batch2_browser import register,open_garage,add_vehicle
 import base64,uuid
 
 def run_batch8_tests(browser,base,route_map):
@@ -64,4 +64,18 @@ def run_batch8_tests(browser,base,route_map):
     page.select_option('#language-select','fi');assert page.locator('[data-media-kind=profile] summary').inner_text()=='Kuvat ja ulkoasu'
     assert not errors,errors
     print('PASS: Batch 8: profile media private default, crop preview/progress/upload/delete and Finnish mobile controls')
+    page.select_option('#language-select','en');page.locator('#public-profile-editor .feature-header button').click()
+    open_garage(page);add_vehicle(page,'Photo motorcycle','motorcycle')
+    page.locator('[data-media-kind=vehicle] summary').click();page.wait_for_selector('#media-vehicle-form')
+    assert page.locator('#media-vehicle-form-slot option').count()==6
+    for index in range(2):
+        page.locator('#media-vehicle-form-file').set_input_files({'name':'garage.png','mimeType':'image/png','buffer':base64.b64decode(fixtures['image/png'])})
+        page.wait_for_selector('.media-preview:not([hidden])');page.locator('#media-vehicle-form button[type=submit]').click()
+        page.wait_for_function(f'document.querySelectorAll(".media-gallery-item").length=={index+1}')
+    first=state['images'][0]['id'];second=state['images'][1]['id']
+    page.locator('.media-gallery-item').last.get_by_role('button',name='Make cover photo').click()
+    page.wait_for_function(f'document.querySelector(".media-gallery-item").dataset.mediaId=="{second}"')
+    assert state['images'][0]['slot']=='photo0' and state['images'][1]['id']==first
+    assert not errors,errors
+    print('PASS: Batch 8: bounded six-slot private Garage gallery, second photo and featured/reordering controls')
     context.close()

@@ -53,7 +53,7 @@ export class MediaState {
       incarnation:resource.incarnation,revision:0,slots:{},theme:{...THEME_DEFAULTS}};
     if(request.method==='GET' && !tail.length) {
       const images=[];
-      for(const [slot,id] of Object.entries(ledger.slots)) {
+      for(const [slot,id] of Object.entries(ledger.slots).sort(([a],[b])=>a.localeCompare(b))) {
         const record=await this.state.storage.get('image:'+id);
         if(record?.state==='active' && record.incarnation===resource.incarnation && (resource.canWrite || resource.privateRead || record.published))
           images.push({id,slot,width:record.width,height:record.height,published:record.published});

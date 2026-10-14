@@ -1,4 +1,4 @@
-export const batch8={en:{'viewer.details':'Ride details'},fi:{'viewer.details':'Ajon tiedot'}};
+export const batch8={en:{'viewer.details':'Ride details','media.gallery':'Photo gallery','media.empty':'No shared photos'},fi:{'viewer.details':'Ajon tiedot','media.gallery':'Kuvagalleria','media.empty':'Ei jaettuja kuvia'}};
 
 const media={
   "en": {

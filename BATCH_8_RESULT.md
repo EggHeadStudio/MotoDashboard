@@ -54,3 +54,10 @@ Milestone 0 verification: 17 focused browser cases/groups (including 26 camera a
 25 replay nested assertions) passed, 0 failed/skipped. Mobile disclosures preserve
 playback, speed and more than 250px clear map space with both collapsed; exports,
 EN/FI and GPS teardown retained. Physical Safari/device acceptance not run.
+
+Milestone 4: six private vehicle slots, first/featured cover, bounded gallery,
+reordering, replace/remove, private Garage cover and independently published
+showcase gallery. Current source/profile/ref/incarnation gates revoke public
+access on hiding/deletion; private Garage is never broadly readable. Three
+cumulative browser groups pass, including two photos/cover reordering. Existing
+backend Garage privacy/deletion/incarnation assertions remain unchanged.

@@ -9,7 +9,7 @@ import {navigate} from './ui/navigation.js';
 import {dataErrorMessage,boundedRequest} from './firebase/access.js';
 import {t,onLanguageChange,setLocalizedText} from './i18n/i18n.js';
 import {vehicleIcon} from './ui/icons.js';
-import {decorateMedia} from './media/media-render.js';
+import {decorateMedia,mountMediaGallery} from './media/media-render.js';
 import {mountMediaEditor} from './media/media-editor.js';
 
 let epoch=0,loaded=null;
@@ -45,6 +45,7 @@ export function initPublicProfiles() {
         if(vehicle.id===p.featuredVehicle)info.append(labelText(element('p','badge'),'showcase.featured'));
         info.append(labelText(element('p','muted'),'category.'+vehicle.category),element('p','',[vehicle.manufacturer,vehicle.model,vehicle.modelYear].filter(Boolean).join(' ')));
         if(vehicle.publicDescription)info.append(element('p','public-bio',vehicle.publicDescription));card.append(art,info);grid.append(card);
+        const target={kind:'showcase',id:p.id,child:vehicle.id};decorateMedia(art,target,{cover:art},{theme:false});mountMediaGallery(info,target);
       }
       if(!vehicles.length)grid.append(labelText(element('p','muted'),'showcase.empty'));garage.append(grid);screen.append(garage);
       if(loaded.partial)screen.append(labelText(element('p','muted'),'showcase.partial'));
