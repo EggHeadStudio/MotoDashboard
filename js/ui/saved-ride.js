@@ -13,7 +13,7 @@ export function createSavedRideViewer({root,map,onBack,onExport}) {
     if(!active || !map || !bounds)return;
     const rect=root.getBoundingClientRect(),landscape=innerWidth>innerHeight,replay=document.getElementById('ride-replay');
     const bottom=(replay?.getBoundingClientRect().height || 24)+12;
-    map.stop();map.fitBounds(bounds,{animate:false,maxZoom:16,paddingTopLeft:landscape?[rect.width+24,24]:[24,rect.height+12],paddingBottomRight:[24,Math.min(innerHeight*0.4,bottom)]});
+    map.invalidateSize({animate:false,pan:false});map.stop();map.fitBounds(bounds,{animate:false,maxZoom:16,paddingTopLeft:landscape?[rect.width+24,24]:[24,rect.height+12],paddingBottomRight:[24,Math.min(innerHeight*0.4,bottom)]});
   }
   addEventListener('resize',()=>{if(active){clearTimeout(resizeTimer);resizeTimer=setTimeout(fit,180);}});
   onLanguageChange(()=>{if(active){languageSelect.value=getLanguage();fit();}});
@@ -28,7 +28,10 @@ export function createSavedRideViewer({root,map,onBack,onExport}) {
     const label=element('label','saved-language');label.append(labelText(element('span'),'ui.language'));languageSelect=element('select');languageSelect.id='saved-language';
     for(const [value,caption] of [['en','English'],['fi','Suomi']]){const option=element('option','',caption);option.value=value;languageSelect.append(option);}
     languageSelect.value=getLanguage();languageSelect.addEventListener('change',()=>setLanguage(languageSelect.value));label.append(languageSelect);header.append(label);text.append(header);
-    const date=element('p','muted');const started=session.startedAt;setLocalizedText(date,()=>formatDate(started));text.append(date);
+    const details=element('details','saved-details');details.id='saved-details';details.open=true;
+    details.append(labelText(element('summary'),'viewer.details'));const content=element('div');details.append(content);text.append(details);
+    details.addEventListener('toggle',()=>{if(active)requestAnimationFrame(fit);});
+    const date=element('p','muted');const started=session.startedAt;setLocalizedText(date,()=>formatDate(started));content.append(date);
     const stats=element('dl','saved-ride-stats');
     const row=(key,value)=>{const cell=element('div'),out=element('dd');setLocalizedText(out,()=>typeof value==='function'?value():value);cell.append(labelText(element('dt'),key),out);stats.append(cell);};
     const elapsed=Number.isFinite(session.startedAt)&&Number.isFinite(session.endedAt)?session.endedAt-session.startedAt:null;
@@ -40,16 +43,16 @@ export function createSavedRideViewer({root,map,onBack,onExport}) {
     }
     const vehicle=session.vehicleSnapshot?.nickname;
     if(vehicle)row('viewer.vehicle',vehicle);else row('viewer.vehicle',()=>t('viewer.notRecorded'));
-    text.append(stats);
+    content.append(stats,actions);
     for(const [key,format,share] of [['rides.json','json',false],['rides.gpx','gpx',false],['rides.share','gpx',true]]) {
       actions.append(button(key,()=>void runAction(actions,status,()=>onExport(format,share))));
     }
     const model=prepareRideReplay(session.routePoints);bounds=model.bounds;
     player=mountRideReplay({model,session,map,onOverview:fit});
-    if(!bounds)text.append(labelText(element('p','muted'),'viewer.noRoute'));
+    if(!bounds)content.append(labelText(element('p','muted'),'viewer.noRoute'));
     fit();title.focus({preventScroll:true});
   },close() {
     player?.dispose();player=null;active=false;bounds=null;clearTimeout(resizeTimer);root.hidden=true;document.body.classList.remove('saved-ride-view');
-    text.replaceChildren();actions.replaceChildren();status.textContent='';languageSelect=null;
+    root.append(actions);text.replaceChildren();actions.replaceChildren();status.textContent='';languageSelect=null;
   },fit,status};
 }

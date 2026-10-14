@@ -3,7 +3,7 @@ body.saved-ride-view #hud,body.saved-ride-view #compass-indicator,
 body.saved-ride-view #compass-rotating-overlay,body.saved-ride-view #gps-error-overlay {display:none!important;}
 body.saved-ride-view #history-detail {
   top:calc(env(safe-area-inset-top,0px) + 8px);left:12px;right:auto;
-  width:min(620px,calc(100vw - 24px));max-height:48dvh;overflow:auto;
+  width:min(620px,calc(100vw - 24px));max-height:36dvh;overflow:auto;
   border:1px solid var(--md-line);border-radius:var(--md-radius);background:var(--md-bg);
   padding:16px;color:var(--md-text);box-shadow:var(--md-shadow);
 }
@@ -16,7 +16,8 @@ body.saved-ride-view #history-detail {
 .saved-ride-stats dd {font-size:1rem;font-weight:600;overflow-wrap:anywhere;}
 body.saved-ride-view button {font:inherit;min-height:44px;padding:8px 12px;border:1px solid var(--md-line);border-radius:10px;background:var(--md-surface);color:var(--md-text);}
 #history-detail-actions {display:flex;gap:8px;flex-wrap:wrap;}
-.ride-replay {position:fixed;z-index:16;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 8px);padding:10px 14px;border:1px solid var(--md-line);border-radius:14px;background:var(--md-bg);color:var(--md-text);max-height:38dvh;overflow:auto;font-size:.8rem;}
+.ride-replay {position:fixed;z-index:16;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 8px);padding:10px 14px;border:1px solid var(--md-line);border-radius:14px;background:var(--md-bg);color:var(--md-text);max-height:32dvh;overflow:auto;font-size:.8rem;}
+.saved-details summary,.replay-controls summary {cursor:pointer;min-height:44px;display:list-item;align-content:center;font-weight:600;}
 .replay-actions {display:flex;gap:8px;flex-wrap:wrap;align-items:center;}.replay-actions label {display:flex;gap:6px;align-items:center;}
 .replay-actions select {min-height:44px;padding:6px;background:var(--md-surface);color:var(--md-text);border:1px solid var(--md-line);border-radius:8px;}
 .replay-timeline {display:grid;grid-template-columns:1fr auto;gap:4px 12px;margin-top:8px;}.replay-timeline input {grid-column:1/-1;width:100%;min-height:32px;accent-color:var(--md-gold);}

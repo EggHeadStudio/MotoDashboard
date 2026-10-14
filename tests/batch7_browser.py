@@ -132,6 +132,18 @@ def run_batch7_tests(browser,base,route_map):
     output=page.evaluate('async()=> (await import("./tests/replay-tests.js")).runReplayTests()');print('PASS: Batch 7:',output)
     assert page.locator('#replay-play').is_visible() and page.locator('#replay-speed option').count()==4
     writes=page.evaluate('window.__mock.writes')
+    colors=page.evaluate('''()=>{const colors=[];window.__cameraMap.eachLayer(layer=>{if(layer instanceof L.Polyline && !(layer instanceof L.Polygon))colors.push(layer.options.color);});return colors;}''')
+    assert '#ff3b30' in colors and '#e9bf73' in colors,colors
+    page.select_option('#replay-speed','2');page.click('#replay-play');page.wait_for_timeout(160)
+    before=float(page.locator('#replay-timeline').input_value())
+    page.locator('#replay-controls summary').click();page.locator('#saved-details summary').click();page.wait_for_timeout(220)
+    assert page.locator('#replay-play').is_hidden() and page.locator('.saved-ride-stats').is_hidden()
+    assert float(page.locator('#replay-timeline').input_value())>before and page.locator('#replay-speed').input_value()=='2'
+    top=page.locator('#history-detail').bounding_box();bottom=page.locator('#ride-replay').bounding_box()
+    assert bottom['y']-(top['y']+top['height'])>250
+    page.locator('#saved-details summary').click();assert page.locator('#replay-play').is_hidden()
+    page.locator('#replay-controls summary').click();page.click('#replay-play');page.select_option('#replay-speed','1');page.click('#replay-restart')
+    print('PASS: Batch 8: independent mobile panel collapse preserves playback/rate, usable map and red route/gold progress')
     page.click('#replay-play');page.wait_for_timeout(300);page.click('#replay-play');offset=float(page.locator('#replay-timeline').input_value());page.wait_for_timeout(150)
     assert offset>0 and float(page.locator('#replay-timeline').input_value())==offset
     page.evaluate('''()=>{const node=document.getElementById('replay-timeline');node.value=node.max/2;node.dispatchEvent(new Event('input',{bubbles:true}));}''')

@@ -1,3 +1,5 @@
+> **Current Batch 8 authorization (2026-10-14):** user-selected private Cloudflare R2 `motodash-media`; implement/test/commit milestones 0?10 locally, saved-view corrections first. No push, deployment, production writes, paid activation or Batch 9. This supersedes historical Batch 7 media deferral and stop within the attached scope. Preserve all future account/commercial/final-brand requirements. See BATCH_8_RESULT.md.
+
 > **Current Batch 7 authorization, 2026-10-14:** the operator reports Batch 6B deployed and its core features working. Batch 7 authorizes local discovery/user search, clearer showcase controls, smooth map follow, a dedicated saved-ride viewer, timestamp-based replay and network recovery improvements. Audit first; implement/test in logical commits; stop after Batch 7. No push, backend deployment or production-data operation. Media uploads, payments, marketplace and final branding remain future work. Section 22 is the current audited plan; dated earlier stops/results are historical.
 
 

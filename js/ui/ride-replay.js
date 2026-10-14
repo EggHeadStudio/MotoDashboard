@@ -8,15 +8,18 @@ export function mountRideReplay({model,session,map,onOverview}) {
   root.setAttribute('data-i18n-aria-label','replay.title');
   let marker=null,route=null,progress=null,frame=null,playing=false,disposed=false,offset=0,speed=1,lastFrame=0,lastDraw=-Infinity,kind='';
   if(map && typeof L!=='undefined') {
-    route=L.polyline(model.overview.map(group=>group.positions),{color:'#aab1bd',weight:4,opacity:0.55,interactive:false}).addTo(map);
+    route=L.polyline(model.overview.map(group=>group.positions),{color:/^#[0-9a-f]{6}$/i.test(session.routeColor || '')?session.routeColor:'#ff3b30',weight:4,opacity:0.9,interactive:false}).addTo(map);
     progress=L.polyline([],{color:'#e9bf73',weight:5,opacity:0.95,interactive:false}).addTo(map);
     const art=element('div','replay-vehicle');art.append(vehicleIcon(session.vehicleSnapshot?.category || session.category || 'other'));
     marker=L.marker([0,0],{icon:L.divIcon({className:'replay-marker',html:art,iconSize:[32,32],iconAnchor:[16,16]}),interactive:false});
   }
-  const status=element('p','replay-status');status.setAttribute('role','status');root.append(status);
+  const controls=element('details','replay-controls');controls.id='replay-controls';controls.open=true;
+  controls.append(labelText(element('summary'),'replay.title'));const content=element('div');controls.append(content);root.append(controls);
+  controls.addEventListener('toggle',()=>{if(!disposed)requestAnimationFrame(onOverview);});
+  const status=element('p','replay-status');status.setAttribute('role','status');content.append(status);
   if(!model.available || !map || !marker) {
     if(marker && model.size===1)marker.setLatLng(model.bounds[0]).addTo(map);
-    root.append(labelText(element('p'),!map?'replay.noMap':model.reason==='timing'?'replay.noTiming':'replay.tooShort'),button('replay.overview',onOverview));
+    content.append(labelText(element('p'),!map?'replay.noMap':model.reason==='timing'?'replay.noTiming':'replay.tooShort'),button('replay.overview',onOverview));
     return {pause(){},dispose(){disposed=true;route?.remove();progress?.remove();marker?.remove();root.remove();}};
   }
   const actions=element('div','replay-actions'),play=button('replay.play',()=>playing?pause():start(),'replay-play');
@@ -29,9 +32,9 @@ export function mountRideReplay({model,session,map,onOverview}) {
   const timeline=element('input');timeline.type='range';timeline.id='replay-timeline';timeline.min='0';timeline.max=String(model.duration);timeline.step='1';timeline.value='0';timelineLabel.append(timeline);
   const elapsed=element('output');elapsed.id='replay-time';timelineLabel.append(elapsed);
   const followLabel=element('label','replay-follow'),follow=element('input');follow.type='checkbox';follow.id='replay-follow';followLabel.append(follow,labelText(element('span'),'replay.follow'));
-  root.append(actions,timelineLabel,followLabel);
-  if(model.gaps)root.append(labelText(element('p','muted'),'replay.gaps'));
-  if(model.simplified)root.append(labelText(element('p','muted'),'replay.simplified'));
+  content.append(actions,timelineLabel,followLabel);
+  if(model.gaps)content.append(labelText(element('p','muted'),'replay.gaps'));
+  if(model.simplified)content.append(labelText(element('p','muted'),'replay.simplified'));
   function draw(force=false) {
     if(disposed)return;
     const at=performance.now(),sample=model.positionAt(offset);
