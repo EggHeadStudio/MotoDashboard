@@ -5,21 +5,6 @@ export function createRouteRecorder(config) {
   var maxPointJumpSpeedKmh = config.maxPointJumpSpeedKmh;
   var movingSpeedThresholdKmh = config.movingSpeedThresholdKmh;
 
-  function getSessionLastLatLng(session) {
-    if (!session || !Array.isArray(session.routePoints)) {
-      return null;
-    }
-
-    for (var i = session.routePoints.length - 1; i >= 0; i -= 1) {
-      var point = session.routePoints[i];
-      if (point && typeof point.latitude === 'number' && typeof point.longitude === 'number') {
-        return [point.latitude, point.longitude];
-      }
-    }
-
-    return null;
-  }
-
   function updateRouteLayer(input) {
     var map = input.map;
     var leaflet = input.leaflet;
@@ -114,7 +99,6 @@ export function createRouteRecorder(config) {
   }
 
   return {
-    getSessionLastLatLng: getSessionLastLatLng,
     updateRouteLayer: updateRouteLayer,
     addAcceptedPoint: addAcceptedPoint
   };

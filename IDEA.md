@@ -3673,7 +3673,7 @@ Sequential milestones, each reviewed/checked and committed:
 - [x] **3 Camera:** rotation coverage without visual scale, one camera owner,
   filtered short-angle heading, speed-aware bounded zoom/default setting and explicit
   manual interruption/recenter. Visual animation never changes recorded GPS data.
-- [ ] **4 Saved viewer:** dedicated localized title/date/duration/distance/speeds/
+- [x] **4 Saved viewer:** dedicated localized title/date/duration/distance/speeds/
   vehicle/route/back and export/share; omit unavailable historical values.
 - [ ] **5 Replay:** pure timestamp model plus bounded mobile rendering, play/pause,
   seek/1x/2x/4x/8x/restart/end/follow/overview. Preserve breaks and gaps; unknown

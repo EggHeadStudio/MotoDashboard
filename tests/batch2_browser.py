@@ -146,7 +146,7 @@ def run_batch2_tests(browser,base,route_map):
     with remote.expect_download() as download:
         remote.locator('#history-detail-actions').get_by_role('button',name='Share GPX',exact=True).click()
     assert download.value.suggested_filename.endswith('.gpx')
-    remote.click('#back-to-start-btn');click_action(remote, '#history-btn')
+    remote.click('#saved-back');click_action(remote, '#history-btn')
     remote.on('dialog',lambda d:d.accept('Renamed Cloud Ride' if d.type=='prompt' else None))
     remote.evaluate("""()=>{
       const records=JSON.parse(localStorage.getItem('__mockProfiles'));

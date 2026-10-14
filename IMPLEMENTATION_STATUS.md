@@ -1,7 +1,7 @@
 # MotoDashboard implementation status
 
 **Current, 2026-10-14:** the operator reports Batch 6B deployed/core working.
-Batch 7 milestones 0–3 are complete; milestones 4–7 are pending under the
+Batch 7 milestones 0–4 are complete; milestones 5–7 are pending under the
 new explicit request. See BATCH_7_RESULT.md and IDEA.md Section 22. No application
 push/deployment/production operation in this batch. People discovery is implemented
 locally with 96 new Rules assertions, 5 browser cases and retained 6B regressions;
@@ -13,6 +13,9 @@ Camera now uses one visual RAF, unscaled rotation coverage, speed-aware half-ste
 zoom/hysteresis, Home follow-zoom preference and explicit manual interruption.
 Full browser regression passes with 11 Batch 7 cases/26 nested camera assertions;
 GPS recording samples and existing live markers/themes remain separate/preserved.
+Dedicated saved-ride mode hides/inerts current telemetry and recording controls,
+shows only recorded metadata/route, supports EN/FI/export/share and returns to
+History. Twelve cumulative Batch 7 cases and the full existing matrix pass.
 is historical; physical/security acceptance is not inferred from reported publication.
 
 Updated **2026-10-13**. The operator now reports Batch 6A deployed and working.

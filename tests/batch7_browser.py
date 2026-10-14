@@ -105,4 +105,23 @@ def run_batch7_tests(browser,base,route_map):
     assert all(point['speedKmh'] in [36,100] for point in points)
     assert not errors,errors
     print('PASS: Batch 7: manual zoom/pan pauses follow, explicit Center resumes, north-up restores coverage and saved GPS remains original')
+    page.on('dialog',lambda dialog:dialog.accept('Recorded camera ride' if dialog.type=='prompt' else None))
+    page.click('#finish-session-btn');page.wait_for_function('window.__geo.active===0');page.click('#guest-history')
+    page.locator('#history-list button[data-action=open]').click();page.wait_for_selector('#saved-ride-title')
+    assert page.locator('#saved-ride-title').inner_text()=='Recorded camera ride'
+    for selector in ['#speed-block','#time-panel','#weather-panel','#gps-panel','#network-panel','#heading-btn','#center-btn','#finish-session-btn','#live-dashboard']:
+        assert page.locator(selector).is_hidden(),selector
+    assert page.locator('#history-detail .saved-ride-stats').is_visible() and page.evaluate('window.__geo.active')==0
+    page.select_option('#saved-language','fi');assert page.locator('#saved-back').inner_text()=='Takaisin ajohistoriaan'
+    assert 'Ei tallennettu' in page.locator('#history-detail').inner_text() and 'Tallennettu ajoneuvo' in page.locator('#history-detail').inner_text()
+    page.select_option('#saved-language','en')
+    page.set_viewport_size({'width':844,'height':390});page.wait_for_timeout(300)
+    assert page.evaluate('Number.isFinite(window.__cameraMap.getCenter().lat) && Number.isFinite(window.__cameraMap.getCenter().lng)')
+    assert page.locator('#history-detail').bounding_box()['height']<=391
+    page.set_viewport_size({'width':390,'height':844});page.wait_for_timeout(300)
+    with page.expect_download() as download:page.locator('#history-detail-actions').get_by_role('button',name='Download JSON',exact=True).click()
+    assert download.value.suggested_filename.endswith('.json')
+    page.click('#saved-back');assert page.locator('#screen-rides').is_visible() and page.evaluate('window.__geo.active')==0
+    assert not page.evaluate('document.body.classList.contains("saved-ride-view")') and not errors,errors
+    print('PASS: Batch 7: saved ride has only recorded metadata/route, EN/FI, export and Back to History with no GPS/current telemetry')
     context.close()

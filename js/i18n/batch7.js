@@ -1,4 +1,6 @@
 export const batch7={en:{
+  'viewer.back':'Back to History','viewer.duration':'Duration','viewer.average':'Average moving speed','viewer.maximum':'Maximum speed',
+  'viewer.vehicle':'Recorded vehicle','viewer.notRecorded':'Not recorded','viewer.noRoute':'No route points were recorded for this ride.',
   'camera.settings':'Map preferences','camera.defaultZoom':'Default follow zoom',
   'camera.wide':'Wide · 13','camera.relaxed':'Relaxed · 14','camera.balanced':'Balanced · 15','camera.close':'Close · 16','camera.detail':'Detailed · 17',
   'camera.hint':'Follow widens at higher speeds. Manual pan or zoom pauses follow until Center.',
@@ -14,6 +16,8 @@ export const batch7={en:{
   'people.prefixHint':'Enter at least two characters to search.','people.empty':'No public profiles match this name.',
   'people.refine':'Refine the name to find more people.','data.peoplePrefix':'Enter between 2 and 64 characters.'
 },fi:{
+  'viewer.back':'Takaisin ajohistoriaan','viewer.duration':'Kesto','viewer.average':'Keskinopeus liikkeellä','viewer.maximum':'Suurin nopeus',
+  'viewer.vehicle':'Tallennettu ajoneuvo','viewer.notRecorded':'Ei tallennettu','viewer.noRoute':'Tästä ajosta ei tallennettu reittipisteitä.',
   'camera.settings':'Kartta-asetukset','camera.defaultZoom':'Seurannan oletuszoomaus',
   'camera.wide':'Laaja · 13','camera.relaxed':'Väljä · 14','camera.balanced':'Tasapainoinen · 15','camera.close':'Lähellä · 16','camera.detail':'Tarkka · 17',
   'camera.hint':'Seuranta näyttää laajemman alueen nopeuden kasvaessa. Kartan siirtäminen tai zoomaus keskeyttää seurannan, kunnes painat Keskitä.',

@@ -112,10 +112,11 @@ export function initNavigation() {
   // Primary navigation is unavailable while driving; the existing HUD owns the map.
   new MutationObserver(() => {
     const driving = document.getElementById('start-overlay').style.display === 'none';
-    document.body.classList.toggle('dashboard-active', driving);
-    setDashboardVisible(driving);
+    const saved=document.body.classList.contains('saved-ride-view');
+    document.body.classList.toggle('dashboard-active', driving && !saved);
+    setDashboardVisible(driving && !saved);
     if(driving) document.getElementById('controls-row').append(language);else actions.prepend(language);
-    document.getElementById('hud').inert = !driving;
+    document.getElementById('hud').inert = !driving || saved;
     document.getElementById('map').inert=!driving;
     document.getElementById('map').setAttribute('aria-hidden',String(!driving));
   }).observe(document.getElementById('start-overlay'), {attributes:true, attributeFilter:['style']});

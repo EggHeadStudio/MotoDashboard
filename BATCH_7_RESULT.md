@@ -83,8 +83,8 @@ milestones in IDEA.md Section 23, together with all prior agreed requirements.
 
 ## Progress
 
-- Milestones 0–3: complete locally with checks/commits.
-- Milestones 4–7: pending sequential implementation and actual verification.
+- Milestones 0–4: complete locally with checks/commits.
+- Milestones 5–7: pending sequential implementation and actual verification.
 - Physical/native Safari/production account tests: NOT RUN.
 - Push/deployment/production writes: NOT PERFORMED.
 
@@ -189,3 +189,26 @@ Actual Leaflet tests check no magnification, one watcher, default/urban/highway
 behavior, manual hold/recenter/north transition and original saved GPS values.
 Old instantaneous-north assertion now waits for the requested smooth transition.
 No physical Safari/GPS/rendering benchmark or production test is claimed.
+
+## Milestone 4 — dedicated saved-ride viewer
+
+New saved-ride UI/styles isolate title/date, recorded elapsed/moving duration,
+distance/average/max/vehicle, route and History back/export/share. Missing statistics
+are omitted; an absent vehicle says Not recorded, never the current Garage default.
+Current weather/GPS/network/clock/speed/orientation/sharing/recording UI is hidden
+and inert. Old GPS position/accuracy layers are removed; no watch starts. Existing
+active-record/live conflict guard remains. Language changes are supported in the
+viewer without destroying controls; a test caught/fixed a parent-label text binding.
+
+Route bounds use one pass instead of allocating a second full point array. Completed
+routes are read-only references, avoiding a duplicate route clone. Portrait/landscape
+fit accounts for metadata coverage; navigation/logout closes and clears the private
+view. Export/share feedback appears inside the viewer. Superseded last-point helper
+and its unused app wrapper/import were removed after reference checks; recorder
+sampling/statistics/storage/export schema remains unchanged.
+
+Checks: **12 cumulative Batch 7 browser cases**, 26 nested camera assertions and
+the **full existing browser matrix** pass; cloud fresh-storage JSON/GPX/share and
+GPS/history/account regressions retained. A targeted rotation/resize check confirms
+finite Leaflet center and usable bounded landscape panel. Zero final failures/skips;
+physical phones/native Safari and production tests remain NOT RUN.

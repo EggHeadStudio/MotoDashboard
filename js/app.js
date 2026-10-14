@@ -1,6 +1,7 @@
 import { createPositionPipeline } from './position-pipeline.js';
 import {createFollowCamera,rotationCanvasSize,DEFAULT_FOLLOW_ZOOM} from './follow-camera.js';
-import { initNavigation } from './ui/navigation.js';
+import { initNavigation,navigate } from './ui/navigation.js';
+import {createSavedRideViewer} from './ui/saved-ride.js';
 import {initLanding} from './ui/landing.js';
 import {initPublicProfiles} from './public-profile-ui.js';
 import {getRideContext,onRideContext,setRecordingContext,verifyRememberedGroup} from './ride-context.js';
@@ -28,7 +29,6 @@ import { createSessionSync, queueRide } from './session-sync.js';
 import { listCloudSessions, loadCloudRoute, localFromCloud, cloudDeletionIds, getCloudSession } from './firebase/sessionRepository.js';
 import { dataErrorKey, dataErrorMessage } from './firebase/access.js';
 import { sessionFile, shareOrDownload } from './session-export.js';
-import { button } from './ui/forms.js';
 import { initI18n, t, resolveText, setLocalizedText, onLanguageChange, formatNumber, getLocale } from './i18n/i18n.js';
 import {
   APP_VERSION,
@@ -212,6 +212,7 @@ import { initLeafletMap, updateMapPositionLayers, setMapThemeLayer } from './map
       }});
       let acquiringRecording=false;
       var sessionHistoryViewActive = false;
+      var savedViewer=null;
       var sessionStatsCollapsed = false;
       var sessionSaveTimer = null;
       var headingUpEnabled = false;
@@ -1055,10 +1056,6 @@ import { initLeafletMap, updateMapPositionLayers, setMapThemeLayer } from './map
         setLocalizedText(elStatMax, () => formatSpeedKmh(session.maxSpeedKmh || 0) + ' km/h');
       }
 
-      function getSessionLastLatLng(session) {
-        return routeRecorder.getSessionLastLatLng(session);
-      }
-
       async function loadSessionHistory() {
         const epoch = accountEpoch;
         const records = await sessionStore.loadSessions();
@@ -1104,32 +1101,24 @@ import { initLeafletMap, updateMapPositionLayers, setMapThemeLayer } from './map
         sessionActive = false;
         clearExistingWatch();
         releaseWakeLockSafely();
-        activeSession = structuredClone(session);
-        updateSessionStatsPanel(activeSession);
+        activeSession = session; // Completed read-only view; no duplicate full route array.
+        setSessionStatsVisible(false);
         renderVehicle();
         applyHeadingModeSettings('lukittu', false);
         camera?.manual();camera?.rotateTo(0,{immediate:true});
-        document.getElementById('history-detail').hidden = false;
-        setTextContent(document.getElementById('history-detail-text'), () => formatCompletedSessionSummary(session, { formatDate, formatDuration, formatSpeedKmh }));
-        document.getElementById('history-detail-actions').replaceChildren(
-          button('rides.json',()=>exportRide(session.id,'json')),
-          button('rides.gpx',()=>exportRide(session.id,'gpx')),
-          button('rides.share',()=>exportRide(session.id,'gpx',true)));
+        if(!savedViewer)savedViewer=createSavedRideViewer({root:document.getElementById('history-detail'),map,
+          onBack:()=>{returnToStartView();navigate('rides');},onExport:(format,share)=>exportRide(activeSession?.id,format,share)});
         elFinishSessionBtn.style.display = 'none';
         elBackToStartBtn.style.display = 'inline-flex';
         elStartOverlay.style.display = 'none';
         elHistoryList.style.display = 'none';
         elHistoryActions.style.display = 'none';
         followUser = false;
+        for(const layer of [posMarker,logoRingMarker,accuracyCircle])if(layer && map?.hasLayer(layer))map.removeLayer(layer);
+        posMarker=null;logoRingMarker=null;accuracyCircle=null;
 
         updateRouteLayer();
-
-        var lastLatLng = getSessionLastLatLng(activeSession);
-        if (map && lastLatLng) {
-          const points = activeSession.routePoints.filter(p => !p.break).map(p => [p.latitude, p.longitude]);
-          if (points.length > 1) map.fitBounds(points, { padding: [40, 40], maxZoom: 16 });
-          else map.setView(lastLatLng, 16);
-        }
+        savedViewer.open(session);
 
         setStartStatus(() => t("ui.viewRide"));
         setSessionSummary(() => formatCompletedSessionSummary(session, {
@@ -1140,6 +1129,7 @@ import { initLeafletMap, updateMapPositionLayers, setMapThemeLayer } from './map
       }
 
       function returnToStartView() {
+        savedViewer?.close();
         sessionHistoryViewActive = false;
         document.getElementById('history-detail').hidden = true;
         applyStoredHeadingMode();
@@ -1853,8 +1843,8 @@ import { initLeafletMap, updateMapPositionLayers, setMapThemeLayer } from './map
           ride=await ensureRideRoute(ride);
           if(!ride || epoch!==accountEpoch) return;
           const key=await shareOrDownload(sessionFile(ride,format),share);
-          if(epoch===accountEpoch) setLocalizedText(document.getElementById('history-status'),()=>t(key));
-        } catch(error) {if(epoch===accountEpoch) setLocalizedText(document.getElementById('history-status'),()=>dataErrorMessage(error));}
+          if(epoch===accountEpoch) setLocalizedText(sessionHistoryViewActive?savedViewer.status:document.getElementById('history-status'),()=>t(key));
+        } catch(error) {if(epoch===accountEpoch) setLocalizedText(sessionHistoryViewActive?savedViewer.status:document.getElementById('history-status'),()=>dataErrorMessage(error));}
       }
       onAccountChange(async ({user,ready}) => {
         const uid = user?.uid || null;
@@ -1892,6 +1882,7 @@ import { initLeafletMap, updateMapPositionLayers, setMapThemeLayer } from './map
       });
       if (recordingReady) prepareCloudSync();
       addEventListener('motodash-return-to-ride',async()=>{
+        if(sessionHistoryViewActive)returnToStartView();
         const context=getRideContext(),epoch=accountEpoch;
         if(sessionActive && activeSession){
           elStartOverlay.style.display='none';document.getElementById('history-detail').hidden=true;
@@ -1903,6 +1894,7 @@ import { initLeafletMap, updateMapPositionLayers, setMapThemeLayer } from './map
         }
       });
       if (accountUid) refreshCloudHistory();
+      addEventListener('motodash-navigate',()=>{if(sessionHistoryViewActive && elStartOverlay.style.display!=='none')returnToStartView();});
       document.getElementById('cloud-retry').addEventListener('click',()=>cloudSync?.retry());
       window.addEventListener('online',()=>cloudSync?.retry());
       document.getElementById('history-refresh').addEventListener('click',()=>refreshCloudHistory());

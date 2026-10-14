@@ -177,9 +177,10 @@ def run():
             assert page.evaluate('window.__geo.active') == 0, 'Finish must clear GPS watch'
             page.click('#history-list button[data-action="open"]')
             assert page.locator('#history-detail').is_visible()
-            assert page.locator('#session-stats-panel').is_visible()
+            assert page.locator('#session-stats-panel').is_hidden()
+            assert page.locator('#history-detail .saved-ride-stats').is_visible()
             assert not page.locator('#finish-session-btn').is_visible()
-            page.click('#back-to-start-btn')
+            page.click('#saved-back')
             click_action(page, '#start-btn')
             page.click('#heading-btn')
             for n in range(4):
