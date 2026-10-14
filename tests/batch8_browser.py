@@ -25,9 +25,15 @@ def run_batch8_tests(browser,base,route_map):
       for(const bad of [new Blob(['<svg><script/></svg>'],{type:'image/svg+xml'}),new Blob([new Uint8Array(12000001)],{type:'image/jpeg'})]){
         let denied=false;try{await prepareImage(bad);}catch{denied=true;}if(!denied)throw Error('invalid accepted');count++;
       }
+      const raw=Uint8Array.from(atob(fixtures['image/png']),c=>c.charCodeAt(0)),huge=raw.slice();new DataView(huge.buffer).setUint32(16,40000001);
+      const animated=new Uint8Array(raw.length+12);animated.set(raw.slice(0,33));animated.set([0,0,0,0,97,99,84,76,0,0,0,0],33);animated.set(raw.slice(33),45);
+      for(const bytes of [huge,animated]){let denied=false;try{await prepareImage(new Blob([bytes],{type:'image/png'}));}catch{denied=true;}if(!denied)throw Error('unbounded/animated source accepted');count++;}
       return count;
     }''',fixtures)
-    assert output==5 and not errors,errors
+    assert output==7 and not errors,errors
+    locale=page.evaluate('''async()=>{const {dictionary}=await import('./js/i18n/dictionary.js');const {batch8}=await import('./js/i18n/batch8.js');
+      return Object.keys(batch8.en).every(key=>typeof batch8.fi[key]==='string') && dictionary.fi['media.camera']==='K\\u00e4yt\\u00e4 kameraa' && !Object.values(batch8.fi).some(value=>/\\w\\?\\w/.test(value));}''')
+    assert locale,'Finnish media translations must retain UTF-8 accents and match English keys'
     print('PASS: Batch 8: PNG/JPEG/WebP decode/crop/re-encode with bounded output; unsupported and oversized input denied')
     state={'revision':0,'images':[],'theme':{'accent':'gold','secondary':'slate','header':'road','card':'outlined','layout':'grid','icon':'shield','badge':'plain'},'canWrite':True}
     payloads={};requests=[]

@@ -1,4 +1,81 @@
-> **Current Batch 7 (2026-10-14):** the operator reports 6B deployed/core working.
+# Batch 8 media contract — 2026-10-15
+
+Local implementation only; R2/IAM/Worker publication and real acceptance NOT RUN.
+The existing profile/Garage/Club/Group/recording schemas and all 19 indexes stay.
+
+| Store | Contract |
+| --- | --- |
+| Private R2 motodash-media | Optimized JPEG/PNG/WebP, server-random images/{UUID} keys, no UID/path provided by client, no originals/public bucket/URLs |
+| MediaState / MEDIA_STATE / SQLite v3 | Authoritative durable private image/resource registry, serialized revisions, quota/rate counters, pending/deleting/mirror journals, rotating hourly cleanup cursors |
+| Firestore mediaRecords/{opaque UUID} | Private trusted mirror of image or resource references; **every client get/list/create/update/delete denied**, including owners. IAM media backend alone writes fixed mediaRecords paths |
+| Browser | Worker-backed js/media/media-client.js, short-lived no-store blobs/previews, account abort/revocation; no media binary in Firestore/localStorage/IndexedDB |
+
+Image mirrors: id, mime, width, height, bytes, key (private resource identifier),
+target {kind,id,child}, ownerUid, incarnation, published, createdAt/updatedAt epoch
+ms. Resource mirrors: metadataId, key, target, ownerUid, incarnation, revision,
+slots {slot:mediaUUID}, theme, updatedAt. **R2 objectKey and durable operational
+state never enter the Firestore mirror or a public response.** No broad metadata
+list is offered to browsers. GET summary returns only revision, bounded safe
+images {id,slot,width,height,published}, controlled theme and canWrite UI hint;
+permissions are independently evaluated server-side on every mutation/image read.
+
+Resource endpoints: profile/{opaque publicUUID}; vehicle/{own sourceUUID};
+showcase/{profileUUID}/{publicVehicleUUID} resolving current private mapping;
+club/{clubUUID}; group/{groupUUID}; rank/{clubUUID}/{rankId}. They are under
+/v1/media/resources/. Images use /v1/media/images/{mediaUUID}, never R2 keys or
+credential queries. Auth headers derive from existing single Firebase app; gateway
+replaces asserted identity headers. Origin remains the exact allowed Pages origin.
+
+| Resource | Modification | Read audience |
+| --- | --- | --- |
+| Profile avatar/banner | Current active alias owner | Owner; anonymous/other viewers only with active Public profile **and per-image published=true** |
+| Garage cover/gallery (six slots) | Own current source vehicle | Owner; outside viewers only via active Public profile, Public source, exact current showcase alias/ref/slot and matching createdAt incarnation, plus image publication |
+| Club logo/banner | Canonical Owner or current technical Admin | Current members/Owner; outside signed-in viewers only for live Public Club plus image publication; private outsiders denied |
+| Group/Event/Meet/Ride/Drive banner | Current authorized personal organizer or Club Owner/Admin/creator Host; usable scheduled/active deadline | Admitted participants/current organizers; outside signed-in viewers only Public/approval plus image publication; bans and deleted Club deny; private/unlisted links/invites alone do not grant images |
+| Rank icon/badge | Current Club Owner/Admin | Club policy as above; rank existence/incarnation required. Decoration never grants roles |
+
+Profile publication alone never publishes associated photos. Publication changes
+may update a photo's flag without replacing pixels. Private member branding may be
+read by actual members without public publication. Hiding/removing source/showcase,
+privacy changes, bans, role revocation and retirement are checked anew; previously
+received bytes cannot be recalled. Every source incarnation is checked before
+using old references. Membership/role ledgers, invite secrets, precise GPS and Auth
+email are never returned by media responses.
+
+Theme allowlist: accent gold/ocean/forest/rose; secondary slate/navy/charcoal;
+header road/horizon/grid; card outlined/solid/minimal; layout grid/list; decorative
+icon shield/star/flag/wheel; badge plain/pill/crest. No arbitrary HTML/CSS/JS/SVG.
+Unset Profile media themes inherit existing accent/banner preferences. Rank uploads
+are PNG/WebP <=256px; browser produces PNG. Other prepared images use JPEG. Original
+input <=12MB/40MP, output <=1600px/1.5MB; server <=1920px/1.5MB. Raster container,
+MIME/signature, dimensions, metadata/animation rejection and PNG CRC are validated;
+full JPEG/WebP entropy decoding/content moderation is not claimed server-side.
+
+Owner quota 30 files/30MB (including pending/deleting), 100 configured resources;
+global 2,000 files/1GB/2,000 ledgers. First vehicle slot is cover; reordering retains
+image identities. If-Match revision rejects concurrent/stale mutations. Durable
+journals precede R2/mirror operations; deletions deny access before cleanup and
+mirror retry cannot resurrect a retired image. Hourly rotating 25-image/25-resource
+source checks can need ~80h at capacity; outages defer erasure, never allow access.
+Hidden media stays stored, valid completed activity banners stay retained, and
+role loss is not source deletion. Unknown manual bucket objects require separately
+approved inventory; no client recursive purge. Account erasure must include every
+mirror/registry/journal/R2 reference and resolve owned community media first.
+
+Credential: dedicated encrypted MEDIA_SERVICE_ACCOUNT for
+motodash-media@motodash-87bf8.iam.gserviceaccount.com; project-level custom permissions
+in cloudflare/media-writer-role.json. IAM bypasses Firestore Rules and is not a
+collection-scoped credential. Never extend/reuse the read-only live reader or
+configuration deployer. Per-request Firebase Auth lookup checks disabled/validSince
+for media only; existing live leases/token expiry are unchanged. All DOs share the
+existing account, no paid service/production operation is activated here.
+
+Deployment/retention/cost/security acceptance: DEPLOYMENT_CHECKLIST.md and
+BATCH_8_RESULT.md. The following Batch 7/6B contracts remain valid dated history.
+
+---
+
+> **Historical Batch 7 (2026-10-14):** the operator reports 6B deployed/core working.
 > Milestones 0–7 add the locally tested contract below; new Rules and 19th index are
 > not deployed by the agent. Dated 6B/earlier descriptions are historical.
 

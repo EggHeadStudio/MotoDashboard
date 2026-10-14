@@ -47,6 +47,10 @@ def run():
                 content_type='text/css' if route.request.url.endswith('.css') else 'application/javascript'))
             ctx.route(re.compile(r'https://.*(?:tile|openstreetmap).*\.png'), lambda route: route.fulfill(body=pixel, content_type='image/png'))
             ctx.route('https://api.open-meteo.com/**', lambda route: route.fulfill(json={'current': {'temperature_2m': 12, 'wind_speed_10m': 5, 'weather_code': 0}}))
+        if '--identity-only' in sys.argv:
+            from identity_browser import run_identity_tests
+            run_identity_tests(browser,base,route_map)
+            browser.close();server.shutdown();return
         if '--clubs-only' in sys.argv:
             from clubs_browser import run_club_tests
             run_club_tests(browser,base,route_map)

@@ -16,7 +16,7 @@ export function mountMediaEditor(root,target,slots,{themeFields=['accent','secon
   disconnected=new MutationObserver(()=>{if(!details.isConnected)cleanup();});disconnected.observe(document.body,{childList:true,subtree:true});
   async function action(fn) {
     if(busy||disposed)return;busy=true;section.setAttribute('aria-busy','true');const controls=[...content.querySelectorAll('button,input,select')],disabled=controls.map(n=>n.disabled);controls.forEach(n=>n.disabled=true);labelText(status,'common.loading');
-    try{await fn();if(!disposed)labelText(status,'media.saved');}catch(error){if(!disposed)labelText(status,mediaError(error));}
+    try{await fn();if(!disposed){labelText(status,'media.saved');if(fn!==refresh)dispatchEvent(new CustomEvent('motodash-media-updated',{detail:{target}}));}}catch(error){if(!disposed)labelText(status,mediaError(error));}
     finally{busy=false;section.setAttribute('aria-busy','false');controls.forEach((n,i)=>n.disabled=disabled[i]);progress.hidden=true;}
   }
   async function refresh() {
@@ -64,7 +64,6 @@ export function mountMediaEditor(root,target,slots,{themeFields=['accent','secon
     form.addEventListener('submit',event=>{event.preventDefault();if(!prepared)return;void action(async()=>{
       progress.hidden=false;await uploadMedia(target,slot.value,prepared,resource.revision,published.checked,value=>{progress.value=value;},controller.signal);
       file=null;prepared=null;if(previewURL){URL.revokeObjectURL(previewURL);previewURL=null;}await refresh();
-      dispatchEvent(new CustomEvent('motodash-media-updated',{detail:{target}}));
     });});
     if(themeFields.length)mountThemeEditor(content,target,resource,refresh,themeFields);
   }

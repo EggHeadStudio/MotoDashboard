@@ -12,6 +12,7 @@ concurrency:
 
 jobs:
   deploy:
+    if: github.repository == 'EggHeadStudio/MotoDashboard' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -65,5 +66,6 @@ jobs:
           # Reuse the Wrangler installed by npm ci from cloudflare/package-lock.json.
           command: deploy --config wrangler.jsonc
           quiet: true
-        # FIRESTORE_SERVICE_ACCOUNT stays in Cloudflare's encrypted Worker secrets.
+        # FIRESTORE_SERVICE_ACCOUNT and MEDIA_SERVICE_ACCOUNT stay in Cloudflare's
+        # encrypted Worker secrets. MEDIA_BUCKET must already be a private bucket.
         # No Worker secret upload, frontend deployment or Firebase deploy occurs here.

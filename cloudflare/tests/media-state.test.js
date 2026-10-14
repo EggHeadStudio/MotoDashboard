@@ -85,6 +85,9 @@ test('concurrent replace/delete uses one revision and never exposes old objects'
   const results=await Promise.all([upload({revision:1}),call(path+'/slots/avatar',{method:'DELETE',revision:1})]);
   assert.deepEqual(results.map(r=>r.status).sort(),[201,409]);
   assert.equal((await call('images/'+id)).status,404);assert.equal(objects.size,1);
+  const current=await info(),key='resource:profile:'+pid,ledger=await storage.get(key);ledger.slots={};await storage.put(key,ledger);
+  assert.equal((await call('images/'+current.images[0].id)).status,404,'crash before old-object cleanup must not permit unreferenced images');
+  await backend.alarm();assert.equal(objects.size,0);
 });
 test('per-user file quota enforced server-side including pending objects',async()=>{
   for(let i=0;i<30;i++)await storage.put('image:quota'+i,{ownerUid:'alice',bytes:20,state:'pending'});
@@ -134,6 +137,9 @@ test('private Group banner retained after creator role removal; authorized Admin
   docs.set('groupSessions/'+pid,{id:pid,creatorUid:'alice',clubId:vid,createdAt:'original',state:'scheduled',visibility:'private',startsAt:Date.now(),endsAt:null});
   const target='resources/group/'+pid,{id}=await (await upload({target,slot:'banner'})).json();docs.delete(`clubs/${vid}/members/alice`);
   await backend.alarm();assert.equal(objects.size,1);assert.equal((await call('images/'+id,{uid:'bob'})).status,200);assert.equal((await upload({target,slot:'banner',revision:1})).status,403);
+  assert.equal((await upload({target,slot:'banner',uid:'other',revision:1})).status,201,'canonical Club Owner manages even when not the creator');
+  docs.get('groupSessions/'+pid).state='completed';assert.equal((await call(target,{uid:'bob'})).status,200,'current Admin reads retained completed branding');
+  assert.equal((await upload({target,slot:'banner',uid:'bob',revision:2})).status,403,'completed banner cannot be edited');
 });
 test('rank raster constraints do not grant technical roles',async()=>{
   docs.set('clubs/'+pid,{id:pid,ownerUid:'alice',state:'active',visibility:'public',createdAt:'original'});docs.set(`clubs/${pid}/ranks/${vid}`,{id:vid,name:'Captain',createdAt:'rank'});
@@ -145,4 +151,8 @@ test('image cache and Firestore mirrors expose no server object key or secret',a
   assert.equal(r.headers.get('Cache-Control'),'private, no-store');assert.equal(r.headers.get('X-Content-Type-Options'),'nosniff');
   for(const [key,value] of docs)if(key.startsWith('mediaRecords/'))assert(!JSON.stringify(value).includes('objectKey'));
   const summary=await info();assert.deepEqual(Object.keys(summary).sort(),['canWrite','images','revision','theme']);assert(!JSON.stringify(summary).includes('ownerUid'));
+});
+test('unconfigured media preserves existing Profile accent/banner preferences',async()=>{
+  Object.assign(docs.get('users/alice/preferences/publicProfile'),{accent:'rose',banner:'horizon'});
+  const result=await info();assert.equal(result.theme.accent,'rose');assert.equal(result.theme.header,'horizon');
 });

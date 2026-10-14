@@ -64,7 +64,7 @@ export function initPublicProfiles() {
       const hero=own.querySelector('.profile-hero');disposeOwnMedia=decorateMedia(hero,{kind:'profile',id:prefs.publicId},{avatar:document.getElementById('profile-avatar'),banner:hero});
     }catch{/* Account data errors remain in the existing Profile flow, optional art falls back. */}
   }
-  addEventListener('motodash-profile-updated',()=>void ownMedia());addEventListener('motodash-media-updated',()=>void ownMedia());
+  addEventListener('motodash-profile-updated',()=>void ownMedia());addEventListener('motodash-media-updated',event=>{if(event.detail?.target?.kind==='profile')void ownMedia();});
   const entry=button('publicProfile.settings',()=>void edit(),'public-profile-edit');own.querySelector('.profile-actions').append(entry);
   async function edit() {
     const uid=getAccount()?.uid;if(!uid)return;

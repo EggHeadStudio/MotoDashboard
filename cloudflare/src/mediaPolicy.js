@@ -6,7 +6,7 @@ const denied=()=>{throw Error('access_denied');};
 export async function mediaResource(get,target,uid,write=false) {
   const {kind,id:rid,child=null}=target;
   if(!uuid(rid) || (child!==null && !id(child)))throw Error('bad_request');
-  let ownerUid,source,incarnation,key,canWrite=false,canRead=false,publicRead=false,privateRead=false;
+  let ownerUid,source,incarnation,key,canWrite=false,canRead=false,publicRead=false,privateRead=false,defaultTheme={};
   if(kind==='profile' || kind==='showcase') {
     ownerUid=(await get('profileOwners/'+rid))?.ownerUid;if(!ownerUid)return denied();
     const p=await get(`users/${ownerUid}/preferences/publicProfile`);
@@ -15,6 +15,8 @@ export async function mediaResource(get,target,uid,write=false) {
     if(kind==='profile') {
       source=await get('publicProfiles/'+rid);if(!source)return denied();
       incarnation=rid;key=`profile:${rid}`;canWrite=uid===ownerUid;publicRead=published;canRead=canWrite||publicRead;
+      if(['gold','ocean','forest','rose'].includes(p.accent))defaultTheme.accent=p.accent;
+      if(['road','horizon','grid'].includes(p.banner))defaultTheme.header=p.banner;
     } else {
       if(!uuid(child))throw Error('bad_request');
       const mapping=await get(`profileOwners/${rid}/vehicles/${child}`);
@@ -44,11 +46,11 @@ export async function mediaResource(get,target,uid,write=false) {
     if(source.clubId){club=await get('clubs/'+source.clubId);if(!live(club))return denied();role=uid?(await get(`clubs/${source.clubId}/members/${uid}`))?.technicalRole:null;}
     const manager=!!uid&&(source.clubId?(club.ownerUid===uid||role==='admin'||(uid===ownerUid&&['owner','host'].includes(role))):uid===ownerUid);
     canWrite=manager&&['scheduled','active'].includes(source.state)&&Date.now()<Math.min(source.endsAt??Infinity,source.startsAt+86400000);
-    publicRead=!!uid&&['public','approval'].includes(source.visibility);privateRead=!!uid&&!banned&&(!!member||manager);canRead=!banned&&(publicRead||privateRead);
+    publicRead=!!uid&&['public','approval'].includes(source.visibility);privateRead=manager||!!uid&&!banned&&!!member;canRead=manager||!banned&&(publicRead||privateRead);
     incarnation=source.createdAt;key=`group:${rid}`;
   } else throw Error('bad_request');
   if(!incarnation || !(write?canWrite:canRead))return denied();
-  return {key,target,ownerUid,incarnation,canWrite,publicRead,privateRead};
+  return {key,target,ownerUid,incarnation,canWrite,publicRead,privateRead,defaultTheme};
 }
 export async function authorizeStored(get,record,uid,write=false) {
   // Garage photo public access must prove the *current* opaque showcase mapping.

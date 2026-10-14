@@ -7,22 +7,25 @@ function ensureCleanup(){if(observer)return;observer=new MutationObserver(()=>{
   for(const entry of active)if(!entry.node.isConnected){entry.dispose();active.delete(entry);}
 });observer.observe(document.body,{childList:true,subtree:true});}
 export function decorateMedia(node,target,placements={banner:node},options={}) {
-  ensureCleanup();const controller=new AbortController(),urls=[],images=[];let started=false,disposed=false;
+  ensureCleanup();let controller=new AbortController();const urls=[],images=[];let started=false,disposed=false,generation=0;
   if(options.rank)node.append(icon('shield'));
-  const entry={node,dispose(){disposed=true;active.delete(entry);controller.abort();visibility?.disconnect();for(const url of urls)releaseMediaURL(url);for(const image of images)image.remove();}};
+  const entry={node,dispose(){disposed=true;generation++;active.delete(entry);controller.abort();visibility?.disconnect();removeEventListener('motodash-media-updated',updated);for(const url of urls)releaseMediaURL(url);for(const image of images)image.remove();}};
   active.add(entry);
-  async function load(){if(started||disposed)return;started=true;const owner=getAccount()?.uid;
+  async function load(){if(started||disposed)return;started=true;const owner=getAccount()?.uid,token=++generation,signal=controller.signal;
     try {
-      const resource=await getMedia(target,controller.signal);if(disposed||owner!==getAccount()?.uid)return;
+      const resource=await getMedia(target,signal);if(disposed||token!==generation||owner!==getAccount()?.uid)return;
       if(options.theme!==false)applyMediaTheme(options.themeRoot || node,resource.theme);
       if(options.rank){node.querySelector('svg')?.remove();node.prepend(icon(['shield','star','flag','wheel'].includes(resource.theme.icon)?resource.theme.icon:'shield'));}
       for(const [slot,container] of Object.entries(placements)) {
         const media=slot==='cover'?resource.images.find(item=>item.slot.startsWith('photo')):resource.images.find(item=>item.slot===slot);
-        if(!media)continue;const url=await mediaObjectURL(media.id,controller.signal);if(disposed||owner!==getAccount()?.uid){releaseMediaURL(url);return;}urls.push(url);
+        if(!media)continue;const url=await mediaObjectURL(media.id,signal);if(disposed||token!==generation||owner!==getAccount()?.uid){releaseMediaURL(url);return;}urls.push(url);
         const img=element('img','media-image media-'+slot);img.dataset.motodashMedia='';img.alt='';img.src=url;img.decoding='async';container.classList.add('has-media');container.append(img);images.push(img);
       }
-    }catch(error){if(disposed)return;if(options.showError){const status=labelText(element('p','muted media-load-status'),mediaError(error));node.append(status);}}
+    }catch(error){if(disposed||token!==generation)return;if(options.showError){const status=labelText(element('p','muted media-load-status'),mediaError(error));node.append(status);}}
   }
+  function updated(event){const changed=event.detail?.target;if(!changed||changed.kind!==target.kind||changed.id!==target.id||changed.child!==target.child)return;
+    generation++;controller.abort();controller=new AbortController();for(const url of urls)releaseMediaURL(url);urls.length=0;for(const image of images)image.remove();images.length=0;started=false;if(node.getClientRects().length)void load();}
+  addEventListener('motodash-media-updated',updated);
   let visibility;
   if(typeof IntersectionObserver==='function'){visibility=new IntersectionObserver(entries=>{if(entries.some(e=>e.isIntersecting)){visibility.disconnect();void load();}});visibility.observe(node);}else void load();
   return entry.dispose;

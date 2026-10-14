@@ -21,6 +21,7 @@ test('oversized PNG dimensions with valid CRC and EXIF/XMP containers denied',()
   assert.throws(()=>inspectImage(large,'image/png'),/invalid_image/);
   const jpeg=Buffer.from(fixtures['image/jpeg'],'base64'),exif=Buffer.from('Exif\0\0GPS-private-data');
   const header=Buffer.from([255,225,0,exif.length+2]);assert.throws(()=>inspectImage(new Uint8Array(Buffer.concat([jpeg.subarray(0,2),header,exif,jpeg.subarray(2)])),'image/jpeg'),/invalid_image/);
+  assert.throws(()=>inspectImage(new Uint8Array(Buffer.concat([jpeg.subarray(0,-2),header,exif,jpeg.subarray(-2)])),'image/jpeg'),/invalid_image/);
   const webp=Buffer.from(fixtures['image/webp'],'base64'),chunk=Buffer.from('EXIF\x04\x00\x00\x00GPS!','latin1'),metadata=Buffer.concat([webp,chunk]);metadata.writeUInt32LE(metadata.length-8,4);
   assert.throws(()=>inspectImage(new Uint8Array(metadata),'image/webp'),/invalid_image/);
 });

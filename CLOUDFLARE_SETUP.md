@@ -1,4 +1,14 @@
-> **Current Batch 6B (2026-10-13):** the operator reports 6A deployed/working.
+> **Current Batch 8 (2026-10-15):** local only. The existing Worker now adds private
+> **MEDIA_BUCKET → motodash-media** and **MEDIA_STATE → MediaState / SQLite v3**,
+> preserving both live bindings/v1/v2 and strict origin. New encrypted
+> **MEDIA_SERVICE_ACCOUNT** is a separate dedicated motodash-media IAM identity;
+> **FIRESTORE_SERVICE_ACCOUNT stays read-only**. Use the exact browser-only
+> [current deployment checklist](DEPLOYMENT_CHECKLIST.md) for bucket/plan/IAM/key,
+> backend-before-Pages deployment, costs, two-account media and rollback.
+> No bucket, secret, production deployment or paid service was activated by the agent.
+> The dated live-only guides below retain their original evidence/permissions.
+
+> **Historical Batch 6B (2026-10-13):** the operator reports 6A deployed/working.
 > 6B is local and adds **LIVE_IDENTITIES → LiveIdentity / SQLite v2**, retaining
 > **LIVE_ROOMS → LiveRoom / v1**. Use the current [deployment checklist](DEPLOYMENT_CHECKLIST.md)
 > before the older setup/6A source-only instructions below. No new secrets/IAM write
@@ -7,7 +17,7 @@
 > Abandoned connected ownership is bounded by 45s without inbound activity; authority
 > leases remain 30s. Quota usage increases by coordinator renewals (about 3/min/UID).
 
-> **Current operator report, 2026-10-12:** motodash-live and LIVE_ROOMS Durable Objects are deployed, the production frontend endpoint is configured, Batch 5 is published, Firestore Rules deployed and all 18 composites Enabled. Real two-account/two-phone acceptance remains pending. This guide now covers maintenance/redeployment and acceptance; no setup/deployment action was performed by this audit. Firebase deployment identity and the Cloudflare read-only Firestore credential are separate.
+> **Historical operator report, 2026-10-12:** motodash-live and LIVE_ROOMS Durable Objects are deployed, the production frontend endpoint is configured, Batch 5 is published, Firestore Rules deployed and all 18 composites Enabled. Real two-account/two-phone acceptance remains pending. This guide now covers maintenance/redeployment and acceptance; no setup/deployment action was performed by this audit. Firebase deployment identity and the Cloudflare read-only Firestore credential are separate.
 
 # Cloudflare maintenance and acceptance for MotoDashboard
 

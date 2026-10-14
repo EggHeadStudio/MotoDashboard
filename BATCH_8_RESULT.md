@@ -99,3 +99,182 @@ media request; this does not change live-token expiry behavior. Local evidence:
 29 media container/policy/state groups, 2 native gateway/R2/SQLite groups, 61 real
 Firestore mirror-denial assertions and 8 cumulative media browser groups pass.
 Zero final failed/skipped. Final integrated rerun remains milestone 10.
+
+
+## Milestone 10 — final integrated verification and operator handoff
+
+Version **1.6.0-batch8**, final date **2026-10-15** (scope began 2026-10-14).
+All milestones complete as local implementation. **NOT DEPLOYED / real acceptance
+NOT RUN**, no paid service activated and no Batch 9. Backend/Pages deployment and
+manual tests are explicit remaining gates, not completion inferred from emulators.
+
+| Completed local check | Exact final evidence |
+| --- | --- |
+| Firestore actual demo emulator | **997 distinct passed**, 0 failed/skipped: 102 baseline +137 Club security +273 Groups +32 identity +82 B5 +79 B6A +135 B6B +96 B7 +61 B8. Repeated baseline executions counted once |
+| Worker build/full suite | **98 passed**, 0 failed/skipped, including **19 native workerd/R2/SQLite groups** and 30 new deterministic media container/policy/authority/race/cleanup/quota groups. Google/Firestore/Auth replies are fixtures, not live cloud |
+| Browser full regression | **102 groups/named cases passed**, 0 final failed/skipped: 93 prior +1 saved-panel regression +8 media groups. Raw log has 104 PASS lines including two B5/B6A summaries; those are not extra tests |
+| Latest focused browser evidence | Final 8 media groups (7 nested prep/rejection paths plus UTF-8 parity/accents), and 17 B7/saved groups pass after related hardening. Counts included above, not added |
+| Nested domains | Existing 26 camera/25 replay and 36 domain/17 confirmation assertions remain passing within browser groups, not additional totals |
+| Locked RTDB | **68 passed**, 0 failed/skipped; localhost deny-all only |
+| GitHub Pages | **2 groups**, **356 literal references /99 local URLs HTTP200** under /MotoDashboard/; Firebase/media unavailable retains guest GPS/history |
+| Deployment | **10 contracts**, exact 19 composites/exemption, Firestore-only config, **3 workflow YAML/15 Bash** syntax checks; no workflow dispatched |
+| Not run | Production R2/IAM/real Auth revocation/Rules/19-index status, physical cameras/GPS/phones/native Safari/WebKit, live two-account media or latency/CPU/battery/usage measurement |
+
+Intermediate failures/limits retained: first native media test found duplicate-case
+cache headers (fixed by normalized Headers); theme saves captured FormData after
+disabling selects (fixed by capturing first); new nested disclosures required scoped
+browser selectors rather than clicking hidden copies. The first complete browser
+run timed out awaiting initial Auth UI in identity fixture; focused unchanged
+expectations and the complete rerun passed. No timeout was raised or security
+assertion weakened; the transient startup cause remains unconfirmed. Windows ASCII
+stdin damaged some new Finnish literals; UTF-8/direct patches repaired them and
+accent/key-parity regression now passes. Final hardening adds predecode dimensions/
+animation rejection, transparent rank PNG, strict baseline-JPEG marker/metadata
+checks, preset inheritance, canonical Club-owner/retained organizer reads, exact
+quota replacement accounting and current media refresh/observer teardown.
+Every image read also proves current ledger slot/incarnation; a crash after replacing
+references but before old-object retirement cannot keep the old ID readable.
+
+### R2, Firestore, Worker and deployment changes
+
+- Existing **motodash-live** gains private **MEDIA_BUCKET → motodash-media**,
+  **MEDIA_STATE → MediaState / SQLite v3**, preserving **LIVE_ROOMS/v1**,
+  **LIVE_IDENTITIES/v2**, FIREBASE_PROJECT_ID, allowed origin and live secrets.
+- New runtime **encrypted Cloudflare MEDIA_SERVICE_ACCOUNT**, exact dedicated
+  **motodash-media@motodash-87bf8.iam.gserviceaccount.com**. Custom six-permission
+  template: cloudflare/media-writer-role.json. IAM bypasses Rules/project-wide;
+  never reuse/increase the live read-only reader or configuration deployer key.
+- Firestore **mediaRecords** mirrors references only; all client reads/writes deny.
+  Explicit denial is added to the Rules source; previous unknown-path deny already
+  enforced it. Existing Profile/Garage/Club/Group/recording schemas stay unchanged.
+  **No index change:** 19 composites plus routeChunks.pointsJson exemption retained.
+- Manual Firebase workflow adds the real B8 denial suite; existing Worker workflow
+  is now explicitly repository/main-only, with existing official action and no inputs.
+  Pages artifact/workflow stays intact and includes native media modules/CSS.
+- Operator order after approval: verify private R2/plan + dedicated media IAM/secret,
+  pause Pages automatic push, publish reviewed main, manual **Validate or deploy
+  MotoDash Firestore** (main, deploy, confirmation motodash-87bf8, rules-and-indexes;
+  rules-only sufficient if all 19 already verified), wait index Enabled, manual
+  **Deploy MotoDash Cloudflare Worker** (main/no inputs), verify v3/R2/live bindings,
+  then enable/manual **Deploy to GitHub Pages** (main/no inputs).
+
+No new GitHub secret: keep existing CLOUDFLARE_API_TOKEN/CLOUDFLARE_ACCOUNT_ID and
+FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON. New media key remains solely in encrypted
+Cloudflare secret. No R2 S3 credential/public r2.dev, Firebase Storage/Blaze upgrade,
+new frontend build/dependency, Cloudflare account or Firebase project.
+
+Exact setup, costs/usage estimates, real two-account media test, mobile acceptance
+and compatible frontend/Rules/Worker rollback: **DEPLOYMENT_CHECKLIST.md** current
+Batch 8 section. It includes key rotation and forbids dropping existing namespaces,
+weakening Rules, clearing private rides or marking privileged Console reads as
+client security proof. Expected prototype storage (20 testers ×10 ×250KB ≈50MB)
+fits the documented R2 Standard allowance in isolation; other account usage and
+Worker/DO/Firestore/Auth costs remain separate. No $0 bill or paid readiness assumed.
+
+### Remaining security and operational limitations
+
+- Real provisioning/IAM/versions/two-account/device acceptance are blockers before
+  calling this deployed/accepted. R2 may require billing enrollment; no paid
+  activation/plan change is authorized or performed automatically.
+- One serialized bounded prototype registry, shared 2500/day allowance and hashed
+  per-caller quotas can be exhausted; no internet-scale abuse/availability guarantee.
+  Project-level writer IAM is not limited by client Rules to mediaRecords. Protect/
+  rotate the secret and monitor current source reads/Auth lookups/DO/R2 operations.
+- Server container validation is not full JPEG/WebP entropy decoding or content
+  moderation. Sources are preflighted/decoded/re-encoded in browser; only prepared
+  supported raster containers pass backend checks, never arbitrary SVG/metadata.
+- Privacy and source deletion revoke new fetches. Already downloaded public images
+  cannot be recalled. Hourly rotating bounded cleanup may need about 80h at full
+  capacity and longer during outages; denied access is not completed physical erasure.
+  Completed Groups retain banners; membership/role loss alone is not deletion.
+- Future trusted complete account deletion must drain all media mirrors/registries/
+  journals/R2 and resolve owned community resources, alongside existing personal,
+  live and retired-ID data. Auth-only removal remains inadequate and wider beta gated.
+- Existing live lease/token-expiry behavior, native background/GPS/camera limits,
+  provider commercial terms, optional members-only profile policy and network-root
+  uncertainty remain. No feature or test claims real phone/production verification.
+- Account recovery/Google/full erasure, Official activities/safe rewards, broadcast
+  notifications/Club QR, subscriptions/Stripe, NFC, merchandise, final global logo/
+  typography/mobile/accessibility/performance and optional marketplace remain agreed.
+
+### Logical local commits
+
+| Milestone | Commit |
+| --- | --- |
+| 0 saved corrections/audit | 3108b5e |
+| 1 private R2 authority/lifecycle | 5c1b5a5 |
+| 2 preparation/client | 244c8b2 |
+| 3 profile media | b318c3a |
+| 4 Garage galleries/showcase | c20a28b |
+| 5 Club branding | 9d0846b |
+| 6 activity banners | 1fdc649 |
+| 7 decorative ranks | b5332ec |
+| 8 templates/preview/reset | e5965a7 |
+| 9 authorization/abuse/cleanup | cae7019 |
+| 10 final regression/hardening/docs | This final commit: obtain SHA with git log -1 --oneline |
+
+### Exact file inventory against baseline eb8a271
+
+**20 new /32 modified /0 removed; 52 files.**
+
+| Status | File |
+| --- | --- |
+| Modified | `.github/workflows/deploy-cloudflare.yml` |
+| Modified | `.github/workflows/deploy-firebase.yml` |
+| New | `BATCH_8_RESULT.md` |
+| Modified | `CLOUDFLARE_SETUP.md` |
+| Modified | `DATA_MODEL.md` |
+| Modified | `DEPLOYMENT_CHECKLIST.md` |
+| Modified | `FIREBASE_DEPLOYMENT.md` |
+| Modified | `IDEA.md` |
+| Modified | `IMPLEMENTATION_STATUS.md` |
+| Modified | `README.md` |
+| Modified | `cloudflare/README.md` |
+| New | `cloudflare/media-writer-role.json` |
+| New | `cloudflare/src/MediaState.js` |
+| Modified | `cloudflare/src/index.js` |
+| New | `cloudflare/src/mediaFirestore.js` |
+| New | `cloudflare/src/mediaImage.js` |
+| New | `cloudflare/src/mediaPolicy.js` |
+| New | `cloudflare/src/mediaTheme.js` |
+| New | `cloudflare/tests/media-fixtures.json` |
+| New | `cloudflare/tests/media-image.test.js` |
+| New | `cloudflare/tests/media-policy.test.js` |
+| New | `cloudflare/tests/media-state.test.js` |
+| Modified | `cloudflare/tests/runtime.test.js` |
+| Modified | `cloudflare/wrangler.jsonc` |
+| New | `css/media.css` |
+| Modified | `css/saved-ride.css` |
+| Modified | `firestore.rules` |
+| Modified | `index.html` |
+| Modified | `js/club-branding-ui.js` |
+| Modified | `js/club-members-ui.js` |
+| Modified | `js/config.js` |
+| Modified | `js/garage-ui.js` |
+| Modified | `js/group-ui.js` |
+| New | `js/i18n/batch8.js` |
+| Modified | `js/i18n/dictionary.js` |
+| New | `js/media/media-client.js` |
+| New | `js/media/media-editor.js` |
+| New | `js/media/media-render.js` |
+| New | `js/media/prepare-image.js` |
+| New | `js/media/theme-editor.js` |
+| Modified | `js/public-profile-ui.js` |
+| Modified | `js/ui/cards.js` |
+| Modified | `js/ui/icons.js` |
+| Modified | `js/ui/ride-replay.js` |
+| Modified | `js/ui/saved-ride.js` |
+| Modified | `tests/batch7_browser.py` |
+| New | `tests/batch8_browser.py` |
+| Modified | `tests/firebase_mocks.py` |
+| Modified | `tests/identity_browser.py` |
+| New | `tests/run_batch8_rules.py` |
+| Modified | `tests/run_browser.py` |
+| Modified | `tools/validate_workflows.cjs` |
+
+Useful security suites/history, locked RTDB, existing credentials/configuration,
+Pages deployment and installed/cached development tools are retained. No file was
+deleted from the committed baseline. Local demo emulators are stopped after final
+checks; no production state changed.
+
+**STOP after Batch 8; await explicit approval before publication or Batch 9.**

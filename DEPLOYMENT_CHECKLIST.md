@@ -1,3 +1,277 @@
+# Batch 8 — browser-only deployment and acceptance
+
+Prepared locally 2026-10-15. **NOT DEPLOYED / live acceptance NOT RUN.**
+App `1.6.0-batch8`, Firebase `motodash-87bf8`, Worker `motodash-live`, existing
+Pages `/MotoDashboard/`. No software installation, new release branch, Firebase
+Storage/Blaze upgrade, public bucket, paid Images service or second project.
+
+## Gates and exact sources
+
+| Classification | Finding / resolution |
+| --- | --- |
+| BLOCKER — media publication | Operator must provision/verify private R2 bucket `motodash-media`, dedicated media IAM/key and encrypted `MEDIA_SERVICE_ACCOUNT`, then publish Worker/v3 before Pages. None was done by the agent. |
+| BLOCKER — live acceptance | Real Firebase IAM/Auth revocation, private/public two-account media and physical iPhone/Android tests below are NOT RUN. Local tests do not certify them. |
+| BLOCKER — wider beta | Complete trusted account deletion/moderation and measured abuse/capacity remain absent. Media adds to the mandatory erasure inventory. |
+| WARNING | R2 activation may require payment details/usage enrollment even when planned usage fits free allowances. Check the existing account; do not approve paid activation/plan upgrades without a separate explicit decision. |
+| WARNING | Media writer IAM is project-level: Firestore client Rules cannot restrict its writes to mediaRecords. Code does so; key compromise has broader database impact. Review the custom role and rotation before provisioning. Never grant Owner/Editor/Firebase Admin. |
+| WARNING | One serialized MediaState is intentionally a small-prototype bottleneck. Quotas/rates bound usage but an attacker can exhaust a shared allowance. Scaling needs a separately tested sharding/global abuse design. |
+| WARNING | Server checks raster signature/container/dimensions/PNG CRC and rejects metadata, animation and SVG; this is not full JPEG/WebP entropy decoding or malware/content moderation. Browsers decode/re-encode before upload. |
+| INFORMATION | `firestore.rules` adds explicit mediaRecords client denial; previous default denial already protected unknown paths. All prior permissions stay. `firestore.indexes.json` is unchanged: **19** composites plus routeChunks.pointsJson exemption. |
+| INFORMATION | Existing Pages allowlist automatically includes css/media.css and js/media/. Backend files/credentials remain outside Pages. No Pages workflow redesign. |
+
+Sources: `cloudflare/wrangler.jsonc`, `cloudflare/src/MediaState.js`, mediaPolicy.js,
+mediaFirestore.js, mediaImage.js and mediaTheme.js; IAM template
+`cloudflare/media-writer-role.json`; Firestore files `firestore.rules`,
+`firestore.indexes.json`, `firebase.deploy.json`. RTDB `database.rules.json` stays
+locked and outside deployment. Existing frontend `live-config.js` endpoint stays
+`https://motodash-live.old-sound-55f2.workers.dev` (media HTTPS; live HTTPS/WSS).
+
+## 1. Private R2 bucket — Cloudflare Dashboard
+
+1. Open the **existing Cloudflare account → R2 Object Storage**. Check current plan,
+   usage and any activation/payment prompt. No paid service was activated locally;
+   stop if provisioning requires an unapproved billing change.
+2. If authorized provisioning is available, choose **Create bucket**, exact name
+   **motodash-media**, **Standard** storage. Choose the appropriate EU location/
+   jurisdiction based on the account's offered settings and privacy needs; record it.
+3. Bucket → **Settings**: keep **Public Development URL / r2.dev disabled** and no
+   public/custom domain. Do not configure public bucket CORS or create S3 keys for
+   the frontend. The Worker binding is the only application access path.
+4. Do not add a blanket age-based lifecycle deletion: active profile/vehicle images
+   may be old and still valid. App journals/alarms handle stale objects. Inspect any
+   preexisting bucket contents/mirror records read-only; do not assume empty or purge.
+5. The checked-in binding is **MEDIA_BUCKET → motodash-media**. Wrangler deploy
+   attaches it; no manual replacement Worker or bucket is needed.
+   [Official R2 binding guide](https://developers.cloudflare.com/r2/get-started/workers-api/).
+
+## 2. Dedicated Google Cloud media account — browser only
+
+1. Open Google Cloud Console and select **motodash-87bf8**. The same project backs
+   Firebase; do not create another project or enable the Identity Platform product.
+2. **IAM & Admin → Roles → Create role**. Title **MotoDash Media Backend**, ID
+   **motodashMedia**, stage **General availability**. Use exactly these permissions
+   from `cloudflare/media-writer-role.json`:
+   `datastore.databases.get`, `datastore.entities.get`, `datastore.entities.create`,
+   `datastore.entities.update`, `datastore.entities.delete`, `firebaseauth.users.get`.
+   Do not add list, IAM/admin/configuration or Auth-write permissions.
+3. **IAM & Admin → Service Accounts → Create service account**. Account ID must be
+   **motodash-media**, email
+   **motodash-media@motodash-87bf8.iam.gserviceaccount.com**. The code verifies that
+   exact identity, project and service_account type. Assign only the custom role
+   just created, on this project. Skip giving users additional impersonation roles.
+4. Verify Firestore and the existing **Identity Toolkit API** are available for
+   this Firebase project. Auth lookup uses `firebaseauth.users.get`, a current
+   disabled/validSince check and cloud-platform scope; no Auth/provider deployment.
+   [Official account lookup permissions](https://docs.cloud.google.com/identity-platform/docs/reference/rest/v1/projects.accounts/lookup).
+5. Account → **Keys → Add key → Create new key → JSON**. Keep the downloaded file
+   outside the repository and shared/synced folders. Never paste it into chat,
+   source/YAML, frontend config, screenshots, workflow output or an artifact.
+   If your organization forbids key creation, stop and arrange approved workload
+   credentials; do not work around its policy or borrow another account's key.
+6. Cloudflare → **Workers & Pages → motodash-live → Settings → Variables and Secrets
+   → Add → Secret**, name **MEDIA_SERVICE_ACCOUNT**, value the complete JSON.
+   Save as **encrypted Secret**. Never use a plain variable. No new GitHub secret
+   for this runtime key is needed; the workflow never uploads/prints Worker secrets.
+7. Keep **FIRESTORE_SERVICE_ACCOUNT** unchanged with its existing **read-only**
+   account. Keep the GitHub Firebase deployer separate. Neither is reused for media.
+8. Rotation: create a replacement JSON key for the same media account, update the
+   encrypted Worker secret, verify media reads/upload/delete and unchanged live
+   sharing, then delete the old key in Google Cloud. Record key IDs/date privately,
+   without key payloads. Rotate promptly on exposure and periodically (e.g. 90 days).
+
+Existing GitHub repository Actions secrets are **CLOUDFLARE_API_TOKEN**,
+**CLOUDFLARE_ACCOUNT_ID**, **FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON**. No R2 S3 token
+or media private key belongs in GitHub. The Cloudflare deployment token must cover
+the existing account's Workers/DO deployment and binding the existing R2 bucket;
+review any missing permission from the deployment error and grant only the needed
+R2 binding/read permission, not account-wide administration or unrelated buckets.
+
+## 3. Publish source after approval; deploy backends, Pages last
+
+1. Save current secure frontend SHA, published Rules source/hash and Worker version/
+   all namespace IDs for rollback. Ask testers to finish/save rides and stop sharing;
+   close old live tabs and allow two minutes for existing claims to expire.
+2. GitHub → **Actions → Deploy to GitHub Pages → … → Disable workflow**. The
+   published site remains up. This avoids main's Pages push trigger deploying first.
+3. In the VS Code PowerShell terminal, after approval:
+
+   ```powershell
+   git switch main
+   git status --short
+   git log --oneline origin/main..main
+   git push origin main
+   ```
+
+   Expect a clean reviewed tree. No force push, extra branch or local CLI installs.
+4. **Actions → Validate or deploy MotoDash Firestore → Run workflow**: branch
+   **main**, **operation=deploy**, **confirmation=motodash-87bf8**,
+   **scope=rules-and-indexes**. This compiles/tests all suites including Batch 8
+   before credentials are available. It deploys only Firestore Rules/indexes.
+   If all 19 indexes are independently confirmed current, **scope=rules-only** is
+   also sufficient for this batch. Do not infer the 19th Enabled from a push.
+5. Firebase Console → project **motodash-87bf8 → Firestore → Rules**: compare the
+   whole file/publication time with reviewed `firestore.rules`, including explicit
+   `mediaRecords` denial and all existing privacy/retired-ID guards.
+6. **Firestore → Indexes → Composite**: verify all **19 Enabled**, including
+   profileDirectory **visibility ASC / searchName ASC**, Collection scope. Keep
+   every previous definition and **Single field → routeChunks.pointsJson exemption**.
+   Emulator success does not certify index building. Auth domains remain
+   **eggheadstudio.github.io**, **localhost**, no path/scheme; Email/Password stays.
+7. **Actions → Deploy MotoDash Cloudflare Worker → Run workflow → main**,
+   **no additional inputs**. Manual main-only workflow uses the existing Wrangler
+   file, dry-run and all Worker/workerd tests. No secret values enter test jobs.
+8. Cloudflare → **motodash-live → Deployments**: record successful reviewed version.
+   **Settings → Bindings** must contain:
+   **LIVE_ROOMS → LiveRoom / v1**, **LIVE_IDENTITIES → LiveIdentity / v2**,
+   new **MEDIA_STATE → MediaState / SQLite v3**, **MEDIA_BUCKET → motodash-media**.
+   Append v3; never delete/recreate v1/v2 or their namespaces. Keep both encrypted
+   secrets and **FIREBASE_PROJECT_ID=motodash-87bf8**,
+   **ALLOWED_ORIGINS=https://eggheadstudio.github.io**. No origin wildcard or RTDB.
+9. Direct Worker navigation may return origin_denied; that is not a media/live
+   acceptance test. Media must be exercised from Pages with real Auth/current roles.
+10. **Actions → Deploy to GitHub Pages → Enable workflow → Run workflow → main**,
+    **no inputs**. Verify SHA/success, HTTPS `/MotoDashboard/`, **1.6.0-batch8**,
+    relative media imports/CSS, EN/FI and optional media failure feedback. Preserve
+    IndexedDB/private rides; close/reload stale tabs rather than clearing all data.
+
+## 4. Two-account media acceptance — NOT RUN
+
+Use disposable **A/B**, independent sessions, iPhone Safari + Android Chromium,
+foreground/stationary. Do not paste tokens/private images/GPS in reports. Privileged
+Console viewing does not prove signed-in client security.
+
+1. A saves Profile settings, opens **Images & appearance**, selects/crops avatar
+   and banner, uploads privately, replaces/removes each. Confirm optimized preview,
+   upload progress, EN/FI feedback, placeholder fallback and refresh persistence.
+2. Make A's profile Public. An unchecked photo must remain inaccessible to B and
+   signed-out visitors. Enable **Allow public presentation** for one photo; B and
+   signed-out known-profile visitors can fetch only that photo. Set profile Private:
+   a **new** B/signed-out image fetch denies. Restore Public and then restrict that
+   photo again: new reads deny without changing the image ID/pixels.
+3. Add private Garage photos in two slots; set cover and move order. Confirm six-slot
+   bound, replacement/removal and gallery persistence. Public Garage card opt-in
+   alone must not expose unchecked photos. Publish a selected card/photo with a
+   Public source vehicle and profile; B sees only the permitted cover/gallery.
+   Hide/unpublish/delete the vehicle: new B image fetches deny immediately. Recreate
+   a fresh vehicle: no old photos, permissions or alias inheritance.
+4. A owns a Club; B is ordinary Member with visible rank **Captain**. A manages logo,
+   banner and controlled theme; B can read private Club branding as a member but
+   cannot modify it. Promote B to Admin, confirm authorized edit; revoke Admin and
+   verify the **same open editor** cannot upload/delete/change publication or theme.
+   Outsiders cannot fetch private Club images. Retired Club references must deny.
+5. A creates Event, Meet and Group Ride banners and theme. Public/approval images
+   require per-photo publication for outside signed-in viewers. Private/unlisted
+   images require actual participation or authorized organizer status; links/invite
+   possession alone do not make images public. Verify Discover/detail/Club listings,
+   membership removal/bans and organizing Club retirement deny current access.
+6. Pick built-in rank icons/badges/colors, upload a small PNG/WebP source (prepared
+   PNG), replace/remove graphic. B's Captain label/graphic confers no role. Confirm
+   arbitrary SVG, spoofed type, >1.5MB payload or oversized dimensions reject.
+7. Two A tabs read the same media revision and replace/delete simultaneously:
+   one write succeeds, the stale write gets **conflict**. Refresh actual state before
+   retry. Check old image IDs cannot retrieve replaced/deleted bytes. Simulate a
+   connection failure: UI reports uncertainty and does not blindly replay uploads.
+8. Disable disposable B in Firebase Auth or revoke its tokens with a separately
+   approved trusted tool: media must deny its old token on a new request. Re-enable
+   and reauthenticate for further tests. Do not assume this changes live room leases.
+9. Inspect R2 privately: opaque object keys, no originals/EXIF GPS, no r2.dev access.
+   Firestore mediaRecords are metadata/references only. Signed-in A/B direct SDK
+   get/list/write/delete of mediaRecords must deny, including alleged owner records.
+   Avoid printing responses with private IDs/credentials or testing with real content.
+10. Observe replaced/deleted object disappearance and pending/retired-source cleanup.
+    An hourly alarm scans up to 25 image and 25 resource records, rotating cursors;
+    at the full 2,000-record bound, one sweep may take about **80 hours**. Authority
+    outage delays cleanup; it never grants reads or becomes deletion proof. New reads
+    still check policy immediately. Never mark complete erasure from access denial.
+
+## 5. Mobile and existing-feature acceptance — NOT RUN
+
+- Saved ride: collapse **Ride details** and **Recorded ride replay** independently;
+  route map stays usable at 320px portrait/short landscape. Replay advances while
+  controls are collapsed, retaining seek position/speed; red route/gold progress,
+  fit after toggles, language, export and Back remain correct. No GPS starts.
+- Camera/gallery, crop sliders, large touch targets, keyboard focus, safe areas,
+  text enlargement, portrait/landscape, contrast/reduced motion and image fallback.
+  HEIC/animation/SVG/over-40MP inputs show unsupported feedback; choose JPEG or a
+  smaller camera export. Native phone media selection/canvas behavior is unaccepted.
+- Recheck login/logout/guest, Garage/history/private exports, Clubs/roles/Wall,
+  invitations/approvals/notifications/Discover/QR and Return to Ride.
+- A/B join an active Group and explicitly consent; verify both live markers, one
+  GPS watcher, map/heading/weather/recording preserved, leave/end/logout revocation,
+  network recovery and no automatic sharing after reload. Media is not a new GPS or
+  live transport pipeline. Unavailable media never blocks personal recording.
+
+## 6. Limits, retention, costs and monitoring
+
+Hard application limits: **1.5MB**, **1920px** server raster cap; browser output
+**1600px** JPEG / **256px** rank PNG; original **12MB/40MP** cap; six photos/vehicle;
+**30 files/30MB per canonical resource owner**, **100 configured resources/owner**,
+**2,000 files/1GB and 2,000 resource ledgers globally**. Pending/deleting objects
+count toward quotas; temporary replacement must fit the projected owner total.
+Limits are prototype capacity controls, not subscription entitlements.
+
+Per hashed verified UID (anonymous reads: hashed connecting IP): **120 requests/min**,
+**30 mutation attempts/hour**, **10 upload attempts/hour**; global **2,500 request
+attempts/UTC day**. One MediaState serializes revisions/quota changes, bounded queue
+20. Anonymous users cannot mutate. Distributed callers can exhaust shared capacity;
+these bounds are not a complete internet-scale anti-abuse service.
+
+Private/public changes revoke future Worker reads; no permanent R2/public/signed
+URLs, CDN cache or service-worker image cache. Responses are no-store/nosniff;
+browser images use short-lived blob URLs revoked on detach/logout. Previously
+downloaded/public content cannot be recalled. Hidden/private media remains stored
+for its owner/member audience; deleting/replacing queues physical deletion. Source
+retirement/deletion/incarnation mismatch is garbage-collected; completed Groups
+retain banners while their canonical source/Club exists. Roles changing is not a
+source deletion. Authority outages keep retry journals fail-closed. Future complete
+account deletion must explicitly drain media records/ledgers/journals/R2 and resolve
+owned Club/Group media; Auth-only deletion is insufficient.
+
+Estimate: 20 testers ×10 optimized 250KB images ≈**50MB**, 500 uploads/replacements
+and 20,000 image reads/month fit current R2 Standard allowances in isolation. Current
+allowances: **10GB-month, 1M Class A, 10M Class B**; excess Standard storage **$0.015/
+GB-month**, writes **$4.50/M**, reads **$0.36/M**, egress free. Shared account usage,
+rounding, Worker/DO and Firestore/Auth calls are separate. No $0 bill is guaranteed.
+[Official R2 pricing, checked 2026-10-15](https://developers.cloudflare.com/r2/pricing/).
+
+Inspect Cloudflare R2 storage/operations and Worker CPU/errors/requests + MediaState
+storage/alarm behavior; Firebase Firestore reads/writes/storage/denials and Auth
+quotas. Each image read rechecks source (several Firestore gets), and every signed-in
+media request adds one Auth lookup; upload rechecks authority and performs metadata
+commits. Alarms add reads even without active viewers. Existing live reads share
+the same Firebase quota. Set available usage/billing alerts and review weekly;
+alerts do not cap spend. Never turn on paid Images/Blaze/DO tiers automatically.
+
+## 7. Safe rollback
+
+1. Stop media editing/sharing and preserve reviewed version/namespace evidence.
+   Restore compatible frontend files from secure baseline **eb8a271** in a new main
+   commit, deploy Pages manually. Do not force push, erase local rides or revert
+   backend Rules/migrations wholesale. Old frontend simply ignores media.
+2. Keep all **19 indexes**, existing secure Rules and explicit client denial of
+   mediaRecords. A Rules correction must be secure/schema-compatible and pass all
+   emulator suites; same Firebase workflow, main, deploy, project confirmation,
+   **scope=rules-only**. Old default-deny already denies mirrors, but do not revert
+   unrelated privacy/role/retired-ID protections.
+3. After v3, keep **MediaState export/binding/v3 migration**, private R2 and both
+   existing live namespaces. Do not roll back to a config that drops/deletes v3.
+   Prefer a corrective Worker revision that denies media routes while retaining
+   the class/migration and live behavior, then run all Worker tests and manual deploy.
+   Existing object alarms must be considered; routing-only removal does not stop them.
+4. For media-key exposure, revoke that dedicated key/role, replace it and audit
+   private mirrors/objects via approved operator procedures. The live read-only
+   account remains separate. A media kill switch/key removal may pause cleanup;
+   retain the journals/bucket and restore trusted access deliberately. Do not grant
+   broad client reads or delete namespaces/buckets to disguise an incident.
+
+No deployment, Console change, production write, billing activation or live test was
+performed by the agent. Complete local evidence and commits: BATCH_8_RESULT.md.
+
+
+---
+
+> The following dated Batch 7/6B/6A procedures are historical evidence. Use the Batch 8 runbook above for current publication, new media IAM/secrets and v3/R2.
+
 # MotoDashboard deployment and acceptance checklist
 
 **Current Batch 7 preparation, 2026-10-14:** Batch 6B deployment/core working is now

@@ -34,6 +34,7 @@ export function inspectImage(bytes,mime) {
     while(offset+12<=bytes.length) {
       const size=v.getUint32(offset),kind=ascii(bytes,offset+4,4),start=offset+8,end=start+size;
       if(end+4>bytes.length || !['IHDR','IDAT','IEND','sRGB','gAMA','cHRM'].includes(kind))throw Error('invalid_image');
+      if((kind==='sRGB'&&size!==1)||(kind==='gAMA'&&size!==4)||(kind==='cHRM'&&size!==32))throw Error('invalid_image');
       let crc=0xffffffff;for(let i=offset+4;i<end;i++)crc=(crc>>>8)^crcTable[(crc^bytes[i])&255];
       if((crc^0xffffffff)>>>0!==v.getUint32(end))throw Error('invalid_image');
       if(first){if(kind!=='IHDR'||size!==13)throw Error('invalid_image');width=v.getUint32(start);height=v.getUint32(start+4);
@@ -52,11 +53,16 @@ export function inspectImage(bytes,mime) {
       const size=v.getUint16(offset),start=offset+2;if(size<2||offset+size>bytes.length)throw Error('invalid_image');
       // Reject EXIF/XMP/ICC/comments and non-baseline/progressive frames.
       if((marker>=0xe1&&marker<=0xef)||marker===0xfe)throw Error('invalid_image');
-      if(marker===0xc0 || marker===0xc2){if(size<8||width||bytes[start]!==8)throw Error('invalid_image');height=v.getUint16(start+1);width=v.getUint16(start+3);}
+      if(marker===0xe0 && (size!==16||ascii(bytes,start,5)!=='JFIF\x00'||bytes[start+12]||bytes[start+13]))throw Error('invalid_image');
+      if(marker===0xc0){if(size<8||width||bytes[start]!==8||size!==8+3*bytes[start+5]||![1,3].includes(bytes[start+5]))throw Error('invalid_image');height=v.getUint16(start+1);width=v.getUint16(start+3);}
       else if(![0xe0,0xdb,0xc4,0xdd,0xda].includes(marker))throw Error('invalid_image');
       offset+=size;if(marker===0xda){scan=true;break;}
     }
     if(!scan||bytes.at(-2)!==255||bytes.at(-1)!==217)throw Error('invalid_image');
+    // Prepared JPEG is baseline, a single scan. Only byte stuffing/restart/EOI
+    // may follow: hidden APP/EXIF/comment or trailing second-image payloads deny.
+    for(let i=offset;i<bytes.length-2;i++)if(bytes[i]===255){while(bytes[i+1]===255)i++;const marker=bytes[++i];
+      if(marker!==0 && !(marker>=0xd0&&marker<=0xd7))throw Error('invalid_image');}
   } else throw Error('invalid_image');
   if(mime!==type || !width||!height||width>MAX_IMAGE_DIMENSION||height>MAX_IMAGE_DIMENSION||width*height>3686400)throw Error('invalid_image');
   return {mime:type,width,height,bytes:bytes.length};

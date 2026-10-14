@@ -1,6 +1,6 @@
-> **Current Batch 8 authorization (2026-10-14):** user-selected private Cloudflare R2 `motodash-media`; implement/test/commit milestones 0?10 locally, saved-view corrections first. No push, deployment, production writes, paid activation or Batch 9. This supersedes historical Batch 7 media deferral and stop within the attached scope. Preserve all future account/commercial/final-brand requirements. See BATCH_8_RESULT.md.
+> **Current Batch 8 authorization (2026-10-14):** user-selected private Cloudflare R2 `motodash-media`; implement/test/commit milestones 0–10 locally, saved-view corrections first. No push, deployment, production writes, paid activation or Batch 9. This supersedes historical Batch 7 media deferral and stop within the attached scope. Preserve all future account/commercial/final-brand requirements. See BATCH_8_RESULT.md.
 
-> **Current Batch 7 authorization, 2026-10-14:** the operator reports Batch 6B deployed and its core features working. Batch 7 authorizes local discovery/user search, clearer showcase controls, smooth map follow, a dedicated saved-ride viewer, timestamp-based replay and network recovery improvements. Audit first; implement/test in logical commits; stop after Batch 7. No push, backend deployment or production-data operation. Media uploads, payments, marketplace and final branding remain future work. Section 22 is the current audited plan; dated earlier stops/results are historical.
+> **Historical Batch 7 authorization, 2026-10-14:** the operator reports Batch 6B deployed and its core features working. Batch 7 authorizes local discovery/user search, clearer showcase controls, smooth map follow, a dedicated saved-ride viewer, timestamp-based replay and network recovery improvements. Audit first; implement/test in logical commits; stop after Batch 7. No push, backend deployment or production-data operation. Media uploads, payments, marketplace and final branding remain future work. Section 22 is the current audited plan; dated earlier stops/results are historical.
 
 
 # MotoDash Platform --- IDEA.md
@@ -1154,7 +1154,12 @@ persistent records and current admission/lifecycle. Cloudflare Worker verifies
 identity and reads authorization; a Durable Object per session transports latest
 positions over WebSockets. See LIVE_TRACKING.md. No Cloud Functions are introduced.
 
-## Media storage and trusted backend cost checkpoint (future)
+## Media storage and trusted backend cost checkpoint
+
+**Batch 8 decision:** the user selected private Cloudflare R2, implemented locally
+in Section 24. No Firebase Storage/billing activation. Its provisioning/IAM,
+retention and cost gates are in DEPLOYMENT_CHECKLIST.md. The following Firebase
+Storage alternative/cost history remains useful for future provider changes.
 
 Before implementing Media & Branding, verify the MotoDash project's actual billing
 plan, bucket provisioning, region, access rules and cost estimate. The checked-in
@@ -3692,17 +3697,18 @@ These are future requirements, not Batch 7 implementation approval. Earlier acco
 Official/safe-reward, subscription/Stripe, NFC, merchandise, privacy/erasure, Safe Zone,
 Club QR, notification fan-out and commercial-provider requirements are preserved.
 
-## Media and customization — future milestone
+## Media and customization — implemented locally in Batch 8; deployment pending
 
-- [ ] User profile photos and banners; vehicle showcase photos and galleries.
-- [ ] Club logos/banners; event, ride and meet banners.
-- [ ] Custom rank graphics using approved PNG/SVG; graphics never grant permissions.
-- [ ] Controlled profile/Club/event colors and safe layout/style presets.
+- [x] User profile photos and banners; vehicle showcase photos and galleries.
+- [x] Club logos/banners; event, ride and meet banners.
+- [x] Custom rank graphics: vetted built-in SVG plus prepared PNG/WebP; no arbitrary uploaded SVG and no permission effects.
+- [x] Controlled profile/Club/event colors and safe layout/style presets.
 - [ ] Secure decoded-media validation, resizing, optimization and storage; sanitize
   SVG or prohibit unsafe content, remove sensitive metadata, enforce owner/manager
   access, retention/replacement/deletion and moderation controls.
-- [ ] Approve storage provisioning/billing/IAM and complete-deletion dependencies
-  before implementation; do not add uploads or paid infrastructure now.
+- [x] User explicitly selected private Cloudflare R2 for Batch 8 implementation.
+- [ ] Operator provisioning/billing/IAM and real acceptance remain gates; complete
+  account deletion is still required before wider beta. No paid service activated.
 
 ## Dedicated final visual polish — after core feature acceptance
 
@@ -3718,3 +3724,81 @@ Club QR, notification fan-out and commercial-provider requirements are preserved
   moderation/privacy, consumer terms and costs. No sales/payment/marketplace code now.
 
 **STOP after Batch 7 and await explicit approval.**
+
+
+# 24. Batch 8 — R2 media and saved-view result (2026-10-15)
+
+The explicit attachment authorizes sequential local milestones 0–10 and supersedes
+historical Batch 7 media deferral/stop. Selected permanent storage is private
+Cloudflare R2 **motodash-media**, in the existing account/Worker. Firebase remains
+Auth/persistent Firestore; RTDB stays locked. No second project/account, frontend
+framework/build, paid activation, push/deployment, production write or Batch 9.
+
+- [x] 0 Saved Ride Details/Replay controls independently collapse; playback/rate
+  preserved, Leaflet refit, red default saved route and distinguishable gold progress;
+  existing recording statistics/points/exports remain intact.
+- [x] 1 Private R2/Worker access architecture, verified Firebase identity/current
+  resource ownership/roles/source incarnation, safe metadata/rate/quota/revisions,
+  upload/read/replacement/deletion with durable retry journals.
+- [x] 2 Camera/gallery selection, crop/zoom/position/preview, predecode source bounds
+  and animation rejection, optimized JPEG or rank PNG, EXIF/GPS removal, signature/
+  container/MIME/size/dimension checks, accessible progress/localized errors.
+- [x] 3 Owner profile avatar/banner, placeholders, replace/remove and independent
+  photo public opt-in under current profile visibility.
+- [x] 4 Six-slot Garage galleries/cover/order, private originals, explicitly selected
+  public showcase media; hiding/deletion/recreated sources revoke old access.
+- [x] 5 Club logo/banner and controlled accent/secondary/header/card presets;
+  canonical Owner/current Admin only, visible ranks grant no authority.
+- [x] 6 Event/Meet/Group Ride/Drive share existing Group banner/theme lifecycle,
+  Discover/detail/Club cards; private/unlisted images do not become public links.
+- [x] 7 Vetted Shield/Star/Flag/Wheel, badge shapes/colors, safe <=256px raster rank
+  graphic, preview/replace/remove; no uploaded executable SVG or role effects.
+- [x] 8 Controlled profile/Garage/Club/activity templates, grid/list, live preview,
+  reset and contrast checks. Existing Profile accent/banner defaults are preserved.
+- [x] 9 Security/abuse/race/regression coverage: private/cross-account/role/ban/privacy/
+  source retirement, invalid metadata/type/size/dimensions, rate/quota, orphan/mirror
+  recovery, concurrent mutation, revoked/expired Auth and no-store media.
+- [x] 10 Full local regression/current docs/deployment preparation and logical commits.
+- [ ] Operator R2/IAM/secrets/Rules/index/Worker/Pages deployment and real two-account/
+  native iPhone/Android acceptance. No live item marked complete from local fixtures.
+
+Reuse: existing static Pages, single Auth initializer, private Garage/showcase
+mappings and Club/Group authorization, shared cards/forms/icons/EN/FI and saved
+replay. New js/media/ separates preparation, Worker-backed repository, editor,
+rendering and controlled themes. Existing GPS/recording/live transport unchanged.
+The existing Worker adds MEDIA_BUCKET and SQLite MEDIA_STATE/v3, preserving
+LIVE_ROOMS/v1, LIVE_IDENTITIES/v2, origin validation and encrypted live reader.
+
+Firestore mediaRecords holds private trusted references only; all client operations
+deny. No existing schema/composite change; source remains 19 plus pointsJson exemption.
+Dedicated motodash-media account/Cloudflare MEDIA_SERVICE_ACCOUNT uses a reviewed
+custom writer/read/Auth-get role; IAM is project-level and bypasses client Rules.
+Do not expand/reuse live reader or configuration deployer credentials. Media requests
+check Auth disabled/validSince; live lease/expiry behavior is deliberately unchanged.
+
+Prototype limits: 1.5MB/1920px server, 1600px prepared JPEG/256px rank PNG, six Gallery
+slots, 30 files/30MB/100 configured resources per canonical owner, 2000 files/1GB and
+2000 resource ledgers globally. Hashed caller rates and 2500 request attempts/day
+bound the single serialized prototype registry. Not subscription entitlements or
+internet-scale availability. Hourly 25-image/25-resource rotating cleanup may take
+~80h at capacity and longer on authority outage; access revocation is immediate on
+new verified reads. Previously downloaded bytes cannot be recalled.
+
+Server performs strict container/signature/metadata/dimension checks, not full
+JPEG/WebP entropy decode or content moderation. Browser re-encoding drops originals
+and EXIF/GPS; arbitrary SVG/animation uploads deny. Trusted complete account deletion
+must inventory mirrors/DO registry/journals/R2 and owned community media; it remains
+a wider-beta gate. Monitor shared Firestore/Auth/Worker/DO/R2 usage; no $0 bill or
+paid-plan readiness is inferred from allowances or emulators.
+
+Current sources/tests/commits/limits: BATCH_8_RESULT.md and DATA_MODEL.md. Exact
+browser-only provisioning/deployment, two-account tests, costs and rollback are in
+DEPLOYMENT_CHECKLIST.md. Milestone 10 spans midnight; original authorization/earlier
+commits were 2026-10-14 and final verification/docs are 2026-10-15.
+
+Preserve password recovery/change, Google linking, complete erasure, Official MotoDash
+activities/all safe reward types, subscriptions/Stripe/trusted entitlements, NFC,
+merchandise, notifications/Club QR, final logo/typography/icon/mobile/accessibility/
+performance polish and optional later marketplace. No requirement silently removed.
+
+**STOP after Batch 8. Await explicit approval; do not start Batch 9 or publish.**

@@ -1,3 +1,40 @@
+# Current Batch 8 — 2026-10-15
+
+**Implemented locally, not deployed or accepted on real phones.** Version
+1.6.0-batch8. Sequential milestones 0–10 are complete with logical local commits;
+final verification and operator documentation are recorded in BATCH_8_RESULT.md.
+Final local evidence: **997 Firestore**, **98 Worker (19 native workerd/R2/SQLite)**,
+**102 browser groups/cases**, **68 locked RTDB**, **2 Pages groups (356 refs/99 URLs)**,
+**10 deployment contracts**, **3 YAML/15 Bash** checks passed, zero final failures/
+skips. Latest related media/browser hardening reruns pass; no real Firebase/phone
+acceptance inferred. Exact distinctions/intermediate failures: BATCH_8_RESULT.md.
+The last explicit operator deployment report was 6B; no new production operation
+or paid service was performed by this batch.
+
+Saved details/replay collapse independently, preserve playback/rate and restore
+red default route/gold progress. Shared image preparation strips original EXIF/GPS,
+bounded cropping/resize produces JPEG or rank PNG. Profile/avatar/banner, six-slot
+vehicle galleries/covers/order/showcase, Club/logo/banner, Group/Event/Meet/Ride
+banners, decorative rank icons/badges and controlled visual templates are connected.
+
+Private R2 motodash-media uses MEDIA_BUCKET in the existing Worker, new serialized
+MediaState/v3 beside retained live v1/v2. Current source/ownership/incarnation,
+publication, roles, private audience, bans and Auth revocation are checked server-side.
+Quotas/rates/revision fences and deny-first cleanup/journals cover interrupted and
+concurrent writes. Firestore mediaRecords contains private references only; all
+client operations deny. Existing Rules boundaries and 19 composites stay; the
+source adds explicit mirror denial and the manual workflow's new security suite.
+
+Publication gates: operator private-bucket/plan verification, dedicated encrypted
+MEDIA_SERVICE_ACCOUNT/IAM and Worker v3, reviewed Rules/indexes, Pages last; real
+Firebase/Auth/IAM/media/two-account/phone acceptance NOT RUN. No service-account
+key in source/YAML, no public R2, Firebase Storage, RTDB activation or frontend build.
+Complete account deletion, wider abuse/moderation/capacity/provider acceptance and
+all future account/Official/reward/Stripe/NFC/merch/final-brand requirements remain.
+Use DEPLOYMENT_CHECKLIST.md's Batch 8 runbook, not the dated deployment claims below.
+
+---
+
 # MotoDashboard implementation status
 
 **Current, 2026-10-14:** the operator reports Batch 6B deployed/core working.

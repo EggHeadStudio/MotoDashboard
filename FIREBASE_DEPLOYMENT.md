@@ -1,4 +1,13 @@
-> **Current Batch 6B (2026-10-13):** 6A is reported deployed/working. New 6B Rules
+> **Current Batch 8 (2026-10-15):** use [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md).
+> Source inventory is **19 composites**, unchanged from Batch 7, with pointsJson
+> exemption. Firestore Rules explicitly deny every client mediaRecords operation;
+> the existing main-only manual validation gate includes **run_batch8_rules.py**.
+> Configuration deployer/key/role stay unchanged. A different encrypted Cloudflare
+> MEDIA_SERVICE_ACCOUNT writes private media mirrors; never reuse the deployer/live
+> reader. No Firebase Storage, Hosting, Auth or RTDB deployment, billing activation
+> or production write was performed locally. Older 18-index claims are dated history.
+
+> **Historical Batch 6B (2026-10-13):** 6A is reported deployed/working. New 6B Rules
 > for opt-in public projections/private mappings are local; the existing manual
 > main workflow now also runs **tests/run_batch6b_rules.py**. Index inventory remains
 > exactly 18 plus routeChunks.pointsJson exemption; no new secret or role is needed.

@@ -34,6 +34,8 @@ export class MediaState {
     const url=new URL(request.url),parts=url.pathname.split('/').filter(Boolean).slice(2),get=createMediaReader(this.env);
     if(parts[0]==='images' && parts.length===2 && uuid(parts[1]) && request.method==='GET') {
       const record=await this.state.storage.get('image:'+parts[1]);if(!record || record.state!=='active')throw Error('not_found');
+      const ledger=await this.state.storage.get('resource:'+record.key);
+      if(!ledger || ledger.incarnation!==record.incarnation || !Object.values(ledger.slots).includes(record.id))throw Error('not_found');
       await authorizeStored(get,record,uid);
       const object=await this.env.MEDIA_BUCKET.get(record.objectKey);if(!object)throw Error('not_found');
       return new Response(object.body,{headers:{'Content-Type':record.mime,'Content-Length':String(record.bytes),
@@ -56,7 +58,7 @@ export class MediaState {
       if(resources.size>=2000 || [...resources.values()].filter(v=>v.ownerUid===resource.ownerUid).length>=100)throw Error('quota');
     }
     ledger ||= {metadataId:crypto.randomUUID(),key:resource.key,target:resource.target,ownerUid:resource.ownerUid,
-      incarnation:resource.incarnation,revision:0,slots:{},theme:{...THEME_DEFAULTS}};
+      incarnation:resource.incarnation,revision:0,slots:{},theme:{...THEME_DEFAULTS,...resource.defaultTheme}};
     if(request.method==='GET' && !tail.length) {
       const images=[];
       for(const [slot,id] of Object.entries(ledger.slots).sort(([a],[b])=>a.localeCompare(b))) {

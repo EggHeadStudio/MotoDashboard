@@ -13,7 +13,7 @@ export function mountThemeEditor(root,target,resource,refresh,keys=['accent','se
   const status=element('p');status.setAttribute('role','status');form.append(status);
   const save=button('common.save');save.type='submit';const reset=button('media.reset',()=>{for(const key of keys)form.elements[key].value=themeDefaults[key];draw();});form.append(save,reset);
   form.addEventListener('submit',async event=>{event.preventDefault();const theme=selected(),controls=[...form.querySelectorAll('button,select')];controls.forEach(n=>n.disabled=true);
-    try{await saveMediaTheme(target,resource.revision,theme,resource.images.map(n=>n.id));await refresh();}
+    try{await saveMediaTheme(target,resource.revision,theme,resource.images.map(n=>n.id));await refresh();dispatchEvent(new CustomEvent('motodash-media-updated',{detail:{target}}));}
     catch(error){labelText(status,mediaError(error));}finally{controls.forEach(n=>n.disabled=false);}
   });
 }

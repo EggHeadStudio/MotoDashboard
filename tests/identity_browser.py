@@ -5,7 +5,8 @@ from firebase_mocks import install
 def run_identity_tests(browser, base, route_map):
     context = browser.new_context(viewport={'width':320,'height':568})
     route_map(context); install(context)
-    page = context.new_page(); page.goto(base, wait_until='networkidle')
+    page = context.new_page(); errors=[];page.on('pageerror',lambda error:errors.append(str(error)));page.goto(base, wait_until='networkidle')
+    assert not errors,errors
     click_action(page, '#account-btn');page.wait_for_function('!document.querySelector("#auth-submit").disabled')
     page.select_option('#auth-mode','register')
     page.fill('#auth-email','identity4@example.test');page.fill('#auth-password','fixture-password')
