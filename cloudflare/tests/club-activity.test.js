@@ -19,10 +19,11 @@ before(async()=>{
 after(()=>{globalThis.fetch=savedFetch;});
 beforeEach(()=>{
   docs=new Map();accounts=new Map();unavailable=false;const map=new Map();
-  storage={get:async key=>structuredClone(map.get(key)),put:async(key,value)=>map.set(key,structuredClone(value)),setAlarm:async value=>{storage.alarm=value;}};
+  storage={get:async key=>structuredClone(map.get(key)),put:async(key,value)=>map.set(key,structuredClone(value)),getAlarm:async()=>storage.alarm || null,setAlarm:async value=>{storage.alarm=value;}};
   backend=new ClubActivity({storage},env);docs.set('clubs/'+clubId,{id:clubId,name:'Club',ownerUid:'owner',state:'active',visibility:'public'});
   for(const [uid,role] of [['owner','owner'],['alice','member'],['bob','member'],['admin','admin']]){
     docs.set(`clubs/${clubId}/members/${uid}`,{uid,technicalRole:role,rankId:null,joinedAt:'membership-1'});docs.set('displayProfiles/'+uid,{displayName:'Rider '+uid});
+    docs.set('activityEpochs/'+uid,{uid,version:1,groupId:null});
   }
   ride('alice','ride-1');
 });
@@ -67,8 +68,9 @@ test('duplicate contribution replaces one entry; concurrent stale revision canno
   await call({method:'POST',revision:1,body:contribution()});assert.equal((await list()).stats.rides,1);
 });
 test('ride tombstone revokes fresh entry reads and trusted cleanup corrects aggregates',async()=>{
-  await call({method:'POST',revision:0,body:contribution('public')});docs.set('users/alice/sessionTombstones/ride-1',{id:'ride-1'});
-  assert.equal((await list(null)).entries.length,0);await backend.alarm();const data=await list();assert.equal(data.stats.rides,0);assert.equal(data.stats.riders,0);
+  await call({method:'POST',revision:0,body:contribution('public')});docs.set('users/alice/sessionTombstones/ride-1',{id:'ride-1'});docs.get('activityEpochs/alice').version++;
+  const immediate=await list(null);assert.equal(immediate.entries.length,0);assert.equal(immediate.stats.rides,0);
+  await backend.alarm();const data=await list();assert.equal(data.stats.rides,0);assert.equal(data.stats.riders,0);
 });
 test('membership revocation and rejoining cannot inherit old entries; retired Club denies everyone',async()=>{
   await call({method:'POST',revision:0,body:contribution('public')});docs.get(`clubs/${clubId}/members/alice`).joinedAt='membership-2';
@@ -106,7 +108,38 @@ test('trusted audience totals count unique riders once and never include another
   data=await list(null);assert.equal(data.stats.rides,1);assert.equal(data.stats.riders,1);
   data=await list('bob');assert.equal(data.stats.rides,3);assert.equal(data.stats.riders,2);
 });
-test('source incarnation change and cancelled Group correction remove stale totals without route duplication',async()=>{
+test('source incarnation change corrects stale totals without route duplication',async()=>{
   await call({method:'POST',revision:0,body:contribution('public')});docs.get('users/alice/sessions/ride-1').createdAt='new-source';
   assert.equal((await list(null)).entries.length,0);await backend.alarm();assert.equal((await list()).stats.distanceMeters,0);
+});
+test('normal updates cannot postpone an earlier reconciliation alarm',async()=>{
+  await call({method:'POST',revision:0,body:contribution()});storage.alarm=Date.now()+1000;const earlier=storage.alarm;
+  await call({method:'POST',revision:1,body:contribution('private')});assert.equal(storage.alarm,earlier);
+});
+test('completed participation requires actual admission and denies a banned rider',async()=>{
+  docs.set('groupSessions/group-2',{id:'group-2',clubId,state:'completed',activityType:'event',title:'Event',startsAt:2000000,createdAt:'group-source',category:'open'});
+  const body={sourceType:'group',sourceId:'group-2',audience:'members',consent:true};
+  assert.equal((await call({method:'POST',revision:0,body})).status,403);
+  docs.set('groupSessions/group-2/participants/alice',{uid:'alice'});docs.set('groupSessions/group-2/bans/alice',{uid:'alice'});
+  assert.equal((await call({method:'POST',revision:0,body})).status,403);
+});
+test('revoked technical role removes private role-audience entries and counters immediately',async()=>{
+  await call({method:'POST',revision:0,body:contribution('roles')});assert.equal((await list('admin')).stats.rides,1);
+  docs.get(`clubs/${clubId}/members/admin`).technicalRole='member';assert.equal((await list('admin')).entries.length,0);assert.equal((await list('admin')).stats.rides,0);
+});
+test('oversized/unknown input, injected paths, public default on private Club and absent consent fail closed',async()=>{
+  for(const body of [{...contribution(),sourceId:'../private'},{...contribution(),secret:'x'.repeat(2048)},{...contribution(),sourceType:'admin'}])
+    assert.equal((await call({method:'POST',revision:0,body})).status,400);
+  docs.get('clubs/'+clubId).visibility='private';
+  assert.equal((await call({uid:'owner',method:'PUT',revision:0,body:{defaultAudience:'public'}})).status,400);
+  assert.equal((await call({uid:null,method:'POST',revision:0,body:contribution()})).status,403);
+});
+test('out-of-page deleted sources cannot leak through aggregates; valid summaries reconcile conservatively',async()=>{
+  for(let n=0;n<12;n++){
+    const sourceId='ride-'+n;ride('alice',sourceId);docs.get('users/alice/sessions/'+sourceId).startedAt=1000000+n;
+    await call({method:'POST',revision:n,body:{...contribution('public'),sourceId}});
+  }
+  docs.set('users/alice/sessionTombstones/ride-0',{id:'ride-0'});docs.get('activityEpochs/alice').version++;
+  const data=await list(null);assert.equal(data.entries.length,10);assert.equal(data.stats.rides,10,'Only freshly revalidated current-epoch rows count, never the deleted off-page source');
+  await backend.alarm();await backend.alarm();assert.equal((await list(null)).stats.rides,11);
 });

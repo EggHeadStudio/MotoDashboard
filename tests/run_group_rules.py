@@ -39,7 +39,7 @@ def join(id,uid,allowed=True,extra=None,vehicle=None):
 def leave(id,uid,actor=None,removed=False,allowed=True):
     fields=r.read('ADMIN','groupSessions/'+id)
     writes=changes(id,fields,{'participantCount':r.decode(fields['participantCount'])-1,'lastParticipantUid':uid,'updatedAt':r.SERVER})
-    writes += [r.delete(f'groupSessions/{id}/participants/{uid}'),r.delete(f'users/{uid}/groupRefs/{id}')]
+    writes += [r.delete(f'groupSessions/{id}/participants/{uid}'),r.delete(f'users/{uid}/groupRefs/{id}'),r.activity_epoch(uid,id)]
     if removed:writes.append(r.update(f'groupSessions/{id}/bans/{uid}',dict(uid=uid,removedBy=actor,removedAt=r.SERVER)))
     r.commit(actor or uid,writes,allowed,label='Group leave/remove '+uid)
 def invite(id,uid,days=6):

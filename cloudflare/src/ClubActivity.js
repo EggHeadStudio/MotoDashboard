@@ -1,5 +1,5 @@
 import {verifyMediaAccount} from './mediaFirestore.js';
-import {activityReader,clubAudience,canReadActivity,verifyActivitySource,activityIsCurrent,publicActivity,adjustActivityStats,visibleActivityStats,audiences} from './clubActivityPolicy.js';
+import {activityReader,clubAudience,canReadActivity,verifyActivitySource,activityIsCurrent,publicActivity,adjustActivityStats,visibleActivityStats,currentActivityProofs,audiences} from './clubActivityPolicy.js';
 
 // One serialized bounded ledger per immutable Club, no browser counter or Firestore writer.
 export class ClubActivity{
@@ -19,22 +19,26 @@ export class ClubActivity{
       const data=await this.ctx.storage.get('ledger') || {clubId,revision:0,entries:{},stats:{},defaultAudience:'private',checkedAt:Date.now(),cursor:0};
       if(data.clubId!==clubId)throw Error('access_denied');
       // Bounded caller rates stay private inside this Club's DO and expire by minute.
-      const caller=identity?.uid || request.headers.get('X-MotoDash-Caller'),minute=Math.floor(Date.now()/60000);
+      const caller=identity?'uid:'+identity.uid:'ip:'+request.headers.get('X-MotoDash-Caller'),minute=Math.floor(Date.now()/60000);
       const rate=await this.ctx.storage.get('rate') || {minute,callers:{}};if(rate.minute!==minute){rate.minute=minute;rate.callers={};}
       if(!caller || (rate.callers[caller] || 0)>=30 || Object.keys(rate.callers).length>=200 && !rate.callers[caller])throw Error('rate_limited');
       rate.callers[caller]=(rate.callers[caller] || 0)+1;await this.ctx.storage.put('rate',rate);
       if(request.method==='GET'&&!entryId){
         const cursor=url.searchParams.get('cursor');if([...url.searchParams.keys()].some(k=>k!=='cursor')||cursor&&!/^[0-9a-f-]{36}$/.test(cursor))throw Error('bad_request');
-        const rows=Object.values(data.entries).sort((a,b)=>b.summary.startedAt-a.summary.startedAt||a.id.localeCompare(b.id));
+        const rows=Object.values(data.entries).filter(entry=>canReadActivity(entry,viewer)).sort((a,b)=>b.summary.startedAt-a.summary.startedAt||a.id.localeCompare(b.id));
         const start=cursor?rows.findIndex(row=>row.id===cursor)+1:0;if(cursor&&start===0)throw Error('conflict');
-        const page=rows.slice(start,start+10),entries=[];
+        const page=rows.slice(start,start+10),entries=[];let reconciled=false;
         // Check current source/member incarnation even when a stale ledger entry remains.
         for(const entry of page){if(!canReadActivity(entry,viewer))continue;
-          try{const source=await verifyActivitySource(read,clubId,entry.uid,entry.sourceType,entry.sourceId);if(activityIsCurrent(entry,source))entries.push(publicActivity(entry,viewer));}
+          try{const source=await verifyActivitySource(read,clubId,entry.uid,entry.sourceType,entry.sourceId);if(activityIsCurrent(entry,source)){
+            if(entry.epoch!==source.epoch){adjustActivityStats(data.stats,entry,-1);entry.epoch=source.epoch;adjustActivityStats(data.stats,entry,1);reconciled=true;}
+            entries.push(publicActivity(entry,viewer));}}
           catch(error){if(!['access_denied','bad_request'].includes(error.message))throw error;}
         }
+        if(reconciled){data.revision++;await this.ctx.storage.put('ledger',data);}
+        const proofs=await currentActivityProofs(read,clubId,data.stats,viewer);
         return reply({revision:data.revision,entries,next:start+page.length<rows.length?page.at(-1)?.id:null,
-          stats:visibleActivityStats(data.stats,viewer),checkedAt:data.checkedAt,defaultAudience:data.defaultAudience,canManage:viewer.role==='owner'});
+          stats:visibleActivityStats(data.stats,viewer,proofs),checkedAt:data.checkedAt,defaultAudience:data.defaultAudience,canManage:viewer.role==='owner'});
       }
       if(!identity)throw Error('invalid_token');
       if(url.search)throw Error('bad_request');
@@ -62,7 +66,8 @@ export class ClubActivity{
         data.defaultAudience=body.defaultAudience;changed=true;
       }else throw Error('bad_request');
       if(changed){data.revision++;if(new TextEncoder().encode(JSON.stringify(data)).byteLength>100000)throw Error('quota');
-        await this.ctx.storage.put('ledger',data);await this.ctx.storage.setAlarm(Date.now()+3600000);}
+        await this.ctx.storage.put('ledger',data);
+        const alarm=await this.ctx.storage.getAlarm();if(!alarm||alarm>Date.now()+3600000)await this.ctx.storage.setAlarm(Date.now()+3600000);}
       return reply({revision:data.revision});
     }catch(error){const code=['access_denied','invalid_token','bad_request','conflict','quota','rate_limited'].includes(error.message)?error.message:'unavailable';
       return reply({error:code},{access_denied:403,invalid_token:401,bad_request:400,conflict:409,quota:429,rate_limited:429}[code] || 503);}
@@ -74,6 +79,7 @@ export class ClubActivity{
       for(const key of page){const entry=data.entries[key];try{
         const source=await verifyActivitySource(read,data.clubId,entry.uid,entry.sourceType,entry.sourceId);
         if(!activityIsCurrent(entry,source))throw Error('access_denied');
+        if(entry.epoch!==source.epoch){adjustActivityStats(data.stats,entry,-1);entry.epoch=source.epoch;adjustActivityStats(data.stats,entry,1);changed=true;}
       }catch(error){if(['access_denied','bad_request'].includes(error.message)){adjustActivityStats(data.stats,entry,-1);delete data.entries[key];changed=true;}
         else{await this.ctx.storage.setAlarm(Date.now()+3600000);return;}}
       }

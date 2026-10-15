@@ -4,6 +4,7 @@ import { groupInput, groupPage, lobbyEligible } from '../data/group-session.js';
 import { loadClub } from './clubRepository.js';
 import { effectiveGroup, groupDeadline, EARLY_START_MS } from '../data/group-lifecycle.js';
 import {notificationWrite} from './notificationRepository.js';
+import {invalidateGroupActivity} from './activityEpoch.js';
 
 const checkId = id => { if (!validId(id)) throw dataError('invalid-input'); };
 const ref = (s, id, ...parts) => s.sdk.doc(s.db, 'groupSessions', id, ...parts);
@@ -178,6 +179,7 @@ export async function leaveGroup(uid,id) {
   await admissionTransaction(uid,id,(tx,s,group,participant)=>{
     if(!participant) return;
     tx.delete(ref(s,id,'participants',uid));tx.delete(indexRef(s,uid,id));
+    invalidateGroupActivity(tx,s,uid,id);
     saveGroup(tx,s,group,{participantCount:group.participantCount-1,lastParticipantUid:uid});
   });
 }
@@ -200,6 +202,7 @@ export async function removeGroupParticipant(uid,id,target) {
     const participant=await tx.get(ref(s,id,'participants',target));
     if(!participant.exists() || group.creatorUid===target || uid===target) throw dataError('permission-denied');
     tx.delete(ref(s,id,'participants',target));tx.delete(indexRef(s,target,id));
+    invalidateGroupActivity(tx,s,target,id);
     tx.set(ref(s,id,'bans',target),{uid:target,removedBy:uid,removedAt:stamp(s)});
     saveGroup(tx,s,group,{participantCount:group.participantCount-1,lastParticipantUid:target});
   });

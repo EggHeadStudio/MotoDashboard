@@ -40,6 +40,12 @@ def update(path, data):
     return result
 
 def delete(path): return {'delete':NAME+path}
+def activity_epoch(uid,group_id=None):
+    # Test fixture construction only; real organizer clients use a blind increment.
+    code,body=request('GET','/activityEpochs/'+uid,'ADMIN')
+    assert code in [200,404]
+    version=decode(body['fields']['version'])+1 if code==200 else 1
+    return update('activityEpochs/'+uid,dict(uid=uid,version=version,groupId=group_id,updatedAt=SERVER))
 
 def request(method,path,uid=None,data=None):
     headers={'Content-Type':'application/json'}

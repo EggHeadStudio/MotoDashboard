@@ -45,6 +45,7 @@ export const getFirestore = app => ({app});
 export const doc = (_, ...parts) => parts.join('/');
 export const collection = (_, ...parts) => parts.join('/');
 export const serverTimestamp = () => ({__serverTimestamp:true});
+export const increment = value => ({__increment:value});
 function read() { return JSON.parse(localStorage.getItem('__mockProfiles') || '{}'); }
 function write(ref,data) {
   if(window.__mock.denyProfile) throw Object.assign(new Error('Denied'),{code:'permission-denied'});
@@ -57,7 +58,10 @@ export async function runTransaction(_,fn) {
   const result=await fn({get:async ref=>snap(ref,read()[ref]),set:(ref,data)=>staged.push(['set',ref,data]),
     update:(ref,changes)=>staged.push(['set',ref,{...read()[ref],...changes}]),delete:ref=>staged.push(['delete',ref])});
   const records=read();
-  for(const [operation,ref,data] of staged) { if(operation==='delete') delete records[ref]; else records[ref]=data; }
+  for(const [operation,ref,data] of staged) { if(operation==='delete') delete records[ref]; else {
+    const resolved={...data};for(const [key,value] of Object.entries(resolved))if(value?.__increment!==undefined)resolved[key]=(records[ref]?.[key] || 0)+value.__increment;
+    records[ref]=resolved;
+  } }
   localStorage.setItem('__mockProfiles',JSON.stringify(records)); window.__mock.writes+=staged.length;window.dispatchEvent(new Event('__mockFirestoreChanged'));
   return result;
 }

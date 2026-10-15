@@ -416,7 +416,9 @@ service cloud.firestore {
       allow create: if owns(uid) && identifier(id)
         && request.resource.data.keys().hasAll(['id', 'ownerUid', 'deletedAt'])
         && request.resource.data.keys().hasOnly(['id', 'ownerUid', 'deletedAt'])
-        && request.resource.data.id == id && request.resource.data.ownerUid == uid && request.resource.data.deletedAt == request.time;
+        && request.resource.data.id == id && request.resource.data.ownerUid == uid && request.resource.data.deletedAt == request.time
+        && (!exists(/databases/$(database)/documents/activityEpochs/$(uid))
+          || activityInvalidated(uid));
       allow update, delete: if false;
     }
     function clubPath(id) { return /databases/$(database)/documents/clubs/$(id); }
@@ -809,6 +811,7 @@ service cloud.firestore {
             || groupVehicle(request.resource.data, uid));
         allow delete: if groupAvailable(id) && uid != get(groupPath(id)).data.creatorUid
           && (owns(uid) || groupManager(id)) && !existsAfter(groupIndex(id, uid))
+          && activityInvalidated(uid)
           && getAfter(groupPath(id)).data.participantCount == get(groupPath(id)).data.participantCount - 1
           && getAfter(groupPath(id)).data.lastParticipantUid == uid
           && (owns(uid) || (existsAfter(groupBan(id, uid)) && getAfter(groupBan(id, uid)).data.removedAt == request.time));
@@ -864,6 +867,25 @@ service cloud.firestore {
         && request.resource.data.uid == uid && request.resource.data.sessionId == id && request.resource.data.joinedAt == request.time;
       allow update: if false;
       allow delete: if signedIn() && (owns(uid) || groupManager(id)) && !existsAfter(groupMember(id, uid));
+    }
+    function activityInvalidated(uid){
+      let path=/databases/$(database)/documents/activityEpochs/$(uid);
+      return existsAfter(path) && getAfter(path).data.updatedAt == request.time
+        && getAfter(path).data.version == (exists(path)?get(path).data.version+1:1);
+    }
+    // A monotonic private invalidation proof prevents stale aggregate disclosure.
+    match /activityEpochs/{uid}{
+      allow get: if owns(uid);
+      allow create,update: if signedIn() && request.resource.data.keys().hasAll(['uid','version','groupId','updatedAt'])
+        && request.resource.data.keys().hasOnly(['uid','version','groupId','updatedAt'])
+        && request.resource.data.uid == uid && request.resource.data.updatedAt == request.time
+        && request.resource.data.version is int && request.resource.data.version > 0 && request.resource.data.version <= 1000000000
+        && request.resource.data.version == (exists(/databases/$(database)/documents/activityEpochs/$(uid))?resource.data.version+1:1)
+        && (request.resource.data.groupId == null || identifier(request.resource.data.groupId))
+        && (owns(uid) || identifier(request.resource.data.groupId) && groupManager(request.resource.data.groupId)
+          && exists(groupMember(request.resource.data.groupId,uid)) && !existsAfter(groupMember(request.resource.data.groupId,uid))
+          && !existsAfter(groupIndex(request.resource.data.groupId,uid)));
+      allow list,delete: if false;
     }
     // RSVP expresses intent only. It is never used by groupAdmission/live authority.
     function attendancePath(id,uid){return /databases/$(database)/documents/groupSessions/$(id)/attendance/$(uid);}

@@ -107,9 +107,11 @@ No production provisioning or deployment performed.
 M10: audience-scoped rides/hours/distance/unique riders and separate Group/Meet/Event
 participations are presented from trusted atomic per-audience/per-rider summaries.
 One personal source contributes once per Club; Group participation adds no duplicate
-mileage. Rider withdrawal corrects immediately. Source deletion/incarnation/membership
-changes deny entry reads immediately and reconcile counters in hourly 10-entry
-sweeps (up to 10 hours at capacity, longer on outage), explicitly shown in the UI.
+mileage. Rider withdrawal corrects immediately. Final hardening below couples
+deletion/departure to a monotonic proof, excluding stale aggregates immediately.
+Valid remaining summaries reconcile on page reads/hourly ten-entry sweeps; counts
+may temporarily understate activity until reconciliation finishes (up to ten hours
+at capacity, longer on outage). The UI explains this conservative behavior.
 No full Firestore-history scan or browser counter. Thirteen backend groups and ten
 focused browser groups pass, including private aggregate isolation/unique riders.
 
@@ -132,3 +134,16 @@ Regression exposed queued panel-close events overriding a newly opened deep link
 stale close events now leave the newer panel/watch intact. All six Group browser
 groups, three Club groups and twelve focused 8.5 groups pass. Legacy tests enter the
 visible Edit controls; no security expectations are relaxed. Full matrix follows.
+
+M13 privacy hardening: final review found that source-denied rows alone did not
+prevent their old metrics appearing in aggregates before cleanup. Private monotonic
+activityEpochs now couple ride tombstones and every Group departure/removal to an
+atomic invalidation. Owner-only reads; organizers can only blind-increment another
+epoch with an authorized paired removal, never read it or change private profiles.
+Worker aggregates are bucketed by epoch and membership incarnation and verify
+current proofs in a bounded batch per contributing rider, without scanning personal
+history. Old proofs never regain validity. Page reads/alarms reconcile surviving
+valid rows; stale totals cannot expose an off-page deleted source. New actual Rules
+tests cover missing/rollback/foreign/paired/blind-transform operations and Club
+organizer access-call limits. **119 cumulative new Rules**, **18 Club backend
+groups** and **13 focused browser groups** pass. No new IAM, secret or index.

@@ -92,6 +92,7 @@ test('Club activity native SQLite gateway verifies consent/source/privacy and ne
   docs.set('clubs/'+id,{id,name:'Activity Club',ownerUid:'activity-owner',state:'active',visibility:'public'});
   docs.set(`clubs/${id}/members/activity-owner`,{uid:'activity-owner',technicalRole:'owner',rankId:null,joinedAt:'member-source'});
   docs.set('displayProfiles/activity-owner',{displayName:'Activity Rider'});
+  docs.set('activityEpochs/activity-owner',{uid:'activity-owner',version:1,groupId:null});
   docs.set('users/activity-owner/sessions/activity-ride',{id:'activity-ride',ownerUid:'activity-owner',status:'completed',uploadState:'ready',visibility:'private',
     startedAt:Date.now()-10000,createdAt:'ride-source',distanceMeters:1000,movingDurationMs:60000,category:'motorcycle'});
   const request=async(uid,options={})=>mf.dispatchFetch(base,{...options,headers:{Origin:origin,...(uid?{Authorization:'Bearer '+await token(uid)}:{}),...options.headers}});
@@ -103,8 +104,8 @@ test('Club activity native SQLite gateway verifies consent/source/privacy and ne
   assert.equal((await request('activity-owner',{method:'POST',headers:{'If-Match':'0'},body})).status,409);
   assert.equal((await request(null,{headers:{Origin:'https://evil.test'}})).status,403);
   docs.get('clubs/'+id).visibility='private';assert.equal((await request(null)).status,403);
-  docs.get('clubs/'+id).visibility='public';docs.set('users/activity-owner/sessionTombstones/activity-ride',{id:'activity-ride'});
-  assert.equal((await (await request(null)).json()).entries.length,0);
+  docs.get('clubs/'+id).visibility='public';docs.set('users/activity-owner/sessionTombstones/activity-ride',{id:'activity-ride'});docs.get('activityEpochs/activity-owner').version++;
+  const deleted=await (await request(null)).json();assert.equal(deleted.entries.length,0);assert.equal(deleted.stats.rides,0);
   docs.get('clubs/'+id).state='deleted';assert.equal((await request('activity-owner')).status,403);
 });
 const mediaProfile='11111111-1111-4111-8111-111111111111';

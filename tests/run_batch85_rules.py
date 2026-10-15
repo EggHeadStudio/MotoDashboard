@@ -82,8 +82,36 @@ def attendance_tests():
     assert sorted(codes)==[200,403],codes;r.checks+=1
     r.read(owner,f'groupSessions/{sid}/attendanceSummary/current')
 
+def epoch_tests():
+    uid='epoch85';path='activityEpochs/'+uid
+    r.commit('ADMIN',[r.delete(path),r.delete('users/'+uid+'/sessionTombstones/source85')])
+    initial=dict(uid=uid,version=1,groupId=None,updatedAt=r.SERVER)
+    r.commit(uid,[r.update(path,initial)]);r.read(uid,path)
+    for actor in ['other85',None]:r.read(actor,path,False);r.commit(actor,[r.update(path,{**initial,'version':2})],False)
+    r.query(uid,'','activityEpochs',False);r.commit(uid,[r.delete(path)],False)
+    for version in [0,1,-1,1000000001]:r.commit(uid,[r.update(path,{**initial,'version':version})],False)
+    r.commit(uid,[r.update(path,{**initial,'version':2,'technicalRole':'admin'})],False)
+    r.commit(uid,[r.update(path,{**initial,'version':2})])
+    tomb='users/'+uid+'/sessionTombstones/source85';data=dict(id='source85',ownerUid=uid,deletedAt=r.SERVER)
+    r.commit(uid,[r.update(tomb,data)],False,'Deletion must atomically invalidate aggregate proof')
+    r.commit(uid,[r.update(tomb,data),r.update(path,{**initial,'version':3})])
+    r.commit(uid,[r.update(path,{**initial,'version':2})],False,'Epoch cannot roll back')
+    owner='epoch-organizer85';r.commit('ADMIN',[r.update('displayProfiles/'+owner,dict(displayName='Rider '+owner,updatedAt=r.SERVER))])
+    group=g.group(owner);sid=group['id'];r.commit(owner,g.bootstrap(group));g.join(sid,uid)
+    fields=r.read(owner,'groupSessions/'+sid)
+    removal=g.changes(sid,fields,{'participantCount':1,'lastParticipantUid':uid,'updatedAt':r.SERVER})+[r.delete(f'groupSessions/{sid}/participants/{uid}'),r.delete(f'users/{uid}/groupRefs/{sid}')]
+    r.commit(uid,removal,False,'Departure must invalidate aggregate proof')
+    blind=r.update(path,dict(uid=uid,groupId=sid,updatedAt=r.SERVER));blind['updateMask']={'fieldPaths':['uid','groupId']}
+    blind['updateTransforms'].append({'fieldPath':'version','increment':{'integerValue':'1'}})
+    r.commit(owner,[blind],False,'Organizer cannot invalidate another user without paired removal')
+    r.commit(owner,removal+[blind,r.update(f'groupSessions/{sid}/bans/{uid}',dict(uid=uid,removedBy=owner,removedAt=r.SERVER))])
+    r.read(owner,path,False);r.read(uid,path)
+    cg=g.group('identity85');cg.update(clubId='club85-current',clubName='Club club85-current')
+    r.commit('identity85',g.bootstrap(cg));g.join(cg['id'],'epoch-member85')
+    g.leave(cg['id'],'epoch-member85',actor='identity85',removed=True)
+
 def run():
-    compile_rules();r.checks=0;identity_tests();group_identity_tests();attendance_tests()
+    compile_rules();r.checks=0;identity_tests();group_identity_tests();attendance_tests();epoch_tests()
     for path in ['clubActivities/forged','clubs/club85-current/activity/forged','users/identity85/clubActivity/forged']:
         for actor in ['identity85','other85',None]:
             r.commit(actor,[r.update(path,{'rides':999,'uid':'identity85'})],False);r.read(actor,path,False)

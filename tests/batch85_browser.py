@@ -154,4 +154,9 @@ def run_batch85_tests(browser,base,route_map):
             assert p.locator('#club-activity .activity-card').is_visible()
     assert not errors,errors
     print('PASS: Batch 8.5 Club content/editor/long translated labels fit portrait, landscape and desktop in English/Finnish')
+    proof=p.evaluate('''async()=>{const uid=(await import('./js/auth-state.js')).getAccount().uid,read=()=>JSON.parse(localStorage.getItem('__mockProfiles'));
+      const before=read()['activityEpochs/'+uid].version;await(await import('./js/firebase/sessionRepository.js')).deleteCloudSession(uid,'ride-fixture');
+      const rows=read();return rows['activityEpochs/'+uid].version===before+1 && !!rows['users/'+uid+'/sessionTombstones/ride-fixture'];}''')
+    assert proof and not errors,errors
+    print('PASS: Batch 8.5 ride deletion advances the private aggregate invalidation in the tombstone transaction')
     c.close()

@@ -8,6 +8,7 @@ import {guardEditor,acceptEdits,editOnly} from './edit-mode.js';
 import {formatDate,formatDuration,formatDistanceKm} from '../utils.js';
 import {t} from '../i18n/i18n.js';
 import {renderActivityStats} from './activity-stats.js';
+import {ensureActivityEpoch} from '../firebase/activityEpoch.js';
 
 export function contributionButton(root,{sourceType='ride',sourceId,clubId=null,session=null}){
   if(!getAccount()||session&&session.ownerUid!==getAccount()?.uid)return;
@@ -33,7 +34,7 @@ async function contributionEditor({sourceType,sourceId,clubId,session}){
     form.append(labelText(element('p','muted'),'activity.summaryOnly'));const save=button('common.save');save.type='submit';save.disabled=!clubs.length;form.append(save,button('common.cancel',()=>view.node.close()));
     form.addEventListener('submit',async event=>{
       event.preventDefault();if(!form.reportValidity()||!consent.checked)return;save.disabled=true;labelText(view.status,'common.loading');
-      try{const current=await activityRequest(club.value);await activityRequest(club.value,{method:'POST',revision:current.revision,
+      try{await ensureActivityEpoch(owner);const current=await activityRequest(club.value);await activityRequest(club.value,{method:'POST',revision:current.revision,
         body:{sourceType,sourceId,audience:audience.value,consent:true,publicConsent:publicConsent.checked}});
         if(owner===getAccount()?.uid){acceptEdits(view.body);view.node.close();dispatchEvent(new Event('motodash-activity-updated'));}
       }catch(error){if(owner===getAccount()?.uid&&view.node.open)labelText(view.status,activityError(error));}finally{save.disabled=false;}

@@ -62,8 +62,11 @@ export async function deleteCloudSession(uid,id) {
   const service=await ownDatabase(uid, 'ride-history'); const {db,sdk}=service;
   const tomb=sdk.doc(db,'users',uid,'sessionTombstones',id);
   await boundedRequest(sdk.runTransaction(db,async tx=>{
-    const old=await tx.get(tomb);service.assertCurrent();
-    if(!old.exists()) tx.set(tomb,{id,ownerUid:uid,deletedAt:sdk.serverTimestamp()});
+    const [old,epoch]=await Promise.all([tx.get(tomb),tx.get(sdk.doc(db,'activityEpochs',uid))]);service.assertCurrent();
+    if(!old.exists()){
+      tx.set(tomb,{id,ownerUid:uid,deletedAt:sdk.serverTimestamp()});
+      if(epoch.exists())tx.set(sdk.doc(db,'activityEpochs',uid),{uid,version:epoch.data().version+1,groupId:null,updatedAt:sdk.serverTimestamp()});
+    }
   }));
   while(true) {
     service.assertCurrent();
