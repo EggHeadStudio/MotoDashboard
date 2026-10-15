@@ -51,3 +51,9 @@ image now hides the built-in icon, and failed/removed/replaced images restore it
 Resource refresh clears stale presentation classes and URLs. Three focused browser
 groups pass including custom-image precedence, replacement, deletion and 403 fallback.
 Existing Worker rank authorization/image upload tests are retained for M13.
+
+M4: accessible named palette buttons augment controlled theme presets across all
+shared media editors; Club colors/optional route color use native visual selection,
+preview, reset and black/white contrast selection instead of raw HEX entry. Existing
+values and strict backend validation remain. Theme Cancel restores the saved values.
+Four focused browser groups and the eight existing media groups pass.

@@ -11,6 +11,7 @@ import { listLobby } from './firebase/lobbyRepository.js';
 import { groupCard } from './ui/cards.js';
 import { sessionURL, followSessionURL } from './data/group-session.js';
 import { loadDisplayProfiles, searchDisplayProfiles } from './firebase/displayProfiles.js';
+import {colorField} from './ui/palette.js';
 
 const sections = new Set();
 export function registerClubSection(render) { sections.add(render); }
@@ -75,8 +76,8 @@ export function initClubUI() {
     field(form,'visibility','clubs.visibility',{choices:['public','unlisted','private'],prefix:'visibility',value:club?.visibility || 'public'});
     field(form,'membershipPolicy','clubs.policy',{choices:['open','approval','invite','private'],prefix:'policy',value:club?.membershipPolicy || 'open'});
     form.append(labelText(element('p','muted'),'clubs.policyHint'));
-    field(form,'primaryColor','clubs.primary',{type:'color',value:club?.primaryColor || '#263648'});
-    field(form,'accentColor','clubs.accent',{type:'color',value:club?.accentColor || '#ffd166'});
+    colorField(form,'primaryColor','clubs.primary',{value:club?.primaryColor || '#263648'});
+    colorField(form,'accentColor','clubs.accent',{value:club?.accentColor || '#ffd166'});
     const save=button('common.save');save.type='submit';form.append(save,button('common.cancel',()=>club?renderClub():renderBrowse()));
     form.addEventListener('submit',event=>{
       event.preventDefault();const input={...club,...Object.fromEntries(new FormData(form)),routeColor:club?.routeColor || null,

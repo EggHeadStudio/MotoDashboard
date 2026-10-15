@@ -12,6 +12,7 @@ import {t,onLanguageChange,setLocalizedText} from './i18n/i18n.js';
 import {vehicleIcon} from './ui/icons.js';
 import {decorateMedia,mountMediaGallery} from './media/media-render.js';
 import {mountMediaEditor} from './media/media-editor.js';
+import {decoratePalette} from './ui/palette.js';
 
 let epoch=0,loaded=null;
 export function publicProfileLink(identity,className='text-button') {
@@ -82,6 +83,7 @@ export function initPublicProfiles() {
       const unspecified=labelText(element('option'),'publicProfile.unspecified');unspecified.value='';category.append(unspecified);
       for(const id of CATEGORIES){const choice=labelText(element('option'),'category.'+id);choice.value=id;category.append(choice);}category.value=settings.category || '';
       const accent=field(form,'accent','publicProfile.accent',{choices:ACCENTS,prefix:'accent',value:settings.accent});
+      decoratePalette(accent);
       const banner=field(form,'banner','publicProfile.banner',{choices:BANNERS,prefix:'banner',value:settings.banner});
       const featured=field(form,'featuredVehicle','showcase.featured',{choices:[]});
       const none=labelText(element('option'),'publicProfile.none');none.value='';featured.append(none);

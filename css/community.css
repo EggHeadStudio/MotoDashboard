@@ -5,6 +5,11 @@
 .feature-header button,.feature-actions button,.edit-toolbar button{min-height:44px;}
 .feature-body h3,.feature-body p,.member-name{overflow-wrap:anywhere;}
 .edit-hint{font-size:.85rem;}
+.color-palette{display:flex;flex-wrap:wrap;gap:10px;margin-block:10px;}
+.color-swatch{width:44px;height:44px;min-width:44px;border:3px solid transparent;border-radius:50%;background:var(--swatch)!important;box-shadow:inset 0 0 0 2px #ffffff55;}
+.color-swatch[aria-pressed=true]{border-color:#fff;outline:2px solid var(--md-gold,#e9bf73);outline-offset:2px;}
+.color-swatch:focus-visible{outline:3px solid #fff;outline-offset:3px;}
+.color-preview{padding:16px;border-radius:12px;}
 .feature-dialog{padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));}
 .feature-body>.feature-card,.feature-body>.home-section{margin-block:16px;}
 .feature-body>.feature-actions{display:flex;flex-wrap:wrap;gap:8px;}

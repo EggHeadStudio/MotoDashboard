@@ -8,6 +8,7 @@ import { element, field, button, labelText, disclosure } from './ui/forms.js';
 import { vehicleIcon } from './ui/icons.js';
 import {mountMediaEditor} from './media/media-editor.js';
 import {decorateMedia} from './media/media-render.js';
+import {colorField} from './ui/palette.js';
 
 export function initClubBrandingUI() {
   registerClubSection(async ({model,uid,body,action,stillCurrent})=>{
@@ -36,9 +37,9 @@ export function initClubBrandingUI() {
     if(canBrand(role)) {
       const form=element('form');form.id='branding-form';
       field(form,'description','garage.description',{multiline:true,max:2000,value:club.description});
-      field(form,'primaryColor','clubs.primary',{type:'color',value:club.primaryColor});
-      field(form,'accentColor','clubs.accent',{type:'color',value:club.accentColor});
-      field(form,'routeColor','branding.route',{max:7,value:club.routeColor || ''});
+      colorField(form,'primaryColor','clubs.primary',{value:club.primaryColor});
+      colorField(form,'accentColor','clubs.accent',{value:club.accentColor});
+      colorField(form,'routeColor','branding.route',{value:club.routeColor,optional:true});
       field(form,'mapTheme','branding.mapTheme',{choices:THEMES,prefix:'themes',value:club.mapTheme});
       for(const key of LINK_KEYS) field(form,key,'link.'+key,{type:'url',max:500,value:club.links?.[key] || ''});
       form.append(labelText(element('p','muted'),'branding.httpsOnly'));

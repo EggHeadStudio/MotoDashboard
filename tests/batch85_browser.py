@@ -58,4 +58,14 @@ def run_batch85_tests(browser,base,route_map):
     p.wait_for_timeout(150);assert p.locator('#test-rank svg').is_visible() and not p.locator('#test-rank img').count()
     assert not errors,errors
     print('PASS: Batch 8.5 custom rank image precedence, replacement, deletion and unauthorized-image fallback')
+    result=p.evaluate('''async()=>{const {colorField,decoratePalette}=await import('./js/ui/palette.js');
+      const form=document.createElement('form');form.id='palette-test';document.body.append(form);
+      const c=colorField(form,'route','branding.route',{value:'#123456',optional:true});
+      const picker=form.querySelector('input[type=color]');picker.value='#6bbde9';picker.dispatchEvent(new Event('input'));
+      if(c.value!=='#6bbde9'||new FormData(form).get('route')!=='#6bbde9')throw Error('color value lost');
+      const {contrast,readableText}=await import('./js/data/branding.js');
+      if(contrast(c.value,readableText(c.value))<4.5)throw Error('contrast');
+      form.remove();return true;}''')
+    assert result and not errors,errors
+    print('PASS: Batch 8.5 visual color selection preserves legacy values, form serialization and readable contrast')
     c.close()
