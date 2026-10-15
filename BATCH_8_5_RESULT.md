@@ -103,3 +103,12 @@ the server. Original GPS routes stay owner-only. Limits: 100 contributions/Club,
 86 cumulative Rules assertions pass. Direct client activity/counter paths deny.
 Statistics foundation is in the same atomic ledger; M10 completes its presentation.
 No production provisioning or deployment performed.
+
+M10: audience-scoped rides/hours/distance/unique riders and separate Group/Meet/Event
+participations are presented from trusted atomic per-audience/per-rider summaries.
+One personal source contributes once per Club; Group participation adds no duplicate
+mileage. Rider withdrawal corrects immediately. Source deletion/incarnation/membership
+changes deny entry reads immediately and reconcile counters in hourly 10-entry
+sweeps (up to 10 hours at capacity, longer on outage), explicitly shown in the UI.
+No full Firestore-history scan or browser counter. Thirteen backend groups and ten
+focused browser groups pass, including private aggregate isolation/unique riders.

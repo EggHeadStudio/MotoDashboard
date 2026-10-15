@@ -7,6 +7,7 @@ import {element,labelText,button,field,dialog,openView,disclosure} from './forms
 import {guardEditor,acceptEdits,editOnly} from './edit-mode.js';
 import {formatDate,formatDuration,formatDistanceKm} from '../utils.js';
 import {t} from '../i18n/i18n.js';
+import {renderActivityStats} from './activity-stats.js';
 
 export function contributionButton(root,{sourceType='ride',sourceId,clubId=null,session=null}){
   if(!getAccount()||session&&session.ownerUid!==getAccount()?.uid)return;
@@ -43,12 +44,14 @@ async function contributionEditor({sourceType,sourceId,clubId,session}){
 export function initClubActivity(){
   registerClubSection(async({model,body,stillCurrent})=>{
     const root=element('section','feature-card');root.id='club-activity';const list=element('div'),status=element('p','feature-status');status.setAttribute('role','status');
-    const details=disclosure('activity.title',status,list);root.append(details);body.append(root);
+    const statistics=element('div');statistics.id='club-activity-stats';
+    const details=disclosure('activity.title',status,statistics,list);root.append(details);body.append(root);
     let loaded=false,busy=false;
     async function load(cursor=null){
       if(busy)return;busy=true;labelText(status,'common.loading');
       try{const data=await activityRequest(model.club.id,{cursor});if(!stillCurrent()||!root.isConnected)return;
         if(!cursor)list.replaceChildren();
+        renderActivityStats(statistics,data);list.querySelector('[data-activity-pagination]')?.remove();
         for(const entry of data.entries){
           const card=element('article','activity-card');card.append(element('h4','',entry.title || entry.displayName),element('p','',entry.displayName),
             labelText(element('span','badge'),entry.type==='ride'?'activity.ride':entry.type==='group'?'activity.ride':'activity.'+entry.type),
@@ -60,8 +63,9 @@ export function initClubActivity(){
             catch(error){if(stillCurrent())labelText(status,activityError(error));}}));list.append(card);
         }
         if(!data.entries.length&&!cursor)list.append(labelText(element('p','muted'),'activity.empty'));
-        if(data.next){const more=button('clubs.more',()=>{more.remove();void load(data.next);});list.append(more);}
-        const refresh=button('activity.refresh',()=>void load());list.append(refresh);status.textContent='';loaded=true;
+        const pagination=element('div','feature-actions');pagination.dataset.activityPagination='';
+        if(data.next){const more=button('clubs.more',()=>{more.remove();void load(data.next);});pagination.append(more);}
+        const refresh=button('activity.refresh',()=>void load());pagination.append(refresh);list.append(pagination);status.textContent='';loaded=true;
       }catch(error){if(stillCurrent()&&root.isConnected)labelText(status,activityError(error));}finally{busy=false;}
     }
     details.addEventListener('toggle',()=>{if(details.open&&!loaded)void load();});

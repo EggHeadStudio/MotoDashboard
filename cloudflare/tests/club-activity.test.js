@@ -98,3 +98,15 @@ test('disabled/expired Auth denies and owner defaults never publish anyone else'
   await call({method:'POST',revision:0,body:contribution('private')});
   await call({uid:'owner',method:'PUT',revision:1,body:{defaultAudience:'public'}});assert.equal((await list(null)).entries.length,0);
 });
+test('trusted audience totals count unique riders once and never include another private contribution',async()=>{
+  await call({method:'POST',revision:0,body:contribution('public')});ride('alice','ride-2');ride('bob','ride-1');
+  await call({method:'POST',revision:1,body:{...contribution('members'),sourceId:'ride-2'}});
+  await call({uid:'bob',method:'POST',revision:2,body:contribution('private')});
+  let data=await list('owner');assert.equal(data.stats.rides,2);assert.equal(data.stats.riders,1);assert.equal(data.stats.distanceMeters,20000);
+  data=await list(null);assert.equal(data.stats.rides,1);assert.equal(data.stats.riders,1);
+  data=await list('bob');assert.equal(data.stats.rides,3);assert.equal(data.stats.riders,2);
+});
+test('source incarnation change and cancelled Group correction remove stale totals without route duplication',async()=>{
+  await call({method:'POST',revision:0,body:contribution('public')});docs.get('users/alice/sessions/ride-1').createdAt='new-source';
+  assert.equal((await list(null)).entries.length,0);await backend.alarm();assert.equal((await list()).stats.distanceMeters,0);
+});

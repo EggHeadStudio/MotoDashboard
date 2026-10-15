@@ -23,6 +23,7 @@
 .rider-heading{position:absolute;top:-9px;left:15px;width:0;height:0;border:6px solid transparent;border-top:0;border-bottom:9px solid #e9bf73;}
 .activity-card{padding:16px 0;border-top:1px solid var(--md-line);}.activity-card h4{margin:8px 0;}.activity-card p{margin:8px 0;}
 .activity-card button{min-height:44px;}
+.activity-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:12px;}.activity-stats dd{margin:4px 0;font-size:1.3rem;font-weight:700;}.activity-stats dt{color:var(--md-muted,#b8bec8);font-size:.85rem;}
 .feature-dialog{padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));}
 .feature-body>.feature-card,.feature-body>.home-section{margin-block:16px;}
 .feature-body>.feature-actions{display:flex;flex-wrap:wrap;gap:8px;}
