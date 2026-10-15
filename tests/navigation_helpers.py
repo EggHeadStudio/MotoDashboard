@@ -41,6 +41,9 @@ def expand_controls(page, selector):
 
 def fill_control(page, selector, value):
     expand_controls(page, selector)
+    if page.locator(selector).get_attribute('type')=='hidden' and page.locator(selector+'-picker').count():
+        page.locator(selector+'-picker').evaluate('(node,value)=>{node.value=value;node.dispatchEvent(new Event("input",{bubbles:true}));}',value)
+        return
     page.fill(selector, value)
 
 def select_control(page, selector, value):
@@ -50,3 +53,11 @@ def select_control(page, selector, value):
 def click_control(page, selector):
     expand_controls(page, selector)
     page.click(selector)
+
+def management_click(locator):
+    """Enter the visible authorized Edit mode before using an existing management action."""
+    page=locator.page
+    toolbars=page.locator('dialog[open]:modal [data-edit-mode="view"] > .edit-toolbar')
+    if not toolbars.count():toolbars=page.locator('dialog[open] [data-edit-mode="view"] > .edit-toolbar')
+    if toolbars.count():toolbars.first.locator('button').first.click()
+    locator.click()

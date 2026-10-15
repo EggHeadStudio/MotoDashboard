@@ -60,7 +60,7 @@ export function mountMediaEditor(root,target,slots,{themeFields=['accent','secon
         if(token!==version||disposed)return;prepared=blob;if(previewURL)URL.revokeObjectURL(previewURL);previewURL=URL.createObjectURL(blob);preview.src=previewURL;preview.hidden=false;upload.disabled=false;status.textContent='';}
       catch(error){if(token===version&&!disposed){prepared=null;preview.hidden=true;labelText(status,mediaError(error));}}finally{if(token===version)progress.hidden=true;}
     }
-    input.addEventListener('change',()=>{file=input.files?.[0] || null;void prepare();});
+    input.addEventListener('change',()=>{file=input.files?.[0] || null;if(!file){version++;prepared=null;upload.disabled=true;preview.hidden=true;if(previewURL)URL.revokeObjectURL(previewURL);previewURL=null;return;}void prepare();});
     for(const node of [zoom,x,y,slot])node.addEventListener('input',()=>{upload.disabled=true;clearTimeout(timer);timer=setTimeout(()=>void prepare(),180);});
     form.addEventListener('submit',event=>{event.preventDefault();if(!prepared)return;void action(async()=>{
       progress.hidden=false;await uploadMedia(target,slot.value,prepared,resource.revision,published.checked,value=>{progress.value=value;},controller.signal);

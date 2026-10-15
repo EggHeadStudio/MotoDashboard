@@ -31,9 +31,10 @@ export function mountEditMode(root,{allowed=false,id='content-edit'}={}) {
   edit.setAttribute('aria-controls',root.id || root.closest('[id]')?.id || 'screen-host');
   const leave=discard=>{
     if(!mayLeaveEditor(root))return;
-    if(discard)for(const node of fields(root))if(baselines.has(node)){
-      if(node.type==='file'){node.value='';continue;}
+    for(const node of fields(root))if(baselines.has(node)){
+      if(node.type==='file'){node.value='';node.dispatchEvent(new Event('change',{bubbles:true}));continue;}
       if(node.type==='checkbox'||node.type==='radio')node.checked=baselines.get(node);else node.value=baselines.get(node);
+      node.dispatchEvent(new Event('change',{bubbles:true}));
     }
     acceptEdits(root);root.dataset.editMode='view';edit.hidden=false;done.hidden=cancel.hidden=true;edit.focus();
   };

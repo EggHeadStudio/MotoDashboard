@@ -1,3 +1,4 @@
+from navigation_helpers import management_click
 from navigation_helpers import click_action, expand_controls, fill_control, select_control, click_control
 """Batch 2 UI tests with SDK fixtures. Permissions are tested separately in the real emulator."""
 from firebase_mocks import install
@@ -45,12 +46,12 @@ def run_batch2_tests(browser,base,route_map):
     add_vehicle(page,'Road Bike','motorcycle'); add_vehicle(page,'Family Car','car')
     assert page.locator('#garage-dialog article').count()==2
     bike=page.locator('#garage-dialog article').filter(has_text='Road Bike')
-    bike.get_by_role('button',name='Edit',exact=True).click()
+    management_click(bike.get_by_role('button',name='Edit',exact=True))
     page.fill('#vehicle-form-nickname','Touring Bike')
     page.locator('#vehicle-form button[type=submit]').click()
     page.wait_for_selector('#garage-add')
     bike=page.locator('#garage-dialog article').filter(has_text='Touring Bike')
-    bike.get_by_role('button',name='Make default',exact=True).click()
+    management_click(bike.get_by_role('button',name='Make default',exact=True))
     page.wait_for_function('document.querySelector("#garage-dialog").textContent.includes("Default vehicle")')
     guard=page.evaluate("""async()=>{
       const {saveVehicle}=await import('./js/firebase/garageRepository.js');
@@ -160,7 +161,7 @@ def run_batch2_tests(browser,base,route_map):
     remote.wait_for_function('document.querySelector("#history-list").textContent.includes("Another device name")')
     remote.locator('.session-item').filter(has_text='Another device name').get_by_role('button',name='Rename',exact=True).click()
     remote.wait_for_function("Object.values(JSON.parse(localStorage.getItem('__mockProfiles'))).some(v=>v.name==='Renamed Cloud Ride' && v.uploadState==='ready')")
-    remote.locator('.session-item').filter(has_text='Renamed Cloud Ride').get_by_role('button',name='Delete',exact=True).click()
+    management_click(remote.locator('.session-item').filter(has_text='Renamed Cloud Ride').get_by_role('button',name='Delete',exact=True))
     remote.wait_for_function("!Object.values(JSON.parse(localStorage.getItem('__mockProfiles'))).some(v=>v.name==='Renamed Cloud Ride')")
     assert remote.evaluate("Object.keys(JSON.parse(localStorage.getItem('__mockProfiles'))).some(k=>k.includes('/sessionTombstones/'))")
     remote.reload(wait_until='networkidle')
@@ -168,7 +169,7 @@ def run_batch2_tests(browser,base,route_map):
     click_action(remote, '#history-btn')
     assert 'Renamed Cloud Ride' not in remote.locator('#history-list').inner_text()
     replica.close()
-    page.locator('#garage-dialog article').filter(has_text='Family Car').get_by_role('button',name='Delete',exact=True).click()
+    management_click(page.locator('#garage-dialog article').filter(has_text='Family Car').get_by_role('button',name='Delete',exact=True))
     page.wait_for_function('document.querySelectorAll("#garage-dialog article").length===1')
     assert any(r['vehicleSnapshot']['nickname']=='Family Car' for r in rides)
     page.select_option('#language-select','fi')

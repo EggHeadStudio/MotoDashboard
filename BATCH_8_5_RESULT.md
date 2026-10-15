@@ -121,3 +121,14 @@ cannot set a public default. Thirteen backend groups and eleven focused browser
 groups pass. No route preview is exposed: the optional preview is deliberately
 omitted, retaining owner-only full GPS routes. Public summaries support anonymous
 known-Club API reads; the existing Club browsing UI still requires sign-in.
+
+M12: consistency pass hides Group invitation management outside Edit, preserves
+ordinary joining/vehicle/status/approval actions, restores unsaved fields and crop
+state on Cancel, and guards showcase editing. Rank previews also prioritize the
+uploaded graphic. Profile photos survive unrelated Home refreshes; selected identity
+appears in participant rosters. Palette labels avoid nested interactive controls,
+statistics update their locale and EN/FI layouts pass at 320/390/844/1280 widths.
+Regression exposed queued panel-close events overriding a newly opened deep link;
+stale close events now leave the newer panel/watch intact. All six Group browser
+groups, three Club groups and twelve focused 8.5 groups pass. Legacy tests enter the
+visible Edit controls; no security expectations are relaxed. Full matrix follows.

@@ -13,6 +13,8 @@ import {liveClient} from './live/live-client.js';
 import {publicProfileLink} from './public-profile-ui.js';
 import {forgetActiveGroup} from './ride-context.js';
 import {getRidingIdentity} from './riding-identity.js';
+import {editOnly} from './ui/edit-mode.js';
+import {decorateMedia} from './media/media-render.js';
 
 export function initGroupParticipantsUI() {
   onRiderMotion(moving=>{
@@ -84,15 +86,21 @@ export function initGroupParticipantsUI() {
           const name=element('strong','participant-name',names.get(member.uid)?.displayName);if(!name.textContent) labelText(name,'identity.member');
           const avatar=element('span','profile-avatar','●');avatar.setAttribute('aria-hidden','true');
           const row=element('div','member-identity');row.append(avatar,publicProfileLink(names.get(member.uid),'participant-name') || name);card.append(row);
+          if(names.get(member.uid)?.publicProfileId)decorateMedia(avatar,{kind:'profile',id:names.get(member.uid).publicProfileId},{avatar},{theme:false});
           if(member.vehicle) card.append(element('p','',member.vehicle.nickname),labelText(element('p'),'category.'+member.vehicle.category));
-          if(member.clubIdentity) {
+          if(member.ridingIdentity?.kind==='club'){
+            const identity=member.ridingIdentity;card.append(element('p','',identity.clubName));
+            if(identity.rankName){const rank=element('p','member-rank',identity.rankName);card.append(rank);
+              if(identity.rankId){const graphic=element('span','rank-graphic');graphic.setAttribute('aria-hidden','true');rank.prepend(graphic);decorateMedia(graphic,{kind:'rank',id:identity.clubId,child:identity.rankId},{icon:graphic},{rank:true});}
+            }
+          }else if(member.clubIdentity) {
             card.append(element('p','',member.clubIdentity.name));
             if(member.clubIdentity.rank) card.append(element('p','member-rank',member.clubIdentity.rank));
           }
           card.append(labelText(element('p'),'riderStatus.'+member.status));
-          if(manager && member.uid!==group.creatorUid && member.uid!==uid) card.append(button('members.remove',()=>{
+          if(manager && member.uid!==group.creatorUid && member.uid!==uid) card.append(editOnly(button('members.remove',()=>{
             if(confirm(t('members.removeConfirm'))) action(owner=>repository.removeGroupParticipant(owner,id,member.uid));
-          }));roster.append(card);
+          })));roster.append(card);
         }
         if(page.more) {const more=button('clubs.more',()=>{more.remove();members(page.cursor).catch(error=>labelText(status,dataErrorKey(error)));});roster.append(more);}
       }
@@ -115,7 +123,7 @@ export function initGroupParticipantsUI() {
         });
       });
       form.addEventListener('submit',event=>{event.preventDefault();const target=recipient.value;action(owner=>repository.inviteGroup(owner,id,target));});
-      admission.append(disclosure('identity.invite',labelText(element('p','muted'),'discover.searchHint'),search,form));
+      admission.append(editOnly(disclosure('identity.invite',labelText(element('p','muted'),'discover.searchHint'),search,form)));
       async function requests(cursor=null) {
         const page=await repository.listGroupRecords(uid,id,'joinRequests',cursor);
         const names=await loadDisplayProfiles(uid,page.records.map(row=>row.uid));if(!stillCurrent()) return;

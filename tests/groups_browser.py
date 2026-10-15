@@ -1,3 +1,4 @@
+from navigation_helpers import management_click
 from navigation_helpers import click_action, expand_controls, fill_control, select_control, click_control
 """Group UI browser integration with SDK fixtures; rules are tested separately."""
 from firebase_mocks import install
@@ -90,11 +91,11 @@ def run_group_tests(browser,base,route_map):
     linked(page,ids[2],'Approval Event');page.click('#group-request')
     page.wait_for_function('document.querySelector("#groups-dialog").textContent.includes("request pending")')
     switch(page,'host@example.test');linked(page,ids[2],'Approval Event')
-    page.locator('[data-group-request-uid="fixture-1"]').get_by_role('button',name='Approve',exact=True).click()
+    management_click(page.locator('[data-group-request-uid="fixture-1"]').get_by_role('button',name='Approve',exact=True))
     page.wait_for_function('!document.querySelector("[data-group-request-uid=fixture-1]")')
     switch(page,'member@example.test');linked(page,ids[2],'Approval Event');page.click('#group-join');page.wait_for_selector('#group-leave')
     switch(page,'host@example.test');linked(page,ids[2],'Approval Event')
-    page.locator('[data-participant-uid="fixture-1"]').get_by_role('button',name='Remove member',exact=True).click()
+    management_click(page.locator('[data-participant-uid="fixture-1"]').get_by_role('button',name='Remove member',exact=True))
     page.wait_for_function('!document.querySelector("[data-participant-uid=fixture-1]")')
     switch(page,'member@example.test');linked(page,ids[2],'Approval Event')
     assert 'cannot rejoin' in page.locator('#groups-dialog').inner_text()
@@ -103,7 +104,7 @@ def run_group_tests(browser,base,route_map):
     fill_control(page, '#group-invite-search-name','Garage Rider');page.locator('#group-invite-search button[type=submit]').click()
     page.wait_for_selector('#group-invite-recipient option',state='attached');select_control(page, '#group-invite-recipient','fixture-1')
     page.locator('#group-invite button[type=submit]').click()
-    page.locator('[data-invitee-uid="fixture-1"]').get_by_role('button',name='Invitation link / QR',exact=True).click()
+    management_click(page.locator('[data-invitee-uid="fixture-1"]').get_by_role('button',name='Invitation link / QR',exact=True))
     page.wait_for_selector('.invitation-qr')
     url=page.locator('#group-share-dialog a').get_attribute('href')
     from PIL import Image

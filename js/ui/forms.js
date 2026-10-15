@@ -48,6 +48,7 @@ export function dialog(id, titleKey) {
   const close=node.close.bind(node);
   node.close=(...args)=>{if(mayLeaveEditor(body)){acceptEdits(body);close(...args);}};
   node.addEventListener('cancel',event=>{if(!mayLeaveEditor(body))event.preventDefault();});
+  node.addEventListener('close',()=>acceptEdits(body));
   mountPanel(node);
   return { node, body, status };
 }

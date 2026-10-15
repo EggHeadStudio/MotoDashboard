@@ -1,3 +1,4 @@
+from navigation_helpers import management_click
 from navigation_helpers import click_action, expand_controls, fill_control, select_control, click_control
 from firebase_mocks import install
 from batch2_browser import register
@@ -66,7 +67,7 @@ def run_club_tests(browser,base,route_map):
     back(page);lookup(page,clubs['approval']);page.click('#club-request')
     page.wait_for_function('document.querySelector("#clubs-dialog").textContent.includes("request pending")')
     switch(page,'owner@example.test');lookup(page,clubs['approval'])
-    page.locator('[data-request-uid="fixture-1"]').get_by_role('button',name='Reject',exact=True).click()
+    management_click(page.locator('[data-request-uid="fixture-1"]').get_by_role('button',name='Reject',exact=True))
     page.wait_for_function('!document.querySelector("[data-request-uid=fixture-1]")')
     switch(page,'member@example.test');lookup(page,clubs['approval'])
     assert 'request rejected' in page.locator('#clubs-dialog').inner_text()
@@ -74,7 +75,7 @@ def run_club_tests(browser,base,route_map):
     page.wait_for_selector('#club-request');page.click('#club-request')
     page.wait_for_function('document.querySelector("#clubs-dialog").textContent.includes("request pending")')
     switch(page,'owner@example.test');lookup(page,clubs['approval'])
-    page.locator('[data-request-uid="fixture-1"]').get_by_role('button',name='Approve',exact=True).click()
+    management_click(page.locator('[data-request-uid="fixture-1"]').get_by_role('button',name='Approve',exact=True))
     page.wait_for_function('!document.querySelector("[data-request-uid=fixture-1]")')
     back(page);lookup(page,clubs['private'])
     fill_control(page, '#club-invite-search-name','Garage Rider');page.locator('#club-invite-search button[type=submit]').click()
@@ -89,11 +90,11 @@ def run_club_tests(browser,base,route_map):
     page.on('dialog',lambda d:d.accept())
     page.click('#club-leave');page.wait_for_selector('#club-create')
     switch(page,'owner@example.test');lookup(page,clubs['open'])
-    page.click('#rank-add');page.fill('#rank-form-name','Captain');page.locator('#rank-form button[type=submit]').click()
-    page.wait_for_selector('#rank-add')
+    click_control(page,'#rank-add');page.fill('#rank-form-name','Captain');page.locator('#rank-form button[type=submit]').click()
+    page.wait_for_selector('#rank-add',state='attached')
     rank=page.evaluate('(id)=>Object.values(JSON.parse(localStorage.getItem("__mockProfiles"))).find(v=>v.name==="Captain" && v.displayOrder===0).id',clubs['open'])
     select_control(page, '#member-fixture-1-rankId',rank)
-    page.locator('#member-fixture-1 button[type=submit]').click();page.wait_for_selector('#rank-add')
+    page.locator('#member-fixture-1 button[type=submit]').click();page.wait_for_selector('#rank-add',state='attached')
     switch(page,'member@example.test');lookup(page,clubs['open'])
     assert 'Captain' in page.locator('[data-member-uid="fixture-1"]').inner_text()
     assert 'fixture-1' not in page.locator('[data-member-uid="fixture-1"]').inner_text()
@@ -112,7 +113,7 @@ def run_club_tests(browser,base,route_map):
     }""",clubs['open']);assert denial
     switch(page,'owner@example.test');lookup(page,clubs['open'])
     select_control(page, '#member-fixture-1-technicalRole','admin');page.locator('#member-fixture-1 button[type=submit]').click()
-    page.wait_for_selector('#rank-add')
+    page.wait_for_selector('#rank-add',state='attached')
     switch(page,'member@example.test');lookup(page,clubs['open'])
     assert page.locator('#rank-add').count() and page.locator('#club-admission').count()
     assert not page.locator('#member-fixture-0').count() and not page.locator('#member-fixture-1-technicalRole').count()
@@ -123,13 +124,13 @@ def run_club_tests(browser,base,route_map):
         try{await setMember(uid,id,target,role,null);}catch(e){if(e.code==='permission-denied')n++;}
       }return n;
     }""",clubs['open']);assert denial==2
-    page.locator('[data-rank-id]').get_by_role('button',name='Edit',exact=True).click()
-    page.fill('#rank-form-name','Road Lead');page.locator('#rank-form button[type=submit]').click();page.wait_for_selector('#rank-add')
+    management_click(page.locator('[data-rank-id]').get_by_role('button',name='Edit',exact=True))
+    page.fill('#rank-form-name','Road Lead');page.locator('#rank-form button[type=submit]').click();page.wait_for_selector('#rank-add',state='attached')
     assert 'Road Lead' in page.locator('[data-member-uid="fixture-1"]').inner_text()
-    page.locator('[data-rank-id]').get_by_role('button',name='Delete',exact=True).click();page.wait_for_selector('#rank-add')
+    management_click(page.locator('[data-rank-id]').get_by_role('button',name='Delete',exact=True));page.wait_for_selector('#rank-add',state='attached')
     assert 'No rank' in page.locator('[data-member-uid="fixture-1"]').inner_text()
     switch(page,'owner@example.test');lookup(page,clubs['open'])
-    select_control(page, '#member-fixture-1-technicalRole','host');page.locator('#member-fixture-1 button[type=submit]').click();page.wait_for_selector('#rank-add')
+    select_control(page, '#member-fixture-1-technicalRole','host');page.locator('#member-fixture-1 button[type=submit]').click();page.wait_for_selector('#rank-add',state='attached')
     switch(page,'member@example.test');lookup(page,clubs['open'])
     assert not page.locator('#rank-add').count() and not page.locator('#club-admission').count()
     switch(page,'owner@example.test');lookup(page,clubs['open'])
@@ -178,18 +179,18 @@ def run_club_tests(browser,base,route_map):
       }return n;
     }""",clubs['open']);assert denial==2
     switch(page,'owner@example.test');lookup(page,clubs['open'])
-    page.locator('#clubs-dialog').get_by_role('button',name='Archive Club',exact=True).click()
+    management_click(page.locator('#clubs-dialog').get_by_role('button',name='Archive Club',exact=True))
     page.wait_for_function('document.querySelector("#clubs-dialog").textContent.includes("Retirement is blocked")')
     assert not page.locator('#clubs-dialog').get_by_role('button',name='Retire Club permanently',exact=True).count()
     back(page);lookup(page,clubs['private'])
-    page.locator('#clubs-dialog').get_by_role('button',name='Archive Club',exact=True).click()
-    page.wait_for_selector('#clubs-dialog button:text("Retire Club permanently")')
+    management_click(page.locator('#clubs-dialog').get_by_role('button',name='Archive Club',exact=True))
+    page.wait_for_selector('#clubs-dialog button:text("Retire Club permanently")',state='attached');page.click('#club-edit')
     assert 'stored records remain inaccessible' in page.locator('#clubs-dialog').inner_text()
     page.select_option('#language-select','fi')
     page.locator('#clubs-dialog').get_by_role('button',name='Sulje kerho lopullisesti',exact=True).wait_for()
     assert 'Kerhoa ei voi avata uudelleen' in page.locator('#clubs-dialog').inner_text()
     page.select_option('#language-select','en')
-    page.locator('#clubs-dialog').get_by_role('button',name='Retire Club permanently',exact=True).click()
+    management_click(page.locator('#clubs-dialog').get_by_role('button',name='Retire Club permanently',exact=True))
     page.wait_for_selector('#club-create')
     retired=page.evaluate('(id)=>JSON.parse(localStorage.getItem("__mockProfiles"))',clubs['private'])
     assert retired['clubs/'+clubs['private']]['state']=='deleted'

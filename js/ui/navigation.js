@@ -70,6 +70,8 @@ export function mountPanel(node) {
   node.classList.add('page-panel'); node.setAttribute('role','region');
   document.getElementById('screen-host').append(node);
   node.addEventListener('close', () => {
+    // close events are queued; a newer deep link may already have reopened this panel.
+    if(node.open)return;
     if(silentClosures.delete(node)) return;
     if (navigating) return;
     const screen = panels[node.id] === 'rides' ? 'rides' : 'home';

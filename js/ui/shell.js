@@ -30,7 +30,8 @@ export function initShell() {
     const name=user && person?.uid===user.uid ? person.displayName : user?.displayName || t('identity.member');
     labelText(document.getElementById('home-title'),user?'home.greeting':'home.guest',{name});
     document.getElementById('profile-display-name').textContent=user?name:t('home.guest');
-    const avatar=document.getElementById('profile-avatar');avatar.replaceChildren(user?element('span','',name.trim().slice(0,2).toLocaleUpperCase()):icon('profile'));
+    const avatar=document.getElementById('profile-avatar'),key=(user?.uid || '')+':'+name;
+    if(avatar.dataset.identity!==key){avatar.dataset.identity=key;avatar.replaceChildren(user?element('span','',name.trim().slice(0,2).toLocaleUpperCase()):icon('profile'));}
     document.getElementById('profile-logout').hidden=!user;
     document.getElementById('profile-language').value=getLanguage();
   }
@@ -66,7 +67,7 @@ export function initShell() {
   }
   onAccountChange(({user})=>{
     if(uid===(user?.uid||null)) {identity();return;}
-    uid=user?.uid||null;epoch++;loading=false;loaded=false;groups=[];clubs=[];status.textContent='';render();
+    uid=user?.uid||null;epoch++;loading=false;loaded=false;groups=[];clubs=[];feed.replaceChildren();status.textContent='';render();
     if(uid) void refresh();
   });
   onDisplayIdentity(identity);listeners.add(stats);

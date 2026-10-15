@@ -1,3 +1,4 @@
+from navigation_helpers import management_click
 """Product navigation/discovery/error regressions. Mock SDK; never production data."""
 import os
 from pathlib import Path
@@ -48,7 +49,7 @@ def run_batch5_tests(browser,base,route_map):
     page.wait_for_function('document.querySelector("#auth-status").textContent.includes("profile is ready")');page.click('#account-close')
     open_garage(page);add_vehicle(page,'Desert Runner','motorcycle');
     assert page.locator('.vehicle-art svg').count()==1
-    page.locator('.vehicle-card').get_by_role('button',name='Make default',exact=True).click()
+    management_click(page.locator('.vehicle-card').get_by_role('button',name='Make default',exact=True))
     page.wait_for_function('document.querySelector(".vehicle-card").textContent.includes("Default vehicle")')
     page.locator('.vehicle-card').get_by_role('button',name='Choose for ride',exact=True).click()
     nav('home');assert 'Desert Runner' in page.locator('#selected-vehicle').inner_text()
@@ -110,7 +111,7 @@ def run_batch5_tests(browser,base,route_map):
     page.locator('#group-invite button').click();page.wait_for_selector('[data-invitee-uid]')
     duplicate=page.evaluate('''async id=>{try{await(await import('./js/firebase/groupRepository.js')).inviteGroup('fixture-0',id,'fixture-1');return null;}catch(e){return e.code;}}''',data['groups'][4])
     assert duplicate=='duplicate-invite'
-    page.locator('[data-invitee-uid]').get_by_role('button',name='Invitation link / QR',exact=True).click()
+    management_click(page.locator('[data-invitee-uid]').get_by_role('button',name='Invitation link / QR',exact=True))
     assert page.locator('dialog:modal').count()==1 and page.locator('#groups-dialog').is_visible()
     page.keyboard.press('Escape');assert page.locator('dialog:modal').count()==0
     done('registered recipient invite, duplicate guard and one modal QR layer with Escape')

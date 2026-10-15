@@ -6,6 +6,7 @@ import { dataErrorKey } from './firebase/access.js';
 import { getAccount, onAccountChange } from './auth-state.js';
 import { invitationQR } from './ui/qr.js';
 import { openView, dialog, element, labelText, button } from './ui/forms.js';
+import {editOnly} from './ui/edit-mode.js';
 
 export function initGroupInvitesUI() {
   const share=dialog('group-share-dialog','groups.invitation');
@@ -29,7 +30,7 @@ export function initGroupInvitesUI() {
     if(!['scheduled','active'].includes(group.state))return;
     if(group.visibility!=='private') body.append(button('groups.shareSession',()=>show(sessionURL(id),group.title),'group-share'));
     if(!manager)return;
-    const section=element('section');section.id='group-invitations';section.append(labelText(element('h3'),'groups.invitations'));body.append(section);
+    const section=editOnly(element('section'));section.id='group-invitations';section.append(labelText(element('h3'),'groups.invitations'));body.append(section);
     async function invites(cursor=null) {
       const page=await listGroupRecords(uid,id,'invites',cursor),names=await loadDisplayProfiles(uid,page.records.map(row=>row.uid));
       if(!stillCurrent())return;

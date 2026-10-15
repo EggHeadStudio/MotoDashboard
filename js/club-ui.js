@@ -78,7 +78,7 @@ export function initClubUI() {
     form.append(labelText(element('p','muted'),'clubs.policyHint'));
     colorField(form,'primaryColor','clubs.primary',{value:club?.primaryColor || '#263648'});
     colorField(form,'accentColor','clubs.accent',{value:club?.accentColor || '#ffd166'});
-    const save=button('common.save');save.type='submit';form.append(save,button('common.cancel',()=>club?renderClub():renderBrowse()));
+    const save=button('common.save');save.type='submit';form.append(save,button('common.cancel',()=>{if(mayLeaveEditor(view.body))return club?renderClub():renderBrowse();}));
     form.addEventListener('submit',event=>{
       event.preventDefault();const input={...club,...Object.fromEntries(new FormData(form)),routeColor:club?.routeColor || null,
         mapTheme:club?.mapTheme || 'normal',links:club?.links || {}};

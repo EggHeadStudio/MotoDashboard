@@ -7,7 +7,7 @@ function ensureCleanup(){if(observer)return;observer=new MutationObserver(()=>{
   for(const entry of active)if(!entry.node.isConnected){entry.dispose();active.delete(entry);}
 });observer.observe(document.body,{childList:true,subtree:true});}
 export function decorateMedia(node,target,placements={banner:node},options={}) {
-  ensureCleanup();let controller=new AbortController();const urls=[],images=[];let started=false,disposed=false,generation=0;
+  ensureCleanup();let controller=new AbortController(),initialResource=options.resource || null;const urls=[],images=[];let started=false,disposed=false,generation=0;
   if(options.rank)node.append(icon('shield'));
   const resetImages=()=>{for(const url of urls)releaseMediaURL(url);urls.length=0;for(const image of images)image.remove();images.length=0;
     for(const container of Object.values(placements)){container.classList.remove('has-media','has-rank-image');}};
@@ -15,7 +15,7 @@ export function decorateMedia(node,target,placements={banner:node},options={}) {
   active.add(entry);
   async function load(){if(started||disposed)return;started=true;const owner=getAccount()?.uid,token=++generation,signal=controller.signal;
     try {
-      const resource=await getMedia(target,signal);if(disposed||token!==generation||owner!==getAccount()?.uid)return;
+      const resource=initialResource || await getMedia(target,signal);initialResource=null;if(disposed||token!==generation||owner!==getAccount()?.uid)return;
       if(options.theme!==false)applyMediaTheme(options.themeRoot || node,resource.theme);
       if(options.rank){node.querySelector('svg')?.remove();node.prepend(icon(['shield','star','flag','wheel'].includes(resource.theme.icon)?resource.theme.icon:'shield'));}
       for(const [slot,container] of Object.entries(placements)) {
@@ -29,7 +29,7 @@ export function decorateMedia(node,target,placements={banner:node},options={}) {
     }catch(error){if(disposed||token!==generation)return;if(options.showError){const status=labelText(element('p','muted media-load-status'),mediaError(error));node.append(status);}}
   }
   function updated(event){const changed=event.detail?.target;if(!changed||changed.kind!==target.kind||changed.id!==target.id||changed.child!==target.child)return;
-    generation++;controller.abort();controller=new AbortController();resetImages();started=false;if(node.getClientRects().length)void load();}
+    generation++;initialResource=null;controller.abort();controller=new AbortController();resetImages();started=false;if(node.getClientRects().length)void load();}
   addEventListener('motodash-media-updated',updated);
   let visibility;
   if(typeof IntersectionObserver==='function'){visibility=new IntersectionObserver(entries=>{if(entries.some(e=>e.isIntersecting)){visibility.disconnect();void load();}});visibility.observe(node);}else void load();

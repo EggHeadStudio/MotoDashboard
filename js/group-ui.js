@@ -99,7 +99,7 @@ export function initGroupUI() {
         else {const id=await repository.createGroup(owner,data);if(getAccount()?.uid===owner) selectedId=id;}
       });
     });
-    view.body.replaceChildren(button('common.cancel',()=>action(()=>Promise.resolve())),form);
+    view.body.replaceChildren(button('common.cancel',()=>{if(mayLeaveEditor(view.body))return action(()=>Promise.resolve());}),form);
     guardEditor(view.body);labelText(view.status,'common.loaded');
   }
   async function open(id) {
@@ -142,7 +142,7 @@ export function initGroupUI() {
     if(!uid) signedOut(); else if(location.hash.startsWith('#/session/')) void linked();
     else if(view.node.open) action(()=>Promise.resolve(),()=>browse());
   });
-  view.node.addEventListener('close',unwatch);
+  view.node.addEventListener('close',()=>{if(!view.node.open)unwatch();});
   async function linked() {
     const match=/^#\/session\/([A-Za-z0-9_-]{1,100})(?:\/invite\/([A-Za-z0-9_-]{1,100}))?$/.exec(location.hash);
     if(!match) {

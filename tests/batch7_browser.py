@@ -1,3 +1,4 @@
+from navigation_helpers import management_click
 """Batch 7 browser integration fixtures; no live account/physical-device claim."""
 from firebase_mocks import install
 from batch2_browser import register,open_garage,add_vehicle
@@ -63,7 +64,7 @@ def run_batch7_tests(browser,base,route_map):
     open_garage(page);add_vehicle(page,'Selected Bike','motorcycle');add_vehicle(page,'Private Car','car')
     bike=page.locator('#garage-dialog .vehicle-card').filter(has=page.get_by_role('heading',name='Selected Bike',exact=True))
     assert 'Private · not shown on profile' in bike.inner_text()
-    bike.get_by_role('button',name='Show on profile',exact=True).click();page.wait_for_selector('#showcase-form')
+    management_click(bike.get_by_role('button',name='Show on profile',exact=True));page.wait_for_selector('#showcase-form')
     page.fill('#showcase-form-description','Public weekend trips');page.check('#showcase-form-consent');page.locator('#showcase-form button[type=submit]').click();page.wait_for_function('!document.getElementById("showcase-editor")')
     assert 'Selected · profile is Private' in bike.inner_text() and 'Featured vehicle' in bike.inner_text()
     page.locator('#garage-dialog').get_by_role('link',name='Preview as visitor',exact=True).click();page.wait_for_selector('#screen-rider h1')
@@ -72,9 +73,9 @@ def run_batch7_tests(browser,base,route_map):
     page.locator('#bottom-nav [data-destination=profile]').click();page.click('#public-profile-edit');page.wait_for_selector('#public-profile-form')
     page.select_option('#public-profile-form-visibility','public');page.locator('#public-profile-form button[type=submit]').click();page.wait_for_function('!document.getElementById("public-profile-editor")')
     open_garage(page);car=page.locator('#garage-dialog .vehicle-card').filter(has=page.get_by_role('heading',name='Private Car',exact=True))
-    car.get_by_role('button',name='Show on profile',exact=True).click();page.wait_for_selector('#showcase-form')
+    management_click(car.get_by_role('button',name='Show on profile',exact=True));page.wait_for_selector('#showcase-form')
     page.check('#showcase-form-consent');page.locator('#showcase-form button[type=submit]').click();page.wait_for_function('!document.getElementById("showcase-editor")')
-    car.get_by_role('button',name='Set as featured vehicle',exact=True).click();page.wait_for_function('document.querySelector("#garage-dialog").getAttribute("aria-busy")!=="true" && document.querySelector("#garage-dialog .feature-body").getAttribute("aria-busy")!=="true"')
+    management_click(car.get_by_role('button',name='Set as featured vehicle',exact=True));page.wait_for_function('document.querySelector("#garage-dialog").getAttribute("aria-busy")!=="true" && document.querySelector("#garage-dialog .feature-body").getAttribute("aria-busy")!=="true"')
     page.wait_for_function('Array.from(document.querySelectorAll("#garage-dialog .vehicle-card")).find(row=>row.textContent.includes("Private Car")).textContent.includes("Featured vehicle")')
     page.locator('#garage-dialog').get_by_role('link',name='Preview as visitor',exact=True).click();page.wait_for_selector('#screen-rider .vehicle-card')
     assert page.locator('#screen-rider .vehicle-card').count()==2 and page.locator('#screen-rider .vehicle-card h3').first.inner_text()=='Private Car'
@@ -85,7 +86,7 @@ def run_batch7_tests(browser,base,route_map):
     assert page.locator('#screen-rider .vehicle-card').count()==1 and 'Private Car' not in page.locator('#screen-rider').inner_text()
     open_garage(page);car=page.locator('#garage-dialog .vehicle-card').filter(has=page.get_by_role('heading',name='Private Car',exact=True))
     assert 'unavailable to visitors' in car.inner_text()
-    car.get_by_role('button',name='Hide from profile',exact=True).click();page.wait_for_function('Array.from(document.querySelectorAll("#garage-dialog .vehicle-card")).find(row=>row.textContent.includes("Private Car")).textContent.includes("Private · not shown")')
+    management_click(car.get_by_role('button',name='Hide from profile',exact=True));page.wait_for_function('Array.from(document.querySelectorAll("#garage-dialog .vehicle-card")).find(row=>row.textContent.includes("Private Car")).textContent.includes("Private · not shown")')
     print('PASS: Batch 7: visitor preview denies retained private source cards and direct Hide removes publication without deleting Garage')
     assert not errors,errors
     context.close()

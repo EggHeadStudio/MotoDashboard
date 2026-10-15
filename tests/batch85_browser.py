@@ -146,4 +146,12 @@ def run_batch85_tests(browser,base,route_map):
       form.remove();return true;}''')
     assert result and not errors,errors
     print('PASS: Batch 8.5 visual color selection preserves legacy values, form serialization and readable contrast')
+    for language in ['en','fi']:
+        p.select_option('#language-select',language)
+        for width,height in [(320,568),(390,844),(844,390),(1280,800)]:
+            p.set_viewport_size({'width':width,'height':height})
+            assert p.evaluate('document.documentElement.scrollWidth<=innerWidth'),(language,width,height)
+            assert p.locator('#club-activity .activity-card').is_visible()
+    assert not errors,errors
+    print('PASS: Batch 8.5 Club content/editor/long translated labels fit portrait, landscape and desktop in English/Finnish')
     c.close()

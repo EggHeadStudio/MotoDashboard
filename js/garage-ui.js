@@ -1,4 +1,4 @@
-import {mountEditMode,editOnly,guardEditor,mayLeaveEditor} from './ui/edit-mode.js';
+import {mountEditMode,editOnly,guardEditor,mayLeaveEditor,acceptEdits} from './ui/edit-mode.js';
 import { getAccount, onAccountChange } from './auth-state.js';
 import { t, onLanguageChange } from './i18n/i18n.js';
 import { CATEGORIES } from './data/schema.js';
@@ -37,8 +37,8 @@ export function initGarageUI() {
       const consent=field(form,'consent','showcase.consent',{type:'checkbox',required:true});
       const save=button('showcase.publish');save.type='submit';form.append(save);
       form.addEventListener('submit',event=>{event.preventDefault();if(!form.reportValidity()||!consent.checked)return;
-        void runAction(form,editor.status,async()=>{await publishShowcaseVehicle(uid,vehicle.id,description.value);if(current(uid)){await refresh();editor.node.close();}});
-      });editor.body.append(form);
+        void runAction(form,editor.status,async()=>{await publishShowcaseVehicle(uid,vehicle.id,description.value);if(current(uid)){await refresh();acceptEdits(editor.body);editor.node.close();}});
+      });editor.body.append(form,button('common.cancel',()=>editor.node.close()));guardEditor(editor.body);
       if(card)editor.body.append(button('showcase.remove',()=>void runAction(editor.body,editor.status,async()=>{await unpublishShowcaseVehicle(uid,vehicle.id);if(current(uid))editor.node.close();}),'showcase-remove'));
     }catch(error){if(current(uid))labelText(editor.status,dataErrorKey(error));}
   }
@@ -73,7 +73,7 @@ export function initGarageUI() {
     field(form, 'visibility', 'garage.visibility', { choices: ['private','club','public'], prefix: 'visibility', value: vehicle?.visibility || 'private' });
     form.append(labelText(element('p', 'muted'), 'garage.visibilityHint'));
     const save = button('common.save'); save.type = 'submit';
-    form.append(save, button('common.cancel', render));
+    form.append(save, button('common.cancel', ()=>{if(mayLeaveEditor(view.body))render();}));
     form.addEventListener('submit', event => {
       event.preventDefault(); const input = Object.fromEntries(new FormData(form));
       action(uid => saveVehicle(uid, vehicle?.id, input));
