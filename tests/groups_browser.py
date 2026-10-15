@@ -34,7 +34,7 @@ def run_group_tests(browser,base,route_map):
         assert page.locator('.group-meeting').inner_text()=='Private entrance behind the building'
         page.locator('#groups-dialog').get_by_role('button',name='Back to Group Sessions',exact=True).click();page.wait_for_selector('#group-create')
     page.locator(f'[data-group-id="{ids[0]}"]').get_by_role('button',name='Open',exact=True).click();page.wait_for_selector('#group-edit')
-    page.click('#group-edit');page.fill('#group-form-title','Updated Ride');page.locator('#group-form button[type=submit]').click();page.wait_for_selector('#group-edit')
+    page.click('#group-edit');page.click('#group-general-edit');page.fill('#group-form-title','Updated Ride');page.locator('#group-form button[type=submit]').click();page.wait_for_selector('#group-edit')
     assert 'Updated Ride' in page.locator('#groups-dialog').inner_text()
     page.click('#group-active');page.wait_for_selector('#group-completed')
     page.click('#group-completed');page.wait_for_function('document.querySelector("#groups-dialog").textContent.includes("Completed")')

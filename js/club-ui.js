@@ -1,3 +1,4 @@
+import {mountEditMode,editOnly,guardEditor,mayLeaveEditor} from './ui/edit-mode.js';
 import { getAccount, onAccountChange } from './auth-state.js';
 import { t, onLanguageChange } from './i18n/i18n.js';
 import { ACTIVITY_CATEGORIES } from './data/schema.js';
@@ -66,7 +67,7 @@ export function initClubUI() {
     if(more) view.body.append(button('clubs.more',()=>action(()=>Promise.resolve(),()=>browse(true))));
   }
   function edit(club) {
-    editing=true;view.body.replaceChildren();
+    if(!mayLeaveEditor(view.body))return;editing=true;view.body.replaceChildren();delete view.body.dataset.editMode;
     const form=element('form');form.id='club-form';
     field(form,'name','clubs.name',{max:80,required:true,value:club?.name});
     field(form,'description','garage.description',{multiline:true,max:2000,value:club?.description});
@@ -81,7 +82,7 @@ export function initClubUI() {
       event.preventDefault();const input={...club,...Object.fromEntries(new FormData(form)),routeColor:club?.routeColor || null,
         mapTheme:club?.mapTheme || 'normal',links:club?.links || {}};
       action(async owner=>{selectedId=club?club.id:await repository.createClub(owner,input);if(club) await repository.editClub(owner,club.id,input);},()=>openClub(selectedId));
-    });view.body.append(form);
+    });view.body.append(form);guardEditor(view.body);
   }
   async function openClub(id) {
     const owner=uid,token=++version;selectedId=id;editing=false;
@@ -128,15 +129,15 @@ export function initClubUI() {
       if(confirm(t('clubs.leaveConfirm'))) action(owner=>repository.removeMember(owner,club.id),()=>browse());
     },'club-leave'));
     if(role==='owner') {
-      view.body.append(button('common.edit',()=>edit(club),'club-edit'),labelText(element('p','muted'),'clubs.ownerPolicy'));
-      if(club.state==='active') view.body.append(button('clubs.archive',()=>{if(confirm(t('clubs.archiveConfirm'))) action(owner=>repository.archiveClub(owner,club.id));}));
-      else if(club.memberCount===1) view.body.append(labelText(element('p','muted'),'clubs.retirementHint'),button('clubs.delete',()=>{
+      view.body.append(editOnly(button('edit.general',()=>edit(club),'club-general-edit')),editOnly(labelText(element('p','muted'),'clubs.ownerPolicy')));
+      if(club.state==='active') view.body.append(editOnly(button('clubs.archive',()=>{if(confirm(t('clubs.archiveConfirm'))) action(owner=>repository.archiveClub(owner,club.id));})));
+      else if(club.memberCount===1) view.body.append(editOnly(labelText(element('p','muted'),'clubs.retirementHint')),editOnly(button('clubs.delete',()=>{
         if(confirm(t('clubs.deleteConfirm',{name:club.name}))) action(owner=>repository.deleteClub(owner,club.id),()=>browse());
-      }));
-      else view.body.append(labelText(element('p'),'clubs.deleteBlocked'));
+      })));
+      else view.body.append(editOnly(labelText(element('p'),'clubs.deleteBlocked')));
     }
     if(isManager(role) && club.state==='active') {
-      const admin=element('section','feature-card');admin.id='club-admission';
+      const admin=editOnly(element('section','feature-card'));admin.id='club-admission';
       admin.append(labelText(element('h3'),'clubs.admission'));
       const inviteForm=element('form');inviteForm.id='club-invite';
       const search=element('form');search.id='club-invite-search';
@@ -188,7 +189,7 @@ export function initClubUI() {
       if(!current(owner,token)) return;
       await render({uid:owner,model,body:view.body,status:view.status,action,stillCurrent:()=>current(owner,token)});
     }
-    if(current(owner,token)) labelText(view.status,'common.loaded');
+    if(current(owner,token)){mountEditMode(view.body,{allowed:isManager(role),id:'club-edit'});labelText(view.status,'common.loaded');}
   }
   document.getElementById('clubs-btn').addEventListener('click',()=>{
     openView(view.node);if(uid) action(()=>Promise.resolve(),()=>browse());else signedOut();

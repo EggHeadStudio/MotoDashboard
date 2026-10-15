@@ -2,6 +2,7 @@ import { product } from './product.js';
 import {batch6b} from './batch6b.js';
 import {batch7} from './batch7.js';
 import {batch8} from './batch8.js';
+import {batch85} from './batch85.js';
 // Stable keys; user-created content is never translated.
 export const dictionary = {
   "en": {
@@ -569,4 +570,4 @@ export const dictionary = {
     "ui.finishBeforeDelete": "Lopeta nykyinen sessio ennen ajojen poistamista."
   }
 };
-for (const language of ['en', 'fi']) Object.assign(dictionary[language], product[language], batch6b[language],batch7[language],batch8[language]);
+for (const language of ['en', 'fi']) Object.assign(dictionary[language], product[language], batch6b[language],batch7[language],batch8[language],batch85[language]);

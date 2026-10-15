@@ -47,6 +47,10 @@ def run():
                 content_type='text/css' if route.request.url.endswith('.css') else 'application/javascript'))
             ctx.route(re.compile(r'https://.*(?:tile|openstreetmap).*\.png'), lambda route: route.fulfill(body=pixel, content_type='image/png'))
             ctx.route('https://api.open-meteo.com/**', lambda route: route.fulfill(json={'current': {'temperature_2m': 12, 'wind_speed_10m': 5, 'weather_code': 0}}))
+        if '--batch85-only' in sys.argv:
+            from batch85_browser import run_batch85_tests
+            run_batch85_tests(browser,base,route_map)
+            browser.close();server.shutdown();return
         if '--identity-only' in sys.argv:
             from identity_browser import run_identity_tests
             run_identity_tests(browser,base,route_map)
@@ -250,6 +254,8 @@ def run():
         run_batch7_tests(browser,base,route_map)
         from batch8_browser import run_batch8_tests
         run_batch8_tests(browser,base,route_map)
+        from batch85_browser import run_batch85_tests
+        run_batch85_tests(browser,base,route_map)
         output=page.evaluate('async()=> (await import("./tests/live-client-tests.js")).runLiveClientTests()')
         print('PASS:',output)
         run_real_sdk_imports(browser, base, route_map)

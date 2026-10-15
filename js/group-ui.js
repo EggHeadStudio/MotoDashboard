@@ -1,3 +1,4 @@
+import {mountEditMode,editOnly,guardEditor,mayLeaveEditor} from './ui/edit-mode.js';
 import { getAccount, onAccountChange } from './auth-state.js';
 import { t, getLanguage } from './i18n/i18n.js';
 import { ACTIVITY_CATEGORIES } from './data/schema.js';
@@ -55,7 +56,7 @@ export function initGroupUI() {
     labelText(view.status, page.partial ? 'data.unavailable' : 'common.loaded');
   }
   async function edit(group) {
-    unwatch();
+    if(!mayLeaveEditor(view.body))return;delete view.body.dataset.editMode;unwatch();
     const owner=uid, token=++version;let clubPage=null;
     if (!group) {
       clubPage=await repository.listHostingClubs(owner);
@@ -99,7 +100,7 @@ export function initGroupUI() {
       });
     });
     view.body.replaceChildren(button('common.cancel',()=>action(()=>Promise.resolve())),form);
-    labelText(view.status,'common.loaded');
+    guardEditor(view.body);labelText(view.status,'common.loaded');
   }
   async function open(id) {
     unwatch();
@@ -113,16 +114,16 @@ export function initGroupUI() {
     if((participant || manager) && group.meetingLocation) view.body.append(element('p','group-meeting',group.meetingLocation));
     if(manager && ['scheduled','active'].includes(group.state))mountMediaEditor(view.body,{kind:'group',id:group.id},['banner']);
     if(manager && ['scheduled','active'].includes(group.state)) {
-      view.body.append(button('common.edit',()=>action(()=>edit(group),()=>{}),'group-edit'));
+      view.body.append(editOnly(button('edit.general',()=>action(()=>edit(group),()=>{}),'group-general-edit')));
       const state=group.state==='scheduled'?'active':'completed';
       view.body.append(button('groups.'+state,()=>{
         const active=getRideContext().groupId;if(state==='active' && active && active!==id){showActiveRideConflict();return;}
         action(owner=>repository.setGroupState(owner,id,state));
       },'group-'+state),
-        button('groups.cancelSession',()=>{if(confirm(t('groups.cancelConfirm'))) action(owner=>repository.setGroupState(owner,id,'cancelled'));},'group-cancel'));
+        editOnly(button('groups.cancelSession',()=>{if(confirm(t('groups.cancelConfirm'))) action(owner=>repository.setGroupState(owner,id,'cancelled'));},'group-cancel')));
     }
     for(const render of sections) {if(!current(owner,token)) return;await render({uid:owner,model,body:view.body,status:view.status,action,stillCurrent:()=>current(owner,token)});}
-    if(current(owner,token)) labelText(view.status,'common.loaded');
+    if(current(owner,token)){mountEditMode(view.body,{allowed:manager && ['scheduled','active'].includes(group.state),id:'group-edit'});labelText(view.status,'common.loaded');}
     if(current(owner,token)) release=watchGroup(owner,id,latest=>{
       if(!current(owner,token))return;
       if(!latest || latest.state!==model.group.state) {

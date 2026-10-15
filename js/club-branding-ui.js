@@ -1,3 +1,4 @@
+import {editOnly} from './ui/edit-mode.js';
 import { registerClubSection } from './club-ui.js';
 import { updateBranding, loadWall, saveWall } from './firebase/clubRepository.js';
 import { canBrand } from './data/permissions.js';
@@ -48,7 +49,7 @@ export function initClubBrandingUI() {
         action(owner=>updateBranding(owner,club.id,input));
       });branding.append(form);
     }
-    body.append(disclosure('branding.title',branding));
+    body.append(editOnly(disclosure('branding.title',branding)));
     if(!role) return;
     const wall=await loadWall(uid,club.id);if(!stillCurrent()) return;
     const section=element('section','feature-card');section.id='club-wall';
@@ -58,7 +59,7 @@ export function initClubBrandingUI() {
       field(form,'text','branding.announcement',{multiline:true,max:4000,value:wall?.text || ''});
       const save=button('common.save');save.type='submit';form.append(save);
       form.addEventListener('submit',event=>{event.preventDefault();const content=new FormData(form).get('text');action(owner=>saveWall(owner,club.id,content));});
-      section.append(disclosure('common.edit',form));
+      section.append(editOnly(disclosure('common.edit',form)));
     }links.after(section);
   });
 }

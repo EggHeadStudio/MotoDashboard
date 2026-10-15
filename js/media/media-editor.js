@@ -3,9 +3,10 @@ import {prepareImage,MEDIA_ASPECTS} from './prepare-image.js';
 import {element,labelText,button,field,disclosure} from '../ui/forms.js';
 import {getAccount,onAccountChange} from '../auth-state.js';
 import {t} from '../i18n/i18n.js';
+import {editOnly,acceptEdits} from '../ui/edit-mode.js';
 import {mountThemeEditor} from './theme-editor.js';
 export function mountMediaEditor(root,target,slots,{themeFields=['accent','secondary','header','card','layout']}={}) {
-  const section=element('section','media-editor'),content=element('div'),details=disclosure('media.title',section);details.dataset.mediaKind=target.kind;root.append(details);
+  const section=element('section','media-editor'),content=element('div'),details=disclosure('media.title',section);details.dataset.mediaKind=target.kind;editOnly(details);root.append(details);
   const status=element('p','feature-status');status.setAttribute('role','status');const progress=element('progress');progress.max=100;progress.value=0;progress.hidden=true;progress.setAttribute('aria-label',t('media.progress'));progress.setAttribute('data-i18n-aria-label','media.progress');
   section.append(labelText(element('p','muted'),'media.privacy'),status,progress,content);
   let resource=null,busy=false,prepared=null,file=null,previewURL=null,version=0,disposed=false,loaded=false,timer,disconnected;
@@ -21,7 +22,7 @@ export function mountMediaEditor(root,target,slots,{themeFields=['accent','secon
   }
   async function refresh() {
     const next=await getMedia(target,controller.signal);if(disposed||getAccount()?.uid!==owner)return;
-    resource=next;loaded=true;render();
+    resource=next;loaded=true;render();acceptEdits(section);
   }
   details.addEventListener('toggle',()=>{if(details.open&&!loaded)void action(refresh);});
   function render() {
@@ -41,7 +42,7 @@ export function mountMediaEditor(root,target,slots,{themeFields=['accent','secon
         for(const [key,delta] of [['media.up',-1],['media.down',1]]){const control=button(key,()=>void action(async()=>{const order=resource.images.map(n=>n.id);[order[index],order[index+delta]]=[order[index+delta],order[index]];await saveMediaTheme(target,resource.revision,resource.theme,order);await refresh();}));control.disabled=index+delta<0||index+delta>=resource.images.length;card.append(control);}
       }list.append(card);
     }
-    const form=element('form');form.id='media-'+target.kind+'-form';content.append(form);
+    const form=element('form');form.id='media-'+target.kind+'-form';if(document.getElementById(form.id))form.id+='-'+target.id+(target.child?'-'+target.child:'');content.append(form);
     const slot=field(form,'slot','media.slot',{choices:slots,prefix:'media',value:slots.find(id=>!resource.images.some(n=>n.slot===id)) || slots[0]});
     const fileLabel=labelText(element('label','field'),'media.select'),input=element('input');input.type='file';input.accept='image/jpeg,image/png,image/webp';input.id=form.id+'-file';fileLabel.htmlFor=input.id;form.append(fileLabel,input);
     const camera=button('media.camera',()=>{input.setAttribute('capture','environment');input.click();input.removeAttribute('capture');});form.append(camera);

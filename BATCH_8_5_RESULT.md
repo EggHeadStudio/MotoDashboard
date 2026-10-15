@@ -34,5 +34,9 @@ requirements remain. No new framework, frontend build or paid service activation
 
 ## Execution results
 
-Pending. This file will record completed/blocked milestones, exact commits, changed
-files, test counts, backend changes, deployment order, mobile checklist and limits.
+M1: shared authorized View/Edit controls hide media, branding, rank/role and vehicle
+management in default content views. Existing per-section saves remain explicit;
+Cancel/closing warns for unsaved fields. Media editors use unique IDs when several
+rank editors coexist. Two focused Chromium checks pass (320px and EN/FI parity).
+Existing regression fixtures now enter the actual Edit controls; no forced hidden
+clicks or permission assertions are removed. Full regression is repeated at M13.

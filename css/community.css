@@ -1,0 +1,9 @@
+[data-edit-mode=view] [data-edit-only]{display:none!important;}
+.edit-toolbar{display:flex;justify-content:flex-end;gap:8px;position:sticky;top:0;z-index:3;background:var(--md-bg,#101214);padding:8px 0;}
+.edit-toolbar [hidden]{display:none;}
+.feature-body{min-width:0;}.feature-body>*{max-width:100%;}
+.feature-header button,.feature-actions button,.edit-toolbar button{min-height:44px;}
+.feature-body h3,.feature-body p,.member-name{overflow-wrap:anywhere;}
+.edit-hint{font-size:.85rem;}
+@media(max-width:400px){.feature-actions{gap:8px;}.feature-actions button{flex:1 1 120px;}.edit-toolbar{padding-top:env(safe-area-inset-top,0px);}}
+@media(prefers-reduced-motion:reduce){.edit-toolbar,.feature-card{transition:none;}}

@@ -28,10 +28,16 @@ def click_action(page, selector):
 def expand_controls(page, selector):
     """Open enclosing disclosures using their visible summary, never force a hidden click."""
     locator = page.locator(selector)
-    parents = locator.locator('xpath=ancestor::details[not(@open)]')
+    editor = locator.locator('xpath=ancestor::*[@data-edit-mode="view"]')
+    if editor.count() and locator.locator('xpath=ancestor-or-self::*[@data-edit-only]').count():
+        editor.first.locator(':scope > .edit-toolbar button').first.click()
+    xpath = 'xpath=ancestor::details[not(@open)]'
+    if locator.evaluate('(node)=>node.tagName==="SUMMARY"'):
+        xpath = 'xpath=ancestor::details[not(@open)][position()>1]'
+    parents = locator.locator(xpath)
     while parents.count():
         parents.first.locator(':scope > summary').click()
-        parents = locator.locator('xpath=ancestor::details[not(@open)]')
+        parents = locator.locator(xpath)
 
 def fill_control(page, selector, value):
     expand_controls(page, selector)

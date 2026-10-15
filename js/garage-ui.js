@@ -1,3 +1,4 @@
+import {mountEditMode,editOnly,guardEditor,mayLeaveEditor} from './ui/edit-mode.js';
 import { getAccount, onAccountChange } from './auth-state.js';
 import { t, onLanguageChange } from './i18n/i18n.js';
 import { CATEGORIES } from './data/schema.js';
@@ -59,7 +60,7 @@ export function initGarageUI() {
     return runAction(view.body, view.status, async () => { await fn(uid); if (current(uid)) await refresh(); }, dataErrorKey);
   }
   function edit(vehicle) {
-    editing = true; view.body.replaceChildren();
+    if(!mayLeaveEditor(view.body))return;editing = true; view.body.replaceChildren();delete view.body.dataset.editMode;
     const form = element('form'); form.id = 'vehicle-form';
     field(form, 'category', 'garage.category', { choices: CATEGORIES, prefix: 'category', value: vehicle?.category || 'motorcycle' });
     field(form, 'nickname', 'garage.nickname', { max: 64, required: true, value: vehicle?.nickname });
@@ -74,7 +75,7 @@ export function initGarageUI() {
     form.addEventListener('submit', event => {
       event.preventDefault(); const input = Object.fromEntries(new FormData(form));
       action(uid => saveVehicle(uid, vehicle?.id, input));
-    }); view.body.append(form);
+    }); view.body.append(form);guardEditor(view.body);
   }
   function render() {
     editing = false; view.body.replaceChildren();
@@ -105,16 +106,17 @@ export function initGarageUI() {
       if(entry?.featured)info.append(labelText(element('p','badge'),'showcase.featured'));
       const controls = element('div','feature-actions');
       controls.append(button('garage.choose', () => { state.selectedId = vehicle.id; publish(); render(); view.node.close(); }),
-        button('garage.makeDefault', () => action(uid => defaultVehicle(uid,vehicle.id))),
-        button('common.edit', () => edit(vehicle)),
-        button('showcase.options',()=>void showcase(vehicle)),
-        button('common.delete', () => { if (confirm(t('garage.deleteConfirm'))) action(uid => deleteVehicle(uid,vehicle.id)); }));
-      controls.append(button(entry?'showcase.hide':'showcase.show',()=>entry?action(uid=>unpublishShowcaseVehicle(uid,vehicle.id)):void showcase(vehicle)));
-      if(entry?.available && !entry.featured)controls.append(button('showcase.makeFeatured',()=>action(uid=>featureShowcaseVehicle(uid,vehicle.id))));
+        editOnly(button('garage.makeDefault', () => action(uid => defaultVehicle(uid,vehicle.id)))),
+        editOnly(button('common.edit', () => edit(vehicle))),
+        editOnly(button('showcase.options',()=>void showcase(vehicle))),
+        editOnly(button('common.delete', () => { if (confirm(t('garage.deleteConfirm'))) action(uid => deleteVehicle(uid,vehicle.id)); })));
+      controls.append(editOnly(button(entry?'showcase.hide':'showcase.show',()=>entry?action(uid=>unpublishShowcaseVehicle(uid,vehicle.id)):void showcase(vehicle))));
+      if(entry?.available && !entry.featured)controls.append(editOnly(button('showcase.makeFeatured',()=>action(uid=>featureShowcaseVehicle(uid,vehicle.id)))));
       info.append(controls);card.append(art,info); view.body.append(card);
       decorateMedia(card,{kind:'vehicle',id:vehicle.id},{cover:art});
       mountMediaEditor(info,{kind:'vehicle',id:vehicle.id},['photo0','photo1','photo2','photo3','photo4','photo5']);
     }
+    mountEditMode(view.body,{allowed:true,id:'garage-edit'});
     view.body.append(button('garage.noVehicle', () => { state.selectedId = null; publish(); render(); view.node.close(); }));
   }
   choose.addEventListener('click', () => {

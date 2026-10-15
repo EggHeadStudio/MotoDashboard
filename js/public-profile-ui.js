@@ -1,3 +1,4 @@
+import {guardEditor,acceptEdits} from './ui/edit-mode.js';
 import {getAccount,onAccountChange,publishDisplayIdentity} from './auth-state.js';
 import {loadPublicProfile,loadOwnPublicProfile,savePublicProfile,loadOwnProfileCards,publishProfileAffiliation,removeProfileAffiliation} from './firebase/publicProfileRepository.js';
 import {profileURL,publicId,ACCENTS,BANNERS} from './data/public-profile.js';
@@ -91,8 +92,9 @@ export function initPublicProfiles() {
       if(settings.publicId){for(const key of ['publicProfile.view','showcase.visitor']){const link=labelText(element('a'),key);link.href=profileURL(settings.publicId);link.addEventListener('click',()=>view.node.close());form.append(link);}}
       form.addEventListener('submit',event=>{event.preventDefault();if(!validDisplayName(name.value)){labelText(view.status,'auth.nameLength');name.focus();return;}void runAction(form,view.status,async()=>{
         await savePublicProfile(uid,{...settings,displayName:name.value,bio:bio.value,category:category.value,accent:accent.value,banner:banner.value,featuredVehicle:featured.value,visibility:visibility.value});
-        if(getAccount()?.uid===uid){publishDisplayIdentity(uid,name.value.trim());dispatchEvent(new Event('motodash-profile-updated'));labelText(view.status,'ui.saved');view.node.close();}
+        if(getAccount()?.uid===uid){publishDisplayIdentity(uid,name.value.trim());dispatchEvent(new Event('motodash-profile-updated'));labelText(view.status,'ui.saved');acceptEdits(view.body);view.node.close();}
       });});view.body.append(form);
+      view.body.append(button('common.cancel',()=>view.node.close()));guardEditor(view.body);
       if(settings.publicId)mountMediaEditor(view.body,{kind:'profile',id:settings.publicId},['avatar','banner']);
       else view.body.append(labelText(element('p','muted'),'media.saveProfileFirst'));
       const affiliations=element('section');affiliations.append(labelText(element('h3'),'publicProfile.affiliations'),labelText(element('p','muted'),'publicProfile.affiliationHint'));view.body.append(affiliations);

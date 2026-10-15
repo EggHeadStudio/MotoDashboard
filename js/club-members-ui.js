@@ -1,3 +1,4 @@
+import {editOnly} from './ui/edit-mode.js';
 import { registerClubSection } from './club-ui.js';
 import { listClubRecords, setMember, saveRank, deleteRank, removeMember, getRank } from './firebase/clubRepository.js';
 import { isManager, canManageMember, canAssignRank } from './data/permissions.js';
@@ -32,15 +33,15 @@ export function initClubMembersUI() {
       ranks.sort((a,b)=>a.displayOrder-b.displayOrder || a.name.localeCompare(b.name));
       rankCursor=page.cursor;
       rankList.replaceChildren();
-      if(isManager(role)) rankList.append(button('members.addRank',()=>rankForm(null),'rank-add'));
+      if(isManager(role)) rankList.append(editOnly(button('members.addRank',()=>rankForm(null),'rank-add')));
       if(!ranks.length) rankList.append(labelText(element('p'),'members.noRanks'));
       for(const rank of ranks) {
         const row=element('div','feature-actions rank-media-row');row.dataset.rankId=rank.id;
         const graphic=element('span','rank-graphic');graphic.setAttribute('aria-hidden','true');row.append(graphic,element('span','',rank.name));
         decorateMedia(graphic,{kind:'rank',id:club.id,child:rank.id},{icon:graphic},{rank:true});
-        if(isManager(role)) row.append(button('common.edit',()=>rankForm(rank)),button('common.delete',()=>{
+        if(isManager(role)) row.append(editOnly(button('common.edit',()=>rankForm(rank))),editOnly(button('common.delete',()=>{
           if(confirm(t('members.deleteRankConfirm'))) action(owner=>deleteRank(owner,club.id,rank.id));
-        }));rankList.append(row);
+        })));rankList.append(row);
         if(isManager(role))mountMediaEditor(row,{kind:'rank',id:club.id,child:rank.id},['icon'],{themeFields:['icon','badge','accent','secondary']});
       }
       if(page.more) rankList.append(button('clubs.more',()=>{
@@ -79,11 +80,11 @@ export function initClubMembersUI() {
           form.addEventListener('submit',event=>{
             event.preventDefault();const nextRole=roleInput?.value || member.technicalRole,nextRank=rankInput.value || null;
             action(owner=>setMember(owner,club.id,member.uid,nextRole,nextRank));
-          });card.append(disclosure('ui.manage',form));
+          });card.append(editOnly(disclosure('ui.manage',form)));
         }
-        if(member.uid!==uid && canManageMember(role,uid,member)) card.append(button('members.remove',()=>{
+        if(member.uid!==uid && canManageMember(role,uid,member)) card.append(editOnly(button('members.remove',()=>{
           if(confirm(t('members.removeConfirm'))) action(owner=>removeMember(owner,club.id,member.uid));
-        }));memberList.append(card);
+        })));memberList.append(card);
       }
       if(page.more) {const next=button('clubs.more',()=>{next.remove();loadMembers().catch(error=>labelText(status,dataErrorKey(error)));});memberList.append(next);}
     }

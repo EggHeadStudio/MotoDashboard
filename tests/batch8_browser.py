@@ -82,7 +82,7 @@ def run_batch8_tests(browser,base,route_map):
     print('PASS: Batch 8: profile media private default, crop preview/progress/upload/delete and Finnish mobile controls')
     page.select_option('#language-select','en');page.locator('#public-profile-editor .feature-header button').click()
     open_garage(page);add_vehicle(page,'Photo motorcycle','motorcycle')
-    page.locator('[data-media-kind=vehicle] > summary').click();page.wait_for_selector('#media-vehicle-form')
+    click_control(page,'[data-media-kind=vehicle] > summary');page.wait_for_selector('#media-vehicle-form')
     assert page.locator('#media-vehicle-form-slot option').count()==6
     for index in range(2):
         page.locator('#media-vehicle-form-file').set_input_files({'name':'garage.png','mimeType':'image/png','buffer':base64.b64decode(fixtures['image/png'])})
@@ -96,7 +96,7 @@ def run_batch8_tests(browser,base,route_map):
     print('PASS: Batch 8: bounded six-slot private Garage gallery, second photo and featured/reordering controls')
     page.locator('#garage-dialog .feature-header button').click();state['images']=[]
     open_clubs(page);page.click('#club-create');page.fill('#club-form-name','Media Club');page.locator('#club-form button[type=submit]').click();page.wait_for_selector('#club-edit')
-    page.locator('[data-media-kind=club] > summary').click();page.wait_for_selector('#media-club-form')
+    click_control(page,'[data-media-kind=club] > summary');page.wait_for_selector('#media-club-form')
     assert page.locator('#media-club-form-slot option').count()==2
     page.locator('#media-club-form-file').set_input_files({'name':'logo.png','mimeType':'image/png','buffer':base64.b64decode(fixtures['image/png'])})
     page.wait_for_selector('.media-preview:not([hidden])');page.locator('#media-club-form button[type=submit]').click();page.wait_for_selector('.media-gallery-item')
@@ -111,15 +111,15 @@ def run_batch8_tests(browser,base,route_map):
             page.locator('#groups-dialog').get_by_role('button',name='Back to Group Sessions',exact=True).click();page.wait_for_selector('#group-create')
         page.click('#group-create');page.wait_for_selector('#group-form');page.fill('#group-form-title','Media '+activity);page.fill('#group-form-meetingArea','Helsinki');page.select_option('#group-form-activityType',activity)
         page.locator('#group-form button[type=submit]').click();page.wait_for_selector('#group-edit')
-        page.locator('[data-media-kind=group] > summary').click();page.wait_for_selector('#media-group-form')
+        click_control(page,'[data-media-kind=group] > summary');page.wait_for_selector('#media-group-form')
         assert page.locator('#media-group-form-slot option').count()==1
         page.locator('#media-group-form-file').set_input_files({'name':'event.png','mimeType':'image/png','buffer':base64.b64decode(fixtures['image/png'])})
         page.wait_for_selector('#groups-dialog .media-preview:not([hidden])');page.locator('#media-group-form button[type=submit]').click();page.wait_for_selector('#groups-dialog .media-gallery-item')
     assert not errors,errors
     print('PASS: Batch 8: Event/Meet/Ride share the authorized Group banner/theme editor and existing activity cards')
     open_clubs(page);clubid=page.evaluate('Object.values(JSON.parse(localStorage.getItem("__mockProfiles"))).find(v=>v.name==="Media Club"&&v.schemaVersion===1).id')
-    lookup(page,clubid);click_control(page,'#rank-add');page.fill('#rank-form-name','Captain');page.locator('#rank-form button[type=submit]').click();page.wait_for_selector('[data-media-kind=rank]')
-    state['images']=[];page.locator('[data-media-kind=rank] > summary').click();page.wait_for_selector('#media-rank-form')
+    lookup(page,clubid);click_control(page,'#rank-add');page.fill('#rank-form-name','Captain');page.locator('#rank-form button[type=submit]').click();page.wait_for_selector('[data-media-kind=rank]',state='attached')
+    state['images']=[];click_control(page,'[data-media-kind=rank] > summary');page.wait_for_selector('#media-rank-form')
     page.locator('#media-rank-form-file').set_input_files({'name':'rank.png','mimeType':'image/png','buffer':base64.b64decode(fixtures['image/png'])})
     page.wait_for_selector('#clubs-dialog .media-preview:not([hidden])');page.locator('#media-rank-form button[type=submit]').click();page.wait_for_selector('[data-media-kind=rank] .media-gallery-item')
     form=page.locator('#media-theme-rank');form.locator('..').locator('summary').click();page.select_option('#media-theme-rank-icon','star');page.select_option('#media-theme-rank-badge','crest');form.locator('button[type=submit]').click()

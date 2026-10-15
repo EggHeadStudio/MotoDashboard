@@ -40,7 +40,7 @@ def run_club_tests(browser,base,route_map):
         page.locator('#club-form button[type=submit]').click();page.wait_for_selector('#club-edit')
         id=page.evaluate('(name)=>Object.values(JSON.parse(localStorage.getItem("__mockProfiles"))).find(v=>v.name===name && v.schemaVersion===1).id',name)
         clubs[policy]=id;back(page)
-    lookup(page,clubs['open']);page.click('#club-edit');page.fill('#club-form-description','Updated description')
+    lookup(page,clubs['open']);page.click('#club-edit');page.click('#club-general-edit');page.fill('#club-form-description','Updated description')
     page.locator('#club-form button[type=submit]').click();page.wait_for_selector('#club-edit')
     assert 'Updated description' in page.locator('#clubs-dialog').inner_text()
     assert page.locator('.owner-name').inner_text()=='Garage Rider'
