@@ -10,6 +10,9 @@ import { groupCard, clubCard, skeletons, emptyState } from './cards.js';
 import { vehicleIcon, icon } from './icons.js';
 import { navigate } from './navigation.js';
 import { sessionURL, followSessionURL } from '../data/group-session.js';
+import {upcomingAttendance} from '../firebase/attendanceRepository.js';
+import {markNotificationRead} from '../firebase/notificationRepository.js';
+import {button,runAction} from './forms.js';
 
 let summary = {owner:null,count:0,distance:0};
 const listeners = new Set();
@@ -21,6 +24,7 @@ export function publishRideSummary(owner, rides) {
 export function initShell() {
   let uid=null,epoch=0,groups=[],clubs=[],loaded=false,loading=false;
   const upcoming=document.getElementById('home-upcoming'),community=document.getElementById('home-clubs'),status=document.getElementById('home-data-status');
+  const feed=element('section','home-section');feed.id='home-invitations';upcoming.closest('section').before(feed);
   function identity() {
     const person=getDisplayIdentity(), user=getAccount();
     const name=user && person?.uid===user.uid ? person.displayName : user?.displayName || t('identity.member');
@@ -38,8 +42,8 @@ export function initShell() {
     identity();stats();
     upcoming.replaceChildren();community.replaceChildren();
     if(!uid) {upcoming.append(emptyState('home.signIn','home.intro'));community.append(labelText(element('p','muted'),'data.signIn'));return;}
-    const next=groups.filter(group=>['active','scheduled'].includes(group.state) && (group.state==='active'||group.startsAt>=Date.now())).sort((a,b)=>a.startsAt-b.startsAt).slice(0,3);
-    for(const group of next) upcoming.append(groupCard(group,()=>followSessionURL(sessionURL(group.id))));
+    const next=groups.filter(group=>['active','scheduled'].includes(group.state) && group.startsAt>=Date.now()).sort((a,b)=>a.startsAt-b.startsAt).slice(0,5);
+    for(const group of next){const card=groupCard(group,()=>followSessionURL(sessionURL(group.id)));if(group.rsvp)card.querySelector('.badges').append(labelText(element('span','badge'),'rsvp.'+group.rsvp));upcoming.append(card);}
     if(!next.length) upcoming.append(labelText(element('p','muted'),'home.noUpcoming'));
     for(const club of clubs.slice(0,3)) community.append(clubCard(club,()=>{location.hash='/club/'+club.id;},{member:true}));
     if(!clubs.length) community.append(labelText(element('p','muted'),'clubs.noMemberships'));
@@ -48,11 +52,12 @@ export function initShell() {
   async function refresh() {
     if(!uid||loading) return;loading=true;const owner=uid,token=epoch;
     const first=skeletons(upcoming),second=skeletons(community);labelText(status,'common.loading');
-    const results=await Promise.allSettled([listMyGroups(owner),listMyClubs(owner)]);
+    const results=await Promise.allSettled([listMyGroups(owner),listMyClubs(owner),upcomingAttendance(owner)]);
     if(uid!==owner||epoch!==token||getAccount()?.uid!==owner) return;
     loading=false;first.remove();second.remove();
-    const [ridePage,clubPage]=results;
+    const [ridePage,clubPage,plans]=results;
     groups=ridePage.status==='fulfilled'?ridePage.value.groups:[];clubs=clubPage.status==='fulfilled'?clubPage.value.clubs:[];
+    if(plans.status==='fulfilled')groups=[...new Map([...groups,...plans.value].map(group=>[group.id,group])).values()];
     loaded=results.every(result=>result.status==='fulfilled');render();
     const failure=results.find(result=>result.status==='rejected');
     if(failure) setLocalizedText(status,()=>dataErrorMessage(failure.reason));
@@ -67,6 +72,16 @@ export function initShell() {
   onDisplayIdentity(identity);listeners.add(stats);
   onVehicleChange(vehicle=>document.getElementById('home-vehicle-icon').replaceChildren(vehicleIcon(vehicle?.category || 'motorcycle')));
   document.getElementById('home-refresh').addEventListener('click',()=>void refresh());
+  addEventListener('motodash-attendance-updated',()=>{loaded=false;if(uid)void refresh();});
+  addEventListener('motodash-notification-feed',event=>{
+    feed.replaceChildren();if(!uid || event.detail.uid!==uid)return;
+    const rows=event.detail.rows.filter(row=>row.readAt===null).slice(0,5);if(!rows.length)return;
+    feed.append(labelText(element('h2'),'home.invitations'));const message=element('p','feature-status');message.setAttribute('role','status');feed.append(message);
+    for(const row of rows)feed.append(button('notifications.'+row.type,()=>void runAction(feed,message,async()=>{
+      const owner=uid;await markNotificationRead(owner,row.id);if(uid!==owner)return;
+      if(row.type==='club-approved')location.hash='/club/'+row.sourceId;else followSessionURL(sessionURL(row.sourceId));
+    })));
+  });
   addEventListener('online',()=>{if(!loaded && uid) void refresh();});
   addEventListener('motodash-navigate',event=>{if(event.detail.screen==='home'&&!loaded) void refresh();});
   document.getElementById('profile-language').addEventListener('change',event=>setLanguage(event.target.value));

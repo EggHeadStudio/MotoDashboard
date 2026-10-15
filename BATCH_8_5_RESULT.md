@@ -83,3 +83,11 @@ including public activities (explicit Join stays separate). Approval/private iso
 forged/duplicate/capacity/concurrent/terminal writes and live separation are tested.
 68 cumulative new Rules assertions and seven focused browser groups pass. Existing
 full Worker suite also passed 98 before the additional authority test (99 on final run).
+
+M7: Home merges admitted Groups and the latest 20 private attendance refs, hydrates
+with bounded concurrency, sorts five upcoming activities chronologically and labels
+Going/Interested. Past/terminal/inaccessible activities disappear. Latest five unread
+invitation/approval updates reuse the existing private notification listeners and
+deep links; no additional listener/polling or broadcast fan-out. Eight focused
+browser groups pass. Notices are updates, not a claim that a stale invite is valid;
+opening still checks current invitation/admission authority.

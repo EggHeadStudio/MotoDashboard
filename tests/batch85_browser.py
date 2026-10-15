@@ -67,6 +67,13 @@ def run_batch85_tests(browser,base,route_map):
     assert not p.evaluate("async()=>(await import('./js/ride-context.js')).getRideContext().sharing")
     assert not errors,errors
     print('PASS: Batch 8.5 RSVP selection, duplicate idempotency and live consent separation through actual Group UI')
+    p.locator('#bottom-nav [data-destination=home]').click();p.click('#home-refresh')
+    p.wait_for_selector('#home-upcoming .event-card:has-text("RSVP test ride") .badge:has-text("Going")')
+    p.evaluate('''async()=>{const uid=(await import('./js/auth-state.js')).getAccount().uid;
+      dispatchEvent(new CustomEvent('motodash-notification-feed',{detail:{uid,rows:[{id:'home-fixture',type:'group-invite',sourceId:'safe-fixture',readAt:null}]}}));}''')
+    assert p.locator('#home-invitations button').count()==1
+    assert 'fixture-0' not in p.locator('#home-invitations').inner_text()
+    print('PASS: Batch 8.5 Home shows bounded RSVP plans and reuses private invitation feed without another listener')
     fixture=json.loads((Path(__file__).resolve().parents[1]/'cloudflare/tests/media-fixtures.json').read_text())
     media={'revision':1,'images':[{'id':'rank-image','slot':'icon','published':False}],'theme':{'icon':'star','badge':'crest'},'canWrite':True}
     deny=[False]

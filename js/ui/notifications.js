@@ -16,6 +16,7 @@ export function initNotifications() {
   document.querySelector('.header-actions').prepend(bell);
   let uid=null,epoch=0,rows=[],release=null,count=0,capped=false,waiting=false,failed=false;
   function render() {
+    dispatchEvent(new CustomEvent('motodash-notification-feed',{detail:{uid,rows:[...rows]}}));
     bell.setAttribute('aria-label',t('notifications.unread',{count:capped?'50+':count}));
     bell.title=t('notifications.title');badge.textContent=capped?'50+':String(count);badge.hidden=count===0;
     view.body.replaceChildren();
