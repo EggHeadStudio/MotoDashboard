@@ -1179,7 +1179,8 @@ import { initLeafletMap, updateMapPositionLayers, setMapThemeLayer } from './map
         const vehicle = selectedVehicle();
         return { ...createSessionRecord(currentTheme), vehicleId: vehicle?.id || null,
           vehicleSnapshot: vehicleSnapshot(vehicle), category: vehicle?.category || null, ownerUid: accountUid,
-          ridingIdentity:identity || getRidingIdentity(),contributeToClub:document.getElementById('ride-launch-options')?.dataset.contribute==='true',groupSessionId:getRideContext().groupId || null };
+          ridingIdentity:identity || getRidingIdentity(),contributeToClub:document.getElementById('ride-launch-options')?.dataset.contribute==='true',
+          groupSessionId:document.getElementById('ride-launch-group')?.value===getRideContext().groupId?getRideContext().groupId:null };
       }
 
       function renderVehicle() {
@@ -1444,7 +1445,7 @@ import { initLeafletMap, updateMapPositionLayers, setMapThemeLayer } from './map
           map: map,
           L: typeof L !== 'undefined' ? L : null,
           dotIcon: dotIcon,
-          ridingIdentity:sessionActive?activeSession?.ridingIdentity:getRidingIdentity(),profileId:getRiderProfileId(),
+          ridingIdentity:sessionActive?activeSession?.ridingIdentity:getRidingIdentity(),profileId:getRiderProfileId(),heading:lastGoodCoords?.heading ?? null,
           logoRingIcon: logoRingIcon,
           posMarker: posMarker,
           logoRingMarker: logoRingMarker,
@@ -1609,7 +1610,7 @@ import { initLeafletMap, updateMapPositionLayers, setMapThemeLayer } from './map
           persistActiveSession(false);
         }
         setSpeedDisplay(smoothedSpeed);
-        lastGoodCoords = { lat, lon,accuracy,speedKmh:sample.validatedSpeedKmh || 0 };
+        lastGoodCoords = { lat, lon,accuracy,speedKmh:sample.validatedSpeedKmh || 0,heading:accuracy<=35&&sample.moving?heading:null };
         prevCoords = { lat, lon, t: now };
         updateMapPosition(lat, lon, accuracy);
         if (lastWeatherFetch === 0 || Date.now() - lastWeatherFetch >= 15 * 60 * 1000) {

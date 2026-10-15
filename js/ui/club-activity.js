@@ -74,7 +74,7 @@ export function initClubActivity(){
         }
         for(const entry of data.entries){
           const card=element('article','activity-card');card.append(element('h4','',entry.title || entry.displayName),element('p','',entry.displayName),
-            labelText(element('span','badge'),entry.type==='ride'?'activity.ride':entry.type==='group'?'activity.ride':'activity.'+entry.type),
+            labelText(element('span','badge'),entry.type==='group'?'activity.groupRide':'activity.'+entry.type),
             element('p','',formatDate(entry.startedAt)),element('p','',[entry.clubName,entry.rankName].filter(Boolean).join(' · ')),labelText(element('p','muted'),'activity.'+entry.audience));
           if(entry.type==='ride')card.append(element('p','',formatDistanceKm(entry.distanceMeters)+' km · '+formatDuration(entry.durationMs)));
           if(entry.category)card.append(labelText(element('span','category-chip'),'category.'+entry.category));

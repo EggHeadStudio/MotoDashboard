@@ -8,6 +8,6 @@ export function riderMarker({name,profileId,clubId,rankId,rankName}={}){
   if(profileId)off.push(decorateMedia(avatar,{kind:'profile',id:profileId},{avatar},{themeRoot:node}));
   if(clubId){const badge=element('span','rider-club-badge','●');badge.setAttribute('aria-hidden','true');node.append(badge);
     off.push(decorateMedia(badge,{kind:'club',id:clubId},{logo:badge},{theme:false}));}
-  node.title=rankName || name || '';node.append(element('span','rider-heading'));
-  return {node,dispose:()=>off.forEach(fn=>fn())};
+  node.title=rankName || name || '';const direction=element('span','rider-heading');direction.hidden=true;node.append(direction);
+  return {node,setHeading(heading){direction.hidden=!Number.isFinite(heading);if(!direction.hidden)direction.style.transform=`rotate(${heading}deg)`;},dispose:()=>off.forEach(fn=>fn())};
 }

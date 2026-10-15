@@ -74,6 +74,12 @@ def run_batch85_tests(browser,base,route_map):
     assert p.locator('#home-invitations button').count()==1
     assert 'fixture-0' not in p.locator('#home-invitations').inner_text()
     print('PASS: Batch 8.5 Home shows bounded RSVP plans and reuses private invitation feed without another listener')
+    group_id=p.locator('#ride-launch-group option').last.get_attribute('value');p.select_option('#ride-launch-group',group_id)
+    assert p.locator('#start-btn').inner_text()=='Continue to Group';p.click('#start-btn');p.wait_for_selector('#group-attendance')
+    assert not p.evaluate("async()=>{const s=(await import('./js/ride-context.js')).getRideContext();return s.recordingId||s.sharing;}")
+    p.locator('#bottom-nav [data-destination=home]').click();p.select_option('#ride-launch-group','')
+    assert p.locator('#start-btn').inner_text()=='Start Ride'
+    print('PASS: Batch 8.5 optional Group launch continues through authorized details without starting GPS or a personal recording')
     activity_club=p.evaluate('''async()=>{const {createClub}=await import('./js/firebase/clubRepository.js');const uid=(await import('./js/auth-state.js')).getAccount().uid;
       return createClub(uid,{name:'Activity Club',description:'',category:'motorcycle',visibility:'public',membershipPolicy:'open',primaryColor:'#101214',accentColor:'#e9bf73',routeColor:null,mapTheme:'normal',links:{}});}''')
     ledger={'revision':0,'entries':[],'next':None,'stats':{'rides':0,'distanceMeters':0,'durationMs':0,'group':0,'meet':0,'event':0,'riders':0},'checkedAt':1700000000000,'defaultAudience':'private','canManage':True}

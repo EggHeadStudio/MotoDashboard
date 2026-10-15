@@ -1,3 +1,48 @@
+# Current Batch 8.5 - final local verification 2026-10-16
+
+Version **1.6.5-batch8.5**, implemented locally. The operator reports Batch 8
+deployed; this batch has not been pushed, deployed or accepted on real phones.
+
+- Shared authorized View/Edit, per-section Save/Cancel, dirty guards, visual palettes
+  and correct custom-rank image/fallback precedence, including editor previews.
+- Home vehicle/identity/Group launch, locked private ride identity snapshots and
+  authorized composite markers, without another GPS watcher or automatic sharing.
+- Independent Going/Interested/Not going, atomic exact counts/private Home refs,
+  bounded upcoming plans and reused private invitation/approval notification feed.
+- Explicit personal/completed Group/Meet/Event contributions, trusted Club log and
+  audience-scoped statistics in **CLUB_ACTIVITY/ClubActivity SQLite v4**. No copied
+  GPS routes or browser-controlled aggregates. Private/Owner-Admin/members/public
+  consent; owner defaults never override existing rider privacy.
+
+Rules change for optional immutable ridingIdentity, separate RSVP and monotonic
+activityEpochs coupled to ride deletion/Group departure; indexes stay
+**19** plus pointsJson exemption. Existing Worker reader/Auth-lookup secrets and IAM
+are reused without additional permissions; no new secret. Retain live v1/v2, media
+v3 and private R2. No RTDB/frontend-build/paid-service activation. Deploy reviewed
+Rules, Worker/v4, then Pages after approval. See DEPLOYMENT_CHECKLIST.md.
+
+Prototype boundaries: 100 contributions/Club, 30/rider/Club, <=100KB ledger, ten
+records/page. Fresh entries and aggregate proofs recheck source/membership. Private monotonic
+activityEpochs couple ride deletion and Group departure/removal to immediate
+aggregate exclusion. Remaining valid records can temporarily understate totals
+until page reads/hourly sweeps reconcile them (up to ten hours, longer on outage). Counts describe only visible
+contributions. Group participation is not verified physical attendance. No route
+preview/public Club browsing UI or automatic contribution is implied. Private
+ride metrics remain user-supplied, unsuitable for trusted rewards.
+
+Final evidence, files and logical commits: [BATCH_8_5_RESULT.md](BATCH_8_5_RESULT.md).
+Final local checks: **1,116 distinct Firestore assertions**, **118 Worker tests
+(20 native workerd/R2/SQLite)**, **116 browser groups/cases**, **68 locked RTDB**,
+**2 Pages groups (435 references/112 URLs)**, **10 deployment contracts** and
+**3 YAML/15 Bash** checks pass, with zero final failures or skipped tests.
+Physical Safari/Android cameras/GPS, production IAM/rules/DO/quota acceptance remain
+NOT RUN. Trusted complete erasure must inventory new RSVP refs and Club DO data;
+Auth deletion alone remains insufficient. Wider beta remains gated. All account,
+Official/reward, commercial/NFC/merchandise and final-brand requirements remain in
+IDEA.md. The following dated Batch 8/earlier descriptions are historical.
+
+---
+
 # Current Batch 8 — 2026-10-15
 
 **Implemented locally, not deployed or accepted on real phones.** Version

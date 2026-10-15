@@ -20,7 +20,7 @@
 .rider-composite-icon{background:none;border:0;}.rider-composite{display:block;position:relative;width:44px;height:44px;}
 .rider-avatar{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:#1c2530;color:#f4f4f4;border:2px solid var(--media-accent,#e9bf73);font-weight:700;}
 .rider-club-badge{position:absolute!important;right:-4px;bottom:-4px;width:23px;height:23px;border-radius:50%;background:#101214;border:2px solid #fff;color:#e9bf73;text-align:center;z-index:4;}
-.rider-heading{position:absolute;top:-9px;left:15px;width:0;height:0;border:6px solid transparent;border-top:0;border-bottom:9px solid #e9bf73;}
+.rider-heading{position:absolute;inset:-9px;pointer-events:none;}.rider-heading::before{content:'';position:absolute;top:0;left:calc(50% - 6px);width:0;height:0;border:6px solid transparent;border-top:0;border-bottom:9px solid var(--media-accent,#e9bf73);}
 .activity-card{padding:16px 0;border-top:1px solid var(--md-line);}.activity-card h4{margin:8px 0;}.activity-card p{margin:8px 0;}
 .activity-card button{min-height:44px;}
 .activity-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:12px;}.activity-stats dd{margin:4px 0;font-size:1.3rem;font-weight:700;}.activity-stats dt{color:var(--md-muted,#b8bec8);font-size:.85rem;}

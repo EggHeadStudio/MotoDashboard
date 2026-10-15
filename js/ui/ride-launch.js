@@ -11,7 +11,12 @@ import {dataErrorMessage} from '../firebase/access.js';
 
 export function initRideLaunch(){
   const launch=document.querySelector('.ride-launch'),root=element('div','ride-launch-options');root.id='ride-launch-options';launch.prepend(root);
-  let groups=[],clubs=[],disposePhoto=null;
+  let groups=[],clubs=[],disposePhoto=null,plannedGroupId=null,accountOwner;
+  const start=document.getElementById('start-btn');
+  start.addEventListener('click',event=>{
+    const id=document.getElementById('ride-launch-group')?.value;
+    if(id&&id!==getRideContext().groupId&&!getRideContext().recordingId){event.preventDefault();event.stopImmediatePropagation();followSessionURL(sessionURL(id));}
+  },{capture:true});
   function render(){
     disposePhoto?.();disposePhoto=null;root.replaceChildren();
     const context=getRideContext(),locked=!!context.recordingId;
@@ -38,13 +43,16 @@ export function initRideLaunch(){
     form.append(labelText(element('p','muted'),'ride.contributionHint'),status);
     const group=field(form,'group','ride.group',{choices:[]});const personal=labelText(element('option'),'ride.noGroup');personal.value='';group.append(personal);
     for(const item of groups.filter(g=>['scheduled','active'].includes(g.state))){const option=element('option','',item.title);option.value=item.id;group.append(option);}
-    group.value=context.groupId || '';group.disabled=locked || context.sharing;
+    if(context.groupId&&!groups.some(item=>item.id===context.groupId)){const option=labelText(element('option'),'ride.currentGroup');option.value=context.groupId;group.append(option);}
+    const intended=plannedGroupId ?? context.groupId ?? '';
+    group.value=groups.some(item=>item.id===intended)||intended===context.groupId?intended:'';group.disabled=locked || context.sharing;
     const open=button('ui.open',()=>{if(group.value)followSessionURL(sessionURL(group.value));});open.disabled=!group.value;
-    group.addEventListener('change',()=>{open.disabled=!group.value;});form.append(open);root.append(form);
+    const launchLabel=()=>{if(!locked)labelText(start,group.value&&group.value!==context.groupId?'ride.openGroup':'home.start');};
+    group.addEventListener('change',()=>{plannedGroupId=group.value;open.disabled=!group.value;launchLabel();});launchLabel();form.append(open);root.append(form);
     if(locked)root.append(labelText(element('p','muted'),'ride.identityLocked'));
   }
   addEventListener('motodash-home-data',event=>{groups=event.detail.groups;clubs=event.detail.clubs;render();});
   onVehicleChange(render);let last;
   onRideContext(context=>{const key=[context.recordingId,context.groupId,context.sharing].join(':');if(key!==last){last=key;render();}});
-  onAccountChange(()=>{groups=[];clubs=[];root.dataset.contribute='false';render();});onLanguageChange(render);render();
+  onAccountChange(({user})=>{const uid=user?.uid || null;if(uid===accountOwner)return;accountOwner=uid;groups=[];clubs=[];plannedGroupId=null;root.dataset.contribute='false';render();});onLanguageChange(render);render();
 }

@@ -1,3 +1,5 @@
+> **Current Batch 8.5 authorization (2026-10-15):** the operator reports Batch 8 deployed. The new attachment authorizes local milestones 0-13 for premium View/Edit UX, ride identity, RSVP and privacy-aware Club activity. It supersedes historical batch stops within this scope only. No push, deployment, production writes, paid activation or Batch 9. Section 25 and BATCH_8_5_RESULT.md record current results; earlier dated results retain their original evidence.
+
 > **Current Batch 8 authorization (2026-10-14):** user-selected private Cloudflare R2 `motodash-media`; implement/test/commit milestones 0–10 locally, saved-view corrections first. No push, deployment, production writes, paid activation or Batch 9. This supersedes historical Batch 7 media deferral and stop within the attached scope. Preserve all future account/commercial/final-brand requirements. See BATCH_8_RESULT.md.
 
 > **Historical Batch 7 authorization, 2026-10-14:** the operator reports Batch 6B deployed and its core features working. Batch 7 authorizes local discovery/user search, clearer showcase controls, smooth map follow, a dedicated saved-ride viewer, timestamp-based replay and network recovery improvements. Audit first; implement/test in logical commits; stop after Batch 7. No push, backend deployment or production-data operation. Media uploads, payments, marketplace and final branding remain future work. Section 22 is the current audited plan; dated earlier stops/results are historical.
@@ -3802,3 +3804,71 @@ merchandise, notifications/Club QR, final logo/typography/icon/mobile/accessibil
 performance polish and optional later marketplace. No requirement silently removed.
 
 **STOP after Batch 8. Await explicit approval; do not start Batch 9 or publish.**
+
+
+# 25. Batch 8.5 - coordinated local UX, identity and Club activity
+
+The explicit request authorizes milestones 0-13 and supersedes historical stops
+only within this batch. Batch 8 is operator-reported deployed; 8.5 remains local.
+
+- [x] 0 Audit actual Home/Discover/Rides/Clubs/Profile/Garage/public/Group/notification/
+  dashboard/saved/replay/media paths and prepare reuse plan before source changes.
+- [x] 1 Authorized View/Edit split, per-section Save/Cancel/dirty warnings, content
+  first, ordinary joining/vehicle/RSVP actions retained; server boundaries unchanged.
+- [x] 2 Shared navigation/Edit placement, mobile targets/safe areas/wrapping and
+  reduced motion; preserve deep links/Auth return/bell/bottom nav/Return to Ride.
+- [x] 3 Custom rank images take precedence only when loaded, with vetted fallback
+  on failure/removal; editor/Club/member/identity rendering, no permission effects.
+- [x] 4 Visual palettes/native colors, live preview/reset/cancel/contrast and legacy
+  value compatibility across shared profile/vehicle/Club/activity/rank editors.
+- [x] 5 Home vehicle/identity/optional existing Group launch. Personal Start never
+  silently creates/admit a Group or enables sharing; existing one recorder/GPS.
+- [x] 6 Current personal/Club identity and private locked historical snapshot, safe
+  composite markers, current R2 authorization and fallback; separate technical rights.
+- [x] 8 Independent RSVP with atomic exact counters/private Home refs, bounded
+  capacity, duplicate/concurrent/approval/private/terminal security coverage.
+- [x] 7 Bounded chronological Home plans and reused private invitation/approval
+  feed. RSVP precedes Home integration because it is the secure data prerequisite.
+- [x] 9 Explicit summary-only Club contributions from own completed ready rides or
+  completed admitted Club Group/Meet/Event participation, no duplicate GPS route.
+- [x] 10 Trusted serialized Club aggregates, unique riders/audience isolation and
+  no double mileage from Group participation; source correction/freshness bounds.
+- [x] 11 Private/Owner-Admin/members/explicit-public policies, current server roles/
+  source/member incarnation, owner defaults never overriding rider privacy.
+- [x] 12 Cross-screen UX/EN-FI/narrow layout/lifecycle consistency review and regressions.
+- [x] 13 Final complete local matrix, deployment/runbook/results and logical commits
+  (2026-10-16); real acceptance remains the separate unchecked gate below.
+- [ ] Explicit operator approval, publication and real two-account/phone acceptance.
+
+Safe bounds/remaining limitations are requirements of this initial implementation,
+not silent deletion of future scope: Club UI still requires sign-in (public known-
+Club API can read explicitly public summaries); no optional route preview is exposed;
+Group records are participation, not verified physical attendance; user-supplied
+ride metrics cannot prove reward eligibility. Source/member changes deny entry reads and stale aggregate proofs immediately.
+Private monotonic epochs couple source deletion/departure to invalidation, without
+granting organizers access to private profiles. Valid remaining summaries may
+temporarily understate totals until page reads/hourly sweeps reconcile them (ten
+hours at the cap, longer on outage). No client-only
+counter, UID disclosure, public bucket, private route publication or recursive purge.
+
+Publication requires new Rules for optional identity, separate RSVP and coupled
+activityEpochs invalidation, unchanged
+19 composites/exemption, Worker CLUB_ACTIVITY/ClubActivity SQLite v4 appended to
+live v1/v2/media v3, then Pages 1.6.5-batch8.5. Existing secrets/IAM suffice; no
+paid activation/new service/project/framework/build. Exact contracts: DATA_MODEL.md.
+Evidence/files/commits/manual steps: BATCH_8_5_RESULT.md and DEPLOYMENT_CHECKLIST.md.
+
+Retain password recovery/change, Google linking, trusted complete account deletion
+(wider-beta gate including RSVP/Club DO/media/live inventories), Club QR and trusted
+notification fan-out, Official MotoDash activities/all original safe reward rules,
+expanded achievements, subscriptions/Stripe/trusted entitlements, NFC, merchandise,
+Safe Zone, provider commercial licensing, optional later marketplace and dedicated
+final global logo/typography/accessibility/performance polish. No Batch 9 begins.
+
+Recommended Batch 9: first accept 8.5 on two phones and measure source/media/read
+quotas; then separately approve account recovery and the trusted complete-erasure/
+ownership/retention design, followed by safe onboarding/community follow-ups.
+Official rewards must use a separately approved evidence/evaluator design; the
+new Club counters are not an achievement or billing authority.
+
+**STOP after Batch 8.5. Await explicit approval; no push/deploy/production changes.**

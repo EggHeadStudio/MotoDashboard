@@ -1,3 +1,99 @@
+# Batch 8.5 identity, RSVP and Club activity contract
+
+Implemented locally, not deployed by this batch. Operator reports Batch 8 deployed.
+All existing private/public projection boundaries, private R2 and **19 indexes**
+remain. Earlier dated contracts below remain historical unless extended here.
+
+| Store/path | Data and authorization |
+| --- | --- |
+| users/{uid}/sessions/{id}.ridingIdentity | Optional immutable private snapshot: kind personal/club, nullable clubId/clubName/rankId/rankName. Historical labels never grant permission or consent. Legacy manifests without it still work |
+| groupSessions/{id}/participants/{uid}.ridingIdentity | Optional same snapshot, independently verified against current selected Club membership/name/rank on admission or scheduled update. Cannot change after activation; legacy organizing-club snapshot remains supported |
+| groupSessions/{id}/attendance/{uid} | uid, sessionId, choice going/interested/not-going, createdAt/updatedAt server times. Owner or actual technical organizer reads; only own choice writes, with current page audience, usable parent and no ban |
+| groupSessions/{id}/attendanceSummary/current | Exact going/interested/not-going/total/updatedAt; **no UID**. Same known-page audience can get. Rules prove exact before/after deltas from the caller's own row and coupled private ref. No list/delete |
+| users/{uid}/attendanceRefs/{id} | uid, sessionId, choice, updatedAt. Owner-only Home navigation, coupled to attendance. Latest20, actual safe page hydration, past/terminal/inaccessible filtered, chronological five-card Home |
+| activityEpochs/{uid} | uid, monotonic version, nullable groupId, updatedAt. Owner-only get, no list/delete. Owner can advance by exactly one; organizers can only blind-increment another UID with the same authorized participant removal |
+| ClubActivity / CLUB_ACTIVITY / SQLite v4 | Trusted serialized per-immutable-Club ledger, consent, source references/incarnations, membership incarnation, historical safe names/rank, revision, controlled owner default, private per-audience/per-rider aggregates and reconciliation cursor |
+| Browser local ride | Locked identity plus local contributeToClub offer flag and current Group reference. The offer never publishes; completed/synced ride requires the separate contribution consent form |
+
+RSVP is intent, never admission, live authority or physical attendance. Even Going
+on a public activity retains explicit Join. Max50 Going, bounded by smaller Group
+capacity, max200 intent records. Organizer names show latest50, counts include all.
+Atomic deltas/idempotent own IDs prevent duplicate/concurrent counter inflation.
+No composite is needed: attendance and private refs use single-field updatedAt.
+
+Club activity API: **/v1/clubs/{clubUUID}/activity**, optional opaque entry UUID for
+DELETE. GET cursor pages ten stored entries before audience/source checks; an empty
+page may still have More. HTTPS, exact existing Origin, verified Auth headers,
+no-store, no credential query, account abort and optimistic If-Match mutations.
+Gateway replaces asserted identity. Writes require explicit consent and current
+Club membership; known-Club anonymous GET only for public Club/public-consented
+summaries. Private/roles/members audiences never become public through frontend
+filtering. Roles means current technical Owner/Admin, never decorative rank.
+
+Trusted source checks: completed ready own private manifest without tombstone, or
+completed Club-bound Group with actual own participant and no ban. Routes/chunks
+are never read/copied. Identity/rank in the log is verified at contribution time;
+the original ride's locked snapshot remains in its private manifest. Each
+(uid,sourceType,sourceId) has one entry per Club. A Group record contributes only
+participation counts; personal source contributes rides/distance/moving time once.
+Metrics are user-supplied records, not independently verified travel or rewards.
+
+First contribution creates its owner's epoch at version1. Once present, every
+new own ride tombstone must atomically advance the epoch. Every Group departure/
+removal writes a blind atomic increment, coupled by Rules to actual admission
+removal and private ref/count changes. An organizer cannot read the epoch, advance
+it independently, or access private profile/history. No client can delete or roll
+back the epoch. Legacy noncontributors without an epoch keep old ride deletion;
+old Group clients must reload the new frontend before Leave/Remove.
+
+Private ledger retains UID/source IDs and membership/source incarnations solely
+for authority, deduplication and correction. Public responses contain random entry
+id, type/title/displayName/date/duration/distance/category/Club/rank snapshot,
+audience and own flag, never UID/email/source path/vehicle notes/GPS/media URLs.
+Only summaries visible to the viewer contribute to returned statistics. Owner
+defaults are suggestions for new consent, never bulk changes to rider entries.
+Explicit public summary/name consent is separate from profile/photo publication.
+
+Bounds: 100 entries/Club, 30/rider/Club, <=100KB complete ledger, queue20,
+30 calls/caller/Club/minute (anonymous callers hashed by gateway). Personal source
+contribution limits 10,000km and 31 moving days; larger private rides still record.
+No global distributed abuse/capacity guarantee. Original private rides remain
+independent when contribution quota/network/service fails.
+
+New entry reads immediately verify current source/member incarnation, retirement
+and viewer role. Statistics are bucketed by owner epoch and membership incarnation.
+Each response checks current proofs in a bounded batch (two documents per eligible
+contributing rider, at most100), not a personal-history scan. A tombstone/departure/
+removal invalidates stale buckets immediately, including off-page deleted sources.
+Old versions cannot regain validity. Membership revocation/rejoining also excludes
+old buckets. Private audiences are filtered before pagination; response stats never
+include another rider's private entries.
+
+A rider can withdraw immediately, updating counters atomically. Page reads and an
+hourly ten-entry alarm move still-valid records into current-epoch buckets and
+remove invalid sources. Totals may temporarily understate activity while surviving
+records reconcile; one full sweep can take ten hours at capacity, longer on outage.
+They never retain a deleted source's metrics merely because cleanup is delayed. Updating a contribution cannot
+postpone an earlier alarm. checkedAt is the last completed source sweep, not a
+promise of a current globally consistent Firestore snapshot. Authority outage is
+never deletion proof. Previously received public summaries cannot be recalled.
+
+No new Firestore activity collection or IAM writer. Direct client activity/counter
+paths deny by default. Existing FIRESTORE_SERVICE_ACCOUNT stays read-only and
+reads source records; MEDIA_SERVICE_ACCOUNT supplies the existing Auth disabled/
+validSince lookup only for this service. Live token/lease behavior stays unchanged.
+New v4 must retain v1/v2/v3, media bucket and secrets on deployment/rollback.
+
+Future trusted erasure/migration must preserve/advance epoch invalidation when
+changing sources; IAM bypasses client Rules. Do not manually remove sources without
+the same invalidation. Future complete erasure must inventory activityEpochs,
+attendance/summary/ref records, all Club
+ledgers/UID aggregates/source/membership snapshots and runtime pending work beside
+existing media/live/private data. Irreversible Club reservation remains in
+Firestore. Access denial/retirement is not complete physical account erasure.
+
+---
+
 # Batch 8 media contract — 2026-10-15
 
 Local implementation only; R2/IAM/Worker publication and real acceptance NOT RUN.

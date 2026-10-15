@@ -1,3 +1,200 @@
+# Batch 8.5 - current browser-only deployment and acceptance
+
+Prepared 2026-10-15, final local verification 2026-10-16;
+**not pushed/deployed; live acceptance NOT RUN**.
+Operator reports Batch 8 deployed. Current source is **1.6.5-batch8.5**.
+Use this section; earlier Batch 8/7/6 procedures below are dated history.
+
+## Required changes and gates
+
+| Classification | Finding / resolution |
+| --- | --- |
+| BLOCKER - publication | Publish reviewed Firestore Rules and Worker/v4 before Pages; old Rules cannot authorize RSVP/epochs/optional identity and old Worker has no Club activity API |
+| BLOCKER - acceptance | Real two-account/phone, effective policy/IAM, usage and native Safari acceptance below are NOT RUN. Local fixtures/emulators do not certify production |
+| BLOCKER - wider beta | Complete trusted account erasure, service-wide abuse/capacity/moderation and provider-commercial acceptance remain outside this batch |
+| WARNING - mixed versions | New Group departure/removal requires a coupled private epoch increment. Close old tabs and reload the new frontend; old clients fail closed. Do not weaken Rules to support an old tab |
+| WARNING - summaries | Counts can temporarily understate while still-valid records reconcile after invalidation. Deleted/departed sources are excluded immediately via fresh epoch/member proofs; page reads/hourly ten-entry sweeps restore valid buckets, up to ten hours at capacity, longer on outage |
+| WARNING - operations | Club logs add source/Auth/DO reads and hourly checks. Per-Club limits are prototype controls, not a global abuse/billing guarantee. Monitor existing quotas before expanding testers |
+| INFORMATION | New Rules source is firestore.rules: private optional ride/participant identity, separate RSVP and activityEpochs. No private profile/vehicle/route/public projection permission is broadened |
+| INFORMATION | firestore.indexes.json is unchanged: **19 composites**, routeChunks.pointsJson exemption. RSVP/ref ordering uses automatic updatedAt indexes; no new composite |
+| INFORMATION | Existing motodash-live appends **CLUB_ACTIVITY -> ClubActivity / SQLite v4** in cloudflare/wrangler.jsonc. Keep LIVE_ROOMS/v1, LIVE_IDENTITIES/v2, MEDIA_STATE/v3 and private MEDIA_BUCKET |
+| INFORMATION | **No new secret, IAM permission, R2 bucket, Firebase service, project, frontend build or paid activation.** Existing read-only Firestore account reads sources/proofs; existing media account supplies Auth lookup only for Club activity |
+
+## Exact sources, secrets and Console verification
+
+- Firebase project **motodash-87bf8**, database **(default)**, config
+  **firebase.deploy.json**, Rules **firestore.rules**, indexes
+  **firestore.indexes.json**. RTDB **database.rules.json** remains deny-all and is
+  outside this workflow. No Auth/Hosting/RTDB/Storage deployment.
+- Existing GitHub repository Actions secrets:
+  **FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON** (dedicated configuration deployer),
+  **CLOUDFLARE_API_TOKEN**, **CLOUDFLARE_ACCOUNT_ID**. Add none for this batch.
+- Existing encrypted Cloudflare runtime secrets **FIRESTORE_SERVICE_ACCOUNT**
+  (read-only datastore.entities.get) and **MEDIA_SERVICE_ACCOUNT** (dedicated
+  motodash-media account with existing firebaseauth.users.get for Auth lookup).
+  Do not rotate/reuse/expand either as a deployment account. No JSON key in source.
+- Existing vars **FIREBASE_PROJECT_ID=motodash-87bf8**,
+  **ALLOWED_ORIGINS=https://eggheadstudio.github.io**; retain exact Origin, no path
+  or wildcard. Existing Worker **motodash-live.old-sound-55f2.workers.dev**.
+- Auth Email/Password and authorized domains **eggheadstudio.github.io**,
+  **localhost**, existing Firebase default domain remain. No new provider/settings.
+- R2 **motodash-media** stays private, no r2.dev/public domain. Media/rank fixes
+  need frontend changes; media storage/schema/bucket policy is unchanged.
+
+## Step-by-step publication - only after approval
+
+1. Record reviewed main SHA, current published Rules source/time and Worker version/
+   namespace IDs. Testers finish/save rides, stop sharing and close old tabs; wait
+   two minutes for abandoned live claims. Preserve all production/local data.
+2. GitHub repository -> **Actions -> Deploy to GitHub Pages -> ... -> Disable
+   workflow**. Existing site stays online. This avoids the automatic main push
+   publishing the frontend ahead of its backends. No extra branch or local install.
+3. In the VS Code PowerShell terminal, after approval:
+
+   ```powershell
+   git switch main
+   git status --short
+   git log --oneline origin/main..main
+   git push origin main
+   ```
+
+   Expect the reviewed clean local commits; no force push. Publishing Git does not
+   deploy Firebase or Cloudflare. Nothing has been pushed by this task.
+4. **Actions -> Validate or deploy MotoDash Firestore -> Run workflow**:
+   branch **main**, **operation=deploy**, **confirmation=motodash-87bf8**,
+   **scope=rules-and-indexes**. If all19 indexes are independently confirmed current,
+   **scope=rules-only** suffices. Deploy runs demo validation including
+   **tests/run_batch85_rules.py** before production credentials. No software needed
+   on this computer. Validate-only is optional; deploy already validates.
+5. Firebase Console -> select **MotoDash / motodash-87bf8 -> Firestore Database ->
+   Rules**. Compare the complete published source/time with reviewed firestore.rules:
+   ridingIdentity/currentRidingIdentity, attendance/summary/refs, activityInvalidated,
+   activityEpochs, all prior source/privacy/retired-ID boundaries and final deny-all.
+6. **Firestore -> Indexes -> Composite:** verify **19 Enabled**, including
+   profileDirectory(visibility ASC,searchName ASC), clubDirectory(category ASC,name
+   ASC), all16 Lobby definitions and sessions(uploadState ASC,startedAt DESC).
+   **Single field:** keep routeChunks.pointsJson exempt; attendance/attendanceRefs
+   updatedAt ordering stays automatically indexed. Emulators do not certify this.
+7. **Actions -> Deploy MotoDash Cloudflare Worker -> Run workflow -> main**,
+   **no inputs**. Official Wrangler Action uses existing cloudflare/wrangler.jsonc,
+   dry-run/build and full local Worker/workerd/R2 tests. Secrets are not printed.
+8. Cloudflare Dashboard -> **Workers & Pages -> motodash-live -> Deployments**:
+   verify reviewed version ready. **Settings -> Bindings**: LIVE_ROOMS/LiveRoom/v1,
+   LIVE_IDENTITIES/LiveIdentity/v2, MEDIA_STATE/MediaState/v3,
+   **CLUB_ACTIVITY/ClubActivity/SQLite v4**, MEDIA_BUCKET/motodash-media. Wrangler
+   appends v4; do not replace/recreate old namespaces. Verify existing vars and
+   encrypted secret names/types above, without revealing their contents.
+9. **Actions -> Deploy to GitHub Pages -> Enable workflow -> Run workflow -> main**,
+   **no inputs**. Check successful reviewed SHA and
+   **https://eggheadstudio.github.io/MotoDashboard/**. Reload/reopen old tabs; keep
+   IndexedDB/local rides. Version is **1.6.5-batch8.5** (js/config.js). No service
+   worker or cold-start cache reset. Existing frontend deployment is unchanged.
+10. Run and record the acceptance procedure below. Green workflows mean published,
+    not real account/phone acceptance. Direct Worker navigation origin_denied is
+    expected and does not test authenticated activity/live/media requests.
+
+## Two-account / two-phone acceptance - NOT RUN
+
+Use disposable A/B with distinct names, separate sessions, iPhone Safari and Android
+Chromium, stationary/on foot and foreground. Choose this production testing window
+explicitly. Record safe operation/code/time/device/version/expected/actual only;
+never share passwords, JWTs, private photos, invitation secrets or precise GPS.
+
+1. EN/FI registration/login/refresh and guest entry still work. Profile/Garage/Club/
+   Group default View shows content, no upload/color/rank/role management forms.
+   Authorized Edit opens them; B cannot manage A. Save a section, Cancel unsaved
+   fields/crop, test close/Back warnings, missing images and 320px/text scaling.
+2. A creates a Club, B joins as Member. A sets rank Captain, uploads/replaces/removes
+   its image. Custom image replaces the fallback in member/Club/editor views;
+   forbidden/broken images restore a vetted icon. Rank grants no technical rights.
+   Check visual colors/preview/reset/cancel, legacy colors, branding and Wall.
+3. Home switches vehicles directly and shows selected cover/category. Choose personal
+   or eligible Club identity; contribution starts off. Start a personal ride: no
+   Group is created, identity/vehicle lock and one recorder/watch remain. Home and
+   Return to Ride preserve it. Revoked membership cannot start a new Club identity.
+4. A creates a scheduled approval Group/Meet/Event. Select identity before admission
+   or scheduled vehicle Save; once active it stays fixed. B selects Interested, then
+   Going: plans appear chronologically on Home, but no admission/GPS/live access.
+   A approves; B explicitly Joins, then separately consents to location sharing.
+   Verify private/invite/wrong-account/expired links and capacity still enforce.
+5. Both share in an active Group. Verify readable avatar/Club-badge markers and rank
+   detail, with private/denied image fallbacks. Public profile alone never publishes
+   unchecked photos; enable each permitted public photo deliberately if desired.
+   No extra watcher/socket; weather/map/heading/recording and live statuses remain.
+   End/leave/logout/removal clears sharing/markers; refresh requires fresh consent.
+6. Home shows unread invitation/approval updates and Going/Interested upcoming plans;
+   opening checks the current target, not a notification as authority. Refresh after
+   remote cancellation/expiry; terminal/past activities disappear. Deep Auth return
+   and notification bell stay usable; A never sees B's private notification list.
+7. Finish/save/sync a personal ride, History -> Open. Saved details/replay/export
+   remain read-only, without GPS; red route/gold progress and gaps remain honest.
+   **Contribute to Club log** -> choose Club/audience, fresh summary consent. Private
+   is the initial default unless its owner suggested another; separate public/name
+   consent always starts unchecked. Local/pending rides require sync first.
+8. A chooses Only me: B and even other Club managers cannot read that entry or count
+   it. A's owner-default change must not republish existing private entries. Resubmit
+   the same source with deliberate members consent: one entry/ride, no double count.
+   B sees only summary/date/name/category/distance/moving time/Club-rank snapshot,
+   never route/vehicle notes/UID/source path. Group participation adds no duplicate
+   personal distance; Meet/Event participation does not claim verified attendance.
+9. Roles audience: only current Owner/Admin, not Host/Member/Captain. Remove the role
+   while its log is open; a new Refresh denies those rows/counts. Test private/public
+   Club and separate public consent. Known-Club anonymous API reads are allowed only
+   for explicitly public summaries; the Club browsing UI still requires sign-in.
+10. A removes a contribution: row and counters update immediately. Re-contribute then
+    delete its own ride: tombstone and activityEpochs increment commit together; new
+    log reads/counters exclude the deleted source, including an off-page entry.
+    Valid surviving summaries can temporarily understate totals until page reads/
+    hourly reconciliation. Verify Group Leave/Remove invalidates participation too.
+    A cannot roll an epoch back; an organizer cannot read it or bump it independently.
+11. B leaves/rejoins a Club: old membership incarnation does not revive contributions.
+    Retire a disposable owner-only Club: all old private log/media/Wall/invites deny
+    and old IDs cannot be recreated. Account Auth deletion alone is not full erasure.
+    Full Admin/Host matrix needs a third account; record unrun cases honestly.
+12. Wi-Fi/cellular/offline/media/Worker failure: scoped inline feedback, no automatic
+    uncertain-write replay, recording remains local. Same-revision concurrent log
+    mutation yields one success/one conflict; Refresh actual state. Test EN/FI,
+    camera/file crop, portrait/landscape/reduced motion/text scaling and real GPS.
+
+Privileged Firebase/Cloudflare Console reads bypass client permissions and are not
+a two-account security test. No live item here is marked completed by local tests.
+
+## Quotas, retention and safe rollback
+
+- Club ledger: **100 entries/Club,30/rider/Club,<=100KB**, ten rows/page, queue20,
+ 30 calls/caller/Club/minute. Personal source cap10,000km/31 moving days applies only
+ to contribution, not private recording. No global distributed abuse guarantee.
+- Read-only Firestore proof checks batch current epoch/membership for each eligible
+ contributing rider (at most100, two docs each), plus current page/source checks and
+ per-signed-in-request Auth lookup. No full personal history or GPS route scan.
+- Hourly ten-entry source reconciliation adds bounded reads per nonempty Club and
+ persists valid summaries/counters. At the 100-entry bound one sweep takes ten
+ hours, longer during outage; request processing cannot postpone an earlier alarm.
+ Epoch/member proof invalidation already excludes stale totals immediately.
+- Inspect Worker requests/CPU/errors, all DO storage/alarms, Firestore reads/writes/
+ denials, Auth lookup quotas and existing R2 operations. Keep prototype testers
+ bounded; review usage before public expansion. No paid service was activated and
+ no zero-cost guarantee is made. Existing media pricing/limits below remain relevant.
+- Do not manually remove/replace source data through privileged IAM without the
+ same epoch invalidation. Future trusted migration/complete erasure must include
+ activityEpochs, RSVP/ref/count records, Club DO source/UID/epoch/aggregate data,
+ pending work, all media/live data and permanent nonpersonal Club reservations.
+- Prefer a tested corrective presentation-only frontend commit while keeping
+ current Rules and **js/firebase/activityEpoch.js,groupRepository.js,sessionRepository.js**
+ compatible. A wholesale pre-8.5 frontend restore can fail Leave/Delete safely;
+ don't drop epoch coupling or loosen Rules to disguise it. Preserve local rides.
+- Rules correction: same manual Firebase workflow/main, operation deploy, exact
+ project confirmation, **scope=rules-only**, all emulator suites pass first. Keep
+ optional fields/epochs/RSVP, existing privacy/retirement and 19 indexes/exemption.
+- Worker correction keeps all **v1/v2/v3/v4** class exports/bindings/migrations, private
+ R2 and secrets. Never delete a namespace/bucket or blindly roll back pre-v4 config.
+ An approved corrective Worker can deny the activity route while retaining its
+ class/alarms; review cleanup separately. No rollback is a data purge.
+
+Full local source/tests/commits/limitations: BATCH_8_5_RESULT.md. Nothing deployed.
+
+---
+
 # Batch 8 — browser-only deployment and acceptance
 
 Prepared locally 2026-10-15. **NOT DEPLOYED / live acceptance NOT RUN.**

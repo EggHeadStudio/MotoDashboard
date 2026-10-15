@@ -182,6 +182,7 @@ export function updateMapPositionLayers(input) {
       posMarker.setIcon(L.divIcon({className:'rider-composite-icon',html:art.node,iconSize:[44,44],iconAnchor:[22,22]}));
       posMarker._riderKey=key;posMarker._riderMedia=art;
     }
+    posMarker._riderMedia?.setHeading(input.heading);
   }
 
   return {

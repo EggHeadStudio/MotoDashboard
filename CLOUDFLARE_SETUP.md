@@ -1,3 +1,9 @@
+> **Current Batch 8.5:** use the top section of [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md).
+> New Rules include RSVP/identity/private activity epochs; append ClubActivity/v4
+> in the existing Worker, retain live/media v1-v3 and private R2. Indexes remain19.
+> No new secret/IAM/paid activation. Batch 8 is operator-reported deployed; 8.5 is
+> local only, no production acceptance claimed. Older setup below is dated history.
+
 > **Current Batch 8 (2026-10-15):** local only. The existing Worker now adds private
 > **MEDIA_BUCKET → motodash-media** and **MEDIA_STATE → MediaState / SQLite v3**,
 > preserving both live bindings/v1/v2 and strict origin. New encrypted

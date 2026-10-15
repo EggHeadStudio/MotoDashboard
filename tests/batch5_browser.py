@@ -59,7 +59,7 @@ def run_batch5_tests(browser,base,route_map):
       const clubs=[];for(let n=0;n<23;n++)clubs.push(await c.createClub(uid,{name:'Road Collective '+String(n).padStart(2,'0'),description:'People who enjoy the journey.',category:n<21?'motorcycle':'car',visibility:'public',membershipPolicy:'open',primaryColor:'#263648',accentColor:'#e9bf73',routeColor:null,mapTheme:'normal',links:{}}));
       const groups=[];for(const [title,activityType,visibility,joiningPolicy] of [['Coastal Escape','ride','public','open'],['Sunday Drive','drive','public','open'],['Harbour Meet','meet','approval','approval'],['Open Road Festival','event','public','open'],['Private Departure','ride','private','invite'],['Unlisted Departure','ride','unlisted','open']])groups.push(await g.createGroup(uid,{title,description:'A relaxed journey together.',activityType,category:'motorcycle',startsAt:Date.now()+7200000,endsAt:null,meetingArea:'Helsinki',meetingLocation:'Members-only entrance',visibility,joiningPolicy,maxParticipants:null,clubId:null}));
       return {clubs,groups};}''')
-    page.click('#home-refresh');page.wait_for_function('document.querySelectorAll("#home-upcoming .event-card").length===3')
+    page.click('#home-refresh');page.wait_for_function('document.querySelectorAll("#home-upcoming .event-card").length===5')
     assert page.locator('#home-clubs .community-card').count()==3
     assert page.evaluate("window.__mock.queries.filter(q=>q.path.endsWith('/groupRefs')||q.path.endsWith('/clubRefs')).every(q=>q.filters.some(f=>f.kind==='limit'&&f.value===20))")
     done('Home uses bounded owned memberships and actual upcoming groups')
@@ -108,7 +108,7 @@ def run_batch5_tests(browser,base,route_map):
     done('unknown recipient produces no write and Send stays disabled')
     fill_control(page,'#group-invite-search-name','Garage Rider');page.locator('#group-invite-search button').click()
     page.wait_for_function('!document.querySelector("#group-invite button").disabled')
-    page.locator('#group-invite button').click();page.wait_for_selector('[data-invitee-uid]')
+    page.locator('#group-invite button').click();page.wait_for_selector('[data-invitee-uid]',state='attached')
     duplicate=page.evaluate('''async id=>{try{await(await import('./js/firebase/groupRepository.js')).inviteGroup('fixture-0',id,'fixture-1');return null;}catch(e){return e.code;}}''',data['groups'][4])
     assert duplicate=='duplicate-invite'
     management_click(page.locator('[data-invitee-uid]').get_by_role('button',name='Invitation link / QR',exact=True))

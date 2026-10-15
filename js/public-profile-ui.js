@@ -68,7 +68,7 @@ export function initPublicProfiles() {
     }catch{/* Account data errors remain in the existing Profile flow, optional art falls back. */}
   }
   addEventListener('motodash-profile-updated',()=>void ownMedia());addEventListener('motodash-media-updated',event=>{if(event.detail?.target?.kind==='profile')void ownMedia();});
-  const entry=button('publicProfile.settings',()=>void edit(),'public-profile-edit');own.querySelector('.profile-actions').append(entry);
+  const entry=button('common.edit',()=>void edit(),'public-profile-edit');own.querySelector('.profile-hero').append(entry);
   async function edit() {
     const uid=getAccount()?.uid;if(!uid)return;
     const view=dialog('public-profile-editor','publicProfile.settings');openView(view.node);labelText(view.status,'common.loading');

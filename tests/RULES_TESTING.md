@@ -1,7 +1,7 @@
 # MotoDashboard security and regression tests
 
-Updated 2026-10-13 after local Batch 6B. The operator reports 6A deployed/working,
-all 18 Enabled indexes and the Worker. 6B publication/real-phone acceptance is pending.
+Updated 2026-10-16 after local Batch 8.5. The operator reports Batch 8 deployed;
+Batch 8.5 publication/real-phone acceptance is pending. Current source has 19 indexes.
 Current operator procedure: [DEPLOYMENT_CHECKLIST.md](../DEPLOYMENT_CHECKLIST.md).
 
 ## Isolation and coverage
@@ -20,7 +20,10 @@ they rebuild shared fixtures. Count the repeated baseline once.
 | Batch 5 authorization/query/index-source | 82 |
 | Batch 6A Open/expiry/source-proven notifications | 79 |
 | Batch 6B profile/showcase/affiliation privacy | 135 |
-| Total distinct Firestore | 840 |
+| Batch 7 discovery, lifecycle and privacy | 96 |
+| Batch 8 media references and themes | 61 |
+| Batch 8.5 identity, RSVP, privacy and atomic aggregate invalidation | 119 |
+| Total distinct Firestore | 1116 |
 | Separate locked RTDB | 68 |
 | Deployment contract | 10 |
 
@@ -45,6 +48,9 @@ python tests/run_identity_rules.py
 python tests/run_batch5_rules.py
 python tests/run_batch6a_rules.py
 python tests/run_batch6b_rules.py
+python tests/run_batch7_rules.py
+python tests/run_batch8_rules.py
+python tests/run_batch85_rules.py
 ```
 
 Security/group runners already rebuild the baseline. For the separate RTDB lock:
@@ -72,20 +78,22 @@ python tests/run_firebase_deployment_contract.py
 ```
 
 Browser tests use fixture data/simulated GPS, real Leaflet and real pinned Firebase
-imports with cloud APIs blocked. SDK fixtures do not enforce Rules. The full run
-covers 24 existing regression groups, 20 named Batch 5 and 13 named Batch 6A cases; nested domain/
-registration cases are not added again. Pages tests use /MotoDashboard/.
+imports with cloud APIs blocked. SDK fixtures do not enforce Rules. The latest
+full run passes 116 distinct groups/cases, including 14 Batch 8.5 cases. Nested
+domain/registration assertions and the Batch 5/6A summary lines are not added
+again. Pages tests use /MotoDashboard/ (435 references, 112 unique URLs HTTP 200).
 
 Worker developers with Node 22 and installed cloudflare lockfile dependencies run
 npm test at root (delegates to npm --prefix cloudflare test), or npm test inside
-cloudflare/. Both build with Wrangler --dry-run before 50 checks, including 13
-local workerd cases using mocked Firebase/OAuth. OpenSSL creates fixture keys only
+cloudflare/. Both build with Wrangler --dry-run before 118 tests, including 20
+local workerd/R2/SQLite cases using mocked Firebase/OAuth. OpenSSL creates fixture keys only
 outside the repository. Raw node --test without a build is not the supported path.
 
-The Firebase workflow runs config/contract and all five Firestore suites before
+The Firebase workflow runs config/contract and all nine Firestore runners before
 explicit deployment. Validate mode performs no production operation. YAML/Bash/
 credential/scope historical results are recorded in REPOSITORY_AUDIT.md; current
-Batch 6A results are in BATCH_6A_RESULT.md.
+results, source changes and limits are in BATCH_8_5_RESULT.md. The local workflow
+validator passes 3 YAML/15 Bash contracts; it does not dispatch a workflow.
 
 ## Pending live acceptance and history
 

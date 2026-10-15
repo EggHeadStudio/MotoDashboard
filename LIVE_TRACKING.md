@@ -1,3 +1,35 @@
+# Batch 8.5 representation extension - local only
+
+Operator reports Batch 8 deployed. Batch 8.5 is not deployed/phone-accepted.
+The existing single GPS pipeline, consent, exclusive UID claim, HTTPS ticket/WSS
+transport and 30s authority lease stay. RSVP, Club identity and Club contributions
+never authorize positions or change recording ownership.
+
+Optional participant ridingIdentity represents a currently verified Club chosen
+independently of the organizing Club. Set on admission or scheduled vehicle save;
+locked once active. Live authority rechecks representation membership and drops
+revoked decoration without granting/removing unrelated actual Group admission.
+Legacy active Groups retain their earlier identity; no client migration is run.
+
+Safe room identity may include mediaIdentity {profileId,clubId,rankId}: public
+profile alias and currently represented Club/rank, never UID, private media URL or
+GPS history. Client builds avatar/initials plus small Club-logo badge using current
+Worker media ACL; denied/private/unavailable images fall back. Rank text stays in
+the readable identity tooltip/roster. No extra GPS watch, socket or media polling.
+Personal recordings independently lock/persist their private historical identity.
+
+The same Worker adds CLUB_ACTIVITY/ClubActivity SQLite v4 for persistent consented
+Club summaries/trusted aggregates. This is separate from latest-only live rooms,
+not a live coordinate history. Existing read-only Firestore source checks and
+media Auth lookup permissions suffice; no new credential/write IAM. Retain all
+v1/v2/v3/v4 bindings on corrective rollout/rollback.
+
+Current operator order and physical two-phone checklist: DEPLOYMENT_CHECKLIST.md.
+New data/privacy/retention inventory: DATA_MODEL.md. Local results: BATCH_8_5_RESULT.md.
+The following dated live records retain their historical evidence.
+
+---
+
 > **Current Batch 6B (2026-10-13):** 6A deployment/working status is reported by
 > the operator. The new UID coordinator and continuity changes below are local;
 > publication and physical-phone acceptance are pending. Older results remain history.

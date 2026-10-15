@@ -18,7 +18,7 @@ for(const file of ['deploy.yml','deploy-firebase.yml','deploy-cloudflare.yml']){
   }
   for(const job of Object.values(config.jobs))for(const step of job.steps || [])if(step.run?.includes('python3 - <<')){execFileSync(bash,['-n','-c',step.run],{stdio:'pipe'});blocks++;}
   if(file==='deploy-firebase.yml'){
-    assert(source.includes('tests/run_batch6b_rules.py'));assert(source.includes('tests/run_batch7_rules.py'));assert(source.includes('tests/run_batch8_rules.py'));assert(source.includes("github.ref == 'refs/heads/main'"));
+    assert(source.includes('tests/run_batch6b_rules.py'));assert(source.includes('tests/run_batch7_rules.py'));assert(source.includes('tests/run_batch8_rules.py'));assert(source.includes('tests/run_batch85_rules.py'));assert(source.includes("github.ref == 'refs/heads/main'"));
     assert(source.includes("inputs.confirmation == 'motodash-87bf8'"));assert(source.includes('FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON'));
     assert(!source.includes('CLOUDFLARE_API_TOKEN'));assert(!source.includes('firestore:delete'));
   }
