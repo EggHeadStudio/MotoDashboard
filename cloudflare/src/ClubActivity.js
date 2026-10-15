@@ -58,7 +58,7 @@ export class ClubActivity{
         adjustActivityStats(data.stats,entry,-1);delete data.entries[key];changed=true;
       }else if(request.method==='PUT'&&!entryId){
         if(viewer.role!=='owner')throw Error('access_denied');const body=await boundedJSON(request);
-        if(Object.keys(body).length!==1||!audiences.includes(body.defaultAudience))throw Error('bad_request');
+        if(Object.keys(body).length!==1||!audiences.includes(body.defaultAudience)||body.defaultAudience==='public'&&viewer.club.visibility!=='public')throw Error('bad_request');
         data.defaultAudience=body.defaultAudience;changed=true;
       }else throw Error('bad_request');
       if(changed){data.revision++;if(new TextEncoder().encode(JSON.stringify(data)).byteLength>100000)throw Error('quota');

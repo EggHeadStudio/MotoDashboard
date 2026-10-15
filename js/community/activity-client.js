@@ -3,7 +3,8 @@ import {getAccount,onAccountChange} from '../auth-state.js';
 import {boundedRequest} from '../firebase/access.js';
 import {liveConfig} from '../../live-config.js';
 const requests=new Set();
-onAccountChange(()=>{for(const controller of requests)controller.abort();requests.clear();});
+let account;
+onAccountChange(({user})=>{if(account===(user?.uid || null))return;account=user?.uid || null;for(const controller of requests)controller.abort();requests.clear();});
 export async function activityRequest(clubId,{method='GET',body,revision,entryId,cursor}={}){
   if(!/^[0-9a-f-]{36}$/.test(clubId)||entryId&&!/^[0-9a-f-]{36}$/.test(entryId)||cursor&&!/^[0-9a-f-]{36}$/.test(cursor))throw Error('bad_request');
   const url=new URL(liveConfig.endpoint);if(url.protocol!=='https:'||url.pathname!=='/'||url.search||url.hash||url.username||url.password)throw Error('not_configured');

@@ -38,6 +38,15 @@ async function contributionEditor({sourceType,sourceId,clubId,session}){
         if(owner===getAccount()?.uid){acceptEdits(view.body);view.node.close();dispatchEvent(new Event('motodash-activity-updated'));}
       }catch(error){if(owner===getAccount()?.uid&&view.node.open)labelText(view.status,activityError(error));}finally{save.disabled=false;}
     });view.body.append(form);guardEditor(view.body);view.status.textContent='';
+    let generation=0;
+    async function defaults(){
+      const token=++generation;consent.checked=publicConsent.checked=false;audience.disabled=true;save.disabled=true;
+      try{const data=await activityRequest(club.value);if(token!==generation||owner!==getAccount()?.uid||!view.node.open)return;
+        audience.value=data.defaultAudience;publicConsent.parentElement.hidden=audience.value!=='public';publicConsent.required=audience.value==='public';acceptEdits(form);
+      }catch(error){if(token===generation&&view.node.open)labelText(view.status,activityError(error));}
+      finally{if(token===generation){audience.disabled=false;save.disabled=!clubs.length;}}
+    }
+    club.addEventListener('change',()=>void defaults());if(clubs.length)void defaults();
     if(!clubs.length)labelText(view.status,'clubs.noMemberships');
   }catch(error){if(owner===getAccount()?.uid&&view.node.open)labelText(view.status,activityError(error));}
 }
@@ -52,6 +61,16 @@ export function initClubActivity(){
       try{const data=await activityRequest(model.club.id,{cursor});if(!stillCurrent()||!root.isConnected)return;
         if(!cursor)list.replaceChildren();
         renderActivityStats(statistics,data);list.querySelector('[data-activity-pagination]')?.remove();
+        if(!cursor&&data.canManage&&model.role==='owner'){
+          const form=editOnly(element('form','activity-policy'));form.id='activity-policy';
+          const policy=field(form,'defaultAudience','activity.default',{choices:['private','roles','members','public'],prefix:'activity',value:data.defaultAudience});
+          if(model.club.visibility!=='public')policy.querySelector('option[value=public]').disabled=true;
+          const save=button('common.save');save.type='submit';form.append(save,button('common.cancel',()=>{policy.value=data.defaultAudience;acceptEdits(form);}));
+          form.addEventListener('submit',async event=>{event.preventDefault();save.disabled=true;
+            try{await activityRequest(model.club.id,{method:'PUT',revision:data.revision,body:{defaultAudience:policy.value}});acceptEdits(form);await load();}
+            catch(error){if(stillCurrent())labelText(status,activityError(error));}finally{save.disabled=false;}
+          });list.append(form);
+        }
         for(const entry of data.entries){
           const card=element('article','activity-card');card.append(element('h4','',entry.title || entry.displayName),element('p','',entry.displayName),
             labelText(element('span','badge'),entry.type==='ride'?'activity.ride':entry.type==='group'?'activity.ride':'activity.'+entry.type),

@@ -86,6 +86,7 @@ def run_batch85_tests(browser,base,route_map):
             ledger['revision']+=1;ledger['entries']=[{'id':'11111111-1111-4111-8111-111111111111','title':'Coastal ride','type':'ride','displayName':'Rider','startedAt':1700000000000,'distanceMeters':10000,'durationMs':3600000,'category':'motorcycle','clubName':'Activity Club','rankName':None,'audience':body['audience'],'own':True}]
             ledger['stats'].update(rides=1,distanceMeters=10000,durationMs=3600000,riders=1)
         elif route.request.method=='DELETE':ledger['revision']+=1;ledger['entries']=[];ledger['stats'].update(rides=0,distanceMeters=0,durationMs=0,riders=0)
+        elif route.request.method=='PUT':ledger['revision']+=1;ledger['defaultAudience']=route.request.post_data_json['defaultAudience']
         route.fulfill(json=ledger,headers=headers)
     c.route('https://motodash-live.old-sound-55f2.workers.dev/v1/clubs/**',activity_route)
     p.evaluate('''async clubId=>{const {contributionButton}=await import('./js/ui/club-activity.js');const n=document.createElement('div');n.id='test-contribution';n.style.cssText='position:fixed;top:0;left:0;z-index:999999';document.body.append(n);
@@ -102,6 +103,11 @@ def run_batch85_tests(browser,base,route_map):
     assert not errors,errors
     print('PASS: Batch 8.5 explicit private ride contribution and lazy Club Activity Log use summary-only payloads')
     print('PASS: Batch 8.5 trusted Club statistics display visible mileage, hours, riders and separate participation counters')
+    assert not p.locator('#activity-policy').is_visible();p.click('#club-edit')
+    p.select_option('#activity-policy-defaultAudience','members');p.locator('#activity-policy button[type=submit]').click()
+    p.wait_for_function('document.getElementById("activity-policy-defaultAudience").value==="members" && !document.querySelector("#activity-policy button[type=submit]").disabled')
+    assert ledger['entries'][0]['audience']=='private','Owner default must not override an existing stricter rider setting'
+    print('PASS: Batch 8.5 owner-only Edit policy changes preserve existing stricter rider privacy')
     fixture=json.loads((Path(__file__).resolve().parents[1]/'cloudflare/tests/media-fixtures.json').read_text())
     media={'revision':1,'images':[{'id':'rank-image','slot':'icon','published':False}],'theme':{'icon':'star','badge':'crest'},'canWrite':True}
     deny=[False]

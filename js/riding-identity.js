@@ -20,4 +20,5 @@ export async function chooseRidingIdentity(id){
   if(token!==version)throw dataError('conflict');next=verified;dispatchEvent(new Event('motodash-riding-identity'));return getRidingIdentity();
 }
 addEventListener('motodash-own-profile',event=>{profileId=event.detail?.publicId || null;});
-onAccountChange(()=>{version++;next=personal();profileId=null;});
+let owner;
+onAccountChange(({user})=>{if(owner===(user?.uid || null))return;owner=user?.uid || null;version++;next=personal();profileId=null;});

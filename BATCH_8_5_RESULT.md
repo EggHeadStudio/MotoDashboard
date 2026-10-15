@@ -112,3 +112,12 @@ changes deny entry reads immediately and reconcile counters in hourly 10-entry
 sweeps (up to 10 hours at capacity, longer on outage), explicitly shown in the UI.
 No full Firestore-history scan or browser counter. Thirteen backend groups and ten
 focused browser groups pass, including private aggregate isolation/unique riders.
+
+M11: private, technical Owner/Admin, Club-member and explicit public audiences are
+enforced in Worker policy. Owner-only default policy appears only in Edit; it never
+changes existing rider audiences. New forms load the default but require fresh
+summary consent and a separate unchecked public-consent control. Private Clubs
+cannot set a public default. Thirteen backend groups and eleven focused browser
+groups pass. No route preview is exposed: the optional preview is deliberately
+omitted, retaining owner-only full GPS routes. Public summaries support anonymous
+known-Club API reads; the existing Club browsing UI still requires sign-in.
