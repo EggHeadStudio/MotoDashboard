@@ -74,6 +74,32 @@ def run_batch85_tests(browser,base,route_map):
     assert p.locator('#home-invitations button').count()==1
     assert 'fixture-0' not in p.locator('#home-invitations').inner_text()
     print('PASS: Batch 8.5 Home shows bounded RSVP plans and reuses private invitation feed without another listener')
+    activity_club=p.evaluate('''async()=>{const {createClub}=await import('./js/firebase/clubRepository.js');const uid=(await import('./js/auth-state.js')).getAccount().uid;
+      return createClub(uid,{name:'Activity Club',description:'',category:'motorcycle',visibility:'public',membershipPolicy:'open',primaryColor:'#101214',accentColor:'#e9bf73',routeColor:null,mapTheme:'normal',links:{}});}''')
+    ledger={'revision':0,'entries':[],'next':None,'stats':{'rides':0,'distanceMeters':0,'durationMs':0,'group':0,'meet':0,'event':0,'riders':0},'checkedAt':1700000000000,'defaultAudience':'private','canManage':True}
+    payloads=[]
+    def activity_route(route):
+        headers={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'Authorization,Content-Type,If-Match','Access-Control-Allow-Methods':'GET,POST,PUT,DELETE,OPTIONS'}
+        if route.request.method=='OPTIONS':route.fulfill(status=204,headers=headers);return
+        if route.request.method=='POST':
+            body=route.request.post_data_json;payloads.append(body);assert set(body)=={'sourceType','sourceId','audience','consent','publicConsent'}
+            ledger['revision']+=1;ledger['entries']=[{'id':'11111111-1111-4111-8111-111111111111','title':'Coastal ride','type':'ride','displayName':'Rider','startedAt':1700000000000,'distanceMeters':10000,'durationMs':3600000,'category':'motorcycle','clubName':'Activity Club','rankName':None,'audience':body['audience'],'own':True}]
+            ledger['stats'].update(rides=1,distanceMeters=10000,durationMs=3600000,riders=1)
+        elif route.request.method=='DELETE':ledger['revision']+=1;ledger['entries']=[];ledger['stats'].update(rides=0,distanceMeters=0,durationMs=0,riders=0)
+        route.fulfill(json=ledger,headers=headers)
+    c.route('https://motodash-live.old-sound-55f2.workers.dev/v1/clubs/**',activity_route)
+    p.evaluate('''async clubId=>{const {contributionButton}=await import('./js/ui/club-activity.js');const n=document.createElement('div');n.id='test-contribution';n.style.cssText='position:fixed;top:0;left:0;z-index:999999';document.body.append(n);
+      const uid=(await import('./js/auth-state.js')).getAccount().uid;contributionButton(n,{sourceId:'ride-fixture',session:{ownerUid:uid,id:'ride-fixture',remoteRevisionId:'ready',ridingIdentity:{clubId}}});}''',activity_club)
+    p.click('#test-contribution button');p.wait_for_selector('#activity-contribution-form')
+    assert p.locator('#activity-contribution-form-audience').input_value()=='private'
+    assert not p.locator('#activity-contribution-form-consent').is_checked()
+    p.check('#activity-contribution-form-consent');p.locator('#activity-contribution-form button[type=submit]').click()
+    p.wait_for_function('!document.getElementById("activity-contribution")');assert payloads[0]['consent'] and payloads[0]['audience']=='private'
+    p.evaluate('id=>{document.getElementById("test-contribution").remove();location.hash="/club/"+id;}',activity_club)
+    p.wait_for_selector('#club-activity > details > summary');p.locator('#club-activity > details > summary').click()
+    p.wait_for_selector('#club-activity .activity-card');assert p.locator('#club-activity').get_by_text('Coastal ride',exact=True).is_visible()
+    assert not errors,errors
+    print('PASS: Batch 8.5 explicit private ride contribution and lazy Club Activity Log use summary-only payloads')
     fixture=json.loads((Path(__file__).resolve().parents[1]/'cloudflare/tests/media-fixtures.json').read_text())
     media={'revision':1,'images':[{'id':'rank-image','slot':'icon','published':False}],'theme':{'icon':'star','badge':'crest'},'canWrite':True}
     deny=[False]

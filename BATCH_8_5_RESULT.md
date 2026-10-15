@@ -91,3 +91,15 @@ invitation/approval updates reuse the existing private notification listeners an
 deep links; no additional listener/polling or broadcast fan-out. Eight focused
 browser groups pass. Notices are updates, not a claim that a stale invite is valid;
 opening still checks current invitation/admission authority.
+
+M9: dedicated lazy Club log, explicit saved/synced personal-ride and completed Group/
+Meet/Event contribution, summary-only payload and rider withdrawal. New trusted
+CLUB_ACTIVITY/ClubActivity SQLite v4 uses existing read-only Firestore reader and
+the existing media account solely for Auth lookup; no new Firestore writer/secret.
+Source/member incarnations, bans, retirement, consent and audience are checked on
+the server. Original GPS routes stay owner-only. Limits: 100 contributions/Club,
+30/rider/Club, <=100KB ledger, 10 rows/page, 30 calls/caller/Club/minute, queue20.
+11 backend groups, one native workerd/SQLite gateway group, nine browser groups and
+86 cumulative Rules assertions pass. Direct client activity/counter paths deny.
+Statistics foundation is in the same atomic ledger; M10 completes its presentation.
+No production provisioning or deployment performed.

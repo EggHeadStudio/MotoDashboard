@@ -10,7 +10,7 @@
     "ALLOWED_ORIGINS": "https://eggheadstudio.github.io"
   },
   "r2_buckets": [{"binding":"MEDIA_BUCKET", "bucket_name":"motodash-media"}],
-  "durable_objects": {"bindings": [{"name":"LIVE_ROOMS", "class_name":"LiveRoom"},{"name":"LIVE_IDENTITIES", "class_name":"LiveIdentity"},{"name":"MEDIA_STATE", "class_name":"MediaState"}]},
-  "migrations": [{"tag":"v1", "new_sqlite_classes":["LiveRoom"]},{"tag":"v2", "new_sqlite_classes":["LiveIdentity"]},{"tag":"v3", "new_sqlite_classes":["MediaState"]}],
+  "durable_objects": {"bindings": [{"name":"LIVE_ROOMS", "class_name":"LiveRoom"},{"name":"LIVE_IDENTITIES", "class_name":"LiveIdentity"},{"name":"MEDIA_STATE", "class_name":"MediaState"},{"name":"CLUB_ACTIVITY", "class_name":"ClubActivity"}]},
+  "migrations": [{"tag":"v1", "new_sqlite_classes":["LiveRoom"]},{"tag":"v2", "new_sqlite_classes":["LiveIdentity"]},{"tag":"v3", "new_sqlite_classes":["MediaState"]},{"tag":"v4", "new_sqlite_classes":["ClubActivity"]}],
   "observability": {"enabled": false}
 }

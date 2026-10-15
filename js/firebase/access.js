@@ -21,6 +21,7 @@ const safeOperation = value => operations.has(value) ? value : 'data';
 operations.add('people-search');
 operations.add('live-identity');
 operations.add('attendance');
+operations.add('club-activity');
 const diagnostics=[];
 export const getDataDiagnostics = () => diagnostics.map(row=>({...row}));
 export function requestDiagnostic(error, operation='data') {

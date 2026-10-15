@@ -4,6 +4,7 @@ import {formatDate,formatDuration,formatDistanceKm,formatSpeedKmh} from '../util
 import {getLanguage,setLanguage,onLanguageChange,setLocalizedText,t} from '../i18n/i18n.js';
 import {prepareRideReplay} from '../ride-replay.js';
 import {mountRideReplay} from './ride-replay.js';
+import {contributionButton} from './club-activity.js';
 
 export function createSavedRideViewer({root,map,onBack,onExport}) {
   const text=root.querySelector('#history-detail-text'),actions=root.querySelector('#history-detail-actions');
@@ -49,6 +50,7 @@ export function createSavedRideViewer({root,map,onBack,onExport}) {
     for(const [key,format,share] of [['rides.json','json',false],['rides.gpx','gpx',false],['rides.share','gpx',true]]) {
       actions.append(button(key,()=>void runAction(actions,status,()=>onExport(format,share))));
     }
+    contributionButton(actions,{sourceId:session.id,session});
     const model=prepareRideReplay(session.routePoints);bounds=model.bounds;
     player=mountRideReplay({model,session,map,onOverview:fit});
     if(!bounds)content.append(labelText(element('p','muted'),'viewer.noRoute'));

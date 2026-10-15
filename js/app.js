@@ -10,6 +10,7 @@ import {createRecordingLock} from './recording-lock.js';
 import { initShell, publishRideSummary } from './ui/shell.js';
 import {initRideLaunch} from './ui/ride-launch.js';
 import {initAttendance} from './ui/attendance.js';
+import {initClubActivity} from './ui/club-activity.js';
 import {getRidingIdentity,verifyRidingIdentity,getRiderProfileId} from './riding-identity.js';
 import {confirmDashboardReturn} from './ui/host-return.js';
 import {initNotifications} from './ui/notifications.js';
@@ -105,6 +106,7 @@ import { initLeafletMap, updateMapPositionLayers, setMapThemeLayer } from './map
       initGroupInvitesUI();
       initClubMembersUI();
       initClubBrandingUI();
+      initClubActivity();
       initRideLaunch();initShell();
       initNotifications();
       initPublicProfiles();

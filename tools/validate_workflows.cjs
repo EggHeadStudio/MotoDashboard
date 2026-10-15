@@ -25,8 +25,8 @@ for(const file of ['deploy.yml','deploy-firebase.yml','deploy-cloudflare.yml']){
   if(file==='deploy-cloudflare.yml')assert(source.includes('workingDirectory: cloudflare') && source.includes('wrangler-action@v4'));
 }
 const wrangler=JSON.parse(fs.readFileSync(path.join(root,'cloudflare/wrangler.jsonc'),'utf8'));
-assert.equal(wrangler.name,'motodash-live');assert.deepEqual(wrangler.migrations,[{tag:'v1',new_sqlite_classes:['LiveRoom']},{tag:'v2',new_sqlite_classes:['LiveIdentity']},{tag:'v3',new_sqlite_classes:['MediaState']}]);
-assert.deepEqual(wrangler.durable_objects.bindings,[{name:'LIVE_ROOMS',class_name:'LiveRoom'},{name:'LIVE_IDENTITIES',class_name:'LiveIdentity'},{name:'MEDIA_STATE',class_name:'MediaState'}]);
+assert.equal(wrangler.name,'motodash-live');assert.deepEqual(wrangler.migrations,[{tag:'v1',new_sqlite_classes:['LiveRoom']},{tag:'v2',new_sqlite_classes:['LiveIdentity']},{tag:'v3',new_sqlite_classes:['MediaState']},{tag:'v4',new_sqlite_classes:['ClubActivity']}]);
+assert.deepEqual(wrangler.durable_objects.bindings,[{name:'LIVE_ROOMS',class_name:'LiveRoom'},{name:'LIVE_IDENTITIES',class_name:'LiveIdentity'},{name:'MEDIA_STATE',class_name:'MediaState'},{name:'CLUB_ACTIVITY',class_name:'ClubActivity'}]);
 assert.deepEqual(wrangler.r2_buckets,[{binding:'MEDIA_BUCKET',bucket_name:'motodash-media'}]);
 assert(!JSON.stringify(wrangler).includes('private_key'));
-console.log(`PASS: 3 workflow YAMLs, ${blocks} Bash blocks, manual backend/main/project/gate contracts, preserved live v1/v2 + media v3/private R2; no workflow executed`);
+console.log(`PASS: 3 workflow YAMLs, ${blocks} Bash blocks, manual backend/main/project/gate contracts, preserved live v1/v2 + media v3/private R2 + Club activity v4; no workflow executed`);

@@ -1,6 +1,7 @@
 export {LiveRoom} from './LiveRoom.js';
 export {LiveIdentity} from './LiveIdentity.js';
 export {MediaState} from './MediaState.js';
+export {ClubActivity} from './ClubActivity.js';
 import {decodeJwt} from 'jose';
 import {verifyFirebaseToken,PROJECT} from './auth.js';
 export function allowedOrigin(request, env) {
@@ -18,6 +19,22 @@ export default {
       'Access-Control-Allow-Methods':'POST, PUT, DELETE, GET, OPTIONS','Access-Control-Allow-Headers':'Authorization, Content-Type, If-Match, X-Media-Published'};
     const reply=(error,status)=>Response.json({error},{status,headers});
     if(request.method==='OPTIONS') return new Response(null,{status:204,headers});
+    const activity=/^\/v1\/clubs\/([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/activity(?:\/[0-9a-f-]{36})?$/.exec(url.pathname);
+    if(activity){
+      if(env.FIREBASE_PROJECT_ID!==PROJECT||!env.CLUB_ACTIVITY||!env.FIRESTORE_SERVICE_ACCOUNT||!env.MEDIA_SERVICE_ACCOUNT)return reply('not_configured',503);
+      if(url.protocol!=='https:')return reply('bad_request',400);
+      let identity=null;const authorization=request.headers.get('Authorization');
+      if(authorization)try{if(!authorization.startsWith('Bearer '))throw Error();const token=authorization.slice(7);
+        identity={...await verifyFirebaseToken(token,PROJECT),authTime:decodeJwt(token).auth_time*1000};
+      }catch{return reply('invalid_token',401);}
+      if(request.method!=='GET'&&!identity)return reply('invalid_token',401);
+      const caller='ip:'+(request.headers.get('CF-Connecting-IP') || 'unknown');
+      const hashed=[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(caller)))].map(x=>x.toString(16).padStart(2,'0')).join('');
+      const internal=new Headers(request.headers);internal.set('X-MotoDash-Identity',JSON.stringify(identity));internal.set('X-MotoDash-Caller',hashed);internal.delete('Authorization');
+      try{const result=await env.CLUB_ACTIVITY.get(env.CLUB_ACTIVITY.idFromName(activity[1])).fetch(new Request(request,{headers:internal}));
+        return new Response(result.body,{status:result.status,headers:{...headers,'Content-Type':'application/json'}});
+      }catch{return reply('unavailable',503);}
+    }
     if(url.pathname.startsWith('/v1/media/')) {
       if(env.FIREBASE_PROJECT_ID!==PROJECT || !env.MEDIA_BUCKET || !env.MEDIA_STATE || !env.MEDIA_SERVICE_ACCOUNT)return reply('not_configured',503);
       if(url.search || url.hash || url.protocol!=='https:')return reply('bad_request',400);

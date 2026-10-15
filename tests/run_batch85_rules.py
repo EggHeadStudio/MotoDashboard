@@ -84,5 +84,8 @@ def attendance_tests():
 
 def run():
     compile_rules();r.checks=0;identity_tests();group_identity_tests();attendance_tests()
+    for path in ['clubActivities/forged','clubs/club85-current/activity/forged','users/identity85/clubActivity/forged']:
+        for actor in ['identity85','other85',None]:
+            r.commit(actor,[r.update(path,{'rides':999,'uid':'identity85'})],False);r.read(actor,path,False)
     print(f'PASS: Batch 8.5 Rules: {r.checks} passed, 0 failed, 0 skipped; actual localhost demo, not production')
 if __name__=='__main__':run()

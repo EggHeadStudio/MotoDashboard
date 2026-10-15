@@ -26,7 +26,7 @@ before(async()=>{
   execFileSync(openssl,['req','-x509','-newkey','rsa:2048','-keyout',join(fixtureDir,'key.pem'),'-out',join(fixtureDir,'cert.pem'),'-days','1','-nodes','-subj','/CN=local-test'],{stdio:'ignore'});
   const pem=await readFile(join(fixtureDir,'key.pem'),'utf8');cert=await readFile(join(fixtureDir,'cert.pem'),'utf8');key=await importPKCS8(pem,'RS256');seed();seed(roomB);
   mf=new Miniflare({modules:true,scriptPath:new URL('../dist/index.js',import.meta.url).pathname.replace(/^\/([A-Z]:)/,'$1'),
-    compatibilityDate:'2026-08-06',r2Buckets:['MEDIA_BUCKET'],durableObjects:{LIVE_ROOMS:{className:'LiveRoom',useSQLite:true},LIVE_IDENTITIES:{className:'LiveIdentity',useSQLite:true},MEDIA_STATE:{className:'MediaState',useSQLite:true}},
+    compatibilityDate:'2026-08-06',r2Buckets:['MEDIA_BUCKET'],durableObjects:{LIVE_ROOMS:{className:'LiveRoom',useSQLite:true},LIVE_IDENTITIES:{className:'LiveIdentity',useSQLite:true},MEDIA_STATE:{className:'MediaState',useSQLite:true},CLUB_ACTIVITY:{className:'ClubActivity',useSQLite:true}},
     bindings:{FIREBASE_PROJECT_ID:project,ALLOWED_ORIGINS:origin,FIRESTORE_SERVICE_ACCOUNT:JSON.stringify({project_id:project,
       client_email:'test-reader@'+project+'.iam.gserviceaccount.com',private_key:pem}),MEDIA_SERVICE_ACCOUNT:JSON.stringify({type:'service_account',project_id:project,
       client_email:'motodash-media@'+project+'.iam.gserviceaccount.com',private_key:pem})},
@@ -87,6 +87,26 @@ test('runtime health, CORS, unknown routes and invalid Firebase tokens',async()=
   assert.equal((await ticket('outsider')).status,403);
 });
 let alice,bob;
+test('Club activity native SQLite gateway verifies consent/source/privacy and never accepts asserted UID',async()=>{
+  const id=crypto.randomUUID(),base=`https://worker.test/v1/clubs/${id}/activity`;
+  docs.set('clubs/'+id,{id,name:'Activity Club',ownerUid:'activity-owner',state:'active',visibility:'public'});
+  docs.set(`clubs/${id}/members/activity-owner`,{uid:'activity-owner',technicalRole:'owner',rankId:null,joinedAt:'member-source'});
+  docs.set('displayProfiles/activity-owner',{displayName:'Activity Rider'});
+  docs.set('users/activity-owner/sessions/activity-ride',{id:'activity-ride',ownerUid:'activity-owner',status:'completed',uploadState:'ready',visibility:'private',
+    startedAt:Date.now()-10000,createdAt:'ride-source',distanceMeters:1000,movingDurationMs:60000,category:'motorcycle'});
+  const request=async(uid,options={})=>mf.dispatchFetch(base,{...options,headers:{Origin:origin,...(uid?{Authorization:'Bearer '+await token(uid)}:{}),...options.headers}});
+  assert.equal((await request(null,{method:'POST',headers:{'X-MotoDash-Identity':'{"uid":"activity-owner"}'}})).status,401);
+  const body=JSON.stringify({sourceType:'ride',sourceId:'activity-ride',audience:'public',consent:true,publicConsent:true});
+  const r=await request('activity-owner',{method:'POST',headers:{'If-Match':'0'},body});assert.equal(r.status,200,await r.clone().text());
+  const data=await (await request(null)).json();assert.equal(data.entries.length,1);assert.equal(data.stats.rides,1);assert.equal(data.stats.distanceMeters,1000);
+  for(const key of ['uid','sourceId','routePoints','email'])assert(!(key in data.entries[0]));
+  assert.equal((await request('activity-owner',{method:'POST',headers:{'If-Match':'0'},body})).status,409);
+  assert.equal((await request(null,{headers:{Origin:'https://evil.test'}})).status,403);
+  docs.get('clubs/'+id).visibility='private';assert.equal((await request(null)).status,403);
+  docs.get('clubs/'+id).visibility='public';docs.set('users/activity-owner/sessionTombstones/activity-ride',{id:'activity-ride'});
+  assert.equal((await (await request(null)).json()).entries.length,0);
+  docs.get('clubs/'+id).state='deleted';assert.equal((await request('activity-owner')).status,403);
+});
 const mediaProfile='11111111-1111-4111-8111-111111111111';
 async function media(path,uid='alice',options={}) {
   return mf.dispatchFetch('https://worker.test/v1/media/'+path,{...options,headers:{Origin:origin,...(uid?{Authorization:'Bearer '+await token(uid)}:{}),...options.headers}});

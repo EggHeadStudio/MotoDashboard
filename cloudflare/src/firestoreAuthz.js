@@ -21,6 +21,7 @@ async function accessToken(env,signal) {
   return pending;
 }
 function decode(value) {
+  if('timestampValue' in value)return value.timestampValue;
   if('stringValue' in value) return value.stringValue;
   if('integerValue' in value) return Number(value.integerValue);
   if('doubleValue' in value) return value.doubleValue;
