@@ -10,6 +10,12 @@
 .color-swatch[aria-pressed=true]{border-color:#fff;outline:2px solid var(--md-gold,#e9bf73);outline-offset:2px;}
 .color-swatch:focus-visible{outline:3px solid #fff;outline-offset:3px;}
 .color-preview{padding:16px;border-radius:12px;}
+.ride-launch-options{position:relative;z-index:1;width:100%;margin-bottom:16px;}
+#ride-launch{display:grid;grid-template-columns:64px minmax(0,1fr);gap:8px 14px;align-items:center;}
+#ride-launch>.field{grid-column:2;min-width:0;}#ride-launch>button,#ride-launch>.category-chip{grid-column:2;}
+.launch-vehicle-photo{grid-column:1;grid-row:1 / span 2;width:64px;height:64px;border-radius:16px;background:#1c2530;display:grid;place-items:center;}
+.launch-vehicle-photo svg{width:44px;height:44px;}
+.ride-launch{flex-wrap:wrap;}.ride-launch select{width:100%;min-width:0;}
 .feature-dialog{padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));}
 .feature-body>.feature-card,.feature-body>.home-section{margin-block:16px;}
 .feature-body>.feature-actions{display:flex;flex-wrap:wrap;gap:8px;}

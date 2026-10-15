@@ -57,3 +57,9 @@ shared media editors; Club colors/optional route color use native visual selecti
 preview, reset and black/white contrast selection instead of raw HEX entry. Existing
 values and strict backend validation remain. Theme Cancel restores the saved values.
 Four focused browser groups and the eight existing media groups pass.
+
+M5: Home now selects from the already-loaded Garage, renders the chosen cover/
+category, and offers bounded existing Groups through their authorized detail flow.
+Personal Start does not create/admit a Group or enable sharing. Active recording
+locks the selector. Five focused checks pass including switching, no new sharing/
+Group creation and 320px overflow. No additional Home Firestore queries were added.

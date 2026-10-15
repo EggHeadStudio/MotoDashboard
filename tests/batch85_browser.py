@@ -30,6 +30,16 @@ def run_batch85_tests(browser,base,route_map):
        && !Object.values(b.fi).some(v=>/\\w\\?\\w/.test(v)) && d.fi['ride.personal']==='Oma profiili';}''')
     assert result
     print('PASS: Batch 8.5 English/Finnish key parity and intact Unicode labels')
+    p.locator('#bottom-nav [data-destination=home]').click()
+    vehicle_id=p.locator('#ride-launch-vehicle option').last.get_attribute('value')
+    p.select_option('#ride-launch-vehicle','')
+    assert p.evaluate("async()=>(await import('./js/garage-ui.js')).selectedVehicle()") is None
+    p.select_option('#ride-launch-vehicle',vehicle_id)
+    assert p.evaluate("async()=>(await import('./js/garage-ui.js')).selectedVehicle().id")==vehicle_id
+    assert p.locator('#ride-launch-group').input_value()==''
+    assert p.evaluate("async()=>{const s=(await import('./js/ride-context.js')).getRideContext();return !s.recordingId&&!s.sharing;}")
+    assert p.evaluate('document.documentElement.scrollWidth<=innerWidth')
+    print('PASS: Batch 8.5 Home vehicle switching is compact, creates no Group and never enables live consent')
     fixture=json.loads((Path(__file__).resolve().parents[1]/'cloudflare/tests/media-fixtures.json').read_text())
     media={'revision':1,'images':[{'id':'rank-image','slot':'icon','published':False}],'theme':{'icon':'star','badge':'crest'},'canWrite':True}
     deny=[False]

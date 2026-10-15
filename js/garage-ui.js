@@ -16,6 +16,8 @@ let state = { uid: null, vehicles: [], defaultVehicleId: null, selectedId: null,
 let version = 0;
 export function selectedVehicle() { return state.uid === getAccount()?.uid ? state.vehicles.find(v => v.id === state.selectedId) || null : null; }
 export function onVehicleChange(fn) { listeners.add(fn); fn(selectedVehicle()); return () => listeners.delete(fn); }
+export function garageVehicles(){return state.uid===getAccount()?.uid?[...state.vehicles]:[];}
+export function chooseRideVehicle(id){if(id!==null&&!garageVehicles().some(v=>v.id===id))return false;state.selectedId=id;publish();return true;}
 function publish() { for (const fn of listeners) fn(selectedVehicle()); }
 export function initGarageUI() {
   const view = dialog('garage-dialog', 'garage.title');

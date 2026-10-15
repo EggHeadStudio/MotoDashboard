@@ -8,6 +8,7 @@ import {getRideContext,onRideContext,setRecordingContext,verifyRememberedGroup} 
 import {initRideReturn,showActiveRideConflict} from './ui/ride-return.js';
 import {createRecordingLock} from './recording-lock.js';
 import { initShell, publishRideSummary } from './ui/shell.js';
+import {initRideLaunch} from './ui/ride-launch.js';
 import {confirmDashboardReturn} from './ui/host-return.js';
 import {initNotifications} from './ui/notifications.js';
 import { initAuthUI } from './auth-ui.js';
@@ -101,7 +102,7 @@ import { initLeafletMap, updateMapPositionLayers, setMapThemeLayer } from './map
       initGroupInvitesUI();
       initClubMembersUI();
       initClubBrandingUI();
-      initShell();
+      initRideLaunch();initShell();
       initNotifications();
       initPublicProfiles();
       initRideReturn();

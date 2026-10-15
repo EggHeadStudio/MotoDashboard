@@ -43,6 +43,7 @@ export function initShell() {
     if(!next.length) upcoming.append(labelText(element('p','muted'),'home.noUpcoming'));
     for(const club of clubs.slice(0,3)) community.append(clubCard(club,()=>{location.hash='/club/'+club.id;},{member:true}));
     if(!clubs.length) community.append(labelText(element('p','muted'),'clubs.noMemberships'));
+    dispatchEvent(new CustomEvent('motodash-home-data',{detail:{groups,clubs}}));
   }
   async function refresh() {
     if(!uid||loading) return;loading=true;const owner=uid,token=epoch;
