@@ -2,6 +2,8 @@
 from firebase_mocks import install
 from batch2_browser import register,open_garage,add_vehicle
 from navigation_helpers import click_control
+import base64,json
+from pathlib import Path
 
 def run_batch85_tests(browser,base,route_map):
     c=browser.new_context(viewport={'width':320,'height':568});route_map(c);install(c)
@@ -28,4 +30,32 @@ def run_batch85_tests(browser,base,route_map):
        && !Object.values(b.fi).some(v=>/\\w\\?\\w/.test(v)) && d.fi['ride.personal']==='Oma profiili';}''')
     assert result
     print('PASS: Batch 8.5 English/Finnish key parity and intact Unicode labels')
+    fixture=json.loads((Path(__file__).resolve().parents[1]/'cloudflare/tests/media-fixtures.json').read_text())
+    media={'revision':1,'images':[{'id':'rank-image','slot':'icon','published':False}],'theme':{'icon':'star','badge':'crest'},'canWrite':True}
+    deny=[False]
+    def route_media(route):
+        headers={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'Authorization'}
+        if route.request.method=='OPTIONS':route.fulfill(status=204,headers=headers)
+        elif '/images/' in route.request.url:
+            if deny[0]:route.fulfill(status=403,json={'error':'access_denied'},headers=headers)
+            else:route.fulfill(body=base64.b64decode(fixture['image/png']),content_type='image/png',headers=headers)
+        else:route.fulfill(json=media,headers=headers)
+    c.route('https://motodash-live.old-sound-55f2.workers.dev/v1/media/**',route_media)
+    p.evaluate('''async()=>{const {decorateMedia}=await import('./js/media/media-render.js');const n=document.createElement('span');n.id='test-rank';n.className='rank-graphic';
+      n.style.cssText='position:fixed;top:0;left:0;z-index:999999';document.body.append(n);window.__rankTarget={kind:'rank',id:'testclub',child:'captain'};
+      decorateMedia(n,window.__rankTarget,{icon:n},{rank:true});}''')
+    p.wait_for_selector('#test-rank.has-rank-image');assert p.locator('#test-rank img').is_visible()
+    assert p.locator('#test-rank svg').evaluate('(n)=>getComputedStyle(n).visibility')=='hidden'
+    media['images'][0]['id']='replacement'
+    p.evaluate("dispatchEvent(new CustomEvent('motodash-media-updated',{detail:{target:window.__rankTarget}}))")
+    p.wait_for_selector('#test-rank.has-rank-image');assert p.locator('#test-rank img').count()==1
+    media['images']=[]
+    p.evaluate("dispatchEvent(new CustomEvent('motodash-media-updated',{detail:{target:window.__rankTarget}}))")
+    p.wait_for_function('!document.querySelector("#test-rank img")')
+    assert p.locator('#test-rank svg').is_visible()
+    media['images']=[{'id':'denied','slot':'icon','published':False}];deny[0]=True
+    p.evaluate("dispatchEvent(new CustomEvent('motodash-media-updated',{detail:{target:window.__rankTarget}}))")
+    p.wait_for_timeout(150);assert p.locator('#test-rank svg').is_visible() and not p.locator('#test-rank img').count()
+    assert not errors,errors
+    print('PASS: Batch 8.5 custom rank image precedence, replacement, deletion and unauthorized-image fallback')
     c.close()

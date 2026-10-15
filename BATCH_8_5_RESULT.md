@@ -45,3 +45,9 @@ M2: shared navigation checks unsaved changes before switching panels; modal clos
 accepts a confirmed discard, preventing repeat prompts. Consistent sticky Edit bar,
 touch targets, safe-area padding, wrapping and reduced-motion styles reuse the
 current design system. Two focused checks and all eight Batch 8 browser groups pass.
+
+M3: confirmed SVG stacking above uploaded rank image; a successfully decoded custom
+image now hides the built-in icon, and failed/removed/replaced images restore it.
+Resource refresh clears stale presentation classes and URLs. Three focused browser
+groups pass including custom-image precedence, replacement, deletion and 403 fallback.
+Existing Worker rank authorization/image upload tests are retained for M13.
