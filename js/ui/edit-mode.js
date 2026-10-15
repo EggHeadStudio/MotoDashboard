@@ -9,7 +9,10 @@ const fields=root=>[...root.querySelectorAll('input,select,textarea')];
 const baselines=new WeakMap();
 export function acceptEdits(root) {for(const node of fields(root))baselines.set(node,value(node));}
 export function hasEdits(root) {return fields(root).some(node=>baselines.has(node)&&baselines.get(node)!==value(node));}
-export function mayLeaveEditor(root) {return root.dataset.editorOwner!==(getAccount()?.uid || '')||!hasEdits(root)||confirm(t('edit.discard'));}
+export function mayLeaveEditor(root) {
+  const owner=root.dataset.editorOwner ?? root.querySelector('[data-editor-owner]')?.dataset.editorOwner;
+  return owner!==(getAccount()?.uid || '')||!hasEdits(root)||confirm(t('edit.discard'));
+}
 export function guardEditor(root) {
   root.dataset.guardedEditor='';root.dataset.editorOwner=getAccount()?.uid || '';acceptEdits(root);
   root.addEventListener('focusin',event=>{if(event.target.matches('input,select,textarea')&&!baselines.has(event.target))baselines.set(event.target,value(event.target));});

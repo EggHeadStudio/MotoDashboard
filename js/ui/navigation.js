@@ -2,6 +2,7 @@ import { icon } from './icons.js';
 import { t, setLocalizedText } from '../i18n/i18n.js';
 import { getAccount, onAccountChange } from '../auth-state.js';
 import {setDashboardVisible} from '../ride-context.js';
+import {mayLeaveEditor,acceptEdits} from './edit-mode.js';
 
 const destinations = ['home','discover','rides','clubs','profile'];
 const panels = {'lobby-dialog':'discover', 'clubs-dialog':'clubs', 'groups-dialog':'rides'};
@@ -13,6 +14,11 @@ const silentClosures = new WeakSet();
 const dashboardReturns = new WeakMap();
 export const currentScreen = () => selected;
 export function navigate(screen, {write = true, panel = null, focus = true} = {}) {
+  for(const view of document.querySelectorAll('dialog[open]')){
+    if(view.id===panel)continue;
+    if(!mayLeaveEditor(view))return false;
+    acceptEdits(view);
+  }
   if (!destinations.includes(screen) && !['landing','rider'].includes(screen)) screen = 'home';
   if(!getAccount() && !panel && screen!=='rider' && !(guestEntry && ['home','rides'].includes(screen))) screen='landing';
   selected = screen; navigating = true;
@@ -35,13 +41,14 @@ export function navigate(screen, {write = true, panel = null, focus = true} = {}
   if (focus) document.getElementById('screen-host').focus({preventScroll:true});
   document.getElementById('start-overlay').scrollTop = 0;
   dispatchEvent(new CustomEvent('motodash-navigate', {detail: {screen}}));
+  return true;
 }
 export function openView(node) {
   const screen = panels[node.id];
   if (screen) {
     const shell=document.getElementById('start-overlay');
     if(shell.style.display==='none') {dashboardReturns.set(node,getAccount()?.uid || null);shell.style.display='flex';}
-    navigate(screen, {write:false, panel:node.id, focus:false});
+    if(navigate(screen, {write:false, panel:node.id, focus:false})===false)return false;
     if (!node.open) node.show();
     node.querySelector('h2')?.setAttribute('tabindex','-1'); node.querySelector('h2')?.focus();
     return;

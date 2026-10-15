@@ -5,5 +5,10 @@
 .feature-header button,.feature-actions button,.edit-toolbar button{min-height:44px;}
 .feature-body h3,.feature-body p,.member-name{overflow-wrap:anywhere;}
 .edit-hint{font-size:.85rem;}
+.feature-dialog{padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));}
+.feature-body>.feature-card,.feature-body>.home-section{margin-block:16px;}
+.feature-body>.feature-actions{display:flex;flex-wrap:wrap;gap:8px;}
+.feature-status{font-size:.85rem;color:var(--md-muted,#b8bec8);}
+.feature-header{align-items:center;gap:12px;}.feature-header h2{min-width:0;overflow-wrap:anywhere;}
 @media(max-width:400px){.feature-actions{gap:8px;}.feature-actions button{flex:1 1 120px;}.edit-toolbar{padding-top:env(safe-area-inset-top,0px);}}
 @media(prefers-reduced-motion:reduce){.edit-toolbar,.feature-card{transition:none;}}

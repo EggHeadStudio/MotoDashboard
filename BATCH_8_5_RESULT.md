@@ -40,3 +40,8 @@ Cancel/closing warns for unsaved fields. Media editors use unique IDs when sever
 rank editors coexist. Two focused Chromium checks pass (320px and EN/FI parity).
 Existing regression fixtures now enter the actual Edit controls; no forced hidden
 clicks or permission assertions are removed. Full regression is repeated at M13.
+
+M2: shared navigation checks unsaved changes before switching panels; modal close
+accepts a confirmed discard, preventing repeat prompts. Consistent sticky Edit bar,
+touch targets, safe-area padding, wrapping and reduced-motion styles reuse the
+current design system. Two focused checks and all eight Batch 8 browser groups pass.

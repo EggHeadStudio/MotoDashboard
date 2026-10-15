@@ -1,6 +1,6 @@
 import { t, setLocalizedText } from '../i18n/i18n.js';
 import { openView, mountPanel } from './navigation.js';
-import {mayLeaveEditor} from './edit-mode.js';
+import {mayLeaveEditor,acceptEdits} from './edit-mode.js';
 import { dataErrorMessage } from '../firebase/access.js';
 
 export function element(tag, className, content) {
@@ -46,7 +46,7 @@ export function dialog(id, titleKey) {
   const status = element('p', 'feature-status'); status.setAttribute('role', 'status');
   node.append(header, status, body); document.body.append(node);
   const close=node.close.bind(node);
-  node.close=(...args)=>{if(mayLeaveEditor(body))close(...args);};
+  node.close=(...args)=>{if(mayLeaveEditor(body)){acceptEdits(body);close(...args);}};
   node.addEventListener('cancel',event=>{if(!mayLeaveEditor(body))event.preventDefault();});
   mountPanel(node);
   return { node, body, status };
