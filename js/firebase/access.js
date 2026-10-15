@@ -20,6 +20,7 @@ const operations = new Set(['data','group-load','group-list','hosting-clubs','gr
 const safeOperation = value => operations.has(value) ? value : 'data';
 operations.add('people-search');
 operations.add('live-identity');
+operations.add('attendance');
 const diagnostics=[];
 export const getDataDiagnostics = () => diagnostics.map(row=>({...row}));
 export function requestDiagnostic(error, operation='data') {

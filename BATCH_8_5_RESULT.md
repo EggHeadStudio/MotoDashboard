@@ -73,3 +73,13 @@ decoration without granting/removing unrelated Group rights. Live marker images 
 authorized opaque resource requests with text/icon fallbacks, no permanent URLs.
 Contribution is a separate opt-in. Six focused browser groups, 32 new actual Rules
 assertions and all 11 authority unit groups pass. Existing GPS/live consent is reused.
+
+M8 precedes M7 because Home upcoming depends on RSVP. Going/Interested/Not going
+are separate owner records, safe UID-free counts and private Home refs. Rules prove
+all three writes and exact deltas atomically; no client-controlled counter. Capacity
+is at most 50 Going (also bounded by activity capacity), 200 intent records total;
+organizer sees at most the latest 50 named responses. Going never admits a participant,
+including public activities (explicit Join stays separate). Approval/private isolation,
+forged/duplicate/capacity/concurrent/terminal writes and live separation are tested.
+68 cumulative new Rules assertions and seven focused browser groups pass. Existing
+full Worker suite also passed 98 before the additional authority test (99 on final run).

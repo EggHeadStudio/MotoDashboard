@@ -1,7 +1,7 @@
 """Batch 8.5 browser checks, local fixtures only."""
 from firebase_mocks import install
 from batch2_browser import register,open_garage,add_vehicle
-from navigation_helpers import click_control
+from navigation_helpers import click_control,click_action
 import base64,json
 from pathlib import Path
 
@@ -56,6 +56,17 @@ def run_batch85_tests(browser,base,route_map):
     assert p.evaluate("async()=>(await import('./js/riding-identity.js')).getRidingIdentity().kind")=='personal'
     assert not errors,errors
     print('PASS: Batch 8.5 current Club identity verification, private-default contribution and revocation denial')
+    click_action(p,'#groups-btn');p.wait_for_selector('#group-create');p.click('#group-create');p.wait_for_selector('#group-form')
+    p.fill('#group-form-title','RSVP test ride');p.fill('#group-form-meetingArea','Helsinki');p.locator('#group-form button[type=submit]').click()
+    p.wait_for_selector('#group-attendance [data-rsvp=interested]');p.locator('#group-attendance [data-rsvp=interested]').click()
+    p.wait_for_selector('#group-attendance [data-rsvp=interested][aria-pressed=true]')
+    p.locator('#group-attendance [data-rsvp=going]').click();p.wait_for_selector('#group-attendance [data-rsvp=going][aria-pressed=true]')
+    before=p.evaluate('window.__mock.writes');p.locator('#group-attendance [data-rsvp=going]').click()
+    p.wait_for_function('document.querySelector("#groups-dialog .feature-body").getAttribute("aria-busy")==="false"')
+    assert p.evaluate('window.__mock.writes')==before,'Duplicate RSVP must not inflate or write counts'
+    assert not p.evaluate("async()=>(await import('./js/ride-context.js')).getRideContext().sharing")
+    assert not errors,errors
+    print('PASS: Batch 8.5 RSVP selection, duplicate idempotency and live consent separation through actual Group UI')
     fixture=json.loads((Path(__file__).resolve().parents[1]/'cloudflare/tests/media-fixtures.json').read_text())
     media={'revision':1,'images':[{'id':'rank-image','slot':'icon','published':False}],'theme':{'icon':'star','badge':'crest'},'canWrite':True}
     deny=[False]

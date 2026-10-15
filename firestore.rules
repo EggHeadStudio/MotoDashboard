@@ -865,6 +865,68 @@ service cloud.firestore {
       allow update: if false;
       allow delete: if signedIn() && (owns(uid) || groupManager(id)) && !existsAfter(groupMember(id, uid));
     }
+    // RSVP expresses intent only. It is never used by groupAdmission/live authority.
+    function attendancePath(id,uid){return /databases/$(database)/documents/groupSessions/$(id)/attendance/$(uid);}
+    function attendanceSummary(id){return /databases/$(database)/documents/groupSessions/$(id)/attendanceSummary/current;}
+    function attendanceRef(id,uid){return /databases/$(database)/documents/users/$(uid)/attendanceRefs/$(id);}
+    function attendanceAudience(id){
+      return groupAvailable(id) && (get(groupPath(id)).data.visibility != 'private' || groupParticipant(id) || groupManager(id) || groupInvited(id));
+    }
+    function attendanceChoice(id,after){
+      let path=attendancePath(id,request.auth.uid);
+      return after ? (existsAfter(path)?getAfter(path).data.choice:null) : (exists(path)?get(path).data.choice:null);
+    }
+    function attendanceDelta(old,next,value){return (next == value?1:0)-(old == value?1:0);}
+    function attendanceCounts(id){
+      return exists(attendanceSummary(id))?get(attendanceSummary(id)).data:{'going':0,'interested':0,'not-going':0,'total':0};
+    }
+    function validAttendanceCounts(id){
+      let old=attendanceChoice(id,false);
+      let next=attendanceChoice(id,true);
+      let before=attendanceCounts(id);
+      let after=request.resource.data;
+      return after.keys().hasAll(['going','interested','not-going','total','updatedAt'])
+        && after.keys().hasOnly(['going','interested','not-going','total','updatedAt']) && after.updatedAt == request.time
+        && after.going is int && after.interested is int && after['not-going'] is int && after.total is int
+        && after.going == before.going + attendanceDelta(old,next,'going')
+        && after.interested == before.interested + attendanceDelta(old,next,'interested')
+        && after['not-going'] == before['not-going'] + attendanceDelta(old,next,'not-going')
+        && after.total == before.total + (old == null?1:0) - (next == null?1:0)
+        && after.going >= 0 && after.going <= 50 && after.interested >= 0 && after['not-going'] >= 0 && after.total >= 0 && after.total <= 200
+        && (next == null ? old != null && !existsAfter(attendanceRef(id,request.auth.uid))
+          : groupUsable(get(groupPath(id)).data) && !exists(groupBan(id,request.auth.uid))
+            && getAfter(attendancePath(id,request.auth.uid)).data.updatedAt == request.time
+            && getAfter(attendanceRef(id,request.auth.uid)).data.updatedAt == request.time
+            && (get(groupPath(id)).data.maxParticipants == null || after.going <= get(groupPath(id)).data.maxParticipants));
+    }
+    match /groupSessions/{id}/attendance/{uid}{
+      allow get: if attendanceAudience(id) && (owns(uid) || groupManager(id));
+      allow list: if groupManager(id) && request.query.limit != null && request.query.limit <= 50;
+      allow create,update: if owns(uid) && attendanceAudience(id) && groupUsable(get(groupPath(id)).data) && !exists(groupBan(id,uid))
+        && request.resource.data.keys().hasAll(['uid','sessionId','choice','createdAt','updatedAt'])
+        && request.resource.data.keys().hasOnly(['uid','sessionId','choice','createdAt','updatedAt'])
+        && request.resource.data.uid == uid && request.resource.data.sessionId == id
+        && request.resource.data.choice in ['going','interested','not-going'] && request.resource.data.updatedAt == request.time
+        && request.resource.data.createdAt == (exists(attendancePath(id,uid))?resource.data.createdAt:request.time)
+        && getAfter(attendanceSummary(id)).data.updatedAt == request.time
+        && getAfter(attendanceRef(id,uid)).data.choice == request.resource.data.choice;
+      allow delete: if owns(uid) && attendanceAudience(id) && !existsAfter(attendanceRef(id,uid))
+        && getAfter(attendanceSummary(id)).data.updatedAt == request.time;
+    }
+    match /groupSessions/{id}/attendanceSummary/{key}{
+      allow get: if key == 'current' && attendanceAudience(id);
+      allow create,update: if key == 'current' && attendanceAudience(id) && validAttendanceCounts(id);
+      allow list,delete: if false;
+    }
+    match /users/{uid}/attendanceRefs/{id}{
+      allow read: if owns(uid);
+      allow create,update: if owns(uid) && request.resource.data.keys().hasAll(['uid','sessionId','choice','updatedAt'])
+        && request.resource.data.keys().hasOnly(['uid','sessionId','choice','updatedAt'])
+        && request.resource.data.uid == uid && request.resource.data.sessionId == id && request.resource.data.updatedAt == request.time
+        && getAfter(attendancePath(id,uid)).data.choice == request.resource.data.choice
+        && getAfter(attendancePath(id,uid)).data.updatedAt == request.time;
+      allow delete: if owns(uid) && !existsAfter(attendancePath(id,uid));
+    }
     match /groupPages/{id} {
       allow get: if groupAvailable(id) && resource.data == groupSummary(get(groupPath(id)).data)
         && (resource.data.visibility != 'private' || groupParticipant(id) || groupManager(id) || groupInvited(id));
