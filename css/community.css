@@ -16,6 +16,11 @@
 .launch-vehicle-photo{grid-column:1;grid-row:1 / span 2;width:64px;height:64px;border-radius:16px;background:#1c2530;display:grid;place-items:center;}
 .launch-vehicle-photo svg{width:44px;height:44px;}
 .ride-launch{flex-wrap:wrap;}.ride-launch select{width:100%;min-width:0;}
+#ride-launch>p{grid-column:1/-1;}#ride-launch input[type=checkbox]{width:22px;height:22px;}
+.rider-composite-icon{background:none;border:0;}.rider-composite{display:block;position:relative;width:44px;height:44px;}
+.rider-avatar{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:#1c2530;color:#f4f4f4;border:2px solid #e9bf73;font-weight:700;}
+.rider-club-badge{position:absolute!important;right:-4px;bottom:-4px;width:23px;height:23px;border-radius:50%;background:#101214;border:2px solid #fff;color:#e9bf73;text-align:center;z-index:4;}
+.rider-heading{position:absolute;top:-9px;left:15px;width:0;height:0;border:6px solid transparent;border-top:0;border-bottom:9px solid #e9bf73;}
 .feature-dialog{padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));}
 .feature-body>.feature-card,.feature-body>.home-section{margin-block:16px;}
 .feature-body>.feature-actions{display:flex;flex-wrap:wrap;gap:8px;}

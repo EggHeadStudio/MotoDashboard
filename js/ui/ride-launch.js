@@ -6,10 +6,12 @@ import {vehicleIcon} from './icons.js';
 import {getRideContext,onRideContext} from '../ride-context.js';
 import {followSessionURL,sessionURL} from '../data/group-session.js';
 import {onLanguageChange,t} from '../i18n/i18n.js';
+import {getRidingIdentity,chooseRidingIdentity} from '../riding-identity.js';
+import {dataErrorMessage} from '../firebase/access.js';
 
 export function initRideLaunch(){
   const launch=document.querySelector('.ride-launch'),root=element('div','ride-launch-options');root.id='ride-launch-options';launch.prepend(root);
-  let groups=[],disposePhoto=null;
+  let groups=[],clubs=[],disposePhoto=null;
   function render(){
     disposePhoto?.();disposePhoto=null;root.replaceChildren();
     const context=getRideContext(),locked=!!context.recordingId;
@@ -24,6 +26,16 @@ export function initRideLaunch(){
     const art=element('div','launch-vehicle-photo');art.setAttribute('aria-hidden','true');art.append(vehicleIcon(selected?.category || 'motorcycle'));
     form.prepend(art);if(selected)disposePhoto=decorateMedia(art,{kind:'vehicle',id:selected.id},{cover:art});
     if(selected)form.append(labelText(element('span','category-chip'),'category.'+selected.category));
+    const identity=field(form,'identity','ride.identity',{choices:[]}),self=labelText(element('option'),'ride.personal');self.value='';identity.append(self);
+    for(const club of clubs){const option=element('option','',club.name);option.value=club.id;identity.append(option);}
+    identity.value=getRidingIdentity().clubId || '';identity.disabled=locked || context.sharing;
+    const status=element('p','feature-status');status.setAttribute('role','status');
+    identity.addEventListener('change',async()=>{identity.disabled=true;try{await chooseRidingIdentity(identity.value || null);render();}
+      catch{labelText(status,'ride.identityUnavailable');identity.value=getRidingIdentity().clubId || '';}
+      finally{identity.disabled=!!getRideContext().recordingId||getRideContext().sharing;}});
+    const contribution=field(form,'contribution','ride.contribute',{type:'checkbox'});contribution.disabled=locked||!getRidingIdentity().clubId;
+    contribution.addEventListener('change',()=>{root.dataset.contribute=String(contribution.checked);});contribution.checked=root.dataset.contribute==='true'&&!contribution.disabled;
+    form.append(labelText(element('p','muted'),'ride.contributionHint'),status);
     const group=field(form,'group','ride.group',{choices:[]});const personal=labelText(element('option'),'ride.noGroup');personal.value='';group.append(personal);
     for(const item of groups.filter(g=>['scheduled','active'].includes(g.state))){const option=element('option','',item.title);option.value=item.id;group.append(option);}
     group.value=context.groupId || '';group.disabled=locked || context.sharing;
@@ -31,8 +43,8 @@ export function initRideLaunch(){
     group.addEventListener('change',()=>{open.disabled=!group.value;});form.append(open);root.append(form);
     if(locked)root.append(labelText(element('p','muted'),'ride.identityLocked'));
   }
-  addEventListener('motodash-home-data',event=>{groups=event.detail.groups;render();});
+  addEventListener('motodash-home-data',event=>{groups=event.detail.groups;clubs=event.detail.clubs;render();});
   onVehicleChange(render);let last;
   onRideContext(context=>{const key=[context.recordingId,context.groupId,context.sharing].join(':');if(key!==last){last=key;render();}});
-  onAccountChange(()=>{groups=[];render();});onLanguageChange(render);render();
+  onAccountChange(()=>{groups=[];clubs=[];root.dataset.contribute='false';render();});onLanguageChange(render);render();
 }

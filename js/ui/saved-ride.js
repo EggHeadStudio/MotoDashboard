@@ -43,6 +43,8 @@ export function createSavedRideViewer({root,map,onBack,onExport}) {
     }
     const vehicle=session.vehicleSnapshot?.nickname;
     if(vehicle)row('viewer.vehicle',vehicle);else row('viewer.vehicle',()=>t('viewer.notRecorded'));
+    if(session.ridingIdentity)row('ride.identity',()=>session.ridingIdentity.kind==='club'
+      ?[session.ridingIdentity.clubName,session.ridingIdentity.rankName].filter(Boolean).join(' · '):t('ride.personal'));
     content.append(stats,actions);
     for(const [key,format,share] of [['rides.json','json',false],['rides.gpx','gpx',false],['rides.share','gpx',true]]) {
       actions.append(button(key,()=>void runAction(actions,status,()=>onExport(format,share))));

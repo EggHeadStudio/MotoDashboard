@@ -63,3 +63,13 @@ category, and offers bounded existing Groups through their authorized detail flo
 Personal Start does not create/admit a Group or enable sharing. Active recording
 locks the selector. Five focused checks pass including switching, no new sharing/
 Group creation and 320px overflow. No additional Home Firestore queries were added.
+
+M6: personal/current Club identity is verified at selection and ride start, stored
+as an immutable private historical snapshot, and rendered with avatar/Club badge.
+Group admission independently verifies the selected Club snapshot; identity can be
+changed only while scheduled and remains fixed once active. Worker rechecks current
+representation membership independently of live admission; revocation removes Club
+decoration without granting/removing unrelated Group rights. Live marker images use
+authorized opaque resource requests with text/icon fallbacks, no permanent URLs.
+Contribution is a separate opt-in. Six focused browser groups, 32 new actual Rules
+assertions and all 11 authority unit groups pass. Existing GPS/live consent is reused.

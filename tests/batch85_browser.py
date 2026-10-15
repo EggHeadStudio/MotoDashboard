@@ -40,6 +40,22 @@ def run_batch85_tests(browser,base,route_map):
     assert p.evaluate("async()=>{const s=(await import('./js/ride-context.js')).getRideContext();return !s.recordingId&&!s.sharing;}")
     assert p.evaluate('document.documentElement.scrollWidth<=innerWidth')
     print('PASS: Batch 8.5 Home vehicle switching is compact, creates no Group and never enables live consent')
+    club=p.evaluate('''async()=>{const {createClub}=await import('./js/firebase/clubRepository.js');const uid=(await import('./js/auth-state.js')).getAccount().uid;
+      return createClub(uid,{name:'Identity Club',description:'',category:'motorcycle',visibility:'public',membershipPolicy:'open',primaryColor:'#101214',accentColor:'#e9bf73',routeColor:null,mapTheme:'normal',links:{}});}''')
+    p.click('#home-refresh');p.wait_for_selector('#ride-launch-identity option[value="'+club+'"]',state='attached')
+    p.select_option('#ride-launch-identity',club)
+    p.wait_for_function('!document.querySelector("#ride-launch-identity").disabled')
+    identity=p.evaluate("async()=>(await import('./js/riding-identity.js')).getRidingIdentity()")
+    assert identity['clubId']==club and identity['clubName']=='Identity Club'
+    assert not p.locator('#ride-launch-contribution').is_checked()
+    result=p.evaluate('''async()=>{const i=await import('./js/riding-identity.js');const uid=(await import('./js/auth-state.js')).getAccount().uid;
+      const key='clubs/'+i.getRidingIdentity().clubId+'/members/'+uid;const rows=JSON.parse(localStorage.getItem('__mockProfiles'));delete rows[key];localStorage.setItem('__mockProfiles',JSON.stringify(rows));
+      try{await i.verifyRidingIdentity();return false;}catch{return true;}}''')
+    assert result,'Revoked membership cannot be captured for a new ride'
+    p.select_option('#ride-launch-identity','');p.wait_for_function('!document.querySelector("#ride-launch-identity").disabled')
+    assert p.evaluate("async()=>(await import('./js/riding-identity.js')).getRidingIdentity().kind")=='personal'
+    assert not errors,errors
+    print('PASS: Batch 8.5 current Club identity verification, private-default contribution and revocation denial')
     fixture=json.loads((Path(__file__).resolve().parents[1]/'cloudflare/tests/media-fixtures.json').read_text())
     media={'revision':1,'images':[{'id':'rank-image','slot':'icon','published':False}],'theme':{'icon':'star','badge':'crest'},'canWrite':True}
     deny=[False]

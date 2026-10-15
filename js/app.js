@@ -9,6 +9,7 @@ import {initRideReturn,showActiveRideConflict} from './ui/ride-return.js';
 import {createRecordingLock} from './recording-lock.js';
 import { initShell, publishRideSummary } from './ui/shell.js';
 import {initRideLaunch} from './ui/ride-launch.js';
+import {getRidingIdentity,verifyRidingIdentity,getRiderProfileId} from './riding-identity.js';
 import {confirmDashboardReturn} from './ui/host-return.js';
 import {initNotifications} from './ui/notifications.js';
 import { initAuthUI } from './auth-ui.js';
@@ -1170,10 +1171,11 @@ import { initLeafletMap, updateMapPositionLayers, setMapThemeLayer } from './map
         updateHistoryActionsVisibility();
       }
 
-      function createSession() {
+      function createSession(identity) {
         const vehicle = selectedVehicle();
         return { ...createSessionRecord(currentTheme), vehicleId: vehicle?.id || null,
-          vehicleSnapshot: vehicleSnapshot(vehicle), category: vehicle?.category || null, ownerUid: accountUid };
+          vehicleSnapshot: vehicleSnapshot(vehicle), category: vehicle?.category || null, ownerUid: accountUid,
+          ridingIdentity:identity || getRidingIdentity(),contributeToClub:document.getElementById('ride-launch-options')?.dataset.contribute==='true',groupSessionId:getRideContext().groupId || null };
       }
 
       function renderVehicle() {
@@ -1254,10 +1256,10 @@ import { initLeafletMap, updateMapPositionLayers, setMapThemeLayer } from './map
         return result.pointAccepted;
       }
 
-      function startNewSession() {
+      function startNewSession(identity) {
         sessionHistoryViewActive = false;
         setSessionStatsCollapsed(false);
-        activeSession = createSession();
+        activeSession = createSession(identity);
         followUser=true;
         hasAppliedInitialFollowZoom = false;
         camera?.reset();
@@ -1438,6 +1440,7 @@ import { initLeafletMap, updateMapPositionLayers, setMapThemeLayer } from './map
           map: map,
           L: typeof L !== 'undefined' ? L : null,
           dotIcon: dotIcon,
+          ridingIdentity:sessionActive?activeSession?.ridingIdentity:getRidingIdentity(),profileId:getRiderProfileId(),
           logoRingIcon: logoRingIcon,
           posMarker: posMarker,
           logoRingMarker: logoRingMarker,
@@ -1665,14 +1668,15 @@ import { initLeafletMap, updateMapPositionLayers, setMapThemeLayer } from './map
         if (!recordingReady || acquiringRecording) return;
         // Guard: if an active session already exists, ask user to choose first
         if (sessionActive || sessionHistory.some(record=>record.status==='active')){showActiveRideConflict();return;}
-        acquiringRecording=true;const epoch=accountEpoch;elStartBtn.disabled=true;
+        acquiringRecording=true;const epoch=accountEpoch;elStartBtn.disabled=true;let identity;
         try {
           const owned=await recordingLock.acquire(accountUid);
           if(epoch!==accountEpoch || accountUid!==(getAccount()?.uid || null))return;
           await loadSessionHistory();
           if(epoch!==accountEpoch)return;
           if(!owned || sessionHistory.some(record=>record.status==='active')){if(owned)await recordingLock.release();showActiveRideConflict();return;}
-        } catch{setStartStatus(()=>t('rideContext.storageUnavailable'));return;}
+          identity=await verifyRidingIdentity();if(epoch!==accountEpoch){await recordingLock.release();return;}
+        } catch{await recordingLock.release();setStartStatus(()=>t('ride.identityUnavailable'));return;}
         finally{acquiringRecording=false;elStartBtn.disabled=!recordingReady;}
 
         elStartBtn.disabled = true;
@@ -1683,7 +1687,7 @@ import { initLeafletMap, updateMapPositionLayers, setMapThemeLayer } from './map
         elRetryBtn.style.display = 'none';
         setGpsStatus(() => t("ui.locationRequest"), 'status-moderate');
 
-        startNewSession();
+        startNewSession(identity);
         updateGpsEnvironmentHint();
 
         enterRunningUiPendingGps();

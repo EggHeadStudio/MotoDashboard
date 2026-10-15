@@ -360,9 +360,18 @@ service cloud.firestore {
         && shortText(data.nickname, 64) && shortText(data.manufacturer, 64) && shortText(data.model, 64) && category(data.category));
     }
     function deletedRide(uid, id) { return exists(/databases/$(database)/documents/users/$(uid)/sessionTombstones/$(id)); }
+    // Private historical labels, never a permission or publication claim.
+    function ridingIdentity(data) {
+      return data == null || (data is map && data.keys().hasAll(['kind','clubId','clubName','rankId','rankName'])
+        && data.keys().hasOnly(['kind','clubId','clubName','rankId','rankName'])
+        && (data.kind == 'personal' ? data.clubId == null && data.clubName == null && data.rankId == null && data.rankName == null
+          : data.kind == 'club' && identifier(data.clubId) && shortText(data.clubName,80)
+            && (data.rankId == null || identifier(data.rankId)) && (data.rankName == null || shortText(data.rankName,64))));
+    }
     function ride(data, uid, id) {
       return data.keys().hasAll(['id', 'schemaVersion', 'ownerUid', 'vehicleId', 'vehicleSnapshot', 'category', 'name', 'status', 'visibility', 'startedAt', 'endedAt', 'distanceMeters', 'movingDurationMs', 'averageMovingSpeedKmh', 'maxSpeedKmh', 'mapTheme', 'pointCount', 'chunkCount', 'routeHash', 'revisionId', 'baseRevisionId', 'uploadState', 'clientUpdatedAt', 'createdAt', 'updatedAt'])
-        && data.keys().hasOnly(['id', 'schemaVersion', 'ownerUid', 'vehicleId', 'vehicleSnapshot', 'category', 'name', 'status', 'visibility', 'startedAt', 'endedAt', 'distanceMeters', 'movingDurationMs', 'averageMovingSpeedKmh', 'maxSpeedKmh', 'mapTheme', 'pointCount', 'chunkCount', 'routeHash', 'revisionId', 'baseRevisionId', 'uploadState', 'clientUpdatedAt', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'schemaVersion', 'ownerUid', 'vehicleId', 'vehicleSnapshot', 'category', 'name', 'status', 'visibility', 'startedAt', 'endedAt', 'distanceMeters', 'movingDurationMs', 'averageMovingSpeedKmh', 'maxSpeedKmh', 'mapTheme', 'pointCount', 'chunkCount', 'routeHash', 'revisionId', 'baseRevisionId', 'uploadState', 'clientUpdatedAt', 'createdAt', 'updatedAt','ridingIdentity'])
+        && ridingIdentity(data.get('ridingIdentity',null))
         && identifier(id) && data.id == id && data.schemaVersion == 1 && data.ownerUid == uid
         && (data.vehicleId == null || identifier(data.vehicleId)) && snapshot(data.vehicleSnapshot)
         && (data.category == null || category(data.category)) && (data.name == null || shortText(data.name, 64))
@@ -737,7 +746,8 @@ service cloud.firestore {
     }
     function validParticipant(data, uid) {
       return data.keys().hasAll(['uid', 'vehicleId', 'vehicle', 'clubIdentity', 'status', 'joinedAt', 'updatedAt'])
-        && data.keys().hasOnly(['uid', 'vehicleId', 'vehicle', 'clubIdentity', 'status', 'joinedAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'vehicleId', 'vehicle', 'clubIdentity', 'status', 'joinedAt', 'updatedAt','ridingIdentity'])
+        && ridingIdentity(data.get('ridingIdentity',null))
         && data.uid == uid && data.status in ['ok', 'fuel', 'mechanical', 'help']
         && data.joinedAt is timestamp && data.updatedAt == request.time;
     }
@@ -750,6 +760,13 @@ service cloud.firestore {
         && ((get(memberPath(clubId, uid)).data.rankId == null && data.clubIdentity.rank == null)
           || (get(memberPath(clubId, uid)).data.rankId != null
             && data.clubIdentity.rank == get(/databases/$(database)/documents/clubs/$(clubId)/ranks/$(get(memberPath(clubId, uid)).data.rankId)).data.name)));
+    }
+    function currentRidingIdentity(data,uid){
+      return data == null || (availableClub(data.clubId) && exists(memberPath(data.clubId,uid))
+        && data.clubName == get(clubPath(data.clubId)).data.name
+        && (data.rankId == null ? get(memberPath(data.clubId,uid)).data.rankId == null && data.rankName == null
+          : data.rankId == get(memberPath(data.clubId,uid)).data.rankId
+            && data.rankName == get(/databases/$(database)/documents/clubs/$(data.clubId)/ranks/$(data.rankId)).data.name));
     }
     match /groupSessions/{id} {
       allow get: if groupParticipant(id) || groupManager(id);
@@ -775,6 +792,7 @@ service cloud.firestore {
         allow get: if groupAvailable(id) && (owns(uid) || groupParticipant(id) || groupManager(id));
         allow list: if (groupParticipant(id) || groupManager(id)) && request.query.limit != null && request.query.limit <= 50;
         allow create: if owns(uid) && validParticipant(request.resource.data, uid) && groupVehicle(request.resource.data, uid)
+          && currentRidingIdentity(request.resource.data.get('ridingIdentity',null),uid)
           && groupClubIdentity(request.resource.data, id, uid)
           && request.resource.data.status == 'ok' && request.resource.data.joinedAt == request.time
           && existsAfter(groupIndex(id, uid))
@@ -783,7 +801,9 @@ service cloud.firestore {
             && getAfter(groupPath(id)).data.lastParticipantUid == uid));
         allow update: if owns(uid) && groupAvailable(id) && groupUsable(get(groupPath(id)).data)
           && validParticipant(request.resource.data, uid) && request.resource.data.joinedAt == resource.data.joinedAt
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['vehicleId', 'vehicle', 'clubIdentity', 'status', 'updatedAt'])
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['vehicleId', 'vehicle', 'clubIdentity', 'status', 'updatedAt','ridingIdentity'])
+          && (request.resource.data.get('ridingIdentity',null) == resource.data.get('ridingIdentity',null)
+            || get(groupPath(id)).data.state == 'scheduled' && currentRidingIdentity(request.resource.data.get('ridingIdentity',null),uid))
           && (request.resource.data.clubIdentity == resource.data.clubIdentity || groupClubIdentity(request.resource.data, id, uid))
           && (request.resource.data.vehicleId == resource.data.vehicleId && request.resource.data.vehicle == resource.data.vehicle
             || groupVehicle(request.resource.data, uid));

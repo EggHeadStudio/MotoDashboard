@@ -1,5 +1,6 @@
 import { t, setLocalizedText } from './i18n/i18n.js';
 import { THEME_MAP_STYLES } from './config.js';
+import {riderMarker} from './ui/rider-marker.js';
 
 function getThemeTileConfig(themeName) {
   var normalizedTheme = themeName || 'normal';
@@ -173,6 +174,14 @@ export function updateMapPositionLayers(input) {
     posMarker = L.marker(latLng, { icon: dotIcon, interactive: false }).addTo(map);
   } else {
     posMarker.setLatLng(latLng);
+  }
+  if(input.ridingIdentity){
+    const identity=input.ridingIdentity,key=JSON.stringify([identity,input.profileId]);
+    if(posMarker._riderKey!==key){posMarker._riderMedia?.dispose();
+      const art=riderMarker({profileId:input.profileId,clubId:identity.clubId,rankId:identity.rankId,rankName:identity.rankName});
+      posMarker.setIcon(L.divIcon({className:'rider-composite-icon',html:art.node,iconSize:[44,44],iconAnchor:[22,22]}));
+      posMarker._riderKey=key;posMarker._riderMedia=art;
+    }
   }
 
   return {

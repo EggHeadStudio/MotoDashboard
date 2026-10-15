@@ -142,7 +142,15 @@ async function ownClubIdentity(tx,s,group,share) {
   const rank=rankId?await tx.get(s.sdk.doc(s.db,'clubs',group.clubId,'ranks',rankId)):null;
   return {name:group.clubName,rank:rank?.exists()?rank.data().name:null};
 }
-export async function joinGroup(uid,id,vehicleId=null,token=null,shareClub=false) {
+async function ownRidingIdentity(tx,s,identity){
+  if(!identity || identity.kind==='personal')return null;
+  checkId(identity.clubId);const club=await tx.get(s.sdk.doc(s.db,'clubs',identity.clubId));
+  const member=await tx.get(s.sdk.doc(s.db,'clubs',identity.clubId,'members',s.uid));
+  if(!club.exists()||!['active','archived'].includes(club.data().state)||!member.exists())throw dataError('permission-denied');
+  const rankId=member.data().rankId,rank=rankId?await tx.get(s.sdk.doc(s.db,'clubs',identity.clubId,'ranks',rankId)):null;
+  return {kind:'club',clubId:identity.clubId,clubName:club.data().name,rankId:rank?.exists()?rankId:null,rankName:rank?.exists()?rank.data().name:null};
+}
+export async function joinGroup(uid,id,vehicleId=null,token=null,shareClub=false,identity=null) {
   if(vehicleId) checkId(vehicleId);
   await admissionTransaction(uid,id,async(tx,s,group,participant,invite,request,banned)=>{
     if(participant) return;
@@ -154,8 +162,9 @@ export async function joinGroup(uid,id,vehicleId=null,token=null,shareClub=false
     const vehicle=vehicleId ? await tx.get(s.sdk.doc(s.db,'users',uid,'vehicles',vehicleId)) : null;
     if(vehicleId && !vehicle?.exists()) throw dataError('invalid-input');
     const clubIdentity=await ownClubIdentity(tx,s,group,shareClub);
+    const ridingIdentity=await ownRidingIdentity(tx,s,identity);
     tx.set(ref(s,id,'participants',uid),{uid,vehicleId,vehicle:vehicle?.exists()?{nickname:vehicle.data().nickname,category:vehicle.data().category}:null,
-      clubIdentity,status:'ok',joinedAt:stamp(s),updatedAt:stamp(s)});
+      clubIdentity,...(ridingIdentity?{ridingIdentity}:{}),status:'ok',joinedAt:stamp(s),updatedAt:stamp(s)});
     tx.set(indexRef(s,uid,id),{uid,sessionId:id,joinedAt:stamp(s)});
     saveGroup(tx,s,group,{participantCount:group.participantCount+1,lastParticipantUid:uid});
     if(invited) tx.delete(ref(s,id,'invites',uid));
@@ -195,14 +204,16 @@ export async function removeGroupParticipant(uid,id,target) {
     saveGroup(tx,s,group,{participantCount:group.participantCount-1,lastParticipantUid:target});
   });
 }
-export async function selectGroupVehicle(uid,id,vehicleId,shareClub=false) {
+export async function selectGroupVehicle(uid,id,vehicleId,shareClub=false,identity=null) {
   checkId(id);if(vehicleId) checkId(vehicleId);const s=await ownDatabase(uid, 'group-vehicle');
   await boundedRequest(s.sdk.runTransaction(s.db,async tx=>{
     const group=await tx.get(ref(s,id));
     const vehicle=vehicleId?await tx.get(s.sdk.doc(s.db,'users',uid,'vehicles',vehicleId)):null;
     s.assertCurrent();if(vehicleId && !vehicle?.exists()) throw dataError('invalid-input');
     const clubIdentity=await ownClubIdentity(tx,s,group.data(),shareClub);
-    tx.update(ref(s,id,'participants',uid),{vehicleId,vehicle:vehicle?.exists()?{nickname:vehicle.data().nickname,category:vehicle.data().category}:null,clubIdentity,updatedAt:stamp(s)});
+    const ridingIdentity=group.data().state==='scheduled'?await ownRidingIdentity(tx,s,identity):undefined;
+    tx.update(ref(s,id,'participants',uid),{vehicleId,vehicle:vehicle?.exists()?{nickname:vehicle.data().nickname,category:vehicle.data().category}:null,clubIdentity,
+      ...(ridingIdentity!==undefined?{ridingIdentity}:{}),updatedAt:stamp(s)});
   }));s.assertCurrent();
 }
 export async function setRiderStatus(uid,id,status) {

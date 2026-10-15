@@ -70,6 +70,12 @@ export async function authorizeMany(env,id,uids,reader=readDocuments) {
   if(session?.clubId) paths.push('clubs/'+session.clubId);
   const result=await reader(env,paths,signal,parent.readTime);
   const club=session?.clubId?result.docs.get('clubs/'+session.clubId):null;
+  const extra=[...new Set(uids.flatMap(uid=>{
+    const identity=result.docs.get(base+'/participants/'+uid)?.ridingIdentity;
+    return identity?.kind==='club'&&/^[A-Za-z0-9_-]{1,100}$/.test(identity.clubId)
+      ?['clubs/'+identity.clubId,'clubs/'+identity.clubId+'/members/'+uid]:[];
+  }))];
+  const represented=extra.length?(await reader(env,extra,signal,parent.readTime)).docs:new Map();
   const authorized=new Map();
   for(const uid of uids) {
     const participant=evaluateAuthority(session,result.docs.get(base+'/participants/'+uid),result.docs.get(base+'/bans/'+uid),club,uid,id);
@@ -79,6 +85,12 @@ export async function authorizeMany(env,id,uids,reader=readDocuments) {
         displayName:typeof name==='string'?name.slice(0,64):null,
         vehicle:participant.vehicle?{nickname:String(participant.vehicle.nickname).slice(0,64),category:String(participant.vehicle.category).slice(0,30)}:null,
         clubIdentity:participant.clubIdentity?{name:String(participant.clubIdentity.name).slice(0,80),rank:participant.clubIdentity.rank?String(participant.clubIdentity.rank).slice(0,64):null}:null});
+      const identity=participant.ridingIdentity,representedClub=identity?.clubId && represented.get('clubs/'+identity.clubId),
+        member=identity?.clubId && represented.get('clubs/'+identity.clubId+'/members/'+uid),person=result.docs.get('displayProfiles/'+uid);
+      const safeProfile=/^[0-9a-f-]{36}$/.test(person?.publicProfileId || '')?person.publicProfileId:null;
+      const safeClub=representedClub&&['active','archived'].includes(representedClub.state)&&member?identity.clubId:null;
+      if(safeProfile||safeClub)authorized.get(uid).mediaIdentity={profileId:safeProfile,clubId:safeClub,rankId:safeClub?identity.rankId:null};
+      if(safeClub)authorized.get(uid).clubIdentity={name:String(identity.clubName).slice(0,80),rank:identity.rankName?String(identity.rankName).slice(0,64):null};
     }
   }
   if(signal.aborted) throw Error('authority_unavailable');

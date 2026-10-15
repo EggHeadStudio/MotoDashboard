@@ -63,6 +63,7 @@ export function initPublicProfiles() {
   async function ownMedia(){
     const uid=getAccount()?.uid,token=++ownMediaEpoch;disposeOwnMedia?.();disposeOwnMedia=null;if(!uid)return;
     try{const prefs=await loadOwnPublicProfile(uid);if(token!==ownMediaEpoch||getAccount()?.uid!==uid||!prefs.publicId)return;
+      dispatchEvent(new CustomEvent('motodash-own-profile',{detail:{publicId:prefs.publicId}}));
       const hero=own.querySelector('.profile-hero');disposeOwnMedia=decorateMedia(hero,{kind:'profile',id:prefs.publicId},{avatar:document.getElementById('profile-avatar'),banner:hero});
     }catch{/* Account data errors remain in the existing Profile flow, optional art falls back. */}
   }

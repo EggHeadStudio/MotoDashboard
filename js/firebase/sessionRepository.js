@@ -17,6 +17,7 @@ export async function uploadSession(uid, session) {
     distanceMeters:session.distanceMeters,movingDurationMs:session.movingDurationMs,
     averageMovingSpeedKmh:session.averageMovingSpeedKmh,maxSpeedKmh:session.maxSpeedKmh,mapTheme:session.mapTheme,
     pointCount:encoded.route.length,chunkCount:encoded.chunks.length,routeHash:encoded.routeHash};
+  if(session.ridingIdentity)immutable.ridingIdentity=session.ridingIdentity;
   const mutable = {name:session.name,revisionId,baseRevisionId:session.remoteRevisionId || null,
     clientUpdatedAt:session.updatedAt,updatedAt:sdk.serverTimestamp()};
   const ready = await boundedRequest(sdk.runTransaction(db,async tx=>{

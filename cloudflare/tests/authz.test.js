@@ -33,3 +33,15 @@ test('Firestore outage fails closed and invalid path cannot be injected',async()
   await assert.rejects(()=>authorizeMany({},'../users',['alice']));
   await assert.rejects(()=>authorizeMany({},id,['alice/other']));
 });
+test('ride representation is verified separately from live admission and drops revoked Club media',async()=>{
+  const personalId='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',clubId='represented-club';let current=true;
+  const identity={kind:'club',clubId,clubName:'Club',rankId:'captain',rankName:'Captain'};
+  const reader=async(_,paths)=>({readTime:'2026-10-15T00:00:00Z',docs:new Map(paths.map(path=>[path,
+    path===`groupSessions/${id}`?session:path.endsWith('/participants/alice')?{...member,ridingIdentity:identity}:
+    path==='displayProfiles/alice'?{displayName:'Alice',publicProfileId:personalId}:
+    path==='clubs/'+clubId?{id:clubId,state:'active'}:path===`clubs/${clubId}/members/alice`&&current?{uid:'alice',technicalRole:'member'}:null]))});
+  let result=await authorizeMany({},id,['alice'],reader),rider=result.authorized.get('alice');
+  assert.deepEqual(rider.mediaIdentity,{profileId:personalId,clubId,rankId:'captain'});assert.equal(rider.clubIdentity.rank,'Captain');
+  current=false;result=await authorizeMany({},id,['alice'],reader);rider=result.authorized.get('alice');
+  assert(rider,'Actual Group admission is independent of decorative Club membership');assert.equal(rider.mediaIdentity.clubId,null);assert.equal(rider.clubIdentity,null);
+});

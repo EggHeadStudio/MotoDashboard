@@ -12,6 +12,7 @@ import { renderGroupOverview } from './ui/group-overview.js';
 import {liveClient} from './live/live-client.js';
 import {publicProfileLink} from './public-profile-ui.js';
 import {forgetActiveGroup} from './ride-context.js';
+import {getRidingIdentity} from './riding-identity.js';
 
 export function initGroupParticipantsUI() {
   onRiderMotion(moving=>{
@@ -39,9 +40,9 @@ export function initGroupParticipantsUI() {
         form.addEventListener('submit',event=>{
           event.preventDefault();const vehicleId=input.value || null,share=Boolean(shareClub?.checked);
           action(async owner=>{
-            if(participant) await repository.selectGroupVehicle(owner,id,vehicleId,share);
+            if(participant) await repository.selectGroupVehicle(owner,id,vehicleId,share,getRidingIdentity());
             else {
-              await repository.joinGroup(owner,id,vehicleId,currentInviteToken(id),share);
+              await repository.joinGroup(owner,id,vehicleId,currentInviteToken(id),share,getRidingIdentity());
               if(stillCurrent()) {setRouteInvite(null);if(location.hash.startsWith('#/session/'+id)) history.replaceState(null,'',sessionURL(id));}
             }
           });
