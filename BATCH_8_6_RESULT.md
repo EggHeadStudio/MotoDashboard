@@ -88,3 +88,165 @@ overflow. Matched baseline comes from a read-only 5c46455 archive with the same
 fixture UI setup. Screenshots were visually inspected on mobile/landscape/tablet/
 desktop; thirteen focused product groups pass. See UX_AUDIT.md for exact evidence
 and findings. Native Safari/physical camera/GPS/subjective acceptance remain NOT RUN.
+
+M12 regression hardening: the full run exposed long Finnish Profile shortcuts
+overflowing the two-column390px layout at200% text. Text-relative auto-fit columns,
+wrapping owner actions and breakable labels fix the cause; checks now cover320,
+390 and430 at200%, with targeted screenshots. Multiple same-kind media theme
+editors also now receive distinct form/field/label IDs, preserving existing first
+editor IDs and payloads. Fourteen focused groups, all20 Batch5 and all8 media
+groups pass. A legacy global empty-state selector was scoped to its actual
+Discover results because History now legitimately has an empty state too.
+
+## Final handoff (2026-10-17)
+
+Implementation started October16; final local verification crossed midnight.
+Version **1.6.6-batch8.6**, baseline **5c46455**. Milestones0-11 are implemented;
+M12 completes the full regression/documentation/local commit. No independent
+implementation is blocked. Publication approval and native two-account/phone
+acceptance remain separate uncompleted gates. **Nothing pushed/deployed, no
+production mutation or paid activation, no Batch9.**
+
+### Design system and screens
+
+css/product-experience.css is a scoped product layer over existing map/media/
+design styles: 4/8/12/16/24/32/48 spacing scale, responsive system typography,
+dark canvas/surface/raised hierarchy, restrained gold accent, readable text,
+consistent corners/inputs/cards/dialogs/targets, quiet skeleton/status feedback,
+focus/reduced-motion/forced-color support. No remote font, framework or build.
+Existing controlled colors/templates/media permissions remain. Final global logo
+and typeface are intentionally a later dedicated brand milestone.
+
+Home, Discover, own/public Profile, Garage, Club and shared Ride/Meet/Event details,
+editors, notifications, history/dashboard/saved replay now use that hierarchy.
+The redesign also changes actual interaction structure: compact ride decisions,
+semantic form groups, accessible section focus, explicit retry and modal/Skip
+navigation guards. Existing data/authorization/business flows remain intact.
+
+### Before/after evidence
+
+- **264 matched before and264 after** local cases, plus264 intermediate review
+  cases:22 surfaces x6 sizes x2 languages. Viewports320x568,390x844,430x932,
+  844x390 landscape,768x1024 and1440x1000. Final document/surface overflow:zero.
+- Actual Chromium screenshots inspected, with an additional correction pass for
+  small Finnish Start, double-inset card images, offscreen section destinations,
+  dense activity metadata and misaligned profile shortcuts. Evidence is rendered,
+  not inferred from source or unit-test success. Read-only production landing was
+  also captured with cloud requests/mutations blocked; no real login was used.
+- Files outside Git: **%TEMP%/motodash-ux86/before/**, **review/**, **after/**, each
+  with manifest.json. Compare matching filenames, e.g. home-fi-320x568.png,
+  discover-en-390x844.png, profile-en-390x844.png, garage-en-390x844.png,
+  club-detail-fi-430x932.png, group-detail-en-430x932.png,
+  profile-edit-en-390x844.png, dashboard-en-390x844.png and
+  saved-replay-fi-844x390.png. UX_AUDIT.md records the full surface/journey audit.
+- Final baseline is a read-only archive of5c46455 in the same TEMP evidence root,
+  using the identical fixture harness/UI save-and-select sequence. No temporary
+  branch. Original public-profile fixture was corrected to use actual UI save,
+  ensuring both versions show the same name/bio/vehicle selection.
+- Temporary evidence can be removed by OS cleanup; regenerate with existing
+  Playwright/Chromium and fixture dependencies, MOTODASH_VISUAL_PHASE=before/after,
+  then python tests/run_browser.py --visual86. For baseline, run the same harness
+  against archived5c46455. No application installation/build or real credential.
+
+### Final automated evidence
+
+| Suite | Final result | Scope |
+| --- | --- | --- |
+| Firestore emulator | 1,116 distinct passed,0 failed/0 skipped | All9 runners; repeated102 baseline counted once, fixed localhost demo only |
+| Worker/R2/workerd | 118 passed,0 failed/0 skipped | Includes20 native workerd/R2/SQLite cases; Wrangler dry-run only |
+| Browser | Full final run pending completion | Includes13 new product groups; screenshot matrix is counted separately |
+| Locked RTDB | 68 passed,0 failed/0 skipped | Deny-all, fixed localhost only |
+| Pages | 2 groups pass;448 refs/116 URLs HTTP200 | /MotoDashboard/, guest/local recording without Firebase and scoped legacy SW cleanup |
+| Deployment | 10 contracts pass | Exact19 indexes/exemption, configuration/scope/credential guards |
+| Workflow syntax | 3 YAML/15 Bash checks pass | No workflow executed; manual backend gates unchanged |
+| Visual matrix | 264 matched before +264 after,0 final overflow | Chromium local fixtures, not native mobile Safari |
+
+Local logs (TEMP): motodash-batch86-firestore-verified.log,
+motodash-batch86-worker.log, motodash-batch86-browser.log,
+motodash-ux86-before-matched.log and motodash-ux86-after-final.log.
+Actual Rules compilation/authorization ran in the emulator. Browser uses simulated
+GPS and SDK fixtures; real Firebase13.0.0 imports are checked with cloud APIs
+blocked. Worker fixtures use local runtimes and mocked Firebase/OAuth. These are
+not real Firebase/Cloudflare/physical-phone acceptance claims.
+
+Intermediate issues: an emulator cold-start fixture reset exceeded15s; the full
+warmed run passed without changing Rules or timeouts. One Club initialization
+wait failed on its first focused run; its complete instrumented rerun passed and
+the full browser run repeats it. New test selectors were corrected to actual
+localized labels/aria-controls, the HUD gap assertion to actual panel geometry,
+and the older statistics assertion to deliberate integer count formatting. No
+security expectation, useful test or feature was removed to obtain passing tests.
+Existing cached development tools were reused/repaired from existing bytecode;
+no workstation software or paid infrastructure was installed/activated.
+
+### Firebase, Cloudflare and deployment
+
+**No changes** to firestore.rules, firestore.indexes.json, database.rules.json,
+firebase.deploy.json, Firebase browser config, live-config.js, any Cloudflare
+source/config/binding/protocol/secret/IAM, private R2 or any GitHub Actions workflow.
+No schema/migration/index/credential/provider change. There remain19 indexes and
+the pointsJson exemption. Current epoch/retirement/role/private-source/consent
+protections remain, including immediate aggregate invalidation. GPS/camera/
+recording/live/replay computation modules are unchanged.
+
+After explicit approval: verify the reported8.5 backend prerequisites, publish
+reviewed main and use existing **Deploy to GitHub Pages**, main/no inputs (main
+push also triggers it). **Pages only** for this batch. Do not redeploy Firebase
+or Cloudflare unnecessarily. No new secret or environment variable. Full exact
+commands/Console checks/rollback: current DEPLOYMENT_CHECKLIST.md section.
+
+### Manual two-phone acceptance - NOT RUN
+
+Use disposable A/B, native iPhone Safari and Android Chromium, stationary/on foot.
+No credentials, invitation secrets, private media or precise GPS in evidence.
+
+1. Visitor/register/login/guest/invitation Auth return, actual errors and EN/FI.
+2. 320/390/430 portrait, landscape/tablet, text scaling/reduced motion/keyboard;
+   Start reachable, no clipping, correct browser chrome/safe areas.
+3. Actual vehicle/Club identity, off/separate contribution, authorized Group detail,
+   one active ride, no automatic GPS/live/Group/publication by selector changes.
+4. Discover prefix search, categories/destinations/pagination/empty/error retry and
+   correct public profile/showcase privacy; no fake recommendation counts/content.
+5. Profile/Garage/Club/activity View/Edit, real photos/crop/theme/rank replacements,
+   section Save/Cancel/validation and dirty close/Back. Decline keeps one modal.
+6. Club membership/Join/upcoming/members/ranks/log/visible-only stats/Wall and all
+   permission boundaries. Decorative rank never grants management or live access.
+7. Ride/Meet/Event RSVP intent separate from actual approval/join/live consent.
+8. Both share an approved active Group; actual map/avatar/Club/rank, weather/GPS,
+   one connection/watcher, Return, failures and logout/leave/end/removal cleanup.
+9. Finish/sync/History/replay/collapse/seek/speed/overview/gaps/colors/export/Back,
+   no live telemetry. Private/departed/deleted/retired sources stay excluded.
+10. Wi-Fi/cellular/offline/denied media/Worker recovery, local storage preserved;
+    actual provider usage and native camera/GPS/suspension. Some role cases need
+    a third account: mark unrun cases honestly. Full procedure is in the checklist.
+
+### Remaining UX and release limits
+
+- Native Safari/WebKit, physical phone camera/GPS/background behavior and subjective
+  user acceptance remain unrun. Chromium screenshots cannot certify them or prove
+  Apple-level quality. Windows fixture screenshots omit native browser chrome.
+- Missing/private media uses original line icons/initials; no stock/fake production
+  vehicles or riders are inserted. Local tile/raster fixtures do not prove real
+  photography or map-provider appearance; verify current authorized photos on phones.
+- Existing per-section saves remain explicit; Done editing is not a global save.
+  Native selects/file/color controls follow the device UI. Very long text/large
+  accessibility sizes may need vertical scrolling; no essential feature is removed.
+- The scoped product stylesheet preserves older layers for compatibility. A later
+  measured consolidation can retire redundant declarations after device acceptance;
+  it is not a reason to rewrite GPS/business logic now.
+- Existing bounded Home/RSVP/log/media/read quotas, refresh freshness, private
+  publication, conservative aggregate correction and erasure/abuse/commercial gates
+  remain as documented in DATA_MODEL.md and BATCH_8_5_RESULT.md.
+- No service worker/offline cold-start or guaranteed background GPS was introduced.
+  Final logo/typeface, account recovery/Google/trusted full erasure, Official/safe
+  rewards, subscriptions/Stripe, NFC/merchandise and all future IDEA.md requirements
+  remain. No Batch9 or paid-provider work was started.
+
+### Recommended future branding, proposal only
+
+After real acceptance: approve original logo/mark exploration, optical small-size
+app icons, a licensed typeface/system fallback strategy, cohesive activity/rank
+iconography and social/merchandise usage. Validate contrast/text scaling/native
+browser chrome/performance and existing customizable themes. Do not imitate
+proprietary UI, add remote fonts without review or mistake decorative ranks/Club
+totals for entitlement or reward authority.

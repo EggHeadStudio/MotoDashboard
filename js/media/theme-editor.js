@@ -7,6 +7,7 @@ const options={accent:['gold','ocean','forest','rose'],secondary:['slate','navy'
 export const themeDefaults={accent:'gold',secondary:'slate',header:'road',card:'outlined',layout:'grid',icon:'shield',badge:'plain'};
 export function mountThemeEditor(root,target,resource,refresh,keys=['accent','secondary','header','card']) {
   const form=element('form','media-theme-form');form.id='media-theme-'+target.kind;const preview=element('div','media-theme-preview');
+  if(document.getElementById(form.id))form.id+='-'+target.id+(target.child?'-'+target.child:'');
   preview.append(labelText(element('h3'),'media.appearance'),labelText(element('p'),'media.contrastHint'));root.append(disclosure('media.appearance',preview,form));
   const graphic=keys.includes('icon')?element('span','rank-graphic'):null;
   if(graphic){preview.prepend(graphic);decorateMedia(graphic,target,{icon:graphic},{rank:true,resource});}

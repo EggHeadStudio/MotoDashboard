@@ -1,6 +1,8 @@
 """Batch 8.6 product regressions: rendered local fixtures, no production calls."""
 from firebase_mocks import install
 from batch2_browser import register,open_garage,add_vehicle
+from pathlib import Path
+import tempfile
 
 def run_batch86_tests(browser,base,route_map):
     c=browser.new_context(viewport={'width':390,'height':844});route_map(c);install(c)
@@ -121,15 +123,27 @@ def run_batch86_tests(browser,base,route_map):
     print('PASS: Batch 8.6 keyboard Skip to content focuses main without overwriting the current deep-link route')
     assert p.evaluate('''async()=>{const {batch86:b}=await import('./js/i18n/batch86.js');return JSON.stringify(Object.keys(b.en).sort())===JSON.stringify(Object.keys(b.fi).sort());}''')
     p.emulate_media(reduced_motion='reduce');p.evaluate('document.documentElement.style.fontSize="200%"')
-    p.set_viewport_size({'width':320,'height':568});p.select_option('#language-select','fi')
-    assert p.evaluate('document.documentElement.scrollWidth<=innerWidth && document.getElementById("start-overlay").scrollWidth<=innerWidth')
+    p.select_option('#language-select','fi')
+    for width in [320,390,430]:
+        p.set_viewport_size({'width':width,'height':568})
+        assert p.evaluate('document.documentElement.scrollWidth<=innerWidth && document.getElementById("start-overlay").scrollWidth<=innerWidth'),width
+        evidence=Path(tempfile.gettempdir())/'motodash-ux86'/'after';evidence.mkdir(parents=True,exist_ok=True)
+        p.screenshot(path=str(evidence/f'profile-fi-{width}x568-text200.png'))
     assert p.locator('#public-profile-edit').evaluate('(node)=>getComputedStyle(node).transitionDuration')=='0s'
     p.evaluate('document.documentElement.style.fontSize=""')
     print('PASS: Batch 8.6 English/Finnish key parity, 200 percent text and reduced-motion focusable controls')
+    p.set_viewport_size({'width':320,'height':568})
     p.locator('#bottom-nav [data-destination=home]').click()
     start=p.locator('#start-btn').bounding_box();nav=p.locator('#bottom-nav').bounding_box()
     assert start['y']+start['height']<nav['y'],(start,nav)
     assert p.locator('#ride-launch-group').is_visible()
     print('PASS: Batch 8.6 rendered correction keeps Finnish Start fully above the 320px portrait navigation')
+    assert p.evaluate('''async()=>{const {mountThemeEditor,themeDefaults}=await import('./js/media/theme-editor.js');
+      const root=document.createElement('div');document.body.append(root);
+      for(const child of ['first-rank','second-rank'])mountThemeEditor(root,{kind:'rank',id:'fixture-club',child},{revision:1,images:[],theme:themeDefaults},async()=>{},['accent']);
+      const forms=[...root.querySelectorAll('form')],ids=[...root.querySelectorAll('[id]')].map(node=>node.id);
+      const labels=[...root.querySelectorAll('[aria-labelledby]')].every(node=>root.querySelector('[id="'+node.getAttribute('aria-labelledby')+'"]'));
+      const valid=forms.length===2&&forms[0].id!==forms[1].id&&new Set(ids).size===ids.length&&labels;root.remove();return valid;}''')
+    print('PASS: Batch 8.6 multiple rank theme editors retain unique field IDs and valid palette labels')
     assert not errors,errors
     c.close()

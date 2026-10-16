@@ -84,10 +84,10 @@
 #screen-profile .large-avatar {grid-column:1;grid-row:1 / span 2;width:72px;height:72px;margin:0;border-color:#e9bf7344;}
 #screen-profile #profile-display-name {grid-column:2;margin:0;line-height:1.2;overflow-wrap:anywhere;font-size:1.5rem;}
 .profile-visibility {grid-column:2;font-size:.6875rem;}.own-bio {grid-column:1/-1;margin:8px 0 0;color:var(--md-muted);}
-.profile-owner-actions {grid-column:1/-1;display:flex;gap:12px;align-items:center;margin-top:8px;}
+.profile-owner-actions {grid-column:1/-1;display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:8px;}
 .profile-owner-actions .text-button {padding:10px 8px;}.profile-owner-actions .primary {min-width:100px;}
-.profile-actions {grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
-.profile-actions .action-row {padding:16px 12px;gap:8px;font-size:.8125rem;flex-wrap:wrap;min-width:0;}
+.profile-actions {grid-template-columns:repeat(auto-fit,minmax(min(100%,10rem),1fr));gap:12px;}
+.profile-actions .action-row {padding:16px 12px;gap:8px;font-size:.8125rem;flex-wrap:wrap;min-width:0;overflow-wrap:anywhere;}
 .public-profile-hero {padding:28px 24px;border:1px solid var(--md-line);border-top:2px solid var(--profile-accent,var(--md-gold));background:var(--md-surface);}
 .public-profile-hero .large-avatar {width:80px;height:80px;margin-bottom:16px;}
 .public-profile-hero h1 {font-size:clamp(1.75rem,5vw,2.5rem);}

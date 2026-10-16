@@ -73,7 +73,7 @@ def run_batch5_tests(browser,base,route_map):
     page.locator('.discovery-tabs').get_by_role('button',name='Events',exact=True).click();loaded();assert 'Open Road Festival' in page.locator('#lobby-results').inner_text()
     done('Rides includes Ride/Drive; Meets and Events issue activity-constrained queries')
     page.locator('.chip-row').get_by_role('button',name='Cars',exact=True).click();loaded()
-    assert page.locator('.empty-state').is_visible()
+    assert page.locator('#lobby-results .empty-state').is_visible()
     assert page.evaluate("window.__mock.queries.filter(q=>q.path==='lobbyEvents').at(-1).filters.some(f=>f.field==='category'&&f.value==='car')")
     done('category chips filter on server and render a polished genuine empty state')
     page.locator('.discovery-tabs').get_by_role('button',name='Clubs',exact=True).click();loaded()
