@@ -58,3 +58,11 @@ Mode controls expose expanded state and authorized photo/management entry points
 repeated Edit entry no longer adds duplicate dirty-field listeners. Existing crop,
 preview/palette/section-save/cancel/publication rules remain. Seven focused groups
 and all8 media browser groups pass, including upload/replacement/gallery/theme.
+
+M8: restrained readable speed, opaque high-contrast HUD surfaces, balanced compact
+status cards and deliberate touch controls. Preserved map/camera geometry, toggles,
+night/monochrome modes, smoothing/recording/live pipeline. Eight focused groups
+and both live integration/client groups pass: one GPS watch through Return,
+consent/HTTPS-WSS/errors/lease scope and logout/leave/local/remote-end cleanup.
+The clear-map assertion measures the actual gap between speed and lower HUD;
+an empty start-aligned grid child has zero own height despite a nonzero grid row.

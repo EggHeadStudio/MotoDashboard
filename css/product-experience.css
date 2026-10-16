@@ -144,3 +144,21 @@
 .media-crop {padding:12px;border-radius:12px;background:var(--md-surface);}
 .media-editor progress {margin-block:12px;}.media-editor .media-preview {max-height:220px;}
 @media(min-width:760px) {.editor-section {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 20px;}.editor-section>.field:has(textarea),.editor-section>.color-palette,.editor-section>.palette-controls {grid-column:1/-1;}}
+
+/* Ride presentation only: preserve the tested HUD grid, map camera and toggles. */
+.dashboard-active #hud {font-family:var(--md-font);}
+.dashboard-active #hud .panel {background:#10181eeb;border-color:#ffffff26;box-shadow:0 4px 14px #0002;backdrop-filter:none;-webkit-backdrop-filter:none;}
+body.dashboard-active:not(.theme-night):not(.theme-monochrome) #speed-value {color:var(--md-text);text-shadow:none;font-weight:750;letter-spacing:-.04em;}
+.dashboard-active #speed-block {width:min(100%,248px);border-radius:24px;}
+.dashboard-active #speed-unit {font-size:.75rem;letter-spacing:.16em;}
+.dashboard-active .panel-label {font-size:.625rem;letter-spacing:.08em;}
+.dashboard-active #controls-row {gap:8px;}
+.dashboard-active #controls-row .hud-btn {font:550 .75rem/1.3 var(--md-font);padding:10px 12px;min-height:44px;border-radius:12px;background:#10181eeb;border:1px solid #ffffff33;box-shadow:none;backdrop-filter:none;}
+.dashboard-active #finish-session-btn {border-color:#e9bf7399!important;color:var(--md-gold);}
+.dashboard-active #status-stack {grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+.dashboard-active #live-dashboard,.dashboard-active #ride-context-status {grid-column:1/-1;}
+.dashboard-active #hud .info-row,.dashboard-active .session-stat-value {text-shadow:none;}
+body.dashboard-active:not(.theme-night) #hud .status-good {color:#b0dbba;}
+.dashboard-active #firestore-diagnostic {white-space:normal;overflow-wrap:anywhere;}
+@media(orientation:landscape) {.dashboard-active #status-stack {grid-template-columns:1fr;}}
+@media(max-width:350px) {.dashboard-active #controls-row {gap:4px;}.dashboard-active #controls-row .hud-btn {padding-inline:8px;}}

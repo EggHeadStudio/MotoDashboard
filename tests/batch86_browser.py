@@ -5,6 +5,7 @@ from batch2_browser import register,open_garage,add_vehicle
 def run_batch86_tests(browser,base,route_map):
     c=browser.new_context(viewport={'width':390,'height':844});route_map(c);install(c)
     p=c.new_page();errors=[];p.on('pageerror',lambda e:errors.append(str(e)))
+    p.add_init_script('''window.__geo={active:0,count:0};Object.defineProperty(navigator,'geolocation',{value:{watchPosition(fn){window.__geo.callback=fn;window.__geo.active++;window.__geo.count++;return 1;},clearWatch(){window.__geo.active=0;}}});Element.prototype.requestFullscreen=undefined;navigator.wakeLock=undefined;''')
     p.goto(base,wait_until='networkidle');register(p,'ux86@example.test')
     colors=p.evaluate('''async()=>{const {contrast}=await import('./js/data/branding.js');
       const s=getComputedStyle(document.documentElement),v=k=>s.getPropertyValue(k).trim();
@@ -85,5 +86,13 @@ def run_batch86_tests(browser,base,route_map):
     p.locator('#bottom-nav [data-destination=home]').click()
     assert p.locator('#screen-home').is_visible()
     print('PASS: Batch 8.6 grouped editors preserve FormData, native accessible validation and unsaved navigation guards')
+    p.set_viewport_size({'width':390,'height':844});p.click('#start-btn');p.wait_for_function('window.__geo.active===1')
+    assert p.locator('#map').is_visible() and p.locator('#session-stats-grid').bounding_box()['width']>200
+    speed=p.locator('#speed-block').bounding_box();bottom=p.locator('#bottom-panel').bounding_box()
+    assert bottom['y']-(speed['y']+speed['height'])>100,(speed,bottom)
+    p.click('#back-to-start-btn');p.locator('#bottom-nav [data-destination=profile]').click();p.click('#return-to-ride')
+    assert p.evaluate('window.__geo.count')==1 and p.evaluate('window.__geo.active')==1
+    assert p.locator('#finish-session-btn').is_visible()
+    print('PASS: Batch 8.6 restrained dashboard retains visible map, readable statistics and one watcher through Return to Ride')
     assert not errors,errors
     c.close()
