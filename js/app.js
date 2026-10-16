@@ -8,6 +8,7 @@ import {getRideContext,onRideContext,setRecordingContext,verifyRememberedGroup} 
 import {initRideReturn,showActiveRideConflict} from './ui/ride-return.js';
 import {createRecordingLock} from './recording-lock.js';
 import { initShell, publishRideSummary } from './ui/shell.js';
+import {emptyState} from './ui/cards.js';
 import {initRideLaunch} from './ui/ride-launch.js';
 import {initAttendance} from './ui/attendance.js';
 import {initClubActivity} from './ui/club-activity.js';
@@ -1082,7 +1083,7 @@ import { initLeafletMap, updateMapPositionLayers, setMapThemeLayer } from './map
       function renderHistory() {
         publishRideSummary(accountUid, sessionHistory);
         if (!sessionHistory.length) {
-          elHistoryList.innerHTML = '<div>' + t('ui.noRides') + '</div>';
+          elHistoryList.replaceChildren(emptyState('ui.noRides','ux.noHistoryHint'));
           updateHistoryActionsVisibility();
           return;
         }

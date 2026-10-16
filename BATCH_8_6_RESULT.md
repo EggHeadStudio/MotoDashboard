@@ -72,3 +72,10 @@ clear Play action and touch timeline, preserving independent collapsible panels.
 No replay/route/timestamp/gap/recording behavior changed. Nine focused groups and
 the complete Batch7 People/showcase/camera/saved/replay regression pass, including
 red route/gold progress, speeds/seek/gaps/export and zero replay GPS/cloud writes.
+
+M10: dirty modal-close cancellation now prevents a second modal from stacking;
+keyboard Skip to content keeps the current route/invitation fragment. Reused
+structured honest history empty state, locale-aware navigation labels, no-motion
+section focus, safe text scaling and lightweight touch/focus/forced-color feedback.
+Twelve focused groups and both Pages groups pass (448 references/116 URLs at this
+stage). Existing loading/error retry is scoped, with no automatic uncertain writes.

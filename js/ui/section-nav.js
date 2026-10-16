@@ -12,7 +12,7 @@ export function sectionNavigation(root,sections,{label='ux.sections'}={}) {
       if(disclosure)disclosure.open=true;
       const heading=node.querySelector('h2,h3,h4,summary') || node;
       if(!heading.matches('summary'))heading.tabIndex=-1;
-      node.scrollIntoView({block:'start',behavior:'instant'});heading.focus({preventScroll:true});
+      node.scrollIntoView({block:'start',behavior:'auto'});heading.focus({preventScroll:true});
     });
     if(node.id)control.setAttribute('aria-controls',node.id);nav.append(control);
   }

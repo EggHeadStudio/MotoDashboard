@@ -55,7 +55,9 @@ export function openView(node) {
   }
   // Native dialogs remain modal, but never stack over another modal.
   const previousFocus=document.activeElement;
-  for (const previous of document.querySelectorAll('dialog[open]:modal')) if (previous !== node) previous.close();
+  for (const previous of document.querySelectorAll('dialog[open]:modal')) if (previous !== node) {
+    previous.close();if(previous.open)return false;
+  }
   if (!node.open) {
     node.showModal();
     node.addEventListener('close',()=>{
@@ -83,6 +85,9 @@ export function mountPanel(node) {
   });
 }
 export function initNavigation() {
+  document.querySelector('.skip-link').addEventListener('click',event=>{
+    event.preventDefault();document.getElementById('screen-host').focus({preventScroll:true});
+  });
   const nav = document.getElementById('bottom-nav');
   for (const screen of destinations) {
     const node = document.createElement('button'); node.type='button'; node.dataset.destination=screen;

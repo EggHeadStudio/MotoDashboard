@@ -29,7 +29,7 @@ export function initLobbyUI() {
       const node=element('button');node.type='button';node.append(vehicleIcon(category),labelText(element('span'),'discover.'+category));node.classList.add('category-chip');
       node.setAttribute('aria-pressed',String(input.category===category));node.addEventListener('click',()=>chooseCategory(category));categories.append(node);
     }
-    const tabs=element('nav','discovery-tabs');tabs.setAttribute('aria-label',t('nav.discover'));
+    const tabs=element('nav','discovery-tabs');tabs.setAttribute('aria-label',t('nav.discover'));tabs.setAttribute('data-i18n-aria-label','nav.discover');
     for(const name of ['featured','rides','meets','events','clubs','people']) {
       const node=button(name==='featured'?'ux.explore':'discover.'+name,()=>{tab=name;input.activityType=name==='meets'?'meet':name==='events'?'event':'';cursor=null;render();action(()=>load());});
       node.dataset.discoveryTab=name;

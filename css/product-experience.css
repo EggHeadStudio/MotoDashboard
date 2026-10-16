@@ -181,3 +181,14 @@ body.saved-ride-view #replay-play {background:var(--md-gold);color:var(--md-gold
 .replay-timeline output {font-variant-numeric:tabular-nums;}
 @media(max-width:380px) {.replay-actions {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));}.replay-actions label {flex-wrap:wrap;} .ride-replay {padding-inline:12px;}}
 @media(orientation:landscape) and (max-height:520px) {body.saved-ride-view #history-detail {max-height:calc(100dvh - 24px - env(safe-area-inset-top));}}
+
+/* Lightweight feedback and robust focus/text scaling. */
+#screen-rides #groups-btn {margin:4px 0 24px;border-color:#68717b;}
+.session-item {padding:20px;}.session-item strong {font-size:1.0625rem;}
+.feature-body,.card-content,.vehicle-info {min-width:0;}
+.section-nav:empty {display:none;}.section-nav {overscroll-behavior-inline:contain;}
+.editor-actions:empty {display:none;}
+#screen-profile .profile-hero .large-avatar {border-color:var(--media-accent,var(--md-gold));color:var(--media-accent,var(--md-gold));}
+.skip-link:focus {position:relative;display:block;width:fit-content;min-height:44px;margin:8px 20px;}
+@media(hover:hover) {.feature-card:has(.card-footer button):hover {border-color:#69737e;}}
+@media(forced-colors:active) {button[aria-pressed=true],#bottom-nav button[aria-current=page] {outline:2px solid Highlight;} .color-swatch {forced-color-adjust:none;}}

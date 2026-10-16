@@ -82,7 +82,7 @@ def run_batch86_tests(browser,base,route_map):
     def stay(dialog):prompts.append(dialog.message);dialog.dismiss()
     p.on('dialog',stay);p.locator('#bottom-nav [data-destination=home]').click()
     assert prompts and p.locator('#group-form-title').input_value()=='Unsaved replacement'
-    p.remove_listener('dialog',stay);p.on('dialog',lambda dialog:dialog.accept())
+    p.remove_listener('dialog',stay);accept_dialog=lambda dialog:dialog.accept();p.on('dialog',accept_dialog)
     p.locator('#bottom-nav [data-destination=home]').click()
     assert p.locator('#screen-home').is_visible()
     print('PASS: Batch 8.6 grouped editors preserve FormData, native accessible validation and unsaved navigation guards')
@@ -106,5 +106,25 @@ def run_batch86_tests(browser,base,route_map):
     assert p.evaluate('window.__geo.active')==0
     p.click('#saved-back');assert p.locator('#screen-rides').is_visible()
     print('PASS: Batch 8.6 saved ride keeps independent details/replay, retained speed and clear route with no live GPS')
+    p.locator('#bottom-nav [data-destination=profile]').click();p.click('#public-profile-edit');p.wait_for_selector('#public-profile-form')
+    p.fill('#public-profile-form-bio','Unsaved modal content')
+    p.remove_listener('dialog',accept_dialog);p.on('dialog',stay)
+    result=p.evaluate('''async()=>{const {dialog,openView}=await import('./js/ui/forms.js');const second=dialog('ux86-second','garage.title');
+      const allowed=openView(second.node);const count=document.querySelectorAll('dialog:modal').length;second.node.remove();return {blocked:allowed===false,count};}''')
+    assert result=={'blocked':True,'count':1},result
+    assert p.locator('#public-profile-form-bio').input_value()=='Unsaved modal content'
+    p.remove_listener('dialog',stay);p.on('dialog',accept_dialog);p.locator('#public-profile-editor .feature-header button').click()
+    assert p.locator('.own-bio').inner_text()=='My weekend road story.'
+    print('PASS: Batch 8.6 declining a dirty modal close blocks a second modal and preserves unsaved fields')
+    original=p.evaluate('location.hash');p.locator('.skip-link').focus();p.keyboard.press('Enter')
+    assert p.evaluate('location.hash')==original and p.evaluate('document.activeElement.id')=='screen-host'
+    print('PASS: Batch 8.6 keyboard Skip to content focuses main without overwriting the current deep-link route')
+    assert p.evaluate('''async()=>{const {batch86:b}=await import('./js/i18n/batch86.js');return JSON.stringify(Object.keys(b.en).sort())===JSON.stringify(Object.keys(b.fi).sort());}''')
+    p.emulate_media(reduced_motion='reduce');p.evaluate('document.documentElement.style.fontSize="200%"')
+    p.set_viewport_size({'width':320,'height':568});p.select_option('#language-select','fi')
+    assert p.evaluate('document.documentElement.scrollWidth<=innerWidth && document.getElementById("start-overlay").scrollWidth<=innerWidth')
+    assert p.locator('#public-profile-edit').evaluate('(node)=>getComputedStyle(node).transitionDuration')=='0s'
+    p.evaluate('document.documentElement.style.fontSize=""')
+    print('PASS: Batch 8.6 English/Finnish key parity, 200 percent text and reduced-motion focusable controls')
     assert not errors,errors
     c.close()
