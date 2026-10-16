@@ -36,5 +36,18 @@ def run_batch86_tests(browser,base,route_map):
             buttons=p.locator('.discovery-tabs button').evaluate_all('(nodes)=>nodes.map(n=>{const r=n.getBoundingClientRect();return {x:r.x,w:r.width,h:r.height};})')
             assert all(n['x']>=0 and n['x']+n['w']<=width and n['h']>=44 for n in buttons)
     print('PASS: Batch 8.6 deliberate Discover navigation and People search have no stale global loading or clipped EN/FI targets')
+    p.select_option('#language-select','en');p.locator('#bottom-nav [data-destination=profile]').click()
+    p.wait_for_selector('.profile-visibility');assert p.locator('.profile-visibility').inner_text()=='Private profile'
+    p.click('#public-profile-edit');p.wait_for_selector('#public-profile-form')
+    p.fill('#public-profile-form-bio','My weekend road story.');p.locator('#public-profile-form button[type=submit]').click()
+    p.wait_for_function('!document.getElementById("public-profile-editor")')
+    p.wait_for_function('document.querySelector(".own-bio").textContent==="My weekend road story."')
+    assert p.locator('.profile-visibility').inner_text()=='Private profile'
+    open_garage(p);add_vehicle(p,'Weekend explorer','motorcycle')
+    assert p.locator('.garage-grid .vehicle-card').count()==1
+    assert not p.locator('[data-media-kind=vehicle]').is_visible()
+    assert p.locator('.vehicle-card').get_by_role('button',name='Choose for ride',exact=True).is_visible()
+    p.locator('#garage-dialog .feature-header button').click()
+    print('PASS: Batch 8.6 actual own bio/privacy and Garage collection preserve private defaults and View/Edit boundaries')
     assert not errors,errors
     c.close()

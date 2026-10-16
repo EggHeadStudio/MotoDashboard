@@ -82,7 +82,8 @@ export function initGarageUI() {
   function render() {
     editing = false; view.body.replaceChildren();
     if (!getAccount()) { view.body.append(labelText(element('p'), 'data.signIn')); return; }
-    view.body.append(button('garage.add', () => edit(null), 'garage-add'), button('common.refresh', () => action(() => Promise.resolve())));
+    const toolbar=element('div','collection-toolbar'),add=button('garage.add', () => edit(null), 'garage-add');add.className='primary';
+    toolbar.append(add,button('common.refresh', () => action(() => Promise.resolve())));view.body.append(toolbar);
     view.body.prepend(labelText(element('p','muted'),'garage.showcase'));
     if(showcaseError)labelText(view.status,dataErrorKey(showcaseError));
     if(showcaseState?.partial)view.body.append(labelText(element('p','muted'),'showcase.stateUnknown'));
@@ -93,6 +94,7 @@ export function initGarageUI() {
       view.body.append(actions,labelText(element('p','muted'),showcaseState.prefs.visibility==='public'?'showcase.profilePublic':'showcase.profilePrivate'));
     }
     if (!state.vehicles.length) view.body.append(labelText(element('p'), 'garage.empty'));
+    const collection=element('div','garage-grid');view.body.append(collection);
     for (const vehicle of state.vehicles) {
       const card = element('article', 'feature-card vehicle-card' + (state.selectedId===vehicle.id?' is-selected':''));
       const art = element('div','vehicle-art');art.append(vehicleIcon(vehicle.category));
@@ -114,7 +116,7 @@ export function initGarageUI() {
         editOnly(button('common.delete', () => { if (confirm(t('garage.deleteConfirm'))) action(uid => deleteVehicle(uid,vehicle.id)); })));
       controls.append(editOnly(button(entry?'showcase.hide':'showcase.show',()=>entry?action(uid=>unpublishShowcaseVehicle(uid,vehicle.id)):void showcase(vehicle))));
       if(entry?.available && !entry.featured)controls.append(editOnly(button('showcase.makeFeatured',()=>action(uid=>featureShowcaseVehicle(uid,vehicle.id)))));
-      info.append(controls);card.append(art,info); view.body.append(card);
+      info.append(controls);card.append(art,info); collection.append(card);
       decorateMedia(card,{kind:'vehicle',id:vehicle.id},{cover:art});
       mountMediaEditor(info,{kind:'vehicle',id:vehicle.id},['photo0','photo1','photo2','photo3','photo4','photo5']);
     }

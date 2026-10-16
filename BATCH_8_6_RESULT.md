@@ -28,3 +28,10 @@ cards, semantic activity dates and contextual action descriptions. Fixed a real
 People transition leaving global Loading stuck; optional query failure gets an
 explicit scoped Retry. Existing bounded queries/privacy/pagination are retained.
 Three focused groups and the20 named Batch5 regression cases pass.
+
+M4: composed own/public profile heroes, actual already-loaded bio and explicit
+privacy state; Edit and Account have separate hierarchy. Garage renders a vehicle
+collection with a create toolbar, selected/featured/private states and authorized
+View/Edit actions. No photo/profile is published automatically. Four focused
+groups and all20 Batch6B browser groups pass, including public projection privacy,
+account changes and exclusive recorder/Return to Ride behavior.

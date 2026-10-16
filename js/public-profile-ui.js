@@ -59,16 +59,21 @@ export function initPublicProfiles() {
     screen.append(button('publicProfile.back',()=>navigate(getAccount()?'home':'landing')));
   }
   const own=document.getElementById('screen-profile');
+  const ownHero=own.querySelector('.profile-hero'),bio=element('p','public-bio own-bio'),visibility=element('p','badge profile-visibility');
+  bio.hidden=visibility.hidden=true;ownHero.append(visibility,bio);
   let disposeOwnMedia=null,ownMediaEpoch=0;
   async function ownMedia(){
-    const uid=getAccount()?.uid,token=++ownMediaEpoch;disposeOwnMedia?.();disposeOwnMedia=null;if(!uid)return;
-    try{const prefs=await loadOwnPublicProfile(uid);if(token!==ownMediaEpoch||getAccount()?.uid!==uid||!prefs.publicId)return;
+    const uid=getAccount()?.uid,token=++ownMediaEpoch;disposeOwnMedia?.();disposeOwnMedia=null;bio.textContent='';bio.hidden=visibility.hidden=true;if(!uid)return;
+    try{const prefs=await loadOwnPublicProfile(uid);if(token!==ownMediaEpoch||getAccount()?.uid!==uid)return;
+      bio.textContent=prefs.bio || '';bio.hidden=!prefs.bio;visibility.hidden=false;labelText(visibility,prefs.visibility==='public'?'ux.publicProfile':'ux.privateProfile');
+      if(!prefs.publicId)return;
       dispatchEvent(new CustomEvent('motodash-own-profile',{detail:{publicId:prefs.publicId}}));
       const hero=own.querySelector('.profile-hero');disposeOwnMedia=decorateMedia(hero,{kind:'profile',id:prefs.publicId},{avatar:document.getElementById('profile-avatar'),banner:hero});
     }catch{/* Account data errors remain in the existing Profile flow, optional art falls back. */}
   }
   addEventListener('motodash-profile-updated',()=>void ownMedia());addEventListener('motodash-media-updated',event=>{if(event.detail?.target?.kind==='profile')void ownMedia();});
-  const entry=button('common.edit',()=>void edit(),'public-profile-edit');own.querySelector('.profile-hero').append(entry);
+  const entry=button('common.edit',()=>void edit(),'public-profile-edit');entry.className='primary';
+  const ownerActions=element('div','profile-owner-actions');ownerActions.append(entry,document.getElementById('account-btn'));ownHero.append(ownerActions);
   async function edit() {
     const uid=getAccount()?.uid;if(!uid)return;
     const view=dialog('public-profile-editor','publicProfile.settings');openView(view.node);labelText(view.status,'common.loading');

@@ -78,3 +78,25 @@
 .card-content {padding:18px;}.card-content .card-footer button {border-color:#68717b;}
 .community-card {align-items:center;}.community-card .card-content>button {margin-top:12px;}
 @media(min-width:760px) {.discovery-tabs {grid-template-columns:repeat(6,minmax(0,1fr));}}
+
+/* Social identity and a vehicle collection; private/public state stays explicit. */
+#screen-profile .profile-hero {display:grid;grid-template-columns:72px minmax(0,1fr);gap:12px 16px;align-items:center;text-align:left;margin:20px 0;padding:24px;background:var(--md-surface);border:1px solid var(--md-line);border-radius:var(--md-radius);}
+#screen-profile .large-avatar {grid-column:1;grid-row:1 / span 2;width:72px;height:72px;margin:0;border-color:#e9bf7344;}
+#screen-profile #profile-display-name {grid-column:2;margin:0;line-height:1.2;overflow-wrap:anywhere;font-size:1.5rem;}
+.profile-visibility {grid-column:2;font-size:.6875rem;}.own-bio {grid-column:1/-1;margin:8px 0 0;color:var(--md-muted);}
+.profile-owner-actions {grid-column:1/-1;display:flex;gap:12px;align-items:center;margin-top:8px;}
+.profile-owner-actions .text-button {padding:10px 8px;}.profile-owner-actions .primary {min-width:100px;}
+.profile-actions {grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+.profile-actions .action-row {padding:16px;flex-wrap:wrap;min-width:0;}
+.public-profile-hero {padding:28px 24px;border:1px solid var(--md-line);border-top:2px solid var(--profile-accent,var(--md-gold));background:var(--md-surface);}
+.public-profile-hero .large-avatar {width:80px;height:80px;margin-bottom:16px;}
+.public-profile-hero h1 {font-size:clamp(1.75rem,5vw,2.5rem);}
+.collection-toolbar {display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0 16px;}
+.garage-grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:16px;margin:20px 0;}
+.garage-grid .vehicle-card {margin:0;min-width:0;}.vehicle-card .vehicle-art {height:150px;background:var(--media-secondary,#20282d);}
+.vehicle-card .vehicle-art .md-icon {width:100px;height:76px;}.vehicle-card .vehicle-info {padding:20px;}
+.vehicle-card.is-selected {border-color:var(--md-gold);box-shadow:inset 0 0 0 1px var(--md-gold);}
+.showcase-state {font-size:.8125rem;color:var(--md-muted);}.vehicle-card .feature-actions {margin-top:16px;}
+[data-edit-mode=view] .vehicle-card .feature-actions>button {width:100%;}
+[data-edit-mode=view] .vehicle-card.is-selected .feature-actions>button {background:var(--md-gold);border-color:var(--md-gold);color:var(--md-gold-ink);}
+@media(max-width:350px) {#screen-profile .profile-hero {padding:18px;grid-template-columns:60px minmax(0,1fr);gap:12px;}#screen-profile .large-avatar {width:60px;height:60px;}#screen-profile #profile-display-name {font-size:1.25rem;}.profile-actions {grid-template-columns:1fr;}}
