@@ -63,3 +63,18 @@
 .home-selected .md-icon {width:28px;height:28px;}.home-selected {margin-top:16px;font-size:.8125rem;}
 #home-invitations:empty {display:none;}.home-notice {margin:8px 0!important;}
 @media(min-width:760px) {.ride-launch {padding:24px;max-width:720px;} .home-heading {padding-right:0;}}
+
+/* Discovery navigation is deliberate at every width, not an orphan fifth tab. */
+.discovery-intro {margin:0 0 16px;max-width:42ch;}
+.discovery-tabs {grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;border:0;padding:4px;background:var(--md-surface);border-radius:16px;margin:16px 0;}
+.discovery-tabs button {min-height:44px;padding:10px 6px;border-radius:12px;font-size:.8125rem;overflow-wrap:anywhere;}
+.discovery-tabs button[aria-pressed=true] {background:var(--md-raised);color:var(--md-gold);box-shadow:0 2px 6px #0003;}
+.chip-row {padding-bottom:12px;margin-bottom:4px;}.chip-row button {border-color:var(--md-line);min-height:44px;}
+#people-search {display:flex;align-items:end;gap:12px;flex-wrap:wrap;}
+#people-search .field {flex:1 1 180px;margin:0;min-width:0;}#people-search>button {margin-top:8px;}
+.person-card {align-items:center;}.person-card .vehicle-info h3 {margin-top:0;}
+.card-art {height:100px;background:var(--media-secondary,#20282d);border-bottom-color:var(--md-line);}
+.card-art .md-icon {width:66px;height:56px;}.featured:not(.group-hero) .card-art {height:100px;}
+.card-content {padding:18px;}.card-content .card-footer button {border-color:#68717b;}
+.community-card {align-items:center;}.community-card .card-content>button {margin-top:12px;}
+@media(min-width:760px) {.discovery-tabs {grid-template-columns:repeat(6,minmax(0,1fr));}}

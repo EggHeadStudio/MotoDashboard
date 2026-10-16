@@ -21,3 +21,10 @@ redundant Group Open button (Continue to Group retains that authorized route),
 cleared contribution offer when changing identity, styled reused private notices.
 Two focused groups and all14 existing Batch8.5 browser groups pass. No new query,
 listener, Group creation, GPS watch or automatic contribution/live consent.
+
+M3: explicit Explore/all-activities state plus Ride/Meet/Event/Club/People
+destinations in deliberate responsive rows, one purpose heading, balanced media
+cards, semantic activity dates and contextual action descriptions. Fixed a real
+People transition leaving global Loading stuck; optional query failure gets an
+explicit scoped Retry. Existing bounded queries/privacy/pagination are retained.
+Three focused groups and the20 named Batch5 regression cases pass.

@@ -23,5 +23,18 @@ def run_batch86_tests(browser,base,route_map):
     assert p.locator('#ride-launch-group').is_visible() and p.locator('#ride-launch-identity').is_visible()
     assert not p.evaluate("async()=>{const c=(await import('./js/ride-context.js')).getRideContext();return c.recordingId||c.sharing;}")
     print('PASS: Batch 8.6 compact Home keeps Start above navigation and privacy optional without admission/sharing')
+    p.locator('#bottom-nav [data-destination=discover]').click()
+    p.wait_for_function('document.querySelector("#lobby-dialog .feature-body").getAttribute("aria-busy")==="false"')
+    assert p.locator('.discovery-tabs button').count()==6
+    assert p.locator('[data-discovery-tab=featured]').get_attribute('aria-pressed')=='true'
+    p.click('[data-discovery-tab=people]');p.wait_for_selector('#people-search')
+    p.wait_for_function('document.querySelector("#lobby-dialog .feature-status").textContent===""')
+    for language in ['en','fi']:
+        p.select_option('#language-select',language)
+        for width in [320,390,430]:
+            p.set_viewport_size({'width':width,'height':844})
+            buttons=p.locator('.discovery-tabs button').evaluate_all('(nodes)=>nodes.map(n=>{const r=n.getBoundingClientRect();return {x:r.x,w:r.width,h:r.height};})')
+            assert all(n['x']>=0 and n['x']+n['w']<=width and n['h']>=44 for n in buttons)
+    print('PASS: Batch 8.6 deliberate Discover navigation and People search have no stale global loading or clipped EN/FI targets')
     assert not errors,errors
     c.close()

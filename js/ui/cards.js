@@ -3,20 +3,22 @@ import { vehicleIcon, icon } from './icons.js';
 import { getLocale } from '../i18n/i18n.js';
 import { readableText } from '../data/branding.js';
 import {decorateMedia} from '../media/media-render.js';
+let cardNumber=0;
 
 export function groupCard(group, open, {featured = false, detail = false} = {}) {
   const card = element('article', 'feature-card event-card' + (featured ? ' featured' : '') + (detail ? ' group-hero' : ''));
+  const title=element('h3','',group.title);title.id='activity-title-'+(++cardNumber);card.setAttribute('aria-labelledby',title.id);
   const art = element('div','card-art'); art.append(vehicleIcon(group.category));
   const body = element('div','card-content');
   const badges = element('div','badges'); badges.append(labelText(element('span','badge'),'activity.'+group.activityType),labelText(element('span','badge'),'groupState.'+group.state));
-  const date = element('p','meta'); date.append(icon('clock'), element('span','',new Date(group.startsAt).toLocaleString(getLocale(),{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})));
+  const date = element('p','meta'),time=element('time','',new Date(group.startsAt).toLocaleString(getLocale(),{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}));time.dateTime=new Date(group.startsAt).toISOString();date.append(icon('clock'),time);
   const area = element('p','meta'); area.append(icon('pin'),element('span','',group.meetingArea));
-  body.append(badges,element('h3','',group.title), labelText(element('p','category-label'),'category.'+group.category),date,area);
+  body.append(badges,title, labelText(element('p','category-label'),'category.'+group.category),date,area);
   if (group.description) body.append(element('p','card-description',group.description));
   body.append(element('p','muted',group.clubName || group.hostName));
   const footer = element('div','card-footer');
   footer.append(labelText(element('span','muted'),group.maxParticipants?'groups.capacityLabel':'groups.count',{count:group.participantCount,max:group.maxParticipants}));
-  if(open) footer.append(button('ui.open',open));
+  if(open){const action=button('ui.open',open);action.setAttribute('aria-describedby',title.id);footer.append(action);}
   body.append(labelText(element('p','muted'),'policy.'+group.joiningPolicy));
   if(['scheduled','active'].includes(group.state)) body.append(labelText(element('p','availability'),group.maxParticipants && group.participantCount >= group.maxParticipants?'lobby.full':'lobby.available'));
   body.append(footer);

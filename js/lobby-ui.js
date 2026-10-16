@@ -7,6 +7,7 @@ import { openView, dialog, element, field, labelText, button, runAction, disclos
 import { groupCard, clubCard, skeletons, emptyState } from './ui/cards.js';
 import { vehicleIcon } from './ui/icons.js';
 import {createPeopleDiscovery} from './ui/people.js';
+import {t} from './i18n/i18n.js';
 
 const chips=['open','motorcycle','car','off-road','bicycle','snowmobile','caravan','other'];
 export function initLobbyUI() {
@@ -20,7 +21,7 @@ export function initLobbyUI() {
     });
   }
   function render() {
-    view.body.replaceChildren(labelText(element('h2'),'discover.title'),labelText(element('p','muted'),'discover.intro'));
+    view.body.replaceChildren(labelText(element('p','muted discovery-intro'),'ux.searchHint'));
     if(!uid) {view.body.append(emptyState('home.signIn','discover.intro'),button('auth.open',()=>document.getElementById('account-btn').click()));return;}
     const categories=element('div','chip-row');
     const all=button('lobby.all',()=>chooseCategory(''));all.setAttribute('aria-pressed',String(!input.category));categories.append(all);
@@ -28,9 +29,10 @@ export function initLobbyUI() {
       const node=element('button');node.type='button';node.append(vehicleIcon(category),labelText(element('span'),'discover.'+category));node.classList.add('category-chip');
       node.setAttribute('aria-pressed',String(input.category===category));node.addEventListener('click',()=>chooseCategory(category));categories.append(node);
     }
-    const tabs=element('div','discovery-tabs');
-    for(const name of ['rides','meets','events','clubs','people']) {
-      const node=button('discover.'+name,()=>{tab=name;input.activityType=name==='meets'?'meet':name==='events'?'event':'';cursor=null;render();action(()=>load());});
+    const tabs=element('nav','discovery-tabs');tabs.setAttribute('aria-label',t('nav.discover'));
+    for(const name of ['featured','rides','meets','events','clubs','people']) {
+      const node=button(name==='featured'?'ux.explore':'discover.'+name,()=>{tab=name;input.activityType=name==='meets'?'meet':name==='events'?'event':'';cursor=null;render();action(()=>load());});
+      node.dataset.discoveryTab=name;
       node.setAttribute('aria-pressed',String(tab===name));tabs.append(node);
     }
     view.body.append(tabs);
@@ -68,7 +70,7 @@ export function initLobbyUI() {
     });
   }
   async function load(more=false) {
-    if(tab==='people')return;
+    if(tab==='people'){view.status.textContent='';return;}
     const owner=uid,token=++version;if(!owner) return;
     const results=document.getElementById('lobby-results');if(!results)return;if(!more) skeletons(results);
     try {
@@ -84,7 +86,7 @@ export function initLobbyUI() {
       });
       if(page.more) {const next=button('clubs.more',()=>action(()=>{next.remove();return load(true);}));results.append(next);}
       labelText(view.status,page.partial?'home.partial':'common.loaded');
-    } catch(error) {if(current(owner,token)&&!more) results.replaceChildren();throw error;}
+    } catch(error) {if(current(owner,token)&&!more) results.replaceChildren(button('common.refresh',()=>action(()=>load(false)),'lobby-retry'));throw error;}
   }
   document.getElementById('lobby-btn').addEventListener('click',()=>{
     openView(view.node);input={};cursor=null;tab='featured';version++;render();if(uid) action(()=>load());
