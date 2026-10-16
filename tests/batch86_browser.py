@@ -94,5 +94,17 @@ def run_batch86_tests(browser,base,route_map):
     assert p.evaluate('window.__geo.count')==1 and p.evaluate('window.__geo.active')==1
     assert p.locator('#finish-session-btn').is_visible()
     print('PASS: Batch 8.6 restrained dashboard retains visible map, readable statistics and one watcher through Return to Ride')
+    p.evaluate('''()=>{for(let i=0;i<5;i++)window.__geo.callback({timestamp:Date.now()+i*1000,coords:{latitude:60+i*.0001,longitude:25,accuracy:5,speed:5,heading:90}});}''')
+    p.click('#finish-session-btn');p.wait_for_function('window.__geo.active===0')
+    p.locator('#bottom-nav [data-destination=rides]').click();p.locator('#history-list button[data-action=open]').first.click()
+    p.wait_for_selector('#replay-play');assert p.locator('#hud').is_hidden()
+    p.select_option('#replay-speed','4');p.locator('#saved-details summary').click()
+    assert p.locator('#replay-speed').input_value()=='4' and p.locator('#replay-play').is_visible()
+    p.locator('#replay-controls summary').click()
+    top=p.locator('#history-detail').bounding_box();bottom=p.locator('#ride-replay').bounding_box()
+    assert bottom['y']-(top['y']+top['height'])>250,(top,bottom)
+    assert p.evaluate('window.__geo.active')==0
+    p.click('#saved-back');assert p.locator('#screen-rides').is_visible()
+    print('PASS: Batch 8.6 saved ride keeps independent details/replay, retained speed and clear route with no live GPS')
     assert not errors,errors
     c.close()

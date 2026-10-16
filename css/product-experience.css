@@ -162,3 +162,22 @@ body.dashboard-active:not(.theme-night) #hud .status-good {color:#b0dbba;}
 .dashboard-active #firestore-diagnostic {white-space:normal;overflow-wrap:anywhere;}
 @media(orientation:landscape) {.dashboard-active #status-stack {grid-template-columns:1fr;}}
 @media(max-width:350px) {.dashboard-active #controls-row {gap:4px;}.dashboard-active #controls-row .hud-btn {padding-inline:8px;}}
+
+/* Recorded mode: a route, its history and replay; no current telemetry. */
+body.saved-ride-view {font-family:var(--md-font);}
+body.saved-ride-view #history-detail {padding:14px 16px;max-height:34dvh;box-shadow:0 8px 24px #0003;}
+.saved-ride-header {display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 12px;}
+.saved-ride-header h1 {grid-column:1/-1;grid-row:2;font-size:1.125rem;margin:0;line-height:1.35;}
+.saved-ride-header #saved-back {justify-self:start;font-size:.8125rem;}
+.saved-language {grid-column:2;grid-row:1;}.saved-language>span {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);}
+.saved-language select {font-size:.8125rem;}
+.saved-details {margin-top:12px;}.saved-details summary {color:var(--md-muted);font-size:.8125rem;}
+.saved-ride-stats {gap:16px 12px;}.saved-ride-stats dd {margin:4px 0 0;font-variant-numeric:tabular-nums;}
+body.saved-ride-view #replay-play {background:var(--md-gold);color:var(--md-gold-ink);border-color:var(--md-gold);min-width:80px;font-weight:650;}
+.ride-replay {padding:12px 16px;box-shadow:0 8px 24px #0003;border-radius:var(--md-radius);}
+.replay-controls summary {font-size:.875rem;}.replay-actions {gap:8px;}
+.replay-actions label {font-size:.8125rem;}.replay-timeline input {min-height:44px;}
+.replay-follow {min-height:44px;font-size:.8125rem;}
+.replay-timeline output {font-variant-numeric:tabular-nums;}
+@media(max-width:380px) {.replay-actions {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));}.replay-actions label {flex-wrap:wrap;} .ride-replay {padding-inline:12px;}}
+@media(orientation:landscape) and (max-height:520px) {body.saved-ride-view #history-detail {max-height:calc(100dvh - 24px - env(safe-area-inset-top));}}

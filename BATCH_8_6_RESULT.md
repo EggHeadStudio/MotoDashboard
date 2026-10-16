@@ -66,3 +66,9 @@ and both live integration/client groups pass: one GPS watch through Return,
 consent/HTTPS-WSS/errors/lease scope and logout/leave/local/remote-end cleanup.
 The clear-map assertion measures the actual gap between speed and lower HUD;
 an empty start-aligned grid child has zero own height despite a nonzero grid row.
+
+M9: composed saved-ride header, compact locale control, readable tabular statistics,
+clear Play action and touch timeline, preserving independent collapsible panels.
+No replay/route/timestamp/gap/recording behavior changed. Nine focused groups and
+the complete Batch7 People/showcase/camera/saved/replay regression pass, including
+red route/gold progress, speeds/seek/gaps/export and zero replay GPS/cloud writes.
