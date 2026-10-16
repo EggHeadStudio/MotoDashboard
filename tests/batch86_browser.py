@@ -59,5 +59,15 @@ def run_batch86_tests(browser,base,route_map):
     assert not p.locator('#branding-form').is_visible()
     assert p.locator('#club-wall').evaluate('(node)=>node===node.parentElement.lastElementChild')
     print('PASS: Batch 8.6 Club section jumps focus existing authorized content without additional queries or exposing editors')
+    p.locator('#bottom-nav [data-destination=rides]').click();p.click('#groups-btn');p.click('#group-create')
+    p.fill('#group-form-title','Weekend meet');p.fill('#group-form-meetingArea','Helsinki area');p.select_option('#group-form-activityType','meet')
+    p.locator('#group-form button[type=submit]').click();p.wait_for_selector('#group-edit')
+    assert p.locator('.group-hero time').get_attribute('datetime')
+    assert p.locator('.group-organizer').inner_text().startswith('Organized by')
+    p.locator('#groups-dialog .section-nav [aria-controls=group-attendance]').click()
+    assert p.evaluate('document.activeElement.closest("#group-attendance")!==null')
+    assert p.locator('#group-attendance').bounding_box()['y']<p.locator('#group-vehicle').bounding_box()['y']
+    assert not p.evaluate("async()=>(await import('./js/ride-context.js')).getRideContext().sharing")
+    print('PASS: Batch 8.6 shared activity detail prioritizes actual date, organizer and independent RSVP without live consent')
     assert not errors,errors
     c.close()

@@ -6,7 +6,7 @@ import {dataErrorMessage} from '../firebase/access.js';
 export function initAttendance(){
   registerGroupSection(async({uid,model,body,action,stillCurrent})=>{
     const section=element('section','feature-card');section.id='group-attendance';body.append(section);
-    section.append(labelText(element('h3'),'rsvp.title'),labelText(element('p','muted'),'rsvp.hint'));
+    section.append(labelText(element('h3'),'rsvp.title'),labelText(element('p','muted'),'ux.attendanceHint'));
     let data;try{data=await loadAttendance(uid,model.group.id,{organizer:model.manager});}
     catch(error){if(stillCurrent())section.append(element('p','feature-status',dataErrorMessage(error)));return;}
     if(!stillCurrent())return;

@@ -9,6 +9,7 @@ import { openView, dialog, element, field, button, labelText, runAction } from '
 // UI mutation hint accelerates server revalidation; it never supplies permissions.
 import {liveClient} from './live/live-client.js';
 import { groupCard, emptyState } from './ui/cards.js';
+import {sectionNavigation} from './ui/section-nav.js';
 import {watchGroup} from './firebase/groupWatch.js';
 import {getRideContext} from './ride-context.js';
 import {showActiveRideConflict} from './ui/ride-return.js';
@@ -123,7 +124,14 @@ export function initGroupUI() {
         editOnly(button('groups.cancelSession',()=>{if(confirm(t('groups.cancelConfirm'))) action(owner=>repository.setGroupState(owner,id,'cancelled'));},'group-cancel')));
     }
     for(const render of sections) {if(!current(owner,token)) return;await render({uid:owner,model,body:view.body,status:view.status,action,stillCurrent:()=>current(owner,token)});}
-    if(current(owner,token)){mountEditMode(view.body,{allowed:manager && ['scheduled','active'].includes(group.state),id:'group-edit'});labelText(view.status,'common.loaded');}
+    if(current(owner,token)){
+      const hero=view.body.querySelector('.group-hero'),attendance=view.body.querySelector('#group-attendance');
+      if(attendance)hero.after(attendance);
+      const nav=sectionNavigation(view.body,[{node:hero,key:'ux.overview'},{node:attendance,key:'rsvp.title'},
+        {node:view.body.querySelector('#group-vehicle'),key:'groups.vehicle'},
+        {node:view.body.querySelector('#group-participants'),key:'groups.participants'}]);hero.after(nav);
+      mountEditMode(view.body,{allowed:manager && ['scheduled','active'].includes(group.state),id:'group-edit'});labelText(view.status,'common.loaded');
+    }
     if(current(owner,token)) release=watchGroup(owner,id,latest=>{
       if(!current(owner,token))return;
       if(!latest || latest.state!==model.group.state) {

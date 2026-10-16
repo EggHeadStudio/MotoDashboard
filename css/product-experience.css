@@ -116,3 +116,17 @@
 .activity-stats dt {font-size:.75rem;overflow-wrap:anywhere;}.activity-card {padding-block:20px;}
 .rank-graphic {border-radius:10px;}.member-rank {line-height:1.4;}
 @media(min-width:760px) {.activity-stats {grid-template-columns:repeat(4,minmax(0,1fr));}}
+
+/* One activity vocabulary for rides, meets and events. Full banners are optional. */
+.group-hero {padding:0;}.group-hero .card-art {height:72px;justify-content:flex-start;padding:16px 20px;}
+.group-hero .card-art>.md-icon {width:48px;height:44px;}.group-hero .card-art.has-media {height:148px;}
+.group-hero .card-content {padding:20px;}.group-hero h3 {font-size:clamp(1.5rem,4vw,2rem);line-height:1.2;margin:12px 0;}
+.group-hero .meta {margin:10px 0;font-size:.875rem;color:var(--md-text);}
+.group-hero .group-organizer {border-top:1px solid var(--md-line);padding-top:12px;margin-top:12px;font-size:.8125rem;}
+#group-attendance .feature-actions {gap:8px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:16px 0;}
+#group-attendance .feature-actions button {min-width:0;font-size:.8125rem;padding:12px 6px;}
+#group-attendance [aria-pressed=true] {border-color:var(--md-gold);background:#e9bf7314;color:var(--md-gold);}
+#group-active,#group-completed {background:var(--md-gold);border-color:var(--md-gold);color:var(--md-gold-ink);}
+#group-vehicle {padding:20px;border:1px solid var(--md-line);border-radius:var(--md-radius);background:var(--md-surface);}
+#group-participants {margin:24px 0;}#group-overview ul {padding-left:20px;line-height:1.8;}
+@media(max-width:350px) {#group-attendance .feature-actions {grid-template-columns:1fr;}#group-attendance .feature-actions button {text-align:left;padding-inline:16px;}}

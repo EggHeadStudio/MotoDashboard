@@ -1,5 +1,6 @@
 // Small original line icons; no external fonts, images or runtime dependency.
 const paths = {
+  calendar:'M4 5h16v16H4ZM8 2v6m8-6v6M4 11h16M8 15h3m3 0h3m-9 3h3',
   shield:'M12 2 3 5v6c0 6 9 11 9 11s9-5 9-11V5Z',
   star:'m12 2 3 7 8 1-6 5 2 8-7-4-7 4 2-8-6-5 8-1Z',
   flag:'M4 22V2m0 1h15l-4 5 4 5H4',

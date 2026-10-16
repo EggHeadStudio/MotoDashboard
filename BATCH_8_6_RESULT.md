@@ -44,3 +44,9 @@ Club regression groups pass. A first Club run timed out waiting for initializati
 after reload; an instrumented complete rerun passed without product/test weakening.
 The final full matrix repeats this path. Baseline count-format expectations were
 updated only for the deliberate integer presentation.
+
+M6: shared Ride/Drive/Meet/Event hero with semantic date, approximate area, actual
+organizer and distinct original activity graphics. Compact fallback artwork;
+authorized banners keep a full image area. RSVP moves ahead of configuration with
+in-page intent/vehicle/participant navigation, remaining separate from admission.
+Six focused groups and all6 existing Group/Lobby/invitation/QR groups pass.

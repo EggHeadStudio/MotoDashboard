@@ -8,14 +8,15 @@ let cardNumber=0;
 export function groupCard(group, open, {featured = false, detail = false} = {}) {
   const card = element('article', 'feature-card event-card' + (featured ? ' featured' : '') + (detail ? ' group-hero' : ''));
   const title=element('h3','',group.title);title.id='activity-title-'+(++cardNumber);card.setAttribute('aria-labelledby',title.id);
-  const art = element('div','card-art'); art.append(vehicleIcon(group.category));
+  const art = element('div','card-art');art.setAttribute('aria-hidden','true');
+  art.append(group.activityType==='meet'?icon('clubs'):group.activityType==='event'?icon('calendar'):vehicleIcon(group.category));
   const body = element('div','card-content');
   const badges = element('div','badges'); badges.append(labelText(element('span','badge'),'activity.'+group.activityType),labelText(element('span','badge'),'groupState.'+group.state));
   const date = element('p','meta'),time=element('time','',new Date(group.startsAt).toLocaleString(getLocale(),{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}));time.dateTime=new Date(group.startsAt).toISOString();date.append(icon('clock'),time);
   const area = element('p','meta'); area.append(icon('pin'),element('span','',group.meetingArea));
   body.append(badges,title, labelText(element('p','category-label'),'category.'+group.category),date,area);
   if (group.description) body.append(element('p','card-description',group.description));
-  body.append(element('p','muted',group.clubName || group.hostName));
+  if(group.clubName || group.hostName)body.append(labelText(element('p','muted group-organizer'),'ux.organizer',{name:group.clubName || group.hostName}));
   const footer = element('div','card-footer');
   footer.append(labelText(element('span','muted'),group.maxParticipants?'groups.capacityLabel':'groups.count',{count:group.participantCount,max:group.maxParticipants}));
   if(open){const action=button('ui.open',open);action.setAttribute('aria-describedby',title.id);footer.append(action);}
