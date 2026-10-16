@@ -78,10 +78,10 @@ export function initShell() {
     feed.replaceChildren();if(!uid || event.detail.uid!==uid)return;
     const rows=event.detail.rows.filter(row=>row.readAt===null).slice(0,5);if(!rows.length)return;
     feed.append(labelText(element('h2'),'home.invitations'));const message=element('p','feature-status');message.setAttribute('role','status');feed.append(message);
-    for(const row of rows)feed.append(button('notifications.'+row.type,()=>void runAction(feed,message,async()=>{
+    for(const row of rows){const notice=button('notifications.'+row.type,()=>void runAction(feed,message,async()=>{
       const owner=uid;await markNotificationRead(owner,row.id);if(uid!==owner)return;
       if(row.type==='club-approved')location.hash='/club/'+row.sourceId;else followSessionURL(sessionURL(row.sourceId));
-    })));
+    }));notice.className='home-notice action-row';feed.append(notice);}
   });
   addEventListener('online',()=>{if(!loaded && uid) void refresh();});
   addEventListener('motodash-navigate',event=>{if(event.detail.screen==='home'&&!loaded) void refresh();});

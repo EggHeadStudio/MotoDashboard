@@ -15,5 +15,13 @@ def run_batch86_tests(browser,base,route_map):
         assert p.evaluate('document.documentElement.scrollWidth<=innerWidth')
     assert p.locator('#bottom-nav button').count()==5
     print('PASS: Batch 8.6 shared contrast tokens, six responsive widths and existing navigation')
+    p.set_viewport_size({'width':390,'height':844});p.locator('#bottom-nav [data-destination=home]').click()
+    start=p.locator('#start-btn').bounding_box();nav=p.locator('#bottom-nav').bounding_box()
+    assert start['y']+start['height']<nav['y'],(start,nav)
+    assert p.locator('.launch-privacy').is_visible() and not p.locator('#ride-launch-contribution').is_visible()
+    p.locator('.launch-privacy summary').click();assert not p.locator('#ride-launch-contribution').is_checked()
+    assert p.locator('#ride-launch-group').is_visible() and p.locator('#ride-launch-identity').is_visible()
+    assert not p.evaluate("async()=>{const c=(await import('./js/ride-context.js')).getRideContext();return c.recordingId||c.sharing;}")
+    print('PASS: Batch 8.6 compact Home keeps Start above navigation and privacy optional without admission/sharing')
     assert not errors,errors
     c.close()

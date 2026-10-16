@@ -45,3 +45,21 @@
 @media(min-width:760px) {.shell-header {padding-top:24px;}#screen-host {padding-top:20px;}}
 @media(max-width:480px) {.feature-dialog:not(.page-panel),#account-dialog {padding:20px 16px calc(24px + env(safe-area-inset-bottom));}}
 @media(prefers-reduced-motion:reduce) {*{scroll-behavior:auto!important;}.skeleton-card{animation:none;} :where(button,a){transition:none!important;}}
+
+/* Home: decisions next to the action; optional publication stays after Start. */
+.ride-launch {padding:18px;background:var(--md-surface);border-color:var(--md-line);}
+.ride-launch .road-art {display:none;}.ride-launch-options {margin-bottom:16px;}
+#ride-launch {position:relative;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start;}
+#ride-launch>.field {grid-column:auto;margin:0;min-width:0;}
+#ride-launch>.field:first-of-type {grid-column:1/-1;padding-left:76px;min-height:64px;}
+#ride-launch .launch-vehicle-photo {position:absolute;left:0;top:2px;width:60px;height:64px;border:1px solid var(--md-line);border-radius:14px;}
+#ride-launch .launch-category {color:var(--md-gold);font-size:.75rem;}
+#ride-launch>p:empty {display:none;}.ride-launch select {padding:10px;font-size:.875rem;}
+.ride-launch #start-btn {min-height:52px;padding:14px;box-shadow:none;}
+.ride-launch .launch-privacy {border:0;border-top:1px solid var(--md-line);border-radius:0;margin:16px 0 0;padding:6px 0 0;background:transparent;}
+.launch-privacy summary {font-size:.8125rem;color:var(--md-muted);}
+.launch-privacy .field {font-size:.8125rem;}.launch-privacy p {font-size:.75rem;}
+.home-selected .vehicle-preview {padding:12px 16px;gap:12px;background:transparent;}
+.home-selected .md-icon {width:28px;height:28px;}.home-selected {margin-top:16px;font-size:.8125rem;}
+#home-invitations:empty {display:none;}.home-notice {margin:8px 0!important;}
+@media(min-width:760px) {.ride-launch {padding:24px;max-width:720px;} .home-heading {padding-right:0;}}

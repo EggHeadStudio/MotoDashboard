@@ -14,3 +14,10 @@ alignment, cards/dialogs/status/skeleton/toast/media/focus/navigation presentati
 System fonts/original icon vocabulary retained. One focused browser group passes:
 normal text/muted/accent contrast >=4.5, six widths/no document overflow and five
 existing navigation destinations. No backend/data/recording behavior changed.
+
+M2: compact vehicle/photo/category, personal/Club and optional Group selectors;
+Start precedes a separate explicit privacy/contribution disclosure. Removed the
+redundant Group Open button (Continue to Group retains that authorized route),
+cleared contribution offer when changing identity, styled reused private notices.
+Two focused groups and all14 existing Batch8.5 browser groups pass. No new query,
+listener, Group creation, GPS watch or automatic contribution/live consent.
