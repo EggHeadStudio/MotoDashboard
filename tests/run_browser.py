@@ -52,6 +52,10 @@ def run():
             from visual86_capture import run_visual86_tests
             run_visual86_tests(browser,base,route_map)
             browser.close();server.shutdown();return
+        if '--batch86-only' in sys.argv:
+            from batch86_browser import run_batch86_tests
+            run_batch86_tests(browser,base,route_map)
+            browser.close();server.shutdown();return
         if '--batch85-only' in sys.argv:
             from batch85_browser import run_batch85_tests
             run_batch85_tests(browser,base,route_map)
@@ -261,6 +265,8 @@ def run():
         run_batch8_tests(browser,base,route_map)
         from batch85_browser import run_batch85_tests
         run_batch85_tests(browser,base,route_map)
+        from batch86_browser import run_batch86_tests
+        run_batch86_tests(browser,base,route_map)
         output=page.evaluate('async()=> (await import("./tests/live-client-tests.js")).runLiveClientTests()')
         print('PASS:',output)
         run_real_sdk_imports(browser, base, route_map)
