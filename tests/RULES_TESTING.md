@@ -1,7 +1,8 @@
 # MotoDashboard security and regression tests
 
-Updated 2026-10-16 after local Batch 8.5. The operator reports Batch 8 deployed;
-Batch 8.5 publication/real-phone acceptance is pending. Current source has 19 indexes.
+Updated 2026-10-17 after local Batch 8.6. The operator reports Batch 8.5 deployed;
+8.6 publication/real-phone acceptance is pending. Rules/indexes/Worker are unchanged
+by 8.6; current source has 19 indexes. No production data is targeted by tests.
 Current operator procedure: [DEPLOYMENT_CHECKLIST.md](../DEPLOYMENT_CHECKLIST.md).
 
 ## Isolation and coverage
@@ -79,9 +80,19 @@ python tests/run_firebase_deployment_contract.py
 
 Browser tests use fixture data/simulated GPS, real Leaflet and real pinned Firebase
 imports with cloud APIs blocked. SDK fixtures do not enforce Rules. The latest
-full run passes 116 distinct groups/cases, including 14 Batch 8.5 cases. Nested
+full Batch 8.6 run passes130 distinct groups/cases (116 existing +14 product groups).
+Nested
 domain/registration assertions and the Batch 5/6A summary lines are not added
-again. Pages tests use /MotoDashboard/ (435 references, 112 unique URLs HTTP 200).
+again. Pages tests use /MotoDashboard/ (448 references, 116 unique URLs HTTP 200).
+
+Focused product checks: python tests/run_browser.py --batch86-only. Rendered
+evidence: MOTODASH_VISUAL_PHASE=before/after and python tests/run_browser.py
+--visual86. Use the archived5c46455 frontend for a true baseline; screenshots and
+manifests go to TEMP/motodash-ux86, outside the published artifact. There are264
+matched cases/version (22 surfaces x6 viewports x2 languages), plus targeted200%
+text screenshots. See UX_AUDIT.md and BATCH_8_6_RESULT.md; screenshots are not counted
+again as independent browser regression groups. Real Safari/phone acceptance is
+separate and must not be inferred from local fixtures or screenshot counts.
 
 Worker developers with Node 22 and installed cloudflare lockfile dependencies run
 npm test at root (delegates to npm --prefix cloudflare test), or npm test inside
@@ -92,7 +103,7 @@ outside the repository. Raw node --test without a build is not the supported pat
 The Firebase workflow runs config/contract and all nine Firestore runners before
 explicit deployment. Validate mode performs no production operation. YAML/Bash/
 credential/scope historical results are recorded in REPOSITORY_AUDIT.md; current
-results, source changes and limits are in BATCH_8_5_RESULT.md. The local workflow
+results, source changes and limits are in BATCH_8_6_RESULT.md. The local workflow
 validator passes 3 YAML/15 Bash contracts; it does not dispatch a workflow.
 
 ## Pending live acceptance and history

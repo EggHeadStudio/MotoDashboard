@@ -101,8 +101,8 @@ Discover results because History now legitimately has an empty state too.
 ## Final handoff (2026-10-17)
 
 Implementation started October16; final local verification crossed midnight.
-Version **1.6.6-batch8.6**, baseline **5c46455**. Milestones0-11 are implemented;
-M12 completes the full regression/documentation/local commit. No independent
+Version **1.6.6-batch8.6**, baseline **5c46455**. Milestones 0-12 are complete
+locally, including full regression/documentation/local commits. No independent
 implementation is blocked. Publication approval and native two-account/phone
 acceptance remain separate uncompleted gates. **Nothing pushed/deployed, no
 production mutation or paid activation, no Batch9.**
@@ -154,7 +154,7 @@ navigation guards. Existing data/authorization/business flows remain intact.
 | --- | --- | --- |
 | Firestore emulator | 1,116 distinct passed,0 failed/0 skipped | All9 runners; repeated102 baseline counted once, fixed localhost demo only |
 | Worker/R2/workerd | 118 passed,0 failed/0 skipped | Includes20 native workerd/R2/SQLite cases; Wrangler dry-run only |
-| Browser | Full final run pending completion | Includes13 new product groups; screenshot matrix is counted separately |
+| Browser | 130 groups/cases passed,0 failed/0 skipped | 116 existing +14 product groups; screenshot matrix counted separately |
 | Locked RTDB | 68 passed,0 failed/0 skipped | Deny-all, fixed localhost only |
 | Pages | 2 groups pass;448 refs/116 URLs HTTP200 | /MotoDashboard/, guest/local recording without Firebase and scoped legacy SW cleanup |
 | Deployment | 10 contracts pass | Exact19 indexes/exemption, configuration/scope/credential guards |
@@ -162,7 +162,7 @@ navigation guards. Existing data/authorization/business flows remain intact.
 | Visual matrix | 264 matched before +264 after,0 final overflow | Chromium local fixtures, not native mobile Safari |
 
 Local logs (TEMP): motodash-batch86-firestore-verified.log,
-motodash-batch86-worker.log, motodash-batch86-browser.log,
+motodash-batch86-worker.log, motodash-batch86-browser-complete.log,
 motodash-ux86-before-matched.log and motodash-ux86-after-final.log.
 Actual Rules compilation/authorization ran in the emulator. Browser uses simulated
 GPS and SDK fixtures; real Firebase13.0.0 imports are checked with cloud APIs
@@ -176,6 +176,11 @@ the full browser run repeats it. New test selectors were corrected to actual
 localized labels/aria-controls, the HUD gap assertion to actual panel geometry,
 and the older statistics assertion to deliberate integer count formatting. No
 security expectation, useful test or feature was removed to obtain passing tests.
+The final full browser run passes132 raw PASS lines: two are already-counted
+Batch5/6A suite summaries, giving130 distinct groups/cases. First full attempts
+exposed the scoped empty-state selector and the real200% Profile overflow above;
+both are corrected and the complete suite was rerun. Three extra Finnish200%
+Profile screenshots at320/390/430x568 are in after/, outside the264-case matrix.
 Existing cached development tools were reused/repaired from existing bytecode;
 no workstation software or paid infrastructure was installed/activated.
 
@@ -250,3 +255,72 @@ iconography and social/merchandise usage. Validate contrast/text scaling/native
 browser chrome/performance and existing customizable themes. Do not imitate
 proprietary UI, add remote fonts without review or mistake decorative ranks/Club
 totals for entitlement or reward authority.
+
+### Local commits
+
+| Commit | Purpose |
+| --- | --- |
+| 7d15208 | M0 rendered audit and safe evidence harness |
+| 62a7d5b | M1 shared premium presentation tokens |
+| fab8f90 | M2 compact private-default Home launch |
+| aebefdf | M3 Discover destinations/cards/loading/retry |
+| 13a5408 | M4 social Profile and Garage collection |
+| c9cf32d | M5 Club sections and readable statistics |
+| d042417 | M6 unified activities and clear RSVP |
+| 6f3fa7d | M7 semantic guarded editors/validation |
+| a032cad | M8 calm dashboard presentation |
+| 512697d | M9 saved/replay presentation |
+| bf2f179 | M10 dirty modal/deep-link/focus guards |
+| 7fa35c0 | M11 corrections from matched visual inspection |
+| 295cbbc | M12 large-text and multiple-editor accessibility regressions |
+
+The final local documentation/version/results commit is named
+`docs: finalize Batch 8.6 evidence and frontend deployment handoff`.
+Its exact hash is obtained with `git log -1 --format="%h %s"`; a commit cannot
+embed its own final hash. Full sequence: `git log --reverse --oneline 5c46455..HEAD`.
+No commit was pushed. Final working tree is checked after that commit.
+
+### Exact file inventory relative to5c46455
+
+No files removed. Existing Firebase/Cloudflare/RTDB/Pages workflows and config,
+security/media/history/GPS coverage and all agreed roadmap requirements retained.
+
+| Change | File |
+| --- | --- |
+| Added | `BATCH_8_6_RESULT.md` |
+| Modified | `DEPLOYMENT_CHECKLIST.md` |
+| Modified | `IDEA.md` |
+| Modified | `IMPLEMENTATION_STATUS.md` |
+| Modified | `README.md` |
+| Added | `UX_AUDIT.md` |
+| Added | `css/product-experience.css` |
+| Modified | `index.html` |
+| Modified | `js/app.js` |
+| Modified | `js/club-ui.js` |
+| Modified | `js/config.js` |
+| Modified | `js/garage-ui.js` |
+| Modified | `js/group-ui.js` |
+| Added | `js/i18n/batch86.js` |
+| Modified | `js/i18n/dictionary.js` |
+| Modified | `js/lobby-ui.js` |
+| Modified | `js/media/theme-editor.js` |
+| Modified | `js/public-profile-ui.js` |
+| Modified | `js/ui/activity-stats.js` |
+| Modified | `js/ui/attendance.js` |
+| Modified | `js/ui/cards.js` |
+| Modified | `js/ui/edit-mode.js` |
+| Added | `js/ui/editor-layout.js` |
+| Modified | `js/ui/forms.js` |
+| Modified | `js/ui/icons.js` |
+| Modified | `js/ui/navigation.js` |
+| Modified | `js/ui/ride-launch.js` |
+| Added | `js/ui/section-nav.js` |
+| Modified | `js/ui/shell.js` |
+| Modified | `tests/RULES_TESTING.md` |
+| Modified | `tests/batch5_browser.py` |
+| Modified | `tests/batch85_browser.py` |
+| Added | `tests/batch86_browser.py` |
+| Modified | `tests/run_browser.py` |
+| Added | `tests/visual86_capture.py` |
+
+**STOP after Batch 8.6. Await explicit approval; no publication or Batch 9.**

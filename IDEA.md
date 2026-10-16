@@ -1,3 +1,5 @@
+> **Current Batch 8.6 authorization (2026-10-16; final work 2026-10-17):** operator reports Batch 8.5 deployed. The attachment authorizes local milestones 0-12: rendered UX audit, coherent product design, mobile screens/editors/navigation and full regression. Preserve static Pages, Auth/Firestore, Cloudflare/private R2, GPS/recording/live consent, EN/FI and all future requirements. No push/deployment, production writes, paid infrastructure or Batch 9. Section 26, UX_AUDIT.md and BATCH_8_6_RESULT.md record current work; earlier dated stops/results are historical.
+
 > **Current Batch 8.5 authorization (2026-10-15):** the operator reports Batch 8 deployed. The new attachment authorizes local milestones 0-13 for premium View/Edit UX, ride identity, RSVP and privacy-aware Club activity. It supersedes historical batch stops within this scope only. No push, deployment, production writes, paid activation or Batch 9. Section 25 and BATCH_8_5_RESULT.md record current results; earlier dated results retain their original evidence.
 
 > **Current Batch 8 authorization (2026-10-14):** user-selected private Cloudflare R2 `motodash-media`; implement/test/commit milestones 0–10 locally, saved-view corrections first. No push, deployment, production writes, paid activation or Batch 9. This supersedes historical Batch 7 media deferral and stop within the attached scope. Preserve all future account/commercial/final-brand requirements. See BATCH_8_RESULT.md.
@@ -3872,3 +3874,61 @@ Official rewards must use a separately approved evidence/evaluator design; the
 new Club counters are not an achievement or billing authority.
 
 **STOP after Batch 8.5. Await explicit approval; no push/deploy/production changes.**
+
+# 26. Batch 8.6 - premium product experience
+
+Authorized 2026-10-16; final verification spans 2026-10-17. Operator reports 8.5
+deployed. The attachment supersedes historical stops within this local UI/UX
+batch only. Preserve all existing product/security requirements and future scope.
+
+- [x] 0 Real Chromium public landing/local fixture audit before redesign; 22 surfaces,
+  six portrait/landscape/tablet/desktop sizes, EN/FI, twelve journey evaluations.
+- [x] 1 Coherent type/space/surface/color/button/card/form/dialog/navigation/status/
+  skeleton/media/motion/focus tokens; retain original icons/system fonts/brand.
+- [x] 2 Compact Home vehicle/identity/Group/Start, separate private contribution,
+  existing chronological plans/private notices and one active ride context.
+- [x] 3 Deliberate Discover destinations/search/filters, honest cards/empty/retry,
+  existing source privacy and bounded queries/pagination.
+- [x] 4 Composed own/public profiles, actual bio/privacy, Garage collection and
+  selected/featured states; management remains in authorized Edit mode.
+- [x] 5 Club content/section navigation, actual membership/Join/upcoming/members/
+  ranks/log/stats/Wall, private/technical boundaries retained.
+- [x] 6 Shared Ride/Meet/Event details with real date/approximate area/organizer,
+  separate RSVP/admission and current invitation/live authority.
+- [x] 7 Semantic editor sections, native validation, preview/crop/palettes,
+  section Save/Cancel, dirty guards and no nested forms or automatic publication.
+- [x] 8 Calm readable dashboard presentation; preserve camera, GPS smoothing,
+  recorder, live consent/lease, markers/status and Return to Ride.
+- [x] 9 Saved route/replay presentation, independent collapses, timestamp/gaps/
+  red route/gold progress/export and zero new live GPS in saved mode.
+- [x] 10 Focus/keyboard/Skip/Back/deep links, scoped loading/errors/retry, touch,
+  text scaling, reduced motion, safe areas and controlled themes.
+- [x] 11 Actual before/after review and additional correction pass:264 matched
+  cases per version, zero final document/surface overflow in local Chromium.
+- [x] 12 Final full regression, current docs/report and local handoff commits.
+- [ ] Explicit publication approval and real two-account/native phone acceptance.
+
+This is a frontend-only implementation. Firestore Rules/indexes/config, locked
+RTDB, Cloudflare protocols/classes/v1-v4/bindings/private R2, IAM/secrets and Actions
+remain unchanged. No new queries/listeners/GPS pipeline, schema/migration/build/
+framework, paid infrastructure or fabricated production data. Existing 19 indexes
+and 8.5 epoch-coupled privacy/source contracts remain required.
+
+Current evidence/design decisions: UX_AUDIT.md and BATCH_8_6_RESULT.md. Exact
+Pages-only rollout, prerequisite verification, real-phone checks and compatible
+frontend rollback: current DEPLOYMENT_CHECKLIST.md. Local visual inspection is not
+native Safari/physical GPS/camera/subjective acceptance or a premium-quality seal.
+
+The final global MotoDash logo/typeface/iconography remains a separate milestone:
+original brand exploration, licensed system/fallback typography, optical sizes,
+dark/light/native browser chrome, app icons/social art and accessibility/contrast.
+No final proprietary imitation, new remote fonts or paid asset service here.
+
+Retain all agreed password recovery/change, Google linking, trusted full erasure/
+ownership/retention, vehicle/Club/rank media, notifications/Club QR, Official MotoDash
+activities/safe rewards/achievements, subscriptions/Stripe/trusted entitlements,
+NFC, merchandise, Safe Zone, provider commercial licensing and optional future
+marketplace requirements. Wider beta still needs account erasure/moderation/abuse/
+provider acceptance. No Batch 9 starts from this record.
+
+**STOP after Batch 8.6. Await explicit approval; no push/deploy/production writes.**

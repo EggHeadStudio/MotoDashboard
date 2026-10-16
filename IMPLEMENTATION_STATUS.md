@@ -1,4 +1,39 @@
-# Current Batch 8.5 - final local verification 2026-10-16
+# Current Batch 8.6 - 2026-10-17
+
+Version **1.6.6-batch8.6**, local product-experience work; no publication by the
+agent. The operator now reports Batch 8.5 deployed. Native phone/production
+acceptance is not inferred from that report.
+
+- Actual rendered UX audit before changes, shared dark automotive presentation,
+  compact Home choices/Start, separate privacy disclosure and reused notices.
+- Deliberate Discover destinations/paged cards, own bio/privacy, vehicle collection,
+  Club/activity section navigation and clearly separate RSVP/admission.
+- Semantic grouped editors, visible validation, dirty guards, private media/theme
+  preview, keyboard/focus/text-scaling/reduced-motion improvements.
+- Calmer dashboard with the same one GPS/recording/live pipeline; clearer saved
+  history/replay controls without live telemetry or changed route timing.
+- Fixed stale People loading, dirty modal stacking and Skip-link fragment loss.
+
+**Frontend-only diff:** Rules/indexes, Firebase configuration, locked RTDB,
+Worker/protocol/bindings/v1-v4, private R2 and GitHub Actions are unchanged. No data
+migration, new secret, query/listener, infrastructure or paid activation. Existing
+19 indexes and Batch 8.5 epoch/source/privacy contracts remain required.
+
+Current evidence/commits/gates: [BATCH_8_6_RESULT.md](BATCH_8_6_RESULT.md).
+Final local results: **1,116 distinct Firestore assertions**, **118 Worker tests
+(20 native workerd/R2/SQLite)**, **130 browser groups/cases**, **68 locked RTDB**,
+**2 Pages groups (448 refs/116 URLs)**, **10 deployment contracts**, **3 YAML/15
+Bash** checks and **264 matched before/after cases per version** pass. Zero final
+failures/skips/visual overflow. Native phone acceptance is separate and NOT RUN.
+Rendered findings/evidence: [UX_AUDIT.md](UX_AUDIT.md). Exact publication/rollback
+and real-phone checks: current DEPLOYMENT_CHECKLIST.md section. Wider beta still
+needs trusted complete erasure, abuse/moderation/provider acceptance. All account,
+Official/reward, commercial/NFC/merchandise and final branding scope stays in IDEA.md.
+No Batch 9 started. Earlier dated local/deployment statements below are history.
+
+---
+
+# Historical Batch 8.5 - final local verification 2026-10-16
 
 Version **1.6.5-batch8.5**, implemented locally. The operator reports Batch 8
 deployed; this batch has not been pushed, deployed or accepted on real phones.

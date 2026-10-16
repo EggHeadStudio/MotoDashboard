@@ -3,16 +3,20 @@
 **Your vehicle. Your crew. Your ride.** MotoDashboard is a mobile-first vehicle and
 community prototype, hosted at [GitHub Pages](https://eggheadstudio.github.io/MotoDashboard/).
 
-**The operator reports Batch 8 deployed. Batch 8.5 is implemented locally and awaits
-approval/publication and real-phone acceptance.** Console/IAM/device acceptance is
-not inferred from publishing Git. Version **1.6.5-batch8.5**. No bundled test credentials.
+**The operator reports Batch 8.5 deployed. Batch 8.6 is implemented locally and
+awaits approval/publication and real-phone acceptance.** Console/IAM/device
+acceptance is not inferred from publishing Git. Version **1.6.6-batch8.6**.
+No bundled test credentials.
 
 ## Implemented functionality
 
 - Home, Discover, Rides, Clubs and Profile; anonymous landing, explicit guest entry,
   shared dark/gold design and English/Finnish. Indicative subscription prices only.
 - Content-first View mode, authorized Edit, per-section Save/Cancel/dirty warnings,
-  accessible visual colors and custom-rank image fallback.
+  grouped mobile editors, accessible visual colors and custom-rank image fallback.
+- Shared premium presentation, compact Home launch, deliberate Discover navigation,
+  own bio/privacy and vehicle collections, Club/activity section jumps and readable
+  dashboard/saved replay. Real local before/after screenshots guide the design.
 - Compact Home vehicle/identity/Group launch, upcoming RSVP plans and private updates.
   Personal/eligible Club identity locks for a ride; composite markers use current
   authorized media. Identity never admits a Group or enables location sharing.
@@ -87,9 +91,10 @@ background/lock-screen GPS. It is not navigation, speed competition or an emerge
 
 Use [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md) for exact browser-only
 workflow, two-account, phone, quota and rollback instructions. Nothing was pushed or
-deployed by this batch. Pause automatic Pages before an approved main push; deploy
-new Rules, Worker/v4, then Pages. Existing private R2, secrets and IAM are preserved;
-no new secret or paid-service activation.
+deployed by this batch. **8.6 changes only the frontend:** verify the reported 8.5
+Rules/Worker/v4 prerequisites, then publish Pages. No Firebase/Cloudflare deployment
+or new secret is required for 8.6. Existing private R2, secrets and IAM are preserved;
+no paid-service activation. The dated 8.5 backend rollout remains in the checklist.
 Keep all **19** existing composite definitions and the routeChunks.pointsJson exemption.
 
 | Workflow | Trigger/scope |
@@ -109,6 +114,9 @@ See [test prerequisites](tests/RULES_TESTING.md): browser fixtures, actual local
 demo Firestore suites through run_batch85_rules.py, locked RTDB, cloudflare/npm test,
 Pages path checks and deployment validation. Existing optional cached tools/Actions
 run tests; frontend still has no build. No test targets production.
+Rendered audit/evidence and final local results: [UX_AUDIT.md](UX_AUDIT.md) and
+[BATCH_8_6_RESULT.md](BATCH_8_6_RESULT.md). Physical Safari/Android acceptance is
+separate; a Chromium fixture screenshot does not certify native phone behavior.
 
 [IDEA.md](IDEA.md) remains authoritative. Password recovery/change, Google linking,
 trusted complete deletion, Official MotoDash activities/safe rewards, broadcast
@@ -116,7 +124,7 @@ notifications, Club QR, subscriptions/Stripe/trusted entitlements, NFC, merchand
 Safe Zone, later ecosystem/optional marketplace and final logo/typography/mobile
 accessibility/performance polish remain agreed future work. No Batch 9 started.
 
-- [Batch 8.5 result](BATCH_8_5_RESULT.md), [Batch 8 history](BATCH_8_RESULT.md), [implementation status](IMPLEMENTATION_STATUS.md).
+- [Batch 8.6 result](BATCH_8_6_RESULT.md), [Batch 8.5 history](BATCH_8_5_RESULT.md), [Batch 8 history](BATCH_8_RESULT.md), [implementation status](IMPLEMENTATION_STATUS.md).
 - [Data model](DATA_MODEL.md), [live tracking](LIVE_TRACKING.md), [protocol](cloudflare/PROTOCOL.md).
 - [Cloudflare setup](CLOUDFLARE_SETUP.md), [Firebase deployment](FIREBASE_DEPLOYMENT.md).
 - [Batch 7](BATCH_7_RESULT.md), [repository audit](REPOSITORY_AUDIT.md), [export schema](EXPORT_SCHEMA.md).

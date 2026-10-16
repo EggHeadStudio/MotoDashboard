@@ -134,3 +134,10 @@ See BATCH_8_6_RESULT.md for final regression/commits/deployment and unrun phone
 checks. Native Safari, real mobile rendering/GPS/camera/background and subjective
 user acceptance remain **NOT RUN**; automated success is not a premium-quality
 certificate or a claim to match Apple's proprietary design.
+
+Final full regression correction:390px Finnish200% text exposed a Profile shortcut
+overflow that the normal-size matrix cannot prove absent. Text-relative auto-fit
+columns and wrapping actions fix the cause;320/390/430 at200% now pass, with
+profile-fi-{width}x568-text200.png captures in after/. Two same-kind theme editors
+also retain unique IDs/accessible labels. These targeted checks extend, rather
+than replace, the264-case normal-size matrix and full130-group browser regression.

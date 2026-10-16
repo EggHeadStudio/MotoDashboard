@@ -1,4 +1,4 @@
-export const APP_VERSION = '1.6.5-batch8.5';
+export const APP_VERSION = '1.6.6-batch8.6';
 
 export const THEME_NAMES = ['themes.normal', 'themes.monochrome', 'themes.forest', 'themes.urban', 'themes.night'];
 export const THEME_CLASSES = ['theme-normal', 'theme-monochrome', 'theme-forest', 'theme-urban', 'theme-night'];

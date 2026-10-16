@@ -1,4 +1,117 @@
-# Batch 8.5 - current browser-only deployment and acceptance
+# Batch 8.6 - frontend-only publication and acceptance
+
+Prepared 2026-10-17. Version **1.6.6-batch8.6**. Operator reports 8.5 deployed;
+8.6 has **not** been pushed/deployed. No production data or billing changed.
+Use this section for 8.6; the 8.5 backend rollout below is conditional history.
+
+| Classification | Finding / resolution |
+| --- | --- |
+| INFORMATION | Frontend/test/docs changes only. No Rules/index/config/RTDB/Worker/binding/protocol/R2/secret/IAM/workflow change |
+| INFORMATION | Required deployment is **Pages only**, after verifying existing 8.5 prerequisites. No new secrets/environment variables |
+| BLOCKER - acceptance | Native iPhone Safari/Android camera/GPS/background, real two-account UX/security and production IAM/usage checks are NOT RUN |
+| WARNING - prerequisite | Confirm production really has reviewed 8.5 Rules, all19 indexes and Worker/v4. If not, pause Pages and follow the existing approved backend procedure below; never weaken Rules |
+| WARNING - wider beta | Trusted erasure, service-wide abuse/moderation/capacity and provider-commercial acceptance remain gates |
+
+## 1. Verify existing setup without changing production data
+
+- Firebase Console -> **motodash-87bf8 -> Firestore (default) -> Rules**: compare
+  published source with firestore.rules, including activityEpochs/coupled deletion
+  and Group departure, riding identity, RSVP and private/retired-ID protections.
+  Source SHA-256 is unchanged:
+  **53d8c86948653c12aeff90d5e63c7f2725595eba604b65aaa188b680b6388aec**.
+- Indexes: **19 Enabled** composites and routeChunks.pointsJson exemption. No new
+  index in 8.6. Auth Email/Password and domains eggheadstudio.github.io /localhost
+  stay unchanged; no provider/key/password change required.
+- Cloudflare Dashboard -> **Workers & Pages -> motodash-live**: current ready
+  version, LIVE_ROOMS/v1, LIVE_IDENTITIES/v2, MEDIA_STATE/v3,
+  **CLUB_ACTIVITY/ClubActivity/v4**, MEDIA_BUCKET/private motodash-media.
+  Retain current exact project/origin and encrypted runtime secrets. No redeploy.
+- Existing endpoint motodash-live.old-sound-55f2.workers.dev;
+  ALLOWED_ORIGINS=https://eggheadstudio.github.io. RTDB stays locked/unused.
+- No production records need creating to verify settings. Console privilege
+  bypasses Rules and does not prove cross-account authorization.
+
+## 2. Publish reviewed frontend, only after explicit approval
+
+1. Finish/save rides, stop sharing and preserve local browser storage.
+2. VS Code terminal at repository root (existing Git; no software installation):
+
+   ```powershell
+   git switch main
+   git status --short
+   git fetch origin
+   git status --short --branch
+   git log --oneline origin/main..main
+   git push origin main
+   ```
+
+   Expect reviewed 8.6 commits and a clean working tree. If diverged/rejected,
+   review remote changes; do not force push. Nothing was published by this task.
+3. **Actions -> Deploy to GitHub Pages** runs on main push. Do not disable it for
+   this frontend-only release. Alternatively, once published, **Run workflow ->
+   main**, **no inputs**. Verify successful reviewed SHA.
+4. Open **https://eggheadstudio.github.io/MotoDashboard/**, reload/reopen old tabs,
+   retaining local rides/IndexedDB. Check **1.6.6-batch8.6** in js/config.js and
+   product-experience.css, editor-layout.js, section-nav.js and batch86.js load
+   under /MotoDashboard/. No build/service-worker reset.
+5. Do **not** run the Firebase or Cloudflare workflow for an already-current 8.5
+   backend. Their manual scopes/secrets remain unchanged for actual backend work.
+6. Record phone acceptance below; a green workflow proves publication only.
+
+## 3. Two-account / two-phone UX acceptance - all NOT RUN
+
+Use disposable A/B, iPhone Safari and Android Chromium, stationary/on foot. Record
+safe device/version/viewport/language/operation/error/expected/actual only; omit
+passwords, JWTs, invite secrets, emails and precise GPS from shared screenshots.
+
+- Visitor/register/login/guest and invitation Auth return: actual success/errors,
+  no fabricated content. EN/FI at320/390/430, landscape/tablet, text scaling/reduced
+  motion; compare local audit screenshots, not only test counts.
+- Home vehicle/personal/eligible Club, Start visible at320 Finnish, contribution
+  off/separate and optional Group through authorized details. No GPS by selection.
+- Discover destinations/search/filter/paging/empty/loading/retry and only public
+  People/showcase projections; duplicate names remain supported.
+- Own/public bio/photo/banner/theme/visibility and Garage selected/featured/private
+  state. B cannot edit A; View hides editors and photo publication remains explicit.
+- Club join/membership/upcoming/members/ranks/log/stats/Wall and section focus;
+  custom rank image replaces fallback without gaining technical rights.
+- Ride/Meet/Event what/when/approximate area/organizer/capacity; RSVP never bypasses
+  approval, invitations, admission or live consent.
+- Editor sections, native validation, photo crop/preview, colors/reset, section
+  Save/Cancel and dirty close/Back. Decline discard: keep fields and one modal.
+- Dashboard speed/map/weather/status, one GPS/recorder/live connection, away/Return,
+  consent/failures/logout/leave/end/removal cleanup and existing night/map modes.
+- Finish/save/sync/History, independent details/replay collapse, seek/speed/overview,
+  gaps/red route/gold progress/export/Back; no live telemetry in saved mode.
+- Private/member/technical/public logs, visible-only counts, deletion/departure
+  invalidation, Club retirement and cross-account Garage/history denial. Full
+  8.5 security procedure remains below; third-account cases stay NOT RUN if absent.
+- Wi-Fi/cellular/offline/media/Worker failure, useful scoped retry, retained local
+  recording and no uncertain write replay. Observe real provider usage.
+
+## 4. Approved frontend rollback
+
+For this 8.6-only release, previous reviewed frontend is **5c46455 (8.5)**. Prefer
+a tested corrective commit. If a restore is needed, on reviewed clean main:
+
+```powershell
+git restore --source=5c46455 -- index.html js css tests
+git diff --stat
+git diff --check
+```
+
+This restores the matching frontend and test revision. Review/run its complete
+regression before committing or publishing and update the release status. Keep current Rules/indexes and
+epoch-coupled repositories (this baseline already contains them), Worker/v1-v4,
+secrets/private R2 and all local/production data. No backend rollback/migration.
+Do not select a pre-8.5 baseline; reassess if future backend contracts change.
+
+Full source/tests/commits/evidence/limits: BATCH_8_6_RESULT.md and UX_AUDIT.md.
+No push/deployment/production mutation/paid activation performed.
+
+---
+
+# Historical Batch 8.5 - browser-only deployment and acceptance
 
 Prepared 2026-10-15, final local verification 2026-10-16;
 **not pushed/deployed; live acceptance NOT RUN**.
