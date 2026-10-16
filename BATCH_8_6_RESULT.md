@@ -50,3 +50,11 @@ organizer and distinct original activity graphics. Compact fallback artwork;
 authorized banners keep a full image area. RSVP moves ahead of configuration with
 in-page intent/vehicle/participant navigation, remaining separate from admission.
 Six focused groups and all6 existing Group/Lobby/invitation/QR groups pass.
+
+M7: semantic general/appearance/visibility/time/admission fieldsets and editor
+section jumps reuse original controls, FormData and handlers. Native invalid
+fields gain a visible/screen-reader invalid state that clears after correction.
+Mode controls expose expanded state and authorized photo/management entry points;
+repeated Edit entry no longer adds duplicate dirty-field listeners. Existing crop,
+preview/palette/section-save/cancel/publication rules remain. Seven focused groups
+and all8 media browser groups pass, including upload/replacement/gallery/theme.

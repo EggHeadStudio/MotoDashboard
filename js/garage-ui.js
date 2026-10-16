@@ -10,6 +10,7 @@ import {loadVehicleShowcase,publishShowcaseVehicle,unpublishShowcaseVehicle,load
 import {profileURL} from './data/public-profile.js';
 import {mountMediaEditor} from './media/media-editor.js';
 import {decorateMedia} from './media/media-render.js';
+import {formSections} from './ui/editor-layout.js';
 
 const listeners = new Set();
 let state = { uid: null, vehicles: [], defaultVehicleId: null, selectedId: null, ready: false };
@@ -77,7 +78,8 @@ export function initGarageUI() {
     form.addEventListener('submit', event => {
       event.preventDefault(); const input = Object.fromEntries(new FormData(form));
       action(uid => saveVehicle(uid, vehicle?.id, input));
-    }); view.body.append(form);guardEditor(view.body);
+    });formSections(form,[{key:'ux.details',names:['category','nickname','manufacturer','model','modelYear']},
+      {key:'garage.visibility',names:['description','visibility']}]);view.body.append(form);guardEditor(view.body);
   }
   function render() {
     editing = false; view.body.replaceChildren();

@@ -69,5 +69,21 @@ def run_batch86_tests(browser,base,route_map):
     assert p.locator('#group-attendance').bounding_box()['y']<p.locator('#group-vehicle').bounding_box()['y']
     assert not p.evaluate("async()=>(await import('./js/ride-context.js')).getRideContext().sharing")
     print('PASS: Batch 8.6 shared activity detail prioritizes actual date, organizer and independent RSVP without live consent')
+    p.click('#group-edit');assert p.locator('#group-edit').get_attribute('aria-expanded')=='true'
+    assert p.locator('#groups-dialog [data-edit-only].section-nav').is_visible()
+    p.click('#group-general-edit');p.wait_for_selector('#group-form .editor-section')
+    assert p.locator('#group-form .editor-section').count()==3
+    p.fill('#group-form-title','');p.locator('#group-form button[type=submit]').click()
+    assert p.locator('#group-form-title').get_attribute('aria-invalid')=='true'
+    p.fill('#group-form-title','Unsaved replacement')
+    assert p.locator('#group-form-title').get_attribute('aria-invalid') is None
+    prompts=[]
+    def stay(dialog):prompts.append(dialog.message);dialog.dismiss()
+    p.on('dialog',stay);p.locator('#bottom-nav [data-destination=home]').click()
+    assert prompts and p.locator('#group-form-title').input_value()=='Unsaved replacement'
+    p.remove_listener('dialog',stay);p.on('dialog',lambda dialog:dialog.accept())
+    p.locator('#bottom-nav [data-destination=home]').click()
+    assert p.locator('#screen-home').is_visible()
+    print('PASS: Batch 8.6 grouped editors preserve FormData, native accessible validation and unsaved navigation guards')
     assert not errors,errors
     c.close()

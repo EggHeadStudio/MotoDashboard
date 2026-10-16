@@ -33,6 +33,8 @@ export function field(form, name, key, options = {}) {
     if (options.maxValue != null) input.max = options.maxValue;
   }
   input.required = Boolean(options.required);
+  input.addEventListener('invalid',()=>input.setAttribute('aria-invalid','true'));
+  input.addEventListener('input',()=>{if(input.validity.valid)input.removeAttribute('aria-invalid');});
   if (options.value != null) input.value = options.value;
   wrap.append(input); form.append(wrap); return input;
 }

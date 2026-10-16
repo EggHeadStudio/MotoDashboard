@@ -10,6 +10,7 @@ import { openView, dialog, element, field, button, labelText, runAction } from '
 import {liveClient} from './live/live-client.js';
 import { groupCard, emptyState } from './ui/cards.js';
 import {sectionNavigation} from './ui/section-nav.js';
+import {formSections} from './ui/editor-layout.js';
 import {watchGroup} from './firebase/groupWatch.js';
 import {getRideContext} from './ride-context.js';
 import {showActiveRideConflict} from './ui/ride-return.js';
@@ -100,6 +101,9 @@ export function initGroupUI() {
         else {const id=await repository.createGroup(owner,data);if(getAccount()?.uid===owner) selectedId=id;}
       });
     });
+    formSections(form,[{key:'ux.details',names:['title','description','activityType','category']},
+      {key:'groups.startTime',names:['startsAt','endsAt','meetingArea','meetingLocation']},
+      {key:'groups.policy',names:['visibility','joiningPolicy','maxParticipants','clubId']}]);
     view.body.replaceChildren(button('common.cancel',()=>{if(mayLeaveEditor(view.body))return action(()=>Promise.resolve());}),form);
     guardEditor(view.body);labelText(view.status,'common.loaded');
   }

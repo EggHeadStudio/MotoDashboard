@@ -130,3 +130,17 @@
 #group-vehicle {padding:20px;border:1px solid var(--md-line);border-radius:var(--md-radius);background:var(--md-surface);}
 #group-participants {margin:24px 0;}#group-overview ul {padding-left:20px;line-height:1.8;}
 @media(max-width:350px) {#group-attendance .feature-actions {grid-template-columns:1fr;}#group-attendance .feature-actions button {text-align:left;padding-inline:16px;}}
+
+/* Editors reuse section saves; mode controls never imply an unsaved global save. */
+[data-edit-mode=view]>.edit-toolbar {float:right;position:static;padding:0;margin:0 0 8px 12px;background:transparent;}
+[data-edit-mode=edit]>.edit-toolbar {position:sticky;top:0;padding:8px 0;z-index:5;justify-content:space-between;}
+.edit-hint {clear:both;margin:12px 0;font-size:.8125rem;}
+.editor-section {min-width:0;margin:20px 0;padding:20px 0 8px;border:0;border-top:1px solid var(--md-line);}
+.editor-section legend {font-size:1.0625rem;letter-spacing:-.02em;font-weight:650;color:var(--md-text);padding-right:16px;}
+.editor-section>.field:first-of-type {margin-top:4px;}
+.editor-section:focus {outline:2px solid var(--md-gold);outline-offset:4px;}
+.editor-actions {display:flex;align-items:center;flex-wrap:wrap;gap:12px;padding:12px 0;margin-top:12px;background:var(--md-bg);}
+.editor-actions button[type=submit] {flex:1;min-width:120px;}
+.media-crop {padding:12px;border-radius:12px;background:var(--md-surface);}
+.media-editor progress {margin-block:12px;}.media-editor .media-preview {max-height:220px;}
+@media(min-width:760px) {.editor-section {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 20px;}.editor-section>.field:has(textarea),.editor-section>.color-palette,.editor-section>.palette-controls {grid-column:1/-1;}}

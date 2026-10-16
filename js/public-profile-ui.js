@@ -13,6 +13,7 @@ import {vehicleIcon} from './ui/icons.js';
 import {decorateMedia,mountMediaGallery} from './media/media-render.js';
 import {mountMediaEditor} from './media/media-editor.js';
 import {decoratePalette} from './ui/palette.js';
+import {formSections} from './ui/editor-layout.js';
 
 let epoch=0,loaded=null;
 export function publicProfileLink(identity,className='text-button') {
@@ -101,7 +102,8 @@ export function initPublicProfiles() {
       form.addEventListener('submit',event=>{event.preventDefault();if(!validDisplayName(name.value)){labelText(view.status,'auth.nameLength');name.focus();return;}void runAction(form,view.status,async()=>{
         await savePublicProfile(uid,{...settings,displayName:name.value,bio:bio.value,category:category.value,accent:accent.value,banner:banner.value,featuredVehicle:featured.value,visibility:visibility.value});
         if(getAccount()?.uid===uid){publishDisplayIdentity(uid,name.value.trim());dispatchEvent(new Event('motodash-profile-updated'));labelText(view.status,'ui.saved');acceptEdits(view.body);view.node.close();}
-      });});view.body.append(form);
+      });});formSections(form,[{key:'ux.details',names:['displayName','bio','category']},
+        {key:'edit.appearance',names:['accent','banner']},{key:'publicProfile.visibility',names:['featuredVehicle','visibility']}]);view.body.append(form);
       view.body.append(button('common.cancel',()=>view.node.close()));guardEditor(view.body);
       if(settings.publicId)mountMediaEditor(view.body,{kind:'profile',id:settings.publicId},['avatar','banner']);
       else view.body.append(labelText(element('p','muted'),'media.saveProfileFirst'));
