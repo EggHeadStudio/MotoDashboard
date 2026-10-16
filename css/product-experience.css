@@ -20,12 +20,12 @@
 :where(.app-shell,.feature-dialog,#account-dialog) button:active:not(:disabled) {filter:brightness(.9);}
 :where(.app-shell,.feature-dialog,#account-dialog) button:disabled {cursor:default;}
 .app-shell :is(input,select),.feature-dialog :is(input,select,textarea),#account-dialog :is(input,select) {border-color:#5f6a75;background:var(--md-surface);min-height:48px;}
-.field {margin:12px 0;gap:6px;font-size:.8125rem;}.field>span {font-weight:550;}
+.field {margin:var(--md-space-3) 0;gap:6px;font-size:.8125rem;}.field>span {font-weight:550;}
 .field:has(input[type=checkbox]) {grid-template-columns:24px minmax(0,1fr);align-items:start;gap:10px;}
 .field:has(input[type=checkbox])>input {grid-column:1;grid-row:1;min-height:24px;width:24px;height:24px;margin-top:2px;}
 .field:has(input[type=checkbox])>span {grid-column:2;line-height:1.55;}
 .surface,.feature-card {border-color:var(--md-line);padding:20px;}
-.feature-card p:empty {display:none;}.card-grid {gap:16px;}
+.feature-card p:empty {display:none;}.card-grid {gap:var(--md-space-4);}
 .feature-status {margin:8px 0;line-height:1.5;}.feature-body>p.feature-status {margin:8px 0;}
 .feature-header {padding-bottom:12px;}.feature-header h2 {margin:0;}
 .feature-dialog:not(.page-panel),#account-dialog {overscroll-behavior:contain;scroll-padding-block:90px 32px;}
@@ -87,7 +87,7 @@
 .profile-owner-actions {grid-column:1/-1;display:flex;gap:12px;align-items:center;margin-top:8px;}
 .profile-owner-actions .text-button {padding:10px 8px;}.profile-owner-actions .primary {min-width:100px;}
 .profile-actions {grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
-.profile-actions .action-row {padding:16px;flex-wrap:wrap;min-width:0;}
+.profile-actions .action-row {padding:16px 12px;gap:8px;font-size:.8125rem;flex-wrap:wrap;min-width:0;}
 .public-profile-hero {padding:28px 24px;border:1px solid var(--md-line);border-top:2px solid var(--profile-accent,var(--md-gold));background:var(--md-surface);}
 .public-profile-hero .large-avatar {width:80px;height:80px;margin-bottom:16px;}
 .public-profile-hero h1 {font-size:clamp(1.75rem,5vw,2.5rem);}
@@ -192,3 +192,24 @@ body.saved-ride-view #replay-play {background:var(--md-gold);color:var(--md-gold
 .skip-link:focus {position:relative;display:block;width:fit-content;min-height:44px;margin:8px 20px;}
 @media(hover:hover) {.feature-card:has(.card-footer button):hover {border-color:#69737e;}}
 @media(forced-colors:active) {button[aria-pressed=true],#bottom-nav button[aria-current=page] {outline:2px solid Highlight;} .color-swatch {forced-color-adjust:none;}}
+
+/* Rendered correction pass: edge-to-edge media, visible destinations, small FI. */
+.feature-card.event-card,.feature-card.vehicle-card {padding:0;}
+.club-section-nav,.activity-section-nav {display:grid;gap:6px;overflow:visible;}
+.club-section-nav {grid-template-columns:repeat(4,minmax(0,1fr));}
+.activity-section-nav {grid-template-columns:repeat(3,minmax(0,1fr));}
+.club-section-nav button,.activity-section-nav button {min-width:0;white-space:normal;font-size:.75rem;padding:10px 6px;}
+.group-hero .card-art {height:56px;padding:10px 20px;}.group-hero .card-art>.md-icon {height:36px;}
+.group-hero .card-content {padding:16px 20px;}.group-hero h3 {margin:10px 0;}
+.group-hero .group-organizer {padding-top:8px;margin-top:8px;}
+.activity-admission {display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;border-top:1px solid var(--md-line);padding-top:12px;margin-top:12px;}
+.group-hero .activity-admission p,.group-hero .activity-admission .card-footer {margin:0;font-size:.75rem;}
+.group-hero .activity-admission .card-footer span {font-size:inherit;}
+#screen-profile .profile-hero[data-media-card=solid] {background-color:var(--media-secondary);}
+#screen-profile .profile-hero[data-media-card=outlined] {border-color:var(--media-accent,var(--md-line));}
+#screen-profile .profile-hero[data-media-card=minimal] {border-color:transparent;box-shadow:none;}
+@media(max-height:700px) and (orientation:portrait) {
+  .home-heading {margin-bottom:12px;}.home-heading h1 {font-size:1.5rem;margin:4px 0;}
+  .home-heading .muted {margin-top:4px;font-size:.8125rem;}
+  .ride-launch {padding:14px;}.ride-launch-options {margin-bottom:12px;}#ride-launch {gap:10px;}
+}

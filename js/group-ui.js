@@ -131,9 +131,9 @@ export function initGroupUI() {
     if(current(owner,token)){
       const hero=view.body.querySelector('.group-hero'),attendance=view.body.querySelector('#group-attendance');
       if(attendance)hero.after(attendance);
-      const nav=sectionNavigation(view.body,[{node:hero,key:'ux.overview'},{node:attendance,key:'rsvp.title'},
+      const nav=sectionNavigation(view.body,[{node:attendance,key:'ux.plansNav'},
         {node:view.body.querySelector('#group-vehicle'),key:'groups.vehicle'},
-        {node:view.body.querySelector('#group-participants'),key:'groups.participants'}]);hero.after(nav);
+        {node:view.body.querySelector('#group-participants'),key:'groups.participants'}]);nav.classList.add('activity-section-nav');hero.after(nav);
       mountEditMode(view.body,{allowed:manager && ['scheduled','active'].includes(group.state),id:'group-edit'});labelText(view.status,'common.loaded');
     }
     if(current(owner,token)) release=watchGroup(owner,id,latest=>{

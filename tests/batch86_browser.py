@@ -54,7 +54,7 @@ def run_batch86_tests(browser,base,route_map):
     p.fill('#club-form-name','Weekend Crew');p.locator('#club-form button[type=submit]').click();p.wait_for_selector('#club-edit')
     assert p.locator('#clubs-dialog .section-nav button').count()>=4
     before=p.evaluate('window.__mock.queries.length')
-    p.locator('#clubs-dialog .section-nav').get_by_role('button',name='Members and ranks',exact=True).click()
+    p.locator('#clubs-dialog .section-nav [aria-controls=club-members]').click()
     assert p.evaluate('window.__mock.queries.length')==before
     assert p.evaluate('document.activeElement.closest("#club-members")!==null')
     assert not p.locator('#branding-form').is_visible()
@@ -126,5 +126,10 @@ def run_batch86_tests(browser,base,route_map):
     assert p.locator('#public-profile-edit').evaluate('(node)=>getComputedStyle(node).transitionDuration')=='0s'
     p.evaluate('document.documentElement.style.fontSize=""')
     print('PASS: Batch 8.6 English/Finnish key parity, 200 percent text and reduced-motion focusable controls')
+    p.locator('#bottom-nav [data-destination=home]').click()
+    start=p.locator('#start-btn').bounding_box();nav=p.locator('#bottom-nav').bounding_box()
+    assert start['y']+start['height']<nav['y'],(start,nav)
+    assert p.locator('#ride-launch-group').is_visible()
+    print('PASS: Batch 8.6 rendered correction keeps Finnish Start fully above the 320px portrait navigation')
     assert not errors,errors
     c.close()

@@ -100,5 +100,37 @@ all agreed account/commercial/Official/NFC/merchandise work stays in IDEA.md.
 ## Acceptance record
 
 Before audit: actual Chromium screenshots inspected, including mobile EN/FI,
-landscape/tablet/desktop. See final BATCH_8_6_RESULT.md for the after matrix,
-additional visual correction, final test results and unrun phone checks.
+landscape/tablet/desktop. Final evidence (2026-10-17) has **264 matched before
+and264 after cases**, 22 surfaces x6 sizes x2 languages, plus an intermediate
+264-case review. Final document/surface overflow failures: **zero**.
+
+The final baseline was regenerated from a read-only git archive of **5c46455** in
+%TEMP%/motodash-ux86/baseline/MotoDashboard, using the same current capture harness
+and real fixture UI profile-save/vehicle-choice steps as after. No branch, install,
+production account or application source modification was needed for the baseline.
+Fixture names/selection are now identical; dates differ naturally by capture time.
+Each before/after folder has manifest.json with the exact matching case keys.
+
+Actual visual iteration, beyond code/tests:
+
+| Review evidence | Problem observed | Additional correction |
+| --- | --- | --- |
+| review/home-fi-320x568.png | Finnish Group label pushed part of Start behind bottom navigation | Tighter short-portrait heading/card rhythm; final Start fully above navigation, regression assertion added |
+| review/discover-en-390x844.png and garage-en-390x844.png | Shared card padding inset artwork twice | Restore edge-to-edge media inside rounded activity/vehicle cards |
+| review/club-detail and group-detail | Long section labels hid important destinations off the right edge | Short localized Club destinations and three activity actions all visible; all original sections retained |
+| review/group-detail-en-430x932.png | Repeated policy/capacity paragraphs delayed RSVP | Compact actual admission metadata and fallback art; real date/area/organizer retained, RSVP buttons visible sooner |
+| review/profile-en-390x844.png | Club shortcut arrow wrapped below its label | Balanced action padding/gap/type; final shortcuts align |
+| viewport switching | Retained focused controls scrolled evidence during resizing | Capture harness blurs/resets scroll before each viewport; actual product focus/Back/dirty guards tested separately |
+
+Examples to compare in before/ and after/: home-fi-320x568.png,
+discover-en-390x844.png, profile-en-390x844.png, club-detail-fi-430x932.png,
+group-detail-en-430x932.png, garage-en-390x844.png, profile-edit-en-390x844.png,
+dashboard-en-390x844.png and saved-replay-fi-844x390.png. Tablet/desktop variants
+use the same prefix with768x1024 or1440x1000. These are genuine local renders,
+not invented production users/imagery/metrics. Small raster fixtures/error/empty
+states do not certify production photography or camera behavior.
+
+See BATCH_8_6_RESULT.md for final regression/commits/deployment and unrun phone
+checks. Native Safari, real mobile rendering/GPS/camera/background and subjective
+user acceptance remain **NOT RUN**; automated success is not a premium-quality
+certificate or a claim to match Apple's proprietary design.

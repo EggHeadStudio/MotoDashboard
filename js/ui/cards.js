@@ -20,9 +20,10 @@ export function groupCard(group, open, {featured = false, detail = false} = {}) 
   const footer = element('div','card-footer');
   footer.append(labelText(element('span','muted'),group.maxParticipants?'groups.capacityLabel':'groups.count',{count:group.participantCount,max:group.maxParticipants}));
   if(open){const action=button('ui.open',open);action.setAttribute('aria-describedby',title.id);footer.append(action);}
-  body.append(labelText(element('p','muted'),'policy.'+group.joiningPolicy));
-  if(['scheduled','active'].includes(group.state)) body.append(labelText(element('p','availability'),group.maxParticipants && group.participantCount >= group.maxParticipants?'lobby.full':'lobby.available'));
-  body.append(footer);
+  const admission=detail?element('div','activity-admission'):body;
+  admission.append(labelText(element('p','muted'),'policy.'+group.joiningPolicy));
+  if(['scheduled','active'].includes(group.state)) admission.append(labelText(element('p','availability'),group.maxParticipants && group.participantCount >= group.maxParticipants?'lobby.full':'lobby.available'));
+  admission.append(footer);if(detail)body.append(admission);
   card.append(art,body);decorateMedia(card,{kind:'group',id:group.id},{banner:art});return card;
 }
 export function clubCard(club, open, {member = false} = {}) {

@@ -79,3 +79,12 @@ structured honest history empty state, locale-aware navigation labels, no-motion
 section focus, safe text scaling and lightweight touch/focus/forced-color feedback.
 Twelve focused groups and both Pages groups pass (448 references/116 URLs at this
 stage). Existing loading/error retry is scoped, with no automatic uncertain writes.
+
+M11: actual264-case intermediate rendered review followed by corrections to
+edge-to-edge card media, compact activity metadata, visible localized section
+destinations, short Finnish Home and aligned profile actions. **264 matched before
+and264 final after cases** pass at all six sizes/EN-FI, zero document/surface
+overflow. Matched baseline comes from a read-only 5c46455 archive with the same
+fixture UI setup. Screenshots were visually inspected on mobile/landscape/tablet/
+desktop; thirteen focused product groups pass. See UX_AUDIT.md for exact evidence
+and findings. Native Safari/physical camera/GPS/subjective acceptance remain NOT RUN.

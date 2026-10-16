@@ -19,7 +19,9 @@ def run_visual86_tests(browser, base, route_map):
     def capture(p,screen,language,anchor=None):
         if extra and screen not in ['club-activity','meet-detail','event-detail','discover-people']:return
         for width,height in SIZES:
+            p.evaluate('document.activeElement?.blur()')
             p.set_viewport_size({'width':width,'height':height})
+            p.wait_for_timeout(100)
             p.evaluate('''()=>{window.scrollTo(0,0);for(const node of document.querySelectorAll('#start-overlay,dialog[open]'))node.scrollTop=0;}''')
             if anchor:p.locator(anchor).scroll_into_view_if_needed()
             p.wait_for_timeout(100)
@@ -57,9 +59,11 @@ def run_visual86_tests(browser, base, route_map):
         p.select_option('#language-select',language);capture(p,'landing',language)
         p.click('[data-auth-entry=register] >> nth=0');capture(p,'register',language);p.click('#account-close')
         p.select_option('#language-select','en');register(p,'visual86@example.test')
-        p.evaluate('''async()=>{const uid=(await import('./js/auth-state.js')).getAccount().uid;
-          await (await import('./js/firebase/publicProfileRepository.js')).savePublicProfile(uid,{displayName:'Alex Rider',visibility:'public',bio:'Weekend roads and good company.',category:'motorcycle',accent:'gold',banner:'road'});}''')
-        open_garage(p);add_vehicle(p,'Weekend Explorer','motorcycle');p.locator('#garage-dialog .feature-header button').click()
+        p.locator('#bottom-nav [data-destination=profile]').click();p.click('#public-profile-edit');p.wait_for_selector('#public-profile-form')
+        p.fill('#public-profile-form-displayName','Alex Rider');p.fill('#public-profile-form-bio','Weekend roads and good company.')
+        p.select_option('#public-profile-form-visibility','public');p.select_option('#public-profile-form-category','motorcycle')
+        p.locator('#public-profile-form button[type=submit]').click();p.wait_for_function('!document.getElementById("public-profile-editor")')
+        open_garage(p);add_vehicle(p,'Weekend Explorer','motorcycle');p.locator('.vehicle-card').get_by_role('button',name='Choose for ride',exact=True).click()
         club=p.evaluate('''async()=>{const uid=(await import('./js/auth-state.js')).getAccount().uid;
           return (await import('./js/firebase/clubRepository.js')).createClub(uid,{name:'Weekend Crew',description:'Short rides. Good company. Everyone welcome.',category:'motorcycle',visibility:'public',membershipPolicy:'open',primaryColor:'#101214',accentColor:'#e9bf73',routeColor:null,mapTheme:'normal',links:{}});}''')
         p.locator('#bottom-nav [data-destination=rides]').click();p.click('#groups-btn');p.click('#group-create')

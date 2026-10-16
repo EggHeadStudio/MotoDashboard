@@ -194,11 +194,10 @@ export function initClubUI() {
     if(current(owner,token)){
       const wall=view.body.querySelector('#club-wall');if(wall)view.body.append(wall);
       const hero=view.body.querySelector('#club-branding') || view.body.querySelector('#club-identity');
-      const nav=sectionNavigation(view.body,[{node:hero,key:'ux.overview'},
-        {node:view.body.querySelector('#club-upcoming'),key:'clubs.upcoming'},
-        {node:view.body.querySelector('#club-members'),key:'members.title'},
-        {node:view.body.querySelector('#club-activity'),key:'activity.title'},
-        {node:wall,key:'branding.wall'}]);hero?.after(nav);
+      const nav=sectionNavigation(view.body,[{node:view.body.querySelector('#club-upcoming'),key:'ux.upcomingNav'},
+        {node:view.body.querySelector('#club-members'),key:'members.people'},
+        {node:view.body.querySelector('#club-activity'),key:'ux.activityNav'},
+        {node:wall,key:'ux.wallNav'}]);nav.classList.add('club-section-nav');hero?.after(nav);
       mountEditMode(view.body,{allowed:isManager(role),id:'club-edit'});labelText(view.status,'common.loaded');
     }
   }
