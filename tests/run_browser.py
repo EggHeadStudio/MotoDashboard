@@ -48,6 +48,10 @@ def run():
                 content_type='text/css' if route.request.url.endswith('.css') else 'application/javascript'))
             ctx.route(re.compile(r'https://.*(?:tile|openstreetmap).*\.png'), lambda route: route.fulfill(body=pixel, content_type='image/png'))
             ctx.route('https://api.open-meteo.com/**', lambda route: route.fulfill(json={'current': {'temperature_2m': 12, 'wind_speed_10m': 5, 'weather_code': 0}}))
+        if '--visual86' in sys.argv:
+            from visual86_capture import run_visual86_tests
+            run_visual86_tests(browser,base,route_map)
+            browser.close();server.shutdown();return
         if '--batch85-only' in sys.argv:
             from batch85_browser import run_batch85_tests
             run_batch85_tests(browser,base,route_map)
