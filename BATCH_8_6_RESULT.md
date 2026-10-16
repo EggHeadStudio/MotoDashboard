@@ -35,3 +35,12 @@ collection with a create toolbar, selected/featured/private states and authorize
 View/Edit actions. No photo/profile is published automatically. Four focused
 groups and all20 Batch6B browser groups pass, including public projection privacy,
 account changes and exclusive recorder/Return to Ride behavior.
+
+M5: reusable focus-aware in-page section navigation (no route change/refetch),
+Club overview/upcoming/members/log/Wall hierarchy, clear create/join actions and
+integer ride/rider/participation counts. Existing technical-role/private log and
+lazy loading boundaries stay unchanged. Five focused groups and three existing
+Club regression groups pass. A first Club run timed out waiting for initialization
+after reload; an instrumented complete rerun passed without product/test weakening.
+The final full matrix repeats this path. Baseline count-format expectations were
+updated only for the deliberate integer presentation.

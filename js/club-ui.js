@@ -12,6 +12,7 @@ import { groupCard } from './ui/cards.js';
 import { sessionURL, followSessionURL } from './data/group-session.js';
 import { loadDisplayProfiles, searchDisplayProfiles } from './firebase/displayProfiles.js';
 import {colorField} from './ui/palette.js';
+import {sectionNavigation} from './ui/section-nav.js';
 
 const sections = new Set();
 export function registerClubSection(render) { sections.add(render); }
@@ -42,8 +43,8 @@ export function initClubUI() {
   function renderBrowse() {
     editing=false;view.body.replaceChildren();
     if(!uid) {signedOut();return;}
-    view.body.append(button('clubs.create',()=>edit(null),'club-create'),
-      button('common.refresh',()=>action(()=>Promise.resolve(),()=>browse())));
+    const toolbar=element('div','collection-toolbar'),create=button('clubs.create',()=>edit(null),'club-create');create.className='primary';
+    toolbar.append(create,button('common.refresh',()=>action(()=>Promise.resolve(),()=>browse())));view.body.append(toolbar);
     const lookup=element('form');lookup.id='club-lookup';
     field(lookup,'url','identity.clubLink',{required:true,max:1000,type:'url'});const open=button('ui.open');open.type='submit';lookup.append(open);
     lookup.addEventListener('submit',event=>{
@@ -190,7 +191,16 @@ export function initClubUI() {
       if(!current(owner,token)) return;
       await render({uid:owner,model,body:view.body,status:view.status,action,stillCurrent:()=>current(owner,token)});
     }
-    if(current(owner,token)){mountEditMode(view.body,{allowed:isManager(role),id:'club-edit'});labelText(view.status,'common.loaded');}
+    if(current(owner,token)){
+      const wall=view.body.querySelector('#club-wall');if(wall)view.body.append(wall);
+      const hero=view.body.querySelector('#club-branding') || view.body.querySelector('#club-identity');
+      const nav=sectionNavigation(view.body,[{node:hero,key:'ux.overview'},
+        {node:view.body.querySelector('#club-upcoming'),key:'clubs.upcoming'},
+        {node:view.body.querySelector('#club-members'),key:'members.title'},
+        {node:view.body.querySelector('#club-activity'),key:'activity.title'},
+        {node:wall,key:'branding.wall'}]);hero?.after(nav);
+      mountEditMode(view.body,{allowed:isManager(role),id:'club-edit'});labelText(view.status,'common.loaded');
+    }
   }
   document.getElementById('clubs-btn').addEventListener('click',()=>{
     openView(view.node);if(uid) action(()=>Promise.resolve(),()=>browse());else signedOut();

@@ -105,7 +105,7 @@ def run_batch85_tests(browser,base,route_map):
     p.evaluate('id=>{document.getElementById("test-contribution").remove();location.hash="/club/"+id;}',activity_club)
     p.wait_for_selector('#club-activity > details > summary');p.locator('#club-activity > details > summary').click()
     p.wait_for_selector('#club-activity .activity-card');assert p.locator('#club-activity').get_by_text('Coastal ride',exact=True).is_visible()
-    assert p.locator('#club-activity-stats dd').all_inner_texts()==['1.0','1.0','10.0','1.0','0.0','0.0','0.0']
+    assert p.locator('#club-activity-stats dd').all_inner_texts()==['1','1.0','10.0','1','0','0','0']
     assert not errors,errors
     print('PASS: Batch 8.5 explicit private ride contribution and lazy Club Activity Log use summary-only payloads')
     print('PASS: Batch 8.5 trusted Club statistics display visible mileage, hours, riders and separate participation counters')

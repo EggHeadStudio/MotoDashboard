@@ -49,5 +49,15 @@ def run_batch86_tests(browser,base,route_map):
     assert p.locator('.vehicle-card').get_by_role('button',name='Choose for ride',exact=True).is_visible()
     p.locator('#garage-dialog .feature-header button').click()
     print('PASS: Batch 8.6 actual own bio/privacy and Garage collection preserve private defaults and View/Edit boundaries')
+    p.locator('#bottom-nav [data-destination=clubs]').click();p.wait_for_selector('#club-create');p.click('#club-create')
+    p.fill('#club-form-name','Weekend Crew');p.locator('#club-form button[type=submit]').click();p.wait_for_selector('#club-edit')
+    assert p.locator('#clubs-dialog .section-nav button').count()>=4
+    before=p.evaluate('window.__mock.queries.length')
+    p.locator('#clubs-dialog .section-nav').get_by_role('button',name='Members and ranks',exact=True).click()
+    assert p.evaluate('window.__mock.queries.length')==before
+    assert p.evaluate('document.activeElement.closest("#club-members")!==null')
+    assert not p.locator('#branding-form').is_visible()
+    assert p.locator('#club-wall').evaluate('(node)=>node===node.parentElement.lastElementChild')
+    print('PASS: Batch 8.6 Club section jumps focus existing authorized content without additional queries or exposing editors')
     assert not errors,errors
     c.close()

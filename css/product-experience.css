@@ -100,3 +100,19 @@
 [data-edit-mode=view] .vehicle-card .feature-actions>button {width:100%;}
 [data-edit-mode=view] .vehicle-card.is-selected .feature-actions>button {background:var(--md-gold);border-color:var(--md-gold);color:var(--md-gold-ink);}
 @media(max-width:350px) {#screen-profile .profile-hero {padding:18px;grid-template-columns:60px minmax(0,1fr);gap:12px;}#screen-profile .large-avatar {width:60px;height:60px;}#screen-profile #profile-display-name {font-size:1.25rem;}.profile-actions {grid-template-columns:1fr;}}
+
+/* Community sections retain their own access boundaries and lazy loading. */
+.section-nav {display:flex;gap:8px;overflow-x:auto;scrollbar-width:thin;padding:8px 0 12px;margin:12px 0 20px;max-width:100%;}
+.section-nav button {flex:none;white-space:nowrap;border-radius:99px;padding:10px 14px;font-size:.8125rem;background:transparent;}
+.section-nav button:focus-visible {outline-offset:-3px;}
+.club-banner {padding:24px;margin:16px 0;border-radius:var(--md-radius);border:1px solid var(--md-line);}
+.club-banner .category-icon {width:56px;height:56px;border-radius:16px;display:grid;place-items:center;}
+.club-banner h3 {margin:16px 0 10px;font-size:clamp(1.65rem,4vw,2.25rem);line-height:1.15;}
+#club-join,#club-request {background:var(--md-gold);border-color:var(--md-gold);color:var(--md-gold-ink);}
+#club-activity {padding:0;border:0;background:transparent;}
+#club-activity>.disclosure {padding:20px;margin:0;border-radius:var(--md-radius);}
+.activity-stats {grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 20px;margin:20px 0;}
+.activity-stats>div {min-width:0;}.activity-stats dd {font-variant-numeric:tabular-nums;font-size:1.75rem;line-height:1.2;color:var(--md-text);}
+.activity-stats dt {font-size:.75rem;overflow-wrap:anywhere;}.activity-card {padding-block:20px;}
+.rank-graphic {border-radius:10px;}.member-rank {line-height:1.4;}
+@media(min-width:760px) {.activity-stats {grid-template-columns:repeat(4,minmax(0,1fr));}}
